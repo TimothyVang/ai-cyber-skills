@@ -1,0 +1,17 @@
+{
+  "name": "deep-mode",
+  "version": "0.1.0",
+  "description": "Rigorous agent engineering mode adapted from pstack (poteto-mode) for omp and Claude Code: /poteto routes any task to a playbook, applies named principles, proves behavior on the real app, and runs a Greptile-aware PR loop.",
+  "author": {
+    "name": "Timothy Vang"
+  },
+  "license": "MIT",
+  "keywords": [
+    "pstack",
+    "poteto-mode",
+    "verification",
+    "greptile",
+    "playbooks",
+    "omp"
+  ]
+}

@@ -1,0 +1,60 @@
+# Babysit
+
+Use when: the user asks to babysit, get green, make merge-ready, address review comments, or check on PRs — normally once a phase or whole stack is built, not when a PR opens. Landing ("merge", "ship", "land") is `references/playbooks/shipping.md`, which starts where this ends. You own the merge frontier: declare a mode, clear one PR at a time, stop at the human's line.
+
+## Steps
+
+1. Declare the mode before any poll:
+   - `drive` (default; "babysit this", "get it green", "merge-ready"): loop to merge-ready.
+   - `background`: triage without blocking — for a plan still executing.
+   - `threads-only` ("address the review comments"): answer threads, touch nothing else.
+   - `check` ("check on X", "is it green"): one status pass, then report. Small or docs-only PRs get `check`, not `drive`.
+   - With the mode, run step 1 (Detect) of the **greptile** technique (`references/techniques/greptile.md`) for the frontier's repo and record installed or `greptile: not installed or not triggered`. Absent Greptile is never a blocker; the loop proceeds without it. `check` mode only reads Greptile's latest round; it never triggers one.
+2. Confirm nothing else is already babysitting this stack. One babysitter per stack.
+3. Find the frontier: the lowest unmerged PR. It is the only PR that matters until it merges. Read upstack threads and batch them; never fix upstack at the cost of restarting the frontier's checks. Caught upstack while the frontier is red → go back down.
+4. Read the forge state (GitHub CLI; never require Graphite):
+   - `gh pr view <pr> --json state,isDraft,mergeable,mergeStateStatus,reviewDecision,baseRefName,headRefOid,statusCheckRollup`
+   - `gh pr checks <pr> --required`; in `drive`, `gh pr checks <pr> --watch` as a background `bash` job (`timeout: 0`); re-read the PR and threads every time it returns.
+   - Threads: `gh api graphql` over `pullRequest.reviewThreads` (`id isResolved isOutdated comments{databaseId author body path line}`).
+   - Greptile (when installed, not `check`): alongside the CI watch, run the greptile technique's step 2 (Trigger, only if needed) and step 3 (Wait) for the current `headRefOid` as a background job, then step 4 (Collect). A summary for an older SHA is stale: never triage it; after any push, the new head needs its own round before the PR counts as review-clean.
+5. Work blockers in order — conflicts, then review threads, then CI — and batch every known fix into one push wave. The babysit request authorizes pushing fixes to the PR's own branch; nothing more.
+6. Conflict (`mergeStateStatus: DIRTY`) or stale base (`BEHIND`): report, don't resolve. Name the branch that needs the rebase and stop; don't fall through to CI to look busy. Name the drift sweep in the report: trunk may have grown callers of code the stack deletes or moves, and the rebase must reconcile them in the same wave.
+7. Triage each review thread (human, bot, or Greptile) skeptically — see Review-comment triage below; Greptile findings (inline threads plus summary-only items from technique step 4) go through the same fix / dismiss / ask, per technique step 5. Fix real findings red-first in the lowest PR that owns the code, never at the tip unless the owning PR merged (then step 9's follow-up PR). Upstack fixes wait for the next frontier push wave. Push the wave before replying so the reply cites the commit.
+8. Reply via a JSON file, never interpolating comment text into a shell command: `gh api --method POST repos/<owner>/<repo>/pulls/<pr>/comments/<comment-id>/replies --input <payload.json>`; resolve with the `resolveReviewThread` GraphQL mutation. Greptile threads close per technique step 6 (dismissal replies start `@greptileai <reason>`). Then loop Greptile per technique step 7 on each new head until it hits a stop condition (clean, converged, 5-round cap, or oscillation — report the last two upward); never relax a finding into a dismissal to stop.
+9. Never mutate stack topology: no base retarget, rebase, stack-wide submit, or force-push from inside a babysit. Fix on the owning branch; report anything rebase-shaped upward. An `references/playbooks/autopilot.md` owner babysitting its own PR is that owner: it rebases its own branch and pushes with `git push --force-with-lease` pinned to its last-pushed SHA. Sole sanctioned creation: a fix whose owning PR already merged becomes a new PR on top of the remaining stack (never a rewrite of merged history); append it to the frozen stack list, drop the merged owner.
+10. Classify CI before any retrigger:
+    - Flake/infra → one fresh full run (`gh run rerun <run-id>`, not `--failed`/`--job`). One retry only; an identical second failure was never flake — reclassify and read the child logs.
+    - Failure in code the diff never touches → suspect a stale base; check `git merge-base --is-ancestor <trunk-sha> <head>` and report a rebase instead of burning retries.
+    - Only a failure in the diff's own code gets a commit.
+11. Trust the forge's merge verdict, not a green check list. For a stack, capture the PR list bottom-to-top once and reuse that frozen list on every re-arm. If another actor merges the frontier, continue with the new frontier.
+12. Answer user questions mid-loop and continue; only an explicit stop ends `drive` early.
+13. At the stop, sweep the run's triage decisions once. Offer any team-useful dismissal pattern as a candidate entry for the repo's shared review-triage doc (own PR, only on the user's go); never keep it only in private memory.
+
+## Review-comment triage
+
+Verify every claim against the code before acting. Not every comment is a required change; not every comment is noise.
+- `fix`: plausible correctness, security, privacy, data-loss, auth, billing, migration, idempotency, race, or shipped-behavior issue → fix in the lowest owning PR, reply with the commit SHA, resolve.
+- `dismiss`: matches a known low-risk pattern AND current code/context proves no change is needed → short reason, resolve. Typical: intentional visual change the PR states; "unused" symbol a verified upstack PR uses (not public API); deliberate temporary duplication beside a path being deleted (not security/billing/data/API); an enforced (not assumed) framework/type invariant covers it; owner-declared follow-up the PR doesn't worsen; bot self-withdrew and you verified the rule locally.
+- `ask` (`ask` tool): novel, high-severity, ambiguous, or security/privacy/auth/billing/data-retention/permission, migration/schema/idempotency/concurrency/cross-system — even if a past PR dismissed something similar — and any small fix that clearly reduces risk without changing intent. When in doubt, ask.
+- Cheap checks first: if a claim is runnable (e.g. "test no longer matches the doc"), run it on the tip; red confirms, green is the dismissal proof. Earlier fixed passes don't make the next finding noise.
+- A finding already fixed at the tip is stale only if the guard runs before the side effect and covers the principal in question.
+- Don't widen a deliberately narrow error condition (e.g. fallback gated on `ENOENT`) into a catch-all that masks the real error — unless it misses a same-category case.
+- Findings against manual reimplementations of native platform behavior (scroll, sticky, hit-testing, event forwarding) have been consistently real: default to fix.
+
+## Gates
+
+- Stop `drive` at merge-ready: PR open, not draft, `mergeable: MERGEABLE`, `mergeStateStatus: CLEAN`, required checks green, no unresolved threads (human, bot, or Greptile) without a pushed fix or a recorded dismissal, and — when Greptile is installed — a completed Greptile round on the current head SHA. With a merge queue, a blocker-free frontier is merge-ready: report and stop watching; don't wait for merges.
+- Greptile is evidence, not a gate: a clean score never waives the checks above, and a non-clean round doesn't block when every remaining finding has a recorded dismissal. Greptile absent or timed out is recorded, not blocking.
+- All stack PRs merged by others → done.
+- Owner approval (`reviewDecision: REVIEW_REQUIRED`) is a wait, not a blocker to fix.
+- Babysitting never authorizes merging. Only an explicit request to merge/land/ship/"merge when ready" does — route it to `references/playbooks/shipping.md`. Surface escalations and keep working the rest.
+- `check` mode: one pass, no edits.
+
+## Evidence
+
+- Mode, frontier PR, and its final forge state (`mergeStateStatus`, checks, `reviewDecision`) read live at the end.
+- Each push wave: commit SHAs and which blockers each cleared.
+- Each thread: fix / dismiss / ask, with the commit or the proof behind the dismissal.
+- Per PR, the greptile technique's one-line report: `greptile: <score>/5 at <short sha>, <k> rounds, fixed <a>, dismissed <b> (reasons), open <c>` or `greptile: not installed or not triggered`.
+- CI classifications and any rerun; any rebase reported upward (branch + drift sweep).
+- What waits on the human (approvals, `ask` items, landing).

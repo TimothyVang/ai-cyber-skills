@@ -1,0 +1,7 @@
+# test-behavior-not-implementation
+
+Group: verification. When: writing, changing, or keeping a test.
+- **Rule.** A test claims what the code does for its users (caller, end user, other service): return values, errors, readable state, external effects (request sent, row written, message emitted). Not private helpers, internal call order, intermediate data, which collaborator did the work.
+- **Two imagined edits.** *Break the behavior* (wrong value, skipped or doubled effect): if the test still passes it proves nothing — usual causes: assertion looser than the contract, expected value computed by the code under test, restated constant/prompt string that never runs the reading code, asserting on data the test built itself. *Change the internals* (same observable results): if the test fails it's pinned to implementation. Keep tests that catch the first and survive the second; rewrite or delete the rest.
+- **Writing.** Drive through the users' interface with concrete input; derive expected values from the requirement, not a run; assert exactly the contract.
+- The contract decides: "empty cart never charges" → asserting no payment-client call is behavior (pair with a case where the charge happens). Payload a mocked *external* service receives is behavior; an internal helper call is not. Exact error message pins wording no caller reads; the error type callers branch on is the contract. Invariants (key exists in two tables, compile-time type check) are behavior.
