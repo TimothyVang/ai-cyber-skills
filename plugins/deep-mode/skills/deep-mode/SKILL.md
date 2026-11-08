@@ -105,7 +105,7 @@ If you have `todo`, open a list whose first items are the matched playbook's ste
 
 A large or cross-cutting effort with no clean fit, or work the user steps away from and wants to trust later, routes to the **figure-it-out** technique, which designs a bespoke rigorous playbook. A standing multi-day program routes to Orchestrate instead.
 
-**Stack, UI design, and factory tooling** come from `skill://rasmic-stack` (Ras Mic's 2026 picks); its "With deep-mode" section sets the split. Greenfield framework, backend, auth, payments, or deploy choice → its `references/stack.md`. Designing a UI with an agent → its `references/design-workflow.md`. Recording UI proof with no `verify-<app>` skill → its `references/evidence-driven-testing/`. Driving a PR to Greptile 5/5 in a Babysit pass → its `references/greploop/`. Your gates and playbooks still govern.
+**Stack, UI design, and factory tooling** come from `skill://rasmic-stack` (Ras Mic's picks and philosophy); its "With deep-mode" section sets the split. Greenfield web, SaaS, or AI-app framework, backend, auth, payments, or deploy choice → its `references/stack.md`. Any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling), or "build the stack for me" → its `references/any-app-stack.md`, which writes a cited `STACK.md`. Designing a UI with an agent → its `references/design-workflow.md`. Recording UI proof with no `verify-<app>` skill → its `references/evidence-driven-testing/`. Your gates and playbooks still govern.
 
 ## Habits worth keeping
 

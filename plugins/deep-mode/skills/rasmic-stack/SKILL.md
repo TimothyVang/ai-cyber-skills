@@ -1,6 +1,6 @@
 ---
 name: rasmic-stack
-description: "Ras Mic's (@rasmic, Michael Shimeles) 2026 software stack, AI UI design workflow, and rstack software factory (worktree → service-layer build → recorded evidence → Greptile 5/5 PR). Use when the user names rasmic, Ras Mic, rstack, software factory, or greploop; picks a stack for a new web, SaaS, or AI-agent app; designs a UI with an agent via a design system; or wants a change shipped as an evidence-backed, Greptile-reviewed PR."
+description: "Ras Mic's (@rasmic, Michael Shimeles) 2026 software stack and the decision philosophy behind it, applied to any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), plus his AI UI design workflow and rstack software factory (worktree → service-layer build → recorded evidence → Greptile-reviewed PR). Use when the user names rasmic, Ras Mic, rstack, software factory, or greploop; asks to pick or build a tech stack for any new app; designs a UI with an agent via a design system; or wants a change shipped as an evidence-backed, Greptile-reviewed PR."
 ---
 
 # Ras Mic stack and software factory
@@ -13,7 +13,8 @@ Read only the reference for the branch in front of you.
 
 | Branch | Read |
 |---|---|
-| Choosing a framework, backend, auth, payments, deploy, sandbox, analytics, or model | `references/stack.md` |
+| Choosing a framework, backend, auth, payments, deploy, sandbox, analytics, or model for a web, SaaS, or AI app | `references/stack.md` |
+| Building a stack for any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling, infra), or "build the stack for me" | `references/any-app-stack.md`, which applies `references/philosophy.md` |
 | Designing or restyling a UI with an agent | `references/design-workflow.md` |
 | Planning work, running agents in parallel or in loops, writing skills / AGENTS.md | `references/agentic-workflow.md` |
 | Shipping a repository change | The factory below |

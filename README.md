@@ -12,7 +12,7 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 | `deep-mode` skill | 22 playbooks (bug fix, feature, perf, refactor, prototype, babysit, shipping, autopilot, and more), 24 principles, and 21 techniques. |
 | `create-verification-skill` | Builds a per-repo `verify-<app>` skill: a control CLI plus a feature map, so agents can drive your app and capture proof. |
 | `maintain-verification-skill` | Keeps that verify skill accurate as the app changes. |
-| `rasmic-stack` skill | Ras Mic's 2026 stack picks, AI UI design workflow, and rstack software factory (worktree, service-layer build, recorded evidence, Greptile 5/5 PR). deep-mode uses it for greenfield stack choices, UI design, and evidence recording. |
+| `rasmic-stack` skill | Ras Mic's stack picks and the philosophy behind them: 57 cited decision rules from 166 of his videos. For web and SaaS apps it uses his exact picks. For any other app (CLI, desktop, mobile, AI agent, data/ML, security tooling) it applies his rules, labels those picks **inferred**, prototypes the risky ones, and writes a cited `STACK.md`. It also carries his UI design workflow and rstack software factory. |
 | Greptile loop | On repos with the Greptile app, the PR playbooks wait for Greptile's review of the current commit, triage each finding (fix, dismiss, or ask), and loop until clean. Greptile is evidence, never a gate. |
 
 The agent never commits, pushes, opens a PR, or merges unless you ask.
@@ -56,6 +56,7 @@ Copy the three folders in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` 
 /poteto add CSV export to the reports page
 /poteto why is the dashboard slow
 /poteto check on PR 42
+/poteto build the tech stack for this project using Ras Mic's philosophy
 ```
 
 - On a new repo, the first run builds a `verify-<app>` skill. Later runs reuse it.
