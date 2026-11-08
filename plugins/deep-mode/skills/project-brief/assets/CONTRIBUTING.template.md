@@ -93,7 +93,7 @@ Use the PR template. Every PR must have:
 
 - **CI** must pass: {{CI_CHECKS}}.
 - **Overlap bot:** a workflow comments on your PR if it touches the same files as another open PR or an active claim, and updates that comment as things change. Resolve the overlap with the other author before merge.
-- **Greptile:** if the Greptile app is installed on this repo, it reviews each push. Address or reply to each finding; your agent's deep-mode PR loop does this for you.
+- **Review:** before opening a PR, your agent self-reviews its branch with deep-mode's pr-review technique (local mode) and fixes or dismisses each finding. Maintainers review PRs with `/deep-mode:review-pr`; address or reply to each finding.
 - A maintainer reviews and merges. Push follow-up commits to the same branch; don't open a second PR for the same issue.
 
 ## Without an agent

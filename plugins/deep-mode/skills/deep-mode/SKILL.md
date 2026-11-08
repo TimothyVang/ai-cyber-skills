@@ -27,7 +27,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 - **Repeated correction** (yours or the user's) → **correct**. Fix it at the highest rung that works: architecture or data structures, then a lint rule or test, then a skill or rule, and human review last.
 - **Long, autonomous, or step-away work** → keep a decision trail with **show-me-your-work**.
 - **PR-status requests** ("check on PR X", "get it green") → Babysit playbook. **Land a green stack** → Shipping playbook. Green is not safe.
-- **Any PR on a repo with the Greptile app** → the **greptile** technique inside whichever PR playbook runs: wait for its round on the current head, triage each finding fix/dismiss/ask, loop until clean. Greptile is evidence, not a gate; it never replaces live proof.
+- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/ask each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof.
 - **Fuzzy request?** → **in-your-own-words** before work. Prompt worth deepening before sending → **sharpen**.
 - **Learning a subsystem or a change** → **teach**. **Resuming a topic from past sessions** → **recall**. **"What could this break?"** → **blast-radius**. **User says "reflect"** → **reflect**.
 

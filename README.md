@@ -1,6 +1,6 @@
 # deep-mode
 
-**deep-mode** brings rigorous engineering habits to [omp](https://github.com/can1357/oh-my-pi) and Claude Code agents. It ships the `/poteto` command, verification skills, a Greptile PR loop, and `rasmic-stack`. Built for the Ai Cyber community; anyone can use and improve it.
+**deep-mode** brings rigorous engineering habits to [omp](https://github.com/can1357/oh-my-pi) and Claude Code agents. It ships the `/poteto` command, verification skills, its own PR review loop, and `rasmic-stack`. Built for the Ai Cyber community; anyone can use and improve it.
 
 deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). Her idea is "if you want to go fast, go deep first": agents prove their work instead of claiming it.
 
@@ -13,7 +13,7 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 | `create-verification-skill` | Builds a per-repo `verify-<app>` skill: a control CLI plus a feature map, so agents can drive your app and capture proof. |
 | `maintain-verification-skill` | Keeps that verify skill accurate as the app changes. |
 | `rasmic-stack` skill | Ras Mic's stack picks and the philosophy behind them: 57 cited decision rules from 166 of his videos. For web and SaaS apps it uses his exact picks. For any other app (CLI, desktop, mobile, AI agent, data/ML, security tooling) it applies his rules, labels those picks **inferred**, prototypes the risky ones, and writes a cited `STACK.md`. It also carries his UI design workflow and rstack software factory. |
-| Greptile loop | On repos with the Greptile app, the PR playbooks wait for Greptile's review of the current commit, triage each finding (fix, dismiss, or ask), and loop until clean. Greptile is evidence, never a gate. |
+| PR review | `/deep-mode:review-pr <PR number>` reviews a PR with your own agent and parallel reviewer subagents, keeps only findings a code read or run proves, posts one GitHub review on your yes, and re-reviews new commits until clean. Agents also self-review before opening a PR. No outside review service; code stays where the agent runs. |
 | `project-brief` (maintainer) | Publishes a project for contributors: a newcomer brief (`docs/PROJECT_BRIEF.md`), small claimable tasks as GitHub Issues, a generated `ROADMAP.md`, PR and issue templates, `CONTRIBUTING.md`, and two GitHub Actions: one flags PRs that touch the same files, one keeps the roadmap current. |
 | `contribute` (contributor) | `/deep-mode:contribute <what you'd like to work on>` briefs a newcomer's agent on the project, finds an unclaimed task that doesn't overlap open PRs or other claims, claims it, builds and proves it through deep-mode, and opens a PR that closes the issue. |
 
@@ -58,6 +58,7 @@ Copy the three folders in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` 
 /poteto add CSV export to the reports page
 /poteto why is the dashboard slow
 /poteto check on PR 42
+/deep-mode:review-pr 42
 /poteto build the tech stack for this project using Ras Mic's philosophy
 ```
 
@@ -82,6 +83,7 @@ Contributor, after installing the plugin:
 - **Claims:** a contributor's agent posts a claim comment on the issue (who, plan, files, expiry in 7 days). Other agents read claims and skip claimed work.
 - **Overlap check:** before starting and before opening a PR, the agent compares its files with every open PR and active claim. On overlap it picks other work, coordinates on the issue, or builds on top. A GitHub Action also comments on any PR that touches the same files as another.
 - **Limits:** claims are a convention, not a lock. The overlap check catches shared files, not logic conflicts in different files; CI and review catch those.
+- **Review:** the maintainer reviews each PR with `/deep-mode:review-pr <PR number>`; contributors' agents self-review before opening one.
 
 ## Contribute
 
@@ -89,4 +91,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: branch, edit, run `python
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Portions are derived from pstack, Copyright (c) 2026 Lauren Tan. Vendored references under `plugins/deep-mode/skills/rasmic-stack/references/` keep their own licenses: `greploop` (MIT, Greptile AI), `unslop` (MIT, Lauren Tan), `before-and-after` (PolyForm Shield 1.0.0, James Clements).
+MIT. See [LICENSE](LICENSE). Portions are derived from pstack, Copyright (c) 2026 Lauren Tan. Vendored references under `plugins/deep-mode/skills/rasmic-stack/references/` keep their own licenses: `unslop` (MIT, Lauren Tan), `before-and-after` (PolyForm Shield 1.0.0, James Clements).

@@ -109,11 +109,12 @@ Released by @<login>: <one-line reason>
    - Re-run the check with those files: `python "$OVERLAP" check --repo R --files <changed files> --exclude-issue N`.
    - New overlap since step 5 → report it to the human with the table and coordinate as in step 5 before opening anything.
    - Changed files grew past the claim → post an updated claim (on a yes) so others see the real footprint.
+   - Self-review: run deep-mode's pr-review technique in local mode (`skill://deep-mode/references/techniques/pr-review.md`) on your branch diff; fix or dismiss (with a reason) each finding, ask the human on judgment calls, and keep its `review:` result line.
 
 9. **Open the PR** with deep-mode's Opening a PR playbook (`skill://deep-mode/references/playbooks/opening-a-pr.md`), only after the human says yes to commit, push, and open.
    - Push the branch (to your fork when you forked; `gh pr create` then targets the project).
    - The body fills the repo's `.github/PULL_REQUEST_TEMPLATE.md` when one exists; otherwise use the playbook's headings.
-   - The body must include `Closes #N`, the verification evidence from step 7, and the overlap result from step 8 (the command and "no overlap", or what overlaps and how you coordinated).
+   - The body must include `Closes #N`, the verification evidence from step 7, the overlap result from step 8 (the command and "no overlap", or what overlaps and how you coordinated), and a note that a self-review ran with its `review:` result line.
    - The repo's `pr-overlap.yml` workflow, if installed, will comment on the PR with its own overlap check; read that comment and act on it.
    - Post the PR URL to the human.
 

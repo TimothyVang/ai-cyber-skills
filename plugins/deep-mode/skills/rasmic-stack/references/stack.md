@@ -76,7 +76,7 @@ Disclosure he repeats: he works at Convex and built its Stripe component (TTS 20
 ## 10. Analytics / observability / CI / email
 - **Sentry + PostHog** for error logging and analytics ("not sponsored"). Tell the agent: "whenever an error happens I need to know how to track it... use Sentry and PostHog" (SYS, 2026-07-02). PostHog is also available as a Convex component (ADS, 2026-10-01).
 - **Email: Resend**, via its Convex component (TTS, 2026-01-23; PAY, 2026-02-04; SYS mentions "Resend" among components, 2026-07-02). For agent email he uses his own Cloudflare Email app (ADS, 2026-10-01).
-- **CI / code review: Greptile** on every PR. Review a PR only if the confidence score is ≥4/5 (TTS, 2026-01-23). Below 4/5, tell the author or agent to address the comments. SYS has a **SPONSOR** Greptile read, but he uses it independently in TTS and ADS. Newest flow: his "GP loop" skill loops the agent on Greptile feedback until the score is 5/5 (ADS, 2026-10-01). These are the only CI tools the transcripts mention.
+- **CI / code review: Greptile** on every PR. He reviews a PR only if the confidence score is ≥4/5 (TTS, 2026-01-23); below 4/5 he tells the author or agent to address the comments. SYS has a **SPONSOR** Greptile read, but he uses it independently in TTS and ADS. Newest flow: his "GP loop" skill loops the agent on Greptile feedback until the score is 5/5 (ADS, 2026-10-01). These are the only CI tools the transcripts mention. deep-mode replaces Greptile and the GP loop with its pr-review technique (`skill://deep-mode/references/techniques/pr-review.md`).
 - **Issue tracking: Linear**, connected over MCP. Assign a ticket to Cursor or Devin cloud agents so a fix PR exists before he has even read the bug (ADS, 2026-10-01).
 
 ## 11. Dev tools
@@ -94,7 +94,7 @@ Disclosure he repeats: he works at Convex and built its Stripe component (TTS 20
   1. Create a git worktree off main per feature, so agents work in parallel ("15 different features").
   2. Write code following the code-structure skill.
   3. Prove the change works: record a video if it's UI, otherwise run tests; fall back to before/after screenshots in the PR.
-  4. Greptile reviews the PR, and the GP loop runs until 5/5.
+  4. Greptile reviews the PR, and the GP loop runs until 5/5 (deep-mode replaces this step with its pr-review technique).
   5. The PR is then ready for him to merge.
   
   (ADS, 2026-10-01)
@@ -145,4 +145,4 @@ Pluto architecture:
 | Opus 4.5 thinking + GPT-5.2 / Codex | 2026-01-23 (TTS) | "Fable 5" (Jul), then Opus 5.5 main + GPT-6 Astra for deep work | 2026-07-02, 2026-10-01 |
 | Cursor editor + Claude Code CLI as main tools | 2026-01-23 (TTS) | T3 Code as daily driver; Cursor/Devin for cloud agents | 2026-10-01 (ADS) |
 | Context7 MCP / pasting docs | (rejected) | opensrc | 2026-04-03 (OSRC) |
-| Greptile: manually review only at ≥4/5 | 2026-01-23 (TTS) | GP-loop skill auto-iterates to 5/5 | 2026-10-01 (ADS) |
+| Greptile: manually review only at ≥4/5 | 2026-01-23 (TTS) | GP-loop skill auto-iterates to 5/5 (deep-mode uses its pr-review technique instead) | 2026-10-01 (ADS) |

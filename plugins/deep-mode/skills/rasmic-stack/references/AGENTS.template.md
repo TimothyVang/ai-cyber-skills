@@ -1,17 +1,18 @@
 # Agent workflow
 
 <!-- From michaelshimeles/rstack AGENTS.md, adapted for omp. Copy into a repo root,
-     then replace "Checks in this repo" with that repo's commands. Each `skill://`
-     path is a file inside the global `rasmic-stack` skill. -->
+     then replace "Checks in this repo" with that repo's commands. Each
+     `skill://rasmic-stack/` path is a file inside the global `rasmic-stack`
+     skill; `skill://deep-mode/` paths are inside the `deep-mode` skill. -->
 
 Choose the applicable parts of this workflow for the requested task.
 
 - Read-only reviews, explanations, and investigations need no worktree, commit,
-  PR, or Greptile run. If an investigation leads to edits, isolate those edits.
+  PR, or PR review run. If an investigation leads to edits, isolate those edits.
 - Code changes use isolation, relevant architecture guidance, checks, and
   evidence of the behavior changed. Capture a failure before fixing it.
 - Small documentation edits use an isolated branch and relevant content or link
-  checks. Do not manufacture runtime evidence or require a bot review for them.
+  checks. Do not manufacture runtime evidence or require a PR review for them.
 - Ship when the task calls for a PR or a completed repository change. A request
   for a plan, review, or local experiment does not imply publishing it.
 
@@ -31,13 +32,15 @@ Choose the applicable parts of this workflow for the requested task.
    verify runnable examples and links as applicable.
 4. **Ship.** Open the PR with evidence appropriate to the change. Use
    `skill://rasmic-stack/references/before-and-after/before-and-after.md` when
-   screenshots help; use output pairs for CLI changes. Run
-   `skill://rasmic-stack/references/greploop/greploop.md` for code or executable
-   workflow changes, or when requested. Aim for **5/5 with zero unresolved
-   actionable Greptile findings** on the current commit. Stop at the configured
-   iteration cap, a review timeout, or an unavailable integration and report
-   the actual score and remaining work. Do not claim success or raise the cap
-   automatically. Present the PR URL.
+   screenshots help; use output pairs for CLI changes. Run the **pr-review**
+   technique (`skill://deep-mode/references/techniques/pr-review.md`) for code
+   or executable workflow changes, or when requested. It reviews with your own
+   read-only subagents; no third-party review service is needed. Stop when no
+   P0/P1 finding is open and every P2 is fixed or dismissed with a reason. Stop
+   after 3 rounds or on oscillation and report its `review:` line with the open
+   findings. Do not claim success or raise the cap automatically. Posting the
+   review to GitHub needs the human's yes; never approve or request changes
+   unless asked. Present the PR URL.
 
 Ship-beat notes:
 
@@ -88,8 +91,7 @@ to text you wrote or changed, not to prose you didn't touch.
 6. Open the PR. The body must explain what changed, how it was tested (every
    claim backed by evidence), before/after proof, and any risks or follow-up
    work. Run the title and body through unslop before posting.
-7. Run greploop when applicable, with the success and stopping conditions
-   above (`--trigger @greptile-apps` when the normal trigger refuses a large PR).
+7. Run the pr-review technique when applicable, with the stop rule above.
 8. End by presenting the PR URL.
 
 Do not merge the PR unless explicitly instructed. Keep the worktree until

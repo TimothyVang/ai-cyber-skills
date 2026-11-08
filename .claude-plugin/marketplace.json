@@ -12,7 +12,7 @@
     {
       "name": "deep-mode",
       "source": "./plugins/deep-mode",
-      "description": "Rigorous agent engineering mode adapted from pstack (poteto-mode) for omp and Claude Code: /poteto routes any task to a playbook, applies named principles, proves behavior on the real app, and runs a Greptile-aware PR loop.",
+      "description": "Rigorous agent engineering mode adapted from pstack (poteto-mode) for omp and Claude Code: /poteto routes any task to a playbook, applies named principles, proves behavior on the real app, and runs the deep-mode PR review loop.",
       "version": "0.1.0",
       "license": "MIT",
       "category": "development",
