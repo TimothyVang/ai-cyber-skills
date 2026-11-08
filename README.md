@@ -1,6 +1,6 @@
-# ai-cyber skills
+# deep-mode
 
-Shared agent skills for the Ai Cyber community. The first plugin is **deep-mode**, which brings rigorous engineering habits to [omp](https://github.com/can1357/oh-my-pi) and Claude Code.
+**deep-mode** brings rigorous engineering habits to [omp](https://github.com/can1357/oh-my-pi) and Claude Code agents. It ships the `/poteto` command, verification skills, a Greptile PR loop, and `rasmic-stack`. Built for the Ai Cyber community; anyone can use and improve it.
 
 deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). Her idea is "if you want to go fast, go deep first": agents prove their work instead of claiming it.
 
@@ -22,8 +22,8 @@ The agent never commits, pushes, opens a PR, or merges unless you ask.
 ### omp
 
 ```bash
-omp plugin marketplace add TimothyVang/ai-cyber-skills
-omp plugin install deep-mode@ai-cyber
+omp plugin marketplace add TimothyVang/deep-mode
+omp plugin install deep-mode@deep-mode
 ```
 
 Then, in any repo:
@@ -39,8 +39,8 @@ Optional: append `agents-snippet.md` to `~/.omp/agent/AGENTS.md`. It routes larg
 ### Claude Code
 
 ```text
-/plugin marketplace add TimothyVang/ai-cyber-skills
-/plugin install deep-mode@ai-cyber
+/plugin marketplace add TimothyVang/deep-mode
+/plugin install deep-mode@deep-mode
 ```
 
 The skills name omp tools (`task`, `todo`, `ask`). Claude Code's equivalents are `Agent`, `TodoWrite`, and `AskUserQuestion`.

@@ -1,11 +1,11 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "ai-cyber",
+  "name": "deep-mode",
   "owner": {
     "name": "Timothy Vang"
   },
   "metadata": {
-    "description": "Shared agent skills for the AI Cyber community",
+    "description": "deep-mode: rigorous agent engineering for omp and Claude Code",
     "version": "0.1.0"
   },
   "plugins": [

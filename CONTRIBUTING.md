@@ -1,6 +1,6 @@
 # Contributing
 
-Anyone in Ai Cyber can improve these skills. Changes land through pull requests.
+Anyone can improve these skills, starting with the Ai Cyber community. Changes land through pull requests.
 
 ## Flow
 
