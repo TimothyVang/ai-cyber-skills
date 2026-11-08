@@ -1,0 +1,41 @@
+# Comments on each pull request when it touches the same files as another open PR
+# or an active issue claim. Installed by the deep-mode `project-brief` skill.
+#
+# Security: pull_request_target runs with the base repository's token, so this
+# workflow NEVER checks out or runs code from the pull request. It checks out the
+# base branch only and reads PR data through the GitHub API.
+name: PR overlap
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, edited]
+
+permissions:
+  pull-requests: write
+  contents: read
+  issues: read
+
+concurrency:
+  group: pr-overlap-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  overlap:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out base branch (not PR code)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Comment on overlap
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/pr-overlap.py comment --repo ${{ github.repository }} --pr ${{ github.event.pull_request.number }}

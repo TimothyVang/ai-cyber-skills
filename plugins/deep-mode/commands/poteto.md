@@ -1,5 +1,5 @@
 ---
-description: Do this task the deep-mode way (pstack / poteto-mode): restate, route to a playbook, prove it on the real app
+description: "Do this task the deep-mode way (pstack / poteto-mode): restate, route to a playbook, prove it on the real app"
 argument-hint: "<task>"
 ---
 

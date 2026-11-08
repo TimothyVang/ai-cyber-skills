@@ -14,6 +14,8 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 | `maintain-verification-skill` | Keeps that verify skill accurate as the app changes. |
 | `rasmic-stack` skill | Ras Mic's stack picks and the philosophy behind them: 57 cited decision rules from 166 of his videos. For web and SaaS apps it uses his exact picks. For any other app (CLI, desktop, mobile, AI agent, data/ML, security tooling) it applies his rules, labels those picks **inferred**, prototypes the risky ones, and writes a cited `STACK.md`. It also carries his UI design workflow and rstack software factory. |
 | Greptile loop | On repos with the Greptile app, the PR playbooks wait for Greptile's review of the current commit, triage each finding (fix, dismiss, or ask), and loop until clean. Greptile is evidence, never a gate. |
+| `project-brief` (maintainer) | Publishes a project for contributors: a newcomer brief (`docs/PROJECT_BRIEF.md`), small claimable tasks as GitHub Issues, a generated `ROADMAP.md`, PR and issue templates, `CONTRIBUTING.md`, and two GitHub Actions: one flags PRs that touch the same files, one keeps the roadmap current. |
+| `contribute` (contributor) | `/deep-mode:contribute <what you'd like to work on>` briefs a newcomer's agent on the project, finds an unclaimed task that doesn't overlap open PRs or other claims, claims it, builds and proves it through deep-mode, and opens a PR that closes the issue. |
 
 The agent never commits, pushes, opens a PR, or merges unless you ask.
 
@@ -62,6 +64,24 @@ Copy the three folders in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` 
 - On a new repo, the first run builds a `verify-<app>` skill. Later runs reuse it.
 - Say "commit it", "open a PR", or "merge it" when you want git writes.
 - Start fuzzy work with "restate in your own words what my goal is".
+
+## Collaborate on a project
+
+Maintainer, once per project (and again when it changes):
+
+```text
+/deep-mode:project-brief
+```
+
+Contributor, after installing the plugin:
+
+```text
+/deep-mode:contribute I know Python and want to help with detections
+```
+
+- **Claims:** a contributor's agent posts a claim comment on the issue (who, plan, files, expiry in 7 days). Other agents read claims and skip claimed work.
+- **Overlap check:** before starting and before opening a PR, the agent compares its files with every open PR and active claim. On overlap it picks other work, coordinates on the issue, or builds on top. A GitHub Action also comments on any PR that touches the same files as another.
+- **Limits:** claims are a convention, not a lock. The overlap check catches shared files, not logic conflicts in different files; CI and review catch those.
 
 ## Contribute
 

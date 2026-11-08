@@ -1,0 +1,64 @@
+# Regenerates ROADMAP.md from GitHub Issues labeled "help wanted".
+# Installed by the deep-mode `project-brief` skill. Never checks out PR code:
+# it always checks out the default branch and only reads issue/PR metadata via the API.
+name: roadmap
+
+on:
+  issues:
+    types: [opened, edited, closed, reopened, labeled, unlabeled, assigned, unassigned, deleted, transferred]
+  issue_comment:
+    types: [created, edited, deleted]
+  pull_request_target:
+    types: [opened, closed, edited, reopened]
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: read
+  pull-requests: read
+
+concurrency:
+  group: roadmap-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out default branch (never PR code)
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.repository.default_branch || github.ref_name }}
+          persist-credentials: true
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generate ROADMAP.md
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python scripts/sync-roadmap.py --repo "${{ github.repository }}" --out ROADMAP.md
+
+      - name: Commit if changed
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch || github.ref_name }}
+        run: |
+          if git diff --quiet -- ROADMAP.md && [ -z "$(git ls-files --others --exclude-standard -- ROADMAP.md)" ]; then
+            echo "ROADMAP.md unchanged"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ROADMAP.md
+          git commit -m "docs: sync ROADMAP.md from issues [skip ci]"
+          for attempt in 1 2 3; do
+            if git push origin "HEAD:${DEFAULT_BRANCH}"; then
+              exit 0
+            fi
+            git pull --rebase origin "${DEFAULT_BRANCH}"
+          done
+          echo "Failed to push ROADMAP.md after 3 attempts" >&2
+          exit 1
