@@ -8,7 +8,7 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 
 | Piece | What it does |
 |---|---|
-| `/poteto <task>` | Runs a task through deep-mode. The agent restates your goal, picks a playbook, applies named principles, proves the change on the real app, and reports with evidence. |
+| `/poteto <anything>` | The one command. It reads your request and the repo, routes it (fix, feature, review a PR, contribute to a project, set up a project for helpers, start a new app and pick its stack), sizes it (fast path for small jobs, full playbook for big ones), proves the result on the real app, and asks you once at the end before anything public. |
 | `deep-mode` skill | 22 playbooks (bug fix, feature, perf, refactor, prototype, babysit, shipping, autopilot, and more), 24 principles, and 21 techniques. |
 | `create-verification-skill` | Builds a per-repo `verify-<app>` skill: a control CLI plus a feature map, so agents can drive your app and capture proof. |
 | `maintain-verification-skill` | Keeps that verify skill accurate as the app changes. |
@@ -54,17 +54,20 @@ Copy the three folders in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` 
 ## Use it
 
 ```text
-/poteto checkout total is wrong with a coupon. repro first, then fix and show proof
+/poteto the coupon total is wrong. fix it
 /poteto add CSV export to the reports page
-/poteto why is the dashboard slow
-/poteto check on PR 42
-/deep-mode:review-pr 42
-/poteto build the tech stack for this project using Ras Mic's philosophy
+/poteto review PR 42
+/poteto what can I work on in this project?
+/poteto set this project up so other people can contribute
+/poteto start a new app: a CLI that converts Sigma rules for our SIEM
+/poteto check on PR 42, and ship it when it's green
 ```
 
-- On a new repo, the first run builds a `verify-<app>` skill. Later runs reuse it.
-- Say "commit it", "open a PR", or "merge it" when you want git writes.
-- Start fuzzy work with "restate in your own words what my goal is".
+- You never pick a skill or playbook. `/poteto` routes, sizes, and runs it.
+- Small jobs take the fast path. Big ones get the full playbook, subagents, and a decision log.
+- It does all reversible work without asking, then asks once at the end before committing, pushing, opening a PR, or posting. Say "ship it" or "do it all" up front to skip that question. Claiming an issue is asked before work starts.
+- On a new repo, medium and large jobs first build a `verify-<app>` skill so the agent can prove changes. Later runs reuse it.
+- The direct commands still work: `/deep-mode:review-pr`, `/deep-mode:contribute`, `/deep-mode:project-brief`.
 
 ## Collaborate on a project
 

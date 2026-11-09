@@ -62,7 +62,7 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
    - Make **Area / files** concrete repo paths; overlap checks depend on them. Split tasks so open tasks touch disjoint paths where you can. Size L means split it first.
    - Label every task `help wanted`; add `good first issue` to S tasks that need no deep context.
    - Prefer adding a task shape to an existing issue over a duplicate; list those as "edit #N" rather than "new".
-   - Show the full list (title, size, labels, area/files, new vs. edit) and `ask` which to create. Create or edit issues only after an explicit yes, and only the ones approved. Run step 5 first so the labels exist. Write each body to a `mktemp` file using `### <field label>` headings in form order (the shape GitHub renders for form issues), then `gh issue create --repo OWNER/REPO --title ... --body-file "$f" --label "help wanted"`.
+   - Draft the full list (title, size, labels, area/files, new vs. edit) and the issue bodies, but create nothing yet; step 7 asks about it together with shipping. Write each body to a `mktemp` file using `### <field label>` headings in form order (the shape GitHub renders for form issues).
 
 4. **Install the assets** per the table above, into the working tree only.
    - Missing file → copy it. Existing identical file → leave it. Existing different file → show the diff and merge by hand: keep the maintainer's content, add only missing sections. Never overwrite.
@@ -71,7 +71,7 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
    - `roadmap.yml` pushes `ROADMAP.md` to the default branch as `github-actions[bot]`. If that branch is protected against direct pushes, tell the human: allow the bot, or skip `roadmap.yml` and run step 6 by hand.
    - Optional: suggest `.github/CODEOWNERS` lines from the brief's architecture map. Write the file only if the human says yes.
 
-5. **Ensure labels.** After the human approves the board (step 3), create or update the labels. `--force` updates an existing label instead of failing:
+5. **Ensure labels.** After the yes in step 7, create or update the labels before creating issues. `--force` updates an existing label instead of failing:
 
    ```bash
    gh label create "help wanted" --repo OWNER/REPO --color 008672 --description "Claimable task: run /deep-mode:contribute" --force
@@ -79,18 +79,18 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
    gh label create "claimed" --repo OWNER/REPO --color fbca04 --description "Someone is working on this" --force
    ```
 
-   Labels are shared state: create them only once the human has approved publishing (the yes in step 3 covers it; say so).
+   Labels are shared state: create them only after the step 7 yes, and say so.
 
-6. **Write the roadmap.** `python scripts/sync-roadmap.py --repo OWNER/REPO --out ROADMAP.md` (on Windows, `py -3` if `python` isn't Python 3). Read the result back and check every created issue appears under `## Open to claim`. Then run `python scripts/pr-overlap.py claims --repo OWNER/REPO` to prove the overlap script works against this repo; paste its output in your report.
+6. **Write the roadmap** after the issues exist (step 7). `python scripts/sync-roadmap.py --repo OWNER/REPO --out ROADMAP.md` (on Windows, `py -3` if `python` isn't Python 3). Read the result back and check every created issue appears under `## Open to claim`. Then run `python scripts/pr-overlap.py claims --repo OWNER/REPO` to prove the overlap script works against this repo; paste its output in your report.
 
-7. **Commit and push only with a yes.** List every file you wrote or merged with a one-line reason, and `ask` how to ship: commit to a branch and open a PR (recommended; follow `skill://deep-mode/references/playbooks/opening-a-pr.md`), commit and push to the default branch, or leave the changes uncommitted. Do exactly what the human picks, nothing more.
+7. **Ask once, then publish.** Show everything in one question: the task list from step 3, the labels, every file you wrote or merged with a one-line reason, and how to ship (commit to a branch and open a PR, recommended, via `skill://deep-mode/references/playbooks/opening-a-pr.md`; commit and push to the default branch; or leave uncommitted). The human can trim the task list in the same answer. If the request already asked to publish ("set it up and push"), that is the yes. Then: labels (step 5), create or edit only the approved issues with `gh issue create --repo OWNER/REPO --title ... --body-file "$f" --label "help wanted"`, write the roadmap (step 6), and ship exactly as chosen.
 
 8. **Re-run mode.** When the brief already exists:
    - **Refresh the brief.** `git log --since=<brief's last commit date> --stat` plus a re-read of changed areas. Update only sections that drifted; re-run the Run & verify commands and update their recorded results.
    - **Release expired claims.** Fetch comments: `gh issue list --repo OWNER/REPO --state open --label "help wanted" --limit 200 --json number,title,assignees,labels,comments`. Find issues whose newest claim comment has an `Expires` date before today and no later unclaim. Show the list, then on a yes comment on each: `Claim by @<login> expired on <date>. This issue is open to claim again; comment here if you're still on it.` On the same yes, remove the `claimed` label if set (`gh issue edit N --remove-label claimed`). Never unassign anyone without a separate yes.
    - **Assets.** Diff each installed asset against this skill's copy; propose updates as in step 4.
    - **New tasks.** Repeat step 3 for gaps since the last run.
-   - Then steps 6 and 7.
+   - Then step 7, which asks once and runs steps 5 and 6.
 
 ## Report
 

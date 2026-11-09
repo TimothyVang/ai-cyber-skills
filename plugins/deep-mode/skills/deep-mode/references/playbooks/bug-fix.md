@@ -12,7 +12,7 @@ Be scientific: every shipped line traces to runtime evidence. A "might help" bel
    - State unclear → add instrumentation/logging and read it as the code runs; don't guess.
    - Long or stubborn hunt → keep looping (see `references/playbooks/autonomous-run.md` for the wake mechanism) until one hypothesis survives.
    - Confirm the surviving *mechanism* with runtime evidence before planning the fix.
-3. Plan the fix. Crosses a function boundary → the **architect** technique (`references/techniques/architect.md`) first. Delegate implementation to a default `task` agent with a specific scope and exclusive file ownership.
+3. Plan the fix. Crosses a function boundary → the **architect** technique (`references/techniques/architect.md`) first. Size L or a fix that splits cleanly → delegate implementation to a default `task` agent with a specific scope and exclusive file ownership. Size M → make the fix yourself; review separation comes from the **pr-review** self-review (`references/techniques/pr-review.md`, local mode) before reporting.
 4. Verify on the same surface: the original repro now passes.
 5. Order the evidence so the failing repro is shown before the fix (`references/principles/sequence-verifiable-units.md`); when committing, that is also the commit order. Use the **tdd** technique (`references/techniques/tdd.md`) for failing-test-first when a cheap local test path exists; skip it when the test would be expensive, integration-heavy, or unclear.
 6. Stop with the diff ready; stage commits only if the user granted commits. If the user asked to land it, run **Opening a PR** (`references/playbooks/opening-a-pr.md`). Never commit, push, or open a PR unasked.

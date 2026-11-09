@@ -9,7 +9,7 @@ You are a guest in someone else's project. The maintainer set it up with `skill:
 
 All deep-mode rules apply (`skill://deep-mode`). Three matter most here:
 
-- **Nothing public without the human's explicit yes.** Claim comments, issue or PR comments, self-assigning, forks, commits, pushes, and PRs each need a yes for that action. Draft first, show it, wait.
+- **Two yeses, not ten.** Ask once before starting work: the claim comment and self-assign (plus a fork if you need one), because a claim only helps if others see it early. Ask once at the end: commit, push, open the PR, and any comments, listed together in one question. If the human's request already asked for these ("claim it and open the PR"), that is the yes. Draft anything public first and show it in the question.
 - **Restate the goal first** with the **in-your-own-words** technique (`skill://deep-mode/references/techniques/in-your-own-words.md`).
 - **Prove it on the real app** and put the evidence in the PR.
 
@@ -111,7 +111,7 @@ Released by @<login>: <one-line reason>
    - Changed files grew past the claim → post an updated claim (on a yes) so others see the real footprint.
    - Self-review: run deep-mode's pr-review technique in local mode (`skill://deep-mode/references/techniques/pr-review.md`) on your branch diff; fix or dismiss (with a reason) each finding, ask the human on judgment calls, and keep its `review:` result line.
 
-9. **Open the PR** with deep-mode's Opening a PR playbook (`skill://deep-mode/references/playbooks/opening-a-pr.md`), only after the human says yes to commit, push, and open.
+9. **Open the PR** with deep-mode's Opening a PR playbook (`skill://deep-mode/references/playbooks/opening-a-pr.md`), after the end-of-work yes covering commit, push, and open.
    - Push the branch (to your fork when you forked; `gh pr create` then targets the project).
    - The body fills the repo's `.github/PULL_REQUEST_TEMPLATE.md` when one exists; otherwise use the playbook's headings.
    - The body must include `Closes #N`, the verification evidence from step 7, the overlap result from step 8 (the command and "no overlap", or what overlaps and how you coordinated), and a note that a self-review ran with its `review:` result line.
@@ -129,5 +129,5 @@ Released by @<login>: <one-line reason>
 - Keep claims fresh: renew before `Expires`, release the moment you stop. A stale claim blocks other people.
 - Never touch files outside the plan without first posting an updated claim.
 - Never push to someone else's branch. To build on their work, stack a branch on top of theirs or ask them.
-- Never claim, comment, assign, fork, commit, push, or open a PR without the human's explicit yes for that action.
+- Never claim, comment, assign, fork, commit, push, or open a PR without the human's yes: one yes before work (claim, assign, fork) and one at the end (commit, push, PR, comments).
 - The maintainer's brief, CONTRIBUTING, and AGENTS rules beat this skill's defaults wherever they disagree; say when they do.

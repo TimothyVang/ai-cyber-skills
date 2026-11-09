@@ -12,7 +12,7 @@ Use when: something is slow or heavy and needs a one-off fix tied to a measureme
    5. Do it when they're not looking.
    6. Do it concurrently.
    7. Do it cheaper.
-3. Plan the fix from the trace. Crosses a function boundary → the **architect** technique (`references/techniques/architect.md`) first. Delegate implementation to a default `task` agent (exclusive file ownership, reasoning level per job). Review the diff.
+3. Plan the fix from the trace. Crosses a function boundary → the **architect** technique (`references/techniques/architect.md`) first. Size L → delegate implementation to a default `task` agent (exclusive file ownership, reasoning level per job) and review the diff. Size M → make the change yourself, then run the **pr-review** self-review (`references/techniques/pr-review.md`, local mode).
 4. Verify each attempt before trying the next (`references/principles/sequence-verifiable-units.md`). Capture a post-fix trace.
 5. Parse and compare artifacts (JSON → sqlite, diff).
 6. Cite the measurement in the hand-off (and the commit/PR description, if commits were granted).
