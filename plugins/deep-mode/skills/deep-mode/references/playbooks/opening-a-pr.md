@@ -1,10 +1,10 @@
 # Opening a PR
 
-Use when: ending any playbook that lands code, and only when the user asked to commit, push, or open a PR. Without that ask, stop at a clean working tree diff and report.
+Use when: ending any playbook that lands code. Opening the PR is part of the work, not a step to ask about (SKILL.md Autonomy).
 
 ## Steps
 
-1. Confirm the user asked for git writes. No ask → stop here; report the diff instead.
+1. Check the change is ready: verified on the real surface, no hard stop (SKILL.md Autonomy) involved.
 2. Work from a git worktree off main. Parallel `task` agents on one branch: give each exclusive files, or a separate worktree. Dirty branch with unrelated work → save it as a patch, fresh worktree, apply. Snarled worktree → reset from main, redo minimally.
 3. Commit liberally, then rebase into small, ordered commits. Each commit is a future PR: landable, ordered to tell the story. Amend when the fix belongs to the just-made commit; new commit when separable. Bodies don't restate the subject.
 4. Before commit, review the diff for slop; before review, apply the **no-comments** technique (`references/techniques/no-comments.md`).
@@ -22,12 +22,13 @@ Use when: ending any playbook that lands code, and only when the user asked to c
 9. Use `gh` for every PR operation (create, edit, view, watch, merge). Do not require Graphite.
 10. Prefer five narrow PRs to one large one. Stack = base-branch chain: root targets trunk; each child rebases onto its parent's exact tip and targets the parent (`gh pr create --base <parent-branch>`, retarget with `gh pr edit <pr> --base <parent-branch>`). When a parent merges, rebase its child onto trunk and retarget. Branch from trunk only for independent work; rebase on trunk before substantial stack work.
 11. Open every PR ready, never draft (omit `--draft`; if it opens as draft, `gh pr ready <n>`). Run `gh pr view <n>` before referring to PR status.
-12. Post the URL and keep building; report the pr-review line from step 5 for the pushed head.
+12. Run the **pr-agent** technique (`references/techniques/pr-agent.md`) on the PR: describe, review, improve, with each finding triaged. Repeat it after each later push.
+13. Post the URL and keep building; report the pr-review line from step 5 for the pushed head.
 
 ## Gates
 
-- No commit, push, PR, or merge without the user's ask.
-- Do not babysit (watch checks, answer review) per PR. Finish the phase or stack first; run a babysit pass (`gh pr checks --watch`, `gh pr view --json reviews,comments`, and the **pr-review** technique steps 5-7 in PR mode on the current head) only when the user asks, after the whole stack exists. Push back when feedback drifts from intent.
+- Commits, pushes, and PRs need no ask; merges need a panel pass (`references/techniques/panel.md`) and go through `references/playbooks/shipping.md`.
+- Do not babysit (watch checks, answer review) per PR. Finish the phase or stack first; then run a babysit pass (`gh pr checks --watch`, `gh pr view --json reviews,comments`, and the **pr-review** technique steps 5-7 in PR mode on the current head) once the whole stack exists. Push back when feedback drifts from intent.
 - A subagent that opens a PR posts the URL and its review line and returns without babysitting, unless its brief assigns the babysit loop.
 - pr-review is evidence, not a gate: a clean review never waives the Verification section's real runs. Never report a review for a stale head SHA; a new push needs a new round.
 

@@ -21,14 +21,13 @@ Use when: adding new behavior. You own the design: plan, review, verify. Size L:
 6. Verify on the matching surface (project `verify-<app>` skill first; else omp `eval` `browser` or bash). "Inconclusive" or wrong-surface is not a pass; flag it.
 7. Sequence into small, ordered, verifiable units (`references/principles/sequence-verifiable-units.md`): build, verify, then the next. Stack follow-ups.
 8. Design contested → run one adversarial review pass by a different model family than yours, when one is available; keep only findings a run proves. Prefer empirical and formal verification.
-9. Run **Opening a PR** (`references/playbooks/opening-a-pr.md`) only if the user asked to commit or open a PR.
+9. Run **Opening a PR** (`references/playbooks/opening-a-pr.md`), then land it through `references/playbooks/shipping.md` on a panel pass.
 
 ## Gates
 
 - Code-coupled work (one feature, one migration) goes to a single owner with the checkpoint inline; that owner fans out internally after the blocking phase. Parent-level fan-out only for slices producing independent artifacts (audits, cross-subsystem investigations, competing experiments).
 - Rewrite the checkpoint at phase boundaries. Spawn a fresh owner rather than chaining interrupts.
 - Not done until verified on the matching surface; inconclusive/wrong-surface blocks completion.
-- No git writes (commit, push, PR) unless the user asked.
 
 ## Evidence
 

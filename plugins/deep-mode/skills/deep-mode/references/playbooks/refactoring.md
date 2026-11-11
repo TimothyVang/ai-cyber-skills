@@ -14,7 +14,7 @@ Use when: changing structure while behavior stays fixed. You own the contract. N
    - Delegate mechanical edits to a default `task` agent with scope: file paths, names being moved, behavior to hold, exclusive file ownership.
 6. Prove behavior unchanged on the real artifact, not "it compiles" (`references/principles/prove-it-works.md`). Larger reshapes: equivalence check (old-vs-new output diff script, recorded baseline replay, or smoke run on the matching surface via the project `verify-<app>` skill).
 7. Confirm it is worth keeping: the diff must lower reader load somewhere (`references/principles/minimize-reader-load.md`); else revert.
-8. Sequence commits: subtraction, then reshape, then follow-on cleanup, each green (`references/principles/sequence-verifiable-units.md`). Commit and run **Opening a PR** (`references/playbooks/opening-a-pr.md`) only if the user asked.
+8. Sequence commits: subtraction, then reshape, then follow-on cleanup, each green (`references/principles/sequence-verifiable-units.md`). Commit and run **Opening a PR** (`references/playbooks/opening-a-pr.md`).
 
 ## Gates
 
@@ -22,7 +22,6 @@ Use when: changing structure while behavior stays fixed. You own the contract. N
 - Cleanup reveals a missing feature or real bug → split it out; ship the structural change first against the pinned contract. A redesign is allowed only when named and routed to Feature.
 - Any step turns the pin red → stop and fix before the next step.
 - No reader-load reduction → revert.
-- No git writes unless the user asked.
 
 ## Evidence
 

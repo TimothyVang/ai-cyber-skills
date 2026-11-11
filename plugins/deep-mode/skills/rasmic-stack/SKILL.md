@@ -1,6 +1,6 @@
 ---
 name: rasmic-stack
-description: "Ras Mic's (@rasmic, Michael Shimeles) 2026 software stack and the decision philosophy behind it, applied to any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), plus his AI UI design workflow and rstack software factory (worktree → service-layer build → recorded evidence → reviewed PR). Use when the user names rasmic, Ras Mic, rstack, or software factory; asks to pick or build a tech stack for any new app; designs a UI with an agent via a design system; or wants a change shipped as an evidence-backed, reviewed PR."
+description: "Ras Mic's (@rasmic, Michael Shimeles) 2026 software stack and the decision philosophy behind it, applied to any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), plus his AI UI design workflow and rstack per-task workflow (worktree → service-layer build → recorded evidence → reviewed PR). Use when the user names rasmic, Ras Mic, or rstack; asks to pick or build a tech stack for any new app; designs a UI with an agent via a design system; or wants one change shipped as an evidence-backed, reviewed PR. An issue queue run as a software factory is deep-mode's Factory playbook."
 ---
 
 # Ras Mic stack and software factory
@@ -48,7 +48,7 @@ Pick the beats the task needs. Read-only reviews and investigations skip all of 
 
 When `deep-mode` is active (`/poteto`, deep-mode, or poteto-mode), it owns the process and this skill supplies the parts:
 
-- deep-mode's playbooks, autonomy gates, and reply rules win. Commit, push, and PR wait for the user's ask; the factory never overrides that pause.
+- deep-mode's playbooks, autonomy rules, and reply rules win. Commits, pushes, PRs, and merges follow deep-mode's Autonomy section: merges need its panel pass.
 - `stack.md` and `design-workflow.md` feed its Feature and Prototype playbooks as the default picks on greenfield work.
 - `evidence-driven-testing` is the recorder for its "prove it on the real artifact" step when no `verify-<app>` skill exists.
 - Ship beat → its Opening a PR playbook, then its pr-review technique (`skill://deep-mode/references/techniques/pr-review.md`). Posting the review to GitHub waits for the user's yes, and the review never approves or merges on its own.

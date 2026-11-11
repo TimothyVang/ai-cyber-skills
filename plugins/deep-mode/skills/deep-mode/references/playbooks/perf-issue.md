@@ -16,7 +16,7 @@ Use when: something is slow or heavy and needs a one-off fix tied to a measureme
 4. Verify each attempt before trying the next (`references/principles/sequence-verifiable-units.md`). Capture a post-fix trace.
 5. Parse and compare artifacts (JSON → sqlite, diff).
 6. Cite the measurement in the hand-off (and the commit/PR description, if commits were granted).
-7. Stop with the diff ready; stage commits only if the user granted commits. If the user asked to land it, run **Opening a PR** (`references/playbooks/opening-a-pr.md`). Never commit, push, or open a PR unasked.
+7. Commit, run **Opening a PR** (`references/playbooks/opening-a-pr.md`), and land it through `references/playbooks/shipping.md` on a panel pass.
 
 ## Gates
 - Every fix tied to a measurement; no perf ceiling claimed without running it.

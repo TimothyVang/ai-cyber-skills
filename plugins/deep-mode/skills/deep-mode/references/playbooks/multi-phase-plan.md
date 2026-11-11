@@ -5,7 +5,7 @@ Use when: a change spans multiple phases or PRs. You own the plan, not the code.
 ## Steps
 
 1. One or two files with an obvious approach → skip the plan; say so and stop.
-2. Settle open questions by prototype first (`references/playbooks/prototype.md`); keep branch, SHA, screenshots for Appendix A. `ask` the user only for product/preference calls no run can settle, with options (`references/principles/never-block-on-the-human.md`).
+2. Settle open questions by prototype first (`references/playbooks/prototype.md`); keep branch, SHA, screenshots for Appendix A. Decide product and preference calls no run can settle yourself, and record each choice with its rejected options in Appendix B (SKILL.md Autonomy).
 3. Explore via `scout` tasks (`references/principles/guard-the-context-window.md`); each returns file pointers, conventions, test commands, entry points; no inlined dumps.
 4. Write the plan file (default `docs/<program>-plan.md` unless the user names a path) using the structure below; every heading and sub-block, in order. One section per PR; one PR = one change with its own evidence (`references/principles/sequence-verifiable-units.md`). Name the execution playbook in How to read this (`autopilot` in `merge` mode if the run may merge, `autopilot` in `stack-only` mode if the user lands PRs, `orchestrate` for a standing program).
 5. Write with the **technical-writing** technique (`references/techniques/technical-writing.md`), then **unslop** (`references/techniques/unslop.md`). Body is how-to only; appendices hold explanation and reference. Each heading states a task or finding.
@@ -17,7 +17,7 @@ Use when: a change spans multiple phases or PRs. You own the plan, not the code.
 - `# <Program> plan`, then an intro under 10 non-blank lines: what changes, for whom, the rule enforced, PR ids in order.
 - `## How to read this`, containing: "One box is one unit of work", "Every box names the evidence that checks it", "Check a box only when its evidence exists" (a file, log line, screenshot, test run, SHA), the execution playbook path, who merges, and the verification rule verbatim: **"Tests alone are not sufficient verification. A PR is verified only when its unit, live, and perf boxes are all checked."**
 - `## Program checklist` with these `###` in order:
-  - `Arm the program`: state protocol + plan, stop for the user's explicit go; list `read skill://deep-mode/references/playbooks/<name>.md` reads of the execution playbook and opening-a-pr, plus `read skill://<verify-skill>` for the repo's verification skill and each leaf skill (skills don't live in the repo; never `git show origin/main:`), re-read every tick; arm a recurring hourly audit tick (scheduled job or harness loop;
+  - `Arm the program`: state protocol + plan, then start once the Plan checklist passes (no user go needed, SKILL.md Autonomy); list `read skill://deep-mode/references/playbooks/<name>.md` reads of the execution playbook and opening-a-pr, plus `read skill://<verify-skill>` for the repo's verification skill and each leaf skill (skills don't live in the repo; never `git show origin/main:`), re-read every tick; arm a recurring hourly audit tick (scheduled job or harness loop;
      never left to memory) with a verbatim tick prompt: re-read the playbook via `skill://deep-mode/`, audit and fix drift, probe lanes by side effects only, replace stuck lanes, post a status message only for tracked changes not yet reported (PR opened, code-ready head, round launched/closed, verdict, merge, stuck agent + action, blocker added/cleared, operator-only decision), else no reply text; log a decision-trail row each tick.
      On hold/stand-down, order every owner to zero writes at once.
   - `Spawn owners`: one owner (`task`) per PR with full lifecycle; dependency graph as nested boxes; file boundaries per PR (exclusive globs); review-gated PR ids.
@@ -43,7 +43,7 @@ Plan checklist (replaces pstack's `check-plan.mjs`); every item must pass, outsi
 - At least one PR section between Program checklist and Close the program; Close the program exists.
 - Each PR section: all nine sub-blocks in exact order; Depends on non-empty; Files, Build, You see, Verify unit, Merge each have ≥1 box; three Verify blocks open with the rule; live names the lane model and has exactly Lanes 1–10, every box a lane with a ``Save `…` `` screenshot and "Pass when"; perf boxes exactly Metric, Probe, Baseline, Rule; Review gate either "None." with no boxes, or boxes mentioning screenshot, video, operator.
 - Every `##` after Close the program is an Appendix; Appendix A Prototype evidence exists.
-- Execution starts only on the user's explicit go, under the playbook the plan names.
+- Execution starts once the Plan checklist passes, under the playbook the plan names.
 - A surface with no verification skill is a risk in Appendix C; its live block still names how each lane drives it.
 
 ## Evidence

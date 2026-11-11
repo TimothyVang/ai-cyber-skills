@@ -8,8 +8,8 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 
 | Piece | What it does |
 |---|---|
-| `/poteto <anything>` | The one command. It reads your request and the repo, routes it (fix, feature, review a PR, contribute to a project, set up a project for helpers, start a new app and pick its stack), sizes it (fast path for small jobs, full playbook for big ones), proves the result on the real app, and asks you once at the end before anything public. |
-| `deep-mode` skill | 22 playbooks (bug fix, feature, perf, refactor, prototype, babysit, shipping, autopilot, and more), 24 principles, and 21 techniques. |
+| `/poteto <anything>` | The one command. It reads your request and the repo, routes it (fix, feature, review a PR, drive a kanban board, chart a big effort, grill a plan, contribute to a project, set up a project for helpers, start a new app and pick its stack), sizes it (fast path for small jobs, full playbook for big ones), proves the result on the real app, lands it on a 3-agent panel pass, and reports what it decided. |
+| `deep-mode` skill | 26 playbooks (bug fix, feature, board, wayfinder, factory, perf, refactor, prototype, babysit, shipping, autopilot, and more), 24 principles, and 26 techniques, including the verdict panel, grill, coworkers, a CI security audit of every PR, and PR-Agent run locally on your Claude subscription. |
 | `create-verification-skill` | Builds a per-repo `verify-<app>` skill: a control CLI plus a feature map, so agents can drive your app and capture proof. |
 | `maintain-verification-skill` | Keeps that verify skill accurate as the app changes. |
 | `rasmic-stack` skill | Ras Mic's stack picks and the philosophy behind them: 57 cited decision rules from 166 of his videos. For web and SaaS apps it uses his exact picks. For any other app (CLI, desktop, mobile, AI agent, data/ML, security tooling) it applies his rules, labels those picks **inferred**, prototypes the risky ones, and writes a cited `STACK.md`. It also carries his UI design workflow and rstack software factory. |
@@ -17,7 +17,7 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 | `project-brief` (maintainer) | Publishes a project for contributors: a newcomer brief (`docs/PROJECT_BRIEF.md`), small claimable tasks as GitHub Issues, a generated `ROADMAP.md`, PR and issue templates, `CONTRIBUTING.md`, and two GitHub Actions: one flags PRs that touch the same files, one keeps the roadmap current. |
 | `contribute` (contributor) | `/deep-mode:contribute <what you'd like to work on>` briefs a newcomer's agent on the project, finds an unclaimed task that doesn't overlap open PRs or other claims, claims it, builds and proves it through deep-mode, and opens a PR that closes the issue. |
 
-The agent never commits, pushes, opens a PR, or merges unless you ask.
+The agent works on its own: it makes product and design calls, commits, pushes, opens PRs, keeps a kanban board, and merges. A task is done, and a PR merges, only when a panel of three skeptical verifier agents runs it and at least two agree, with evidence the agent has checked. Parallel agents talk to each other directly, like coworkers. It still asks you before deploys, deleting things it didn't create, rewriting shared history, messaging people outside the repo, spending money, or using secrets only you have.
 
 ## Install
 
@@ -65,7 +65,7 @@ Copy the three folders in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` 
 
 - You never pick a skill or playbook. `/poteto` routes, sizes, and runs it.
 - Small jobs take the fast path. Big ones get the full playbook, subagents, and a decision log.
-- It does all reversible work without asking, then asks once at the end before committing, pushing, opening a PR, or posting. Say "ship it" or "do it all" up front to skip that question. Claiming an issue is asked before work starts.
+- It decides and acts without asking: commits, pushes, PRs, board cards, and merges after a panel pass. It asks once at the end only for hard stops (deploys, deletions, shared-history rewrites, outside messages, money, secrets), and lists every decision it made so you can reverse any.
 - On a new repo, medium and large jobs first build a `verify-<app>` skill so the agent can prove changes. Later runs reuse it.
 - The direct commands still work: `/deep-mode:review-pr`, `/deep-mode:contribute`, `/deep-mode:project-brief`.
 

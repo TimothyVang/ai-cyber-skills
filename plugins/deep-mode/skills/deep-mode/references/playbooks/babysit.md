@@ -34,7 +34,7 @@ Use when: the user asks to babysit, get green, make merge-ready, address review 
 Verify every claim against the code before acting. Not every comment is a required change; not every comment is noise.
 - `fix`: plausible correctness, security, privacy, data-loss, auth, billing, migration, idempotency, race, or shipped-behavior issue → fix in the lowest owning PR, reply with the commit SHA, resolve.
 - `dismiss`: matches a known low-risk pattern AND current code/context proves no change is needed → short reason, resolve. Typical: intentional visual change the PR states; "unused" symbol a verified upstack PR uses (not public API); deliberate temporary duplication beside a path being deleted (not security/billing/data/API); an enforced (not assumed) framework/type invariant covers it; owner-declared follow-up the PR doesn't worsen; bot self-withdrew and you verified the rule locally.
-- `ask` (`ask` tool): novel, high-severity, ambiguous, or security/privacy/auth/billing/data-retention/permission, migration/schema/idempotency/concurrency/cross-system — even if a past PR dismissed something similar — and any small fix that clearly reduces risk without changing intent. When in doubt, ask.
+- `escalate`: novel, high-severity, ambiguous, or security/privacy/auth/billing/data-retention/permission, migration/schema/idempotency/concurrency/cross-system, even if a past PR dismissed something similar. Decide it yourself: when a fix reduces risk without changing the PR's intent, make it; otherwise leave the thread open and report it as waiting on the human. When in doubt, fix.
 - Cheap checks first: if a claim is runnable (e.g. "test no longer matches the doc"), run it on the tip; red confirms, green is the dismissal proof. Earlier fixed passes don't make the next finding noise.
 - A finding already fixed at the tip is stale only if the guard runs before the side effect and covers the principal in question.
 - Don't widen a deliberately narrow error condition (e.g. fallback gated on `ENOENT`) into a catch-all that masks the real error — unless it misses a same-category case.
@@ -46,14 +46,14 @@ Verify every claim against the code before acting. Not every comment is a requir
 - pr-review is evidence, not a waiver: a clean review never waives the checks above, and a P2 doesn't block once it has a recorded dismissal.
 - All stack PRs merged by others → done.
 - Owner approval (`reviewDecision: REVIEW_REQUIRED`) is a wait, not a blocker to fix.
-- Babysitting never authorizes merging. Only an explicit request to merge/land/ship/"merge when ready" does — route it to `references/playbooks/shipping.md`. Surface escalations and keep working the rest.
+- Merge-ready is not merged: landing goes through `references/playbooks/shipping.md`, which merges on a panel pass. Surface escalations and keep working the rest.
 - `check` mode: one pass, no edits.
 
 ## Evidence
 
 - Mode, frontier PR, and its final forge state (`mergeStateStatus`, checks, `reviewDecision`) read live at the end.
 - Each push wave: commit SHAs and which blockers each cleared.
-- Each thread: fix / dismiss / ask, with the commit or the proof behind the dismissal.
+- Each thread: fix / dismiss / escalate, with the commit or the proof behind the dismissal.
 - Per PR, the pr-review technique's one-line report: `review: <ready|changes needed|needs discussion> at <short sha>, <k> rounds, open P0/P1/P2 <a>/<b>/<c>, fixed <d>, dismissed <e>`.
 - CI classifications and any rerun; any rebase reported upward (branch + drift sweep).
-- What waits on the human (approvals, `ask` items, landing).
+- What waits on the human (approvals, escalated threads, landing).
