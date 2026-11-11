@@ -5,11 +5,11 @@ Usage:
   python pr_agent_local.py <pr-url> [review|describe|improve|ask "<question>"] [--backend omp|claude] [--model M] [--dry-run]
 
 PR-Agent talks to an OpenAI-compatible endpoint. This script serves one on 127.0.0.1 and answers each
-request with a tool-less run of your own harness, so the calls draw on your subscription's usage limits
-(Claude Max/Pro, ChatGPT/Codex, or whatever omp is logged into), never an API key:
-  --backend omp (default): `omp -p` with tools, skills, rules and context files off, on omp's current
-    default model, or --model.
-  --backend claude: `claude -p` through Claude Code, default model sonnet.
+request with a run of your own harness that has no tools, MCP servers, skills or context files, so the
+calls draw on your subscription's usage limits (Claude Max/Pro, ChatGPT/Codex, or whatever omp is logged
+into), never an API key. `@` mentions in PR text are defanged so neither CLI attaches local files:
+  --backend omp (default): `omp -p` with every discovery source off, on omp's current default model, or --model.
+  --backend claude: `claude -p` through Claude Code with an empty strict MCP config, default model sonnet.
 API-key variables (ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, OPENAI_API_KEY) are removed from the child's
 environment so a stray key can't turn this into API billing. GitHub access uses `gh auth token`.
 --dry-run prints PR-Agent's output instead of posting it on the PR.
@@ -19,6 +19,7 @@ Needs: the backend CLI (logged in), `gh` (logged in), and `uvx` (or `pr-agent` o
 import argparse
 import json
 import os
+import re
 import secrets
 import shutil
 import subprocess
@@ -44,7 +45,9 @@ def flatten(messages: list[dict]) -> str:
         if isinstance(content, list):  # OpenAI content parts
             content = "\n".join(p.get("text", "") for p in content if isinstance(p, dict))
         parts.append(f"<{message.get('role', 'user')}>\n{content}\n</{message.get('role', 'user')}>")
-    return "\n\n".join(parts)
+    # Both CLIs attach the file behind any `@path` in the prompt, so PR text like `@~/.ssh/id_ed25519` would
+    # hand a local file to the model and onto the PR. A word joiner after `@` reads the same and never matches.
+    return re.sub(r"@(?=\S)", "@\u2060", "\n\n".join(parts))
 
 
 # `--no-tools` drops only built-in tools: MCP servers from omp's config (and from Claude, Codex, Cursor and
@@ -81,6 +84,9 @@ def omp_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
         if event.get("type") == "tool_execution_start":
             # Tripwire: the overlay should leave no tools. If one ran anyway, the run is unsafe; drop it.
             raise RuntimeError(f"omp ran a tool ({event.get('toolName')}) despite --no-tools; reply discarded")
+        if (event.get("message") or {}).get("role") == "fileMention":
+            # Tripwire: flatten() defangs `@path`; an attached file means a mention got through. Drop it.
+            raise RuntimeError("omp attached a mentioned file to the prompt; reply discarded")
         if event.get("type") == "message_end" and (event.get("message") or {}).get("role") == "assistant":
             reply = event["message"]
     if reply is None or proc.returncode != 0:
@@ -99,7 +105,9 @@ def claude_complete(messages: list[dict], model: str | None) -> tuple[str, dict]
     env = {k: v for k, v in os.environ.items() if k not in API_KEY_VARS}
     proc = subprocess.run(
         [shutil.which("claude") or "claude", "-p", "--model", model or "sonnet", "--output-format", "json",
-         "--tools", "", "--no-session-persistence", "--system-prompt", SYSTEM],
+         # `--tools ""` drops built-ins only; an empty strict MCP config drops every MCP server too.
+         "--tools", "", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",
+         "--no-session-persistence", "--system-prompt", SYSTEM],
         input=flatten(messages), capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
         timeout=900,
     )

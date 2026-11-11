@@ -27,7 +27,11 @@ Each comment starts with a signature line, so the thread reads as separate voice
 3. **Answer every finding** in one author comment: `fixed in <sha>` with the proof, or `dismissed:` with the reason and the command or file line that shows it. Push the fixes.
 4. **Repeat** steps 2–3 on each new head until no P0 or P1 is open. Three rounds without converging → stop: post the open findings as author and report the PR as blocked.
 5. **Panel.** Run the **panel** (`references/techniques/panel.md`) at the final head. Verifiers vote before anything is posted, so none sees another's verdict; then post each vote verbatim as `verifier N`, and the tally as `panel`. Not done → back to step 3 with the failures.
-6. **Merge** on a pass. First, at that head, `gh pr checks <N> -R <owner/repo> --required --watch --fail-fast` must end green ("no required checks reported" counts as green only when the base branch requires none); anything else stops the merge. Then `gh pr merge <N> -R <owner/repo> --squash --match-head-commit <sha> --delete-branch`. When the base branch requires an approving review, the PR's author can't give it, and these bots are the author: with authorization (below) add `--admin`. Post the merge note as author: the head, the panel tally, the checks, and that the required review was replaced by the panel.
+6. **Merge** on a pass. Before merging, at that exact head:
+   - **Required checks.** List the base branch's required contexts: `gh api repos/<owner>/<repo>/branches/<base>/protection --jq '.required_status_checks.contexts // []'` plus active rulesets, `gh api repos/<owner>/<repo>/rules/branches/<base> --jq '[.[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context]'`. Every one must be reported and passing in `gh pr checks <N> -R <owner/repo> --required --watch --fail-fast`; a required check that never reported blocks the merge (`gh` doesn't list expected checks). With none required, gh's "no checks reported" is fine.
+   - **Local gate.** When the repo documents a local gate (AGENTS.md, CONTRIBUTING, a check script), run it at that SHA and merge only on its pass line.
+
+   Then `gh pr merge <N> -R <owner/repo> --squash --match-head-commit <sha> --delete-branch`. When the base branch requires an approving review, the PR's author can't give it, and these bots are the author: with authorization (below) add `--admin`. Post the merge note as author: the head, the panel tally, the checks and gate line, and that the required review was replaced by the panel.
 7. **After merge,** run the repo's checks on the new trunk. Red → open a revert PR and run this technique on it.
 
 ## Authorization for `--admin`
@@ -37,7 +41,7 @@ Bypassing a required review is a hard stop (SKILL.md Autonomy) unless one of the
 - The user asked for it in this session ("merge it on its own", "no owner approval").
 - The base branch has `.deep-mode.json` with `{"autonomousMerge": true}`. Read it from the base branch (`git show origin/<base>:.deep-mode.json`), never the PR head, so a PR can't grant itself the bypass.
 
-Without either, stop at merge-ready and ask.
+Without either, stop at merge-ready and ask. A base-branch `.deep-mode.json` with `"autonomousMerge": false` overrides a session request: stop and ask.
 
 ## Gates
 
