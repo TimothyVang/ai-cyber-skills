@@ -6,9 +6,9 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 
 1. Branch from `main`.
 2. Edit. Each plugin lives in `plugins/<name>/`; skills in `plugins/<name>/skills/<skill>/SKILL.md`.
-3. Run `python scripts/check.py`. It must print `OK`.
-4. Open a PR. Say what agent behavior you saw, what you changed, and how you tested it.
-5. CI runs the same check. A maintainer reviews and merges.
+3. Run `python scripts/check.py`. It must print `OK`. There is no CI; this local run is the gate.
+4. Open a PR. Say what agent behavior you saw, what you changed, and how you tested it, including the check output.
+5. A maintainer reviews and merges.
 
 ## What the check enforces
 

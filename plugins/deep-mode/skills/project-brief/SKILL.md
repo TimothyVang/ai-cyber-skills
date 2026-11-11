@@ -1,6 +1,6 @@
 ---
 name: project-brief
-description: "Maintainer workflow that opens a repo to many contributors and their agents: writes docs/PROJECT_BRIEF.md, proposes claimable GitHub Issues, installs the overlap bot, roadmap sync, PR and issue templates, and CONTRIBUTING.md, so anyone can run /deep-mode:contribute. Re-run to refresh the brief and roadmap and release expired claims. Use for /skill:project-brief, \"publish this project for contributors\", or \"set up the task board\"."
+description: "Maintainer workflow that opens a repo to many contributors and their agents: writes docs/PROJECT_BRIEF.md, proposes claimable GitHub Issues, installs the overlap and roadmap scripts your agent runs, PR and issue templates, and CONTRIBUTING.md, so anyone can run /deep-mode:contribute. Re-run to refresh the brief and roadmap, post overlap comments, and release expired claims. Use for /skill:project-brief, \"publish this project for contributors\", or \"set up the task board\"."
 disable-model-invocation: true
 ---
 
@@ -14,15 +14,13 @@ Deep-mode rules apply throughout (`skill://deep-mode`): restate first, answer ob
 
 ## Assets
 
-Copy these into the target repo. Never overwrite a file that already exists; merge it instead (step 4).
+Copy these into the target repo. Never overwrite a file that already exists; merge it instead (step 4). Nothing here installs GitHub Actions: the maintainer's agent runs the overlap and roadmap scripts (steps 6 and 8).
 
 | Asset (relative to this skill) | Destination in the target repo |
 |---|---|
 | `assets/PROJECT_BRIEF.template.md` | `docs/PROJECT_BRIEF.md` (filled in, step 2) |
 | `assets/pr-overlap.py` | `scripts/pr-overlap.py` |
 | `assets/sync-roadmap.py` | `scripts/sync-roadmap.py` |
-| `assets/workflows/pr-overlap.yml` | `.github/workflows/pr-overlap.yml` |
-| `assets/workflows/roadmap.yml` | `.github/workflows/roadmap.yml` |
 | `assets/PULL_REQUEST_TEMPLATE.md` | `.github/PULL_REQUEST_TEMPLATE.md` |
 | `assets/ISSUE_TEMPLATE/task.yml` | `.github/ISSUE_TEMPLATE/task.yml` |
 | `assets/CONTRIBUTING.template.md` | `CONTRIBUTING.md` (filled in, step 4) |
@@ -67,8 +65,7 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
 4. **Install the assets** per the table above, into the working tree only.
    - Missing file → copy it. Existing identical file → leave it. Existing different file → show the diff and merge by hand: keep the maintainer's content, add only missing sections. Never overwrite.
    - `CONTRIBUTING.md`: fill `{{...}}` placeholders from the brief (repo, run and verify commands, constraints). If one exists, merge the deep-mode sections (install, claim rules, overlap check, PR requirements, review flow) into it.
-   - `pr-overlap.yml` runs on `pull_request_target` from the default branch; it never checks out PR code, so it's safe on fork PRs and only activates once the files land on the default branch. Don't change that trigger to `pull_request` or add a PR-head checkout.
-   - `roadmap.yml` pushes `ROADMAP.md` to the default branch as `github-actions[bot]`. If that branch is protected against direct pushes, tell the human: allow the bot, or skip `roadmap.yml` and run step 6 by hand.
+   - A repo that already carries the old `.github/workflows/pr-overlap.yml` or `roadmap.yml` from an earlier run: propose deleting them in step 7. Deep-mode replaces GitHub Actions; the agent runs both scripts instead.
    - Optional: suggest `.github/CODEOWNERS` lines from the brief's architecture map. Write the file only if the human says yes.
 
 5. **Ensure labels.** After the yes in step 7, create or update the labels before creating issues. `--force` updates an existing label instead of failing:
@@ -90,6 +87,8 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
    - **Release expired claims.** Fetch comments: `gh issue list --repo OWNER/REPO --state open --label "help wanted" --limit 200 --json number,title,assignees,labels,comments`. Find issues whose newest claim comment has an `Expires` date before today and no later unclaim. Show the list, then on a yes comment on each: `Claim by @<login> expired on <date>. This issue is open to claim again; comment here if you're still on it.` On the same yes, remove the `claimed` label if set (`gh issue edit N --remove-label claimed`). Never unassign anyone without a separate yes.
    - **Assets.** Diff each installed asset against this skill's copy; propose updates as in step 4.
    - **New tasks.** Repeat step 3 for gaps since the last run.
+   - **Overlap comments.** For each open PR: `python scripts/pr-overlap.py comment --repo OWNER/REPO --pr N`. It posts or updates one comment per PR (marker `<!-- deep-mode:overlap -->`). Comments are shared state: run them after the step 7 yes.
+   - **Roadmap.** Re-run step 6 and include a changed `ROADMAP.md` in what step 7 ships.
    - Then step 7, which asks once and runs steps 5 and 6.
 
 ## Report
