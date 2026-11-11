@@ -6,11 +6,11 @@ The factory is the `factory` CLI (source: `github.com/TimothyVang/softwarefactor
 
 ## Steps
 
-1. Install check: `factory --help` runs. Missing → `pip install git+https://github.com/TimothyVang/softwarefactory`; if that repo is unreachable (not yet published), ask the user for their local checkout and `pip install -e <path>`. Done when `--help` prints.
-2. No `factory.json` → set it up:
+1. Install check: `factory --help` runs. Missing → `pip install git+https://github.com/TimothyVang/softwarefactory`; if that repo is unreachable (not yet published), find the user's local checkout (a folder whose `pyproject.toml` names `software-factory`) and `pip install -e <path>`. Done when `--help` prints.
+2. Set it up. With no `factory.json`:
    - Find the repo's real test, lint, typecheck and build commands (CI config, package scripts, AGENTS.md) and the command that runs a test folder.
    - `factory init --checks "<commands>" --holdout-command "<runs factory_holdout/>"`. It refuses when the checks fail on the base: fix or report that, never weaken the checks to pass.
-   - Set `merge.auto` to `false`: the factory's single approver is not a panel, so every job it approves comes back as an escalated PR for step 5's panel. Start at `concurrency: 1` and raise it once a run merges cleanly.
+   - In every `factory.json`, new or existing, set `"merge": {"auto": false}` before any run: the factory's single approver is not a panel, and the CLI defaults to merging on its own. Every job it approves then comes back as an escalated PR for step 5's panel. Start at `concurrency: 1` and raise it once a run merges cleanly.
    - Commit and push `factory.json` and `.gitignore`.
 
    Done when `factory init` prints that the checks pass on the base.

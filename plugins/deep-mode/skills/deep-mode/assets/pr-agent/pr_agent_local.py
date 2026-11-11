@@ -92,7 +92,8 @@ def make_handler(model: str, log: list, secret: str):
                 request = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             except (ValueError, TypeError):
                 request = None
-            if not isinstance(request, dict) or not isinstance(request.get("messages", []), list):
+            messages = request.get("messages", []) if isinstance(request, dict) else None
+            if not isinstance(messages, list) or not all(isinstance(m, dict) for m in messages):
                 self._json(400, {"error": {"message": "invalid request body"}})
                 return
             started = time.monotonic()
