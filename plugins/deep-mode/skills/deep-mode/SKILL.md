@@ -137,6 +137,8 @@ A large or cross-cutting effort with no clean fit, or work the user steps away f
 
 **Stack, UI design, and factory tooling** come from `skill://rasmic-stack` (Ras Mic's picks and philosophy); its "With deep-mode" section sets the split. Greenfield web, SaaS, or AI-app framework, backend, auth, payments, or deploy choice → its `references/stack.md`. Any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling), or "build the stack for me" → its `references/any-app-stack.md`, which writes a cited `STACK.md`. Designing a UI with an agent → its `references/design-workflow.md`. Recording UI proof with no `verify-<app>` skill → its `references/evidence-driven-testing/`. Your gates and playbooks still govern.
 
+**Frontend UI/UX** (building, restyling, or reviewing UI; motion; color; accessibility; chat or agent UI) → before writing UI code, read `AGENTS.md` in a local checkout of `TimothyVang/frontend`, then the `PLAYBOOK.md` section it routes to. Its `reference/` holds the cited evidence (articles, talks, clips, live demos) and its `.claude/skills/` the vendored design skills. No checkout: `gh repo clone TimothyVang/frontend` (private; skip if you can't access it). It adds component, motion, color, and agent-UI rules on top of rasmic-stack's design workflow.
+
 ## Habits worth keeping
 
 - Restate-in-your-own-words is her most-used prompt. Use it on any thread, report, or fuzzy ask before acting.
