@@ -3,7 +3,10 @@
     python test_bot.py
 """
 import json
+import tempfile
 import unittest
+from pathlib import Path
+from unittest import mock
 
 import bot
 
@@ -321,6 +324,71 @@ class GateTest(unittest.TestCase):
             self.assertEqual(bot.app_checks("o/r", "s" * 40, "check", [7]), {"7": []})  # not that app's status
         finally:
             bot.gh, bot.app_id_of = gh, app_id_of
+
+
+class FakeItem:
+    def __init__(self, reply):
+        self.reply, self.asked, self.posts = reply, [], []
+
+    def ask(self, role, prompt, tree, *flags):
+        self.asked.append(prompt)
+        return self.reply
+
+    def say(self, label, who, sha, body):
+        self.posts.append((label, body))
+
+
+class TrunkCheckTest(unittest.TestCase):
+    SHA = "a" * 40
+
+    def check(self, reply, revert=None):
+        c = object.__new__(bot.PRConversation)
+        with tempfile.TemporaryDirectory() as tmp:
+            c.repo, c.n, c.base, c.cfg = "o/r", 7, "main", {"verifiers": [{"agent": "v"}]}
+            c.clone, c.verifier_trees = Path(tmp), [Path(tmp) / "v0"]
+            c.it = FakeItem(reply)
+            c.open_revert = revert or mock.Mock(return_value="https://github.com/o/r/pull/8")
+            with mock.patch.object(bot, "git"), mock.patch.object(bot, "worktree_at", return_value=Path(tmp)):
+                status = c.trunk_check(self.SHA)
+        self.assertEqual(len(c.it.asked), 1)  # reached the verifier, not the could-not-run branch
+        self.assertIn("trunk check after pull request o/r#7", c.it.asked[0])
+        return status, c.open_revert, [body for label, body in c.it.posts if label == "coordinator"]
+
+    def test_unclear_vote_reports_no_verdict_and_never_reverts(self):
+        replies = {"no block": "all good I think", "unknown": '```json\n{"vote":"UNKNOWN","evidence":"x"}\n```',
+                   "null": '```json\n{"vote":null}\n```', "empty": '```json\n{"vote":""}\n```',
+                   "malformed": '```json\n{"vote":\n```'}
+        for case, reply in replies.items():
+            with self.subTest(case):
+                status, revert, notes = self.check(reply)
+                self.assertEqual(status, "merged")
+                revert.assert_not_called()
+                self.assertEqual(len(notes), 1)
+                self.assertIn("no verdict", notes[0])
+                self.assertIn("on `main` by hand", notes[0])
+                if case == "unknown":
+                    self.assertIn("UNKNOWN", notes[0])
+
+    def test_pass_merges_quietly(self):
+        status, revert, notes = self.check('```json\n{"vote":"PASS"}\n```')
+        self.assertEqual((status, notes), ("merged", []))
+        revert.assert_not_called()
+
+    def test_explicit_fail_opens_a_revert(self):
+        for reply, evidence in (('```json\n{"vote":"fail","evidence":"e"}\n```', "e"),
+                                ('```json\n{"vote":"FAIL"}\n```', "no parseable vote")):
+            with self.subTest(reply):
+                status, revert, notes = self.check(reply)
+                self.assertEqual(status, "merged-reverting")
+                revert.assert_called_once_with(self.SHA, evidence)
+                self.assertIn("Opened https://github.com/o/r/pull/8", notes[-1])
+
+    def test_fail_with_broken_revert_leaves_trunk_red(self):
+        status, revert, notes = self.check('```json\n{"vote":"FAIL"}\n```', mock.Mock(side_effect=RuntimeError("x")))
+        self.assertEqual(status, "merged-red")
+        revert.assert_called_once()
+        self.assertIn("Revert it by hand", notes[-1])
+        self.assertIn("(x)", notes[-1])
 
 
 class TextTest(unittest.TestCase):
