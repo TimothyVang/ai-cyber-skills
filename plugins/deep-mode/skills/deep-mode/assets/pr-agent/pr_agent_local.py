@@ -2,18 +2,16 @@
 """Run PR-Agent locally on a GitHub PR, powered by the subscription your agent harness is logged into.
 
 Usage:
-  python pr_agent_local.py <pr-url> [review|describe|improve|ask "<question>"] [--backend omp|claude] [--model M] [--dry-run]
+  python pr_agent_local.py <pr-url> [review|describe|improve|ask "<question>"] [--model M] [--dry-run]
 
 PR-Agent talks to an OpenAI-compatible endpoint. This script serves one on 127.0.0.1 and answers each
-request with a run of your own harness that has no tools, MCP servers, skills or context files, so the
-calls draw on your subscription's usage limits (Claude Max/Pro, ChatGPT/Codex, or whatever omp is logged
-into), never an API key. `@` mentions in PR text are defanged so neither CLI attaches local files:
-  --backend omp (default): `omp -p` with every discovery source off, on omp's current default model, or --model.
-  --backend claude: `claude -p` through Claude Code with an empty strict MCP config, default model sonnet.
-API-key variables (ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, OPENAI_API_KEY) are removed from the child's
-environment so a stray key can't turn this into API billing. GitHub access uses `gh auth token`.
---dry-run prints PR-Agent's output instead of posting it on the PR.
-Needs: the backend CLI (logged in), `gh` (logged in), and `uvx` (or `pr-agent` on PATH).
+request with `omp -p` on omp's current default model (or --model), so the calls draw on the usage limits of
+whatever subscription omp is logged into (Claude Max/Pro, ChatGPT/Codex), never an API key. The child has
+no tools, MCP servers, plugins, skills or context files, and `@` mentions in PR text are defanged so omp
+never attaches a local file. API-key variables (ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, OPENAI_API_KEY)
+are removed from its environment so a stray key can't turn this into API billing. GitHub access uses
+`gh auth token`. --dry-run prints PR-Agent's output instead of posting it on the PR.
+Needs: `omp` (logged in), `gh` (logged in), and `uvx` (or `pr-agent` on PATH).
 """
 
 import argparse
@@ -45,8 +43,8 @@ def flatten(messages: list[dict]) -> str:
         if isinstance(content, list):  # OpenAI content parts
             content = "\n".join(p.get("text", "") for p in content if isinstance(p, dict))
         parts.append(f"<{message.get('role', 'user')}>\n{content}\n</{message.get('role', 'user')}>")
-    # Both CLIs attach the file behind any `@path` in the prompt, so PR text like `@~/.ssh/id_ed25519` would
-    # hand a local file to the model and onto the PR. A word joiner after `@` reads the same and never matches.
+    # omp attaches the file behind any `@path` in the prompt, so PR text like `@~/.ssh/id_ed25519` would hand
+    # a local file to the model and onto the PR. A word joiner after `@` reads the same and never matches.
     return re.sub(r"@(?=\S)", "@\u2060", "\n\n".join(parts))
 
 
@@ -101,34 +99,7 @@ def omp_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
     }
 
 
-def claude_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
-    env = {k: v for k, v in os.environ.items() if k not in API_KEY_VARS}
-    proc = subprocess.run(
-        [shutil.which("claude") or "claude", "-p", "--model", model or "sonnet", "--output-format", "json",
-         # `--tools ""` drops built-ins only; an empty strict MCP config drops every MCP server too.
-         "--tools", "", "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}', "--disable-slash-commands",
-         "--no-session-persistence", "--system-prompt", SYSTEM],
-        input=flatten(messages), capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
-        timeout=900,
-    )
-    try:
-        data = json.loads(proc.stdout)
-    except json.JSONDecodeError:
-        raise RuntimeError(f"claude exited {proc.returncode}: {(proc.stderr or proc.stdout)[-800:]}")
-    if data.get("is_error"):
-        raise RuntimeError(f"claude error: {str(data.get('result'))[:800]}")
-    usage = data.get("usage") or {}
-    return data.get("result") or "", {
-        "prompt_tokens": (usage.get("input_tokens") or 0) + (usage.get("cache_read_input_tokens") or 0)
-        + (usage.get("cache_creation_input_tokens") or 0),
-        "completion_tokens": usage.get("output_tokens") or 0,
-    }
-
-
-BACKENDS = {"omp": omp_complete, "claude": claude_complete}
-
-
-def make_handler(complete, model: str | None, log: list, secret: str):
+def make_handler(model: str | None, log: list, secret: str):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -169,7 +140,9 @@ def make_handler(complete, model: str | None, log: list, secret: str):
                 return
             started = time.monotonic()
             try:
-                text, usage = complete(request.get("messages", []), model)
+                text, usage = omp_complete(request.get("messages", []), model)
+                # The model may echo flatten()'s word joiners; they must not reach suggested code.
+                text = text.replace("\u2060", "")
             except Exception as exc:  # reported to PR-Agent as an API error
                 self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
                 return
@@ -202,14 +175,11 @@ def main() -> int:
     parser.add_argument("pr_url")
     parser.add_argument("command", nargs="?", default="review")
     parser.add_argument("args", nargs="*", help="extra words for the command, e.g. the question for ask")
-    parser.add_argument("--backend", choices=sorted(BACKENDS), default="omp",
-                        help="harness whose subscription answers the calls (default omp)")
-    parser.add_argument("--model", default=None,
-                        help="model for the backend (default: omp's current model; sonnet for claude)")
+    parser.add_argument("--model", default=None, help="omp model (default: omp's current model)")
     parser.add_argument("--dry-run", action="store_true", help="print the result instead of posting it")
     opts = parser.parse_args()
 
-    for tool in (opts.backend, "gh"):
+    for tool in ("omp", "gh"):
         if not shutil.which(tool):
             sys.exit(f"pr_agent_local: `{tool}` is not on PATH")
     token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True).stdout.strip()
@@ -218,7 +188,7 @@ def main() -> int:
 
     calls: list = []
     secret = secrets.token_urlsafe(32)
-    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(BACKENDS[opts.backend], opts.model, calls, secret))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(opts.model, calls, secret))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}/v1"
 
@@ -242,7 +212,7 @@ def main() -> int:
     code = subprocess.run(command, env=env).returncode
     server.shutdown()
     spent = sum(c["seconds"] for c in calls)
-    print(f"\npr_agent_local: {len(calls)} model call(s) through {opts.backend} ({opts.model or 'default model'}), "
+    print(f"\npr_agent_local: {len(calls)} model call(s) through omp ({opts.model or 'default model'}), "
           f"{spent:.0f}s, "
           f"{sum(c['prompt_tokens'] for c in calls)} in / {sum(c['completion_tokens'] for c in calls)} out tokens",
           file=sys.stderr)
