@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="584" viewBox="0 0 1200 584" role="img" aria-labelledby="t d">
+<title id="t">White-labeling the bots with brand.json</title>
+<desc id="d">One brand name, acme-review, set by install.py --brand or brand.json, becomes the GitHub App name, the bot comment author, the comment signature, the @mention, the issue branch prefix, the repo opt-out file, the config directory and the autostart task.</desc>
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9fb0c8"/></marker>
+<marker id="ahA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#fbbf24"/></marker>
+<marker id="ahV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker>
+<marker id="ahS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#38bdf8"/></marker>
+</defs>
+<rect x="1" y="1" width="1198" height="582" rx="24" fill="#0b1220" stroke="#22304d" stroke-width="2"/>
+<text x="40" y="58" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#e6edf3" text-anchor="start">One name, every surface</text>
+<text x="40" y="86" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#9fb0c8" text-anchor="start">brand.py derives every user-visible name from "name". Set it once; the rest follows.</text>
+<rect x="40" y="130" width="400" height="300" rx="16" fill="#0d1526" stroke="#2a3a5c" stroke-width="1.5"/>
+<circle cx="64" cy="152" r="5" fill="#fb7185"/><circle cx="82" cy="152" r="5" fill="#fbbf24"/><circle cx="100" cy="152" r="5" fill="#34d399"/>
+<text x="124" y="157" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13" font-weight="400" fill="#9fb0c8" text-anchor="start">brand.local.json</text>
+<text x="64" y="204" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="18" font-weight="400" fill="#e6edf3" text-anchor="start">{</text>
+<text x="86" y="236" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="18" font-weight="400" fill="#38bdf8" text-anchor="start">"name":</text>
+<text x="176" y="236" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="18" font-weight="600" fill="#fbbf24" text-anchor="start">"acme-review"</text>
+<text x="64" y="268" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="18" font-weight="400" fill="#e6edf3" text-anchor="start">}</text>
+<text x="64" y="322" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">written by</text>
+<rect x="60" y="334" width="360" height="40" rx="10" fill="#111b2f" stroke="#2a3a5c"/>
+<text x="76" y="360" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15" font-weight="500" fill="#34d399" text-anchor="start">install.py --brand acme-review</text>
+<text x="64" y="404" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">or edit brand.json in your fork</text>
+<line x1="440" y1="280" x2="520" y2="280" stroke="#fbbf24" stroke-width="2.5" marker-end="url(#ahA)"/>
+<text x="480" y="268" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="600" fill="#fbbf24" text-anchor="middle">derive</text>
+<rect x="530" y="112" width="630" height="38" rx="12" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.2"/>
+<text x="552" y="137" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="500" fill="#9fb0c8" text-anchor="start">GitHub App</text>
+<text x="760" y="137" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15.5" font-weight="500" fill="#fbbf24" text-anchor="start">acme-review-&lt;login&gt;</text>
+<rect x="530" y="158" width="630" height="38" rx="12" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.2"/>
+<text x="552" y="183" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="500" fill="#9fb0c8" text-anchor="start">Comments by</text>
+<text x="760" y="183" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15.5" font-weight="500" fill="#fbbf24" text-anchor="start">acme-review-&lt;login&gt;[bot]</text>
+<rect x="530" y="204" width="630" height="38" rx="12" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.2"/>
+<text x="552" y="229" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="500" fill="#9fb0c8" text-anchor="start">Comment signature</text>
+<text x="760" y="229" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15.5" font-weight="500" fill="#e6edf3" text-anchor="start">**acme-review reviewer · omp**</text>
+<rect x="530" y="250" width="630" height="38" rx="12" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.2"/>
+<text x="552" y="275" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="500" fill="#9fb0c8" text-anchor="start">Mention</text>
+<text x="760" y="275" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15.5" font-weight="500" fill="#e6edf3" text-anchor="start">@acme-review implement</text>
+<rect x="530" y="296" width="630" height="38" rx="12" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.2"/>
+<text x="552" y="321" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="500" fill="#9fb0c8" text-anchor="start">Issue branches</text>
+<text x="760" y="321" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15.5" font-weight="500" fill="#e6edf3" text-anchor="start">acme-review/issue-&lt;n&gt;</text>
+<rect x="530" y="342" width="630" height="38" rx="12" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.2"/>
+<text x="552" y="367" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="500" fill="#9fb0c8" text-anchor="start">Repo opt-out file</text>
+<text x="760" y="367" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15.5" font-weight="500" fill="#e6edf3" text-anchor="start">.acme-review.json</text>
+<rect x="530" y="388" width="630" height="38" rx="12" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.2"/>
+<text x="552" y="413" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="500" fill="#9fb0c8" text-anchor="start">Config and state</text>
+<text x="760" y="413" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15.5" font-weight="500" fill="#e6edf3" text-anchor="start">~/.config/acme-review/</text>
+<rect x="530" y="434" width="630" height="38" rx="12" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.2"/>
+<text x="552" y="459" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="500" fill="#9fb0c8" text-anchor="start">Autostart task</text>
+<text x="760" y="459" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="15.5" font-weight="500" fill="#e6edf3" text-anchor="start">acme-review-bot</text>
+<text x="40" y="524" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#e6edf3" text-anchor="start">Stays the same:</text>
+<text x="160" y="524" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#9fb0c8" text-anchor="start">the gates, the panel, the agents and their logins, the skill and its commands.</text>
+<text x="40" y="552" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">Only "name" is required. description, homepage and the rest can be set too; missing keys derive from name.</text>
+</svg>
