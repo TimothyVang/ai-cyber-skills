@@ -155,6 +155,15 @@ A large or cross-cutting effort with no clean fit, or work the user steps away f
 
 **Agent tooling** (browser automation, agent sandboxes, coding-agent harnesses or multi-agent orchestrators, autoresearch loops) → read the cited landscape in `C:/Users/newbi/orca/workspaces/boop-agent/automation-tools/research/README.md` before picking a tool; if that worktree is gone, `gh repo clone TimothyVang/automation-tools` (private). It is a 2026-11-11 snapshot tuned for omp + Orca on Windows, so recheck release dates and licenses of the tool you pick.
 
+**Engineering domain rules** come from `references/cloudxberry/` (Cloud X Berry's videos; its `README.md` lists sources). Read only the file the task touches, before designing or reviewing in that area:
+
+- AI agent, agent harness, multi-agent system, MCP or WebMCP, or an agent instruction file (CLAUDE.md, AGENTS.md, a skill) → `references/cloudxberry/agent-engineering.md`. Audit agents against all seven of its laws.
+- LLM fundamentals, RAG or retrieval, fine-tuning, inference cost or hardware, local models, or model choice → `references/cloudxberry/ai-concepts.md`.
+- AWS, VPC, cloud connectivity failure, IAM, or cloud cost → `references/cloudxberry/aws-networking.md`. A "can't connect" bug starts with its four-step packet check and flow-log table.
+- Backend code, API, database, cache, queue, scaling, resilience, observability, security, or language choice → `references/cloudxberry/backend-system-design.md`; a specific language's runtime, tooling, or traps → `references/cloudxberry/language-ecosystems.md`.
+- Linux, shell tools, git, containers, Kubernetes, Terraform, CI/CD, deploy strategy, secrets, or a bug rooted in data structures, complexity, memory, floats, concurrency, or network protocols → `references/cloudxberry/devops-and-fundamentals.md`.
+- Unfamiliar codebase, stuck on an error, slowness, memory, or race debugging, legacy code, PR or commit text, production incident, estimates, or pushing back on scope → `references/cloudxberry/engineering-practice.md`.
+
 ## Habits worth keeping
 
 - Restate-in-your-own-words is her most-used prompt. Use it on any thread, report, or fuzzy ask before acting.
