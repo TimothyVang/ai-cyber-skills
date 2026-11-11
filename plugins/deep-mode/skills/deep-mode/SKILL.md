@@ -4,7 +4,7 @@ description: "Rigorous engineering mode distilled from pstack (poteto-mode) plus
 disable-model-invocation: true
 hooks:
   PreToolUse:
-    - matcher: "Write|Edit|NotebookEdit|Read|Grep"
+    - matcher: "Write|Edit|NotebookEdit"
       hooks:
         - type: command
           command: 'for f in "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/deep-mode/assets/contain/claude_guard.py" "$HOME/.claude/skills/deep-mode/assets/contain/claude_guard.py"; do if [ -f "$f" ]; then if command -v python >/dev/null 2>&1; then exec python "$f"; fi; exec python3 "$f"; fi; done; exit 0'
@@ -71,7 +71,6 @@ Every task has one project root, and every file you create or change lives insid
 - **Durable notes stay in the repo.** Resume notes, trails, and anything a later session needs go under `.scratch/` or `$(git rev-parse --git-common-dir)/omp-resume/`, never only in a session store.
 - **Delegates inherit the fence.** Every brief names the absolute root and says: write only inside it, scratch in `.scratch/`, worktrees in `.worktrees/`.
 - **The guard enforces it.** Claude Code: `assets/contain/claude_guard.py` denies `Write`, `Edit`, and `NotebookEdit` outside the root. The plugin's `hooks/hooks.json` arms it for the rest of a session once any `/deep-mode:` command runs; this skill's frontmatter hook arms it when the skill itself is invoked (including a manual install at `~/.claude/skills/deep-mode`). omp: `assets/contain/omp-contain.ts` blocks `write`, `edit`, and `ast_edit` outside the root once copied to `~/.omp/agent/hooks/pre/` or loaded with `--hook`.
-- **Key files are never read.** The same guard denies file-tool reads of `.env.keys`, private keys, `*.kdbx`, cloud credential files, and `.scratch/auth/` (saved browser sessions). `.env` files are readable. Rules and harness settings: `references/credentials/README.md`.
 - **Codex fences natively.** Its `workspace-write` sandbox limits writes to the workspace; also set `[sandbox_workspace_write] exclude_tmpdir_env_var = true` and `exclude_slash_tmp = true` in `config.toml` so temp dirs are fenced too.
 - **No guard fully covers shell commands,** so the rule still binds `bash`. A denial means move the file into the root; never route around the guard. Per-harness details: `references/harnesses/README.md`.
 - **Before reporting done,** `git status --porcelain` lists only intended changes, `.scratch/tmp/` is emptied, and evidence the report links sits under `.scratch/evidence/`.

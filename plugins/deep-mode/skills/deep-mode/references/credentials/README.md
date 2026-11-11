@@ -25,9 +25,9 @@ Read before any task that touches API keys, tokens, `.env` files, passwords, use
 
 ## What deep-mode enforces
 
-The containment guard (`assets/contain/claude_guard.py` for Claude Code, `assets/contain/omp-contain.ts` for omp) denies file-tool reads of `.env.keys` (dotenvx decryption keys), private keys (`*.pem`, `*.key`, `id_rsa`, `id_ed25519`, ...), `*.kdbx`, `~/.aws/credentials`, `.netrc`, `.git-credentials`, and `.scratch/auth/`. `.env` and other `.env.*` files are readable. The guard stops the common path, not a determined one: a shell command or script can still open those files. Close the rest with the harness settings below.
+Nothing on reads. deep-mode's guard (`assets/contain/claude_guard.py`, `assets/contain/omp-contain.ts`) only keeps writes inside the project root; agents can read `.env`, keys, credential files, and saved sessions. The rules above are what keep values out of output and commits. To block reads, apply the optional settings below.
 
-## Harness settings that close the gaps (user-level, the user applies them)
+## Optional harness settings (user-level, the user applies them)
 
 | Harness | Setting | Why |
 |---|---|---|

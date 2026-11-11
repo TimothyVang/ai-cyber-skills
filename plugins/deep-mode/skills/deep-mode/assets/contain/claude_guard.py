@@ -59,18 +59,6 @@ def allowed_roots(roots):
     return [real(r) for r in allowed]
 
 
-WRITE_TOOLS = {"Write", "Edit", "NotebookEdit"}
-SECRET_READ_TOOLS = {"Read", "Grep", "Edit"}
-SECRET_FILE = re.compile(
-    r"^(\.env\.keys|id_(rsa|dsa|ecdsa|ed25519)|\.netrc|\.pgpass|\.git-credentials)$"
-    r"|\.(pem|key|p12|pfx|kdbx|jks|keystore)$", re.I)
-SECRET_DIR = re.compile(r"[\\/](\.aws[\\/]credentials|\.scratch[\\/]auth[\\/].*)$", re.I)
-
-
-def is_secret(path):
-    return bool(SECRET_FILE.search(os.path.basename(path)) or SECRET_DIR.search(path))
-
-
 def deny(reason):
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": reason}}))
@@ -100,20 +88,14 @@ def main():
         return 0
     if mode == "if-active" and not (mark and os.path.exists(mark)):
         return 0
-    tool = str(event.get("tool_name") or "")
+    if event.get("tool_name") not in ("Write", "Edit", "NotebookEdit"):
+        return 0
     tool_input = event.get("tool_input") or {}
-    target = tool_input.get("file_path") or tool_input.get("notebook_path") or (tool_input.get("path") if tool == "Grep" else None)
+    target = tool_input.get("file_path") or tool_input.get("notebook_path")
     if not isinstance(target, str) or not target:
         return 0
     cwd = event.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
     path = real(target if os.path.isabs(os.path.expanduser(target)) else os.path.join(cwd, target))
-    if tool in SECRET_READ_TOOLS and is_secret(path):
-        deny(f"deep-mode never reads key, password-database, credential, or saved-session files, and {target} is one. "
-             "Let the tool that needs it load it (`dotenvx run -- <cmd>`, `ssh`, `bw`), and ask the user for anything "
-             "only they should see. Rules: deep-mode references/credentials/README.md.")
-        return 0
-    if tool not in WRITE_TOOLS:
-        return 0
     roots = project_roots(cwd)
     root = os.path.normpath(roots[0])
     if any(inside(path, r) for r in allowed_roots(roots)):
