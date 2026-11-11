@@ -17,6 +17,7 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 | Land a PR | `/deep-mode:land-pr <PR number>` finishes and merges your own PR with no human: reviewer bots post findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. Where the branch requires an approving review, it admin-merges only on your request or when the base branch's `.deep-mode.json` sets `"autonomousMerge": true`, and never over a failing check. Every bot runs on your own subscription in omp; no API keys. |
 | `project-brief` (maintainer) | Publishes a project for contributors: a newcomer brief (`docs/PROJECT_BRIEF.md`), small claimable tasks as GitHub Issues, a generated `ROADMAP.md`, PR and issue templates, `CONTRIBUTING.md`, and two GitHub Actions: one flags PRs that touch the same files, one keeps the roadmap current. |
 | `contribute` (contributor) | `/deep-mode:contribute <what you'd like to work on>` briefs a newcomer's agent on the project, finds an unclaimed task that doesn't overlap open PRs or other claims, claims it, builds and proves it through deep-mode, and opens a PR that closes the issue. |
+| Trending catalog | A daily GitHub Action collects new and trending repos (GitHub Trending, GitHub search for new fast risers and agent topics like skills and MCP, and githubawesome.com), enriches them with stars, license, and language, and commits a categorized digest to `references/trending/`. Before building anything, deep-mode checks it so newer projects can beat the idea it already knows. |
 
 The agent works on its own: it makes product and design calls, commits, pushes, opens PRs, keeps a kanban board, and merges. A task is done, and a PR merges, only when a panel of three skeptical verifier agents runs it and at least two agree, with evidence the agent has checked. Parallel agents talk to each other directly, like coworkers. It still asks you before deploys, deleting things it didn't create, rewriting shared history, messaging people outside the repo, spending money, or using secrets only you have.
 
@@ -88,6 +89,10 @@ Contributor, after installing the plugin:
 - **Overlap check:** before starting and before opening a PR, the agent compares its files with every open PR and active claim. On overlap it picks other work, coordinates on the issue, or builds on top. A GitHub Action also comments on any PR that touches the same files as another.
 - **Limits:** claims are a convention, not a lock. The overlap check catches shared files, not logic conflicts in different files; CI and review catch those.
 - **Review:** the maintainer reviews each PR with `/deep-mode:review-pr <PR number>`; contributors' agents self-review before opening one.
+
+## Trending catalog
+
+`.github/workflows/trending.yml` runs `scripts/trending.py update` every day at 06:17 UTC (or on demand from the Actions tab) and commits `plugins/deep-mode/skills/deep-mode/references/trending/` to `main`: `catalog.json` keeps every repo seen in the last 120 days with first-seen date and star growth, and `README.md` is the digest agents read. Installed copies go stale between plugin updates, so the prior-art step reads today's catalog from `main` with `python scripts/trending.py find <terms> --live`. To add a source, write a `source_*` function in `trending.py` and list it in `SOURCES`; to watch another GitHub topic, add it to `WATCH_TOPICS`.
 
 ## Contribute
 
