@@ -94,6 +94,25 @@ def omp_default_model() -> str:
     return model
 
 
+def _configured_providers(path: str) -> set | None:
+    """Casefolded provider names under `providers` in an omp models file, or None if it can't be parsed."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            if path.endswith(".json"):
+                data = json.load(handle)
+            else:
+                import yaml  # PyYAML resolves escapes and aliases the way omp's YAML loader does
+                data = yaml.safe_load(handle)
+    except Exception:  # missing PyYAML, bad syntax, bad encoding: can't vouch for the file
+        return None
+    if data is None:
+        return set()
+    providers = data.get("providers") if isinstance(data, dict) else None
+    if providers is None:
+        return set() if isinstance(data, dict) else None
+    return {str(name).casefold() for name in providers} if isinstance(providers, dict) else None
+
+
 def omp_oauth_credentials(model: str) -> set:
     """Return the ids of the model provider's OAuth logins; exit if the provider could bill an API key.
 
@@ -135,16 +154,19 @@ def omp_oauth_credentials(model: str) -> set:
     if kinds != {"oauth"}:
         sys.exit(f"pr_agent_local: omp's `{provider}` logins are {sorted(kinds) or 'missing'}, not OAuth only; "
                  "log in with /login in omp or pick another --model")
-    # models.yml `providers.<name>.apiKey` (or a custom baseUrl/headers) outranks stored OAuth, so a provider
-    # named there could still bill a key. Without a YAML parser, refuse any file that names it as a key.
+    # models.yml `providers.<name>` (apiKey, or a custom baseUrl/headers) outranks or reroutes stored OAuth while
+    # omp still reports the OAuth credential id, so the tripwire can't see it. Parse the file as omp does
+    # (escapes and aliases resolved) and refuse if it names the provider; refuse if it can't be parsed.
     for name in ("models.yml", "models.yaml", "models.json"):
         path = os.path.join(agent_dir, name)
         if os.path.isfile(path):
-            with open(path, encoding="utf-8", errors="replace") as handle:
-                text = handle.read()
-            if re.search(rf"(^|[\s{{,])[\"']?{re.escape(provider)}[\"']?\s*:", text, re.M):
-                sys.exit(f"pr_agent_local: {path} configures `{provider}`, which can override its OAuth login with "
-                         "an API key; pick another --model or remove that entry")
+            configured = _configured_providers(path)
+            if configured is None:
+                sys.exit(f"pr_agent_local: can't parse {path} to check it for `{provider}` overrides "
+                         "(YAML needs PyYAML); fix or move it to run")
+            if provider.casefold() in configured:
+                sys.exit(f"pr_agent_local: {path} configures `{provider}`, which can reroute or override its OAuth "
+                         "login; pick another --model or remove that entry")
     # omp fills unset variables from its own .env files, after the scrub. Refuse if any of them holds a
     # credential-shaped name (only names are read and reported, never values).
     # Config roots: the active profile's (parent of its agent dir) and the default one.
