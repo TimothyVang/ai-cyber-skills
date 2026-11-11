@@ -1625,11 +1625,19 @@ def cmd_once(args) -> None:
 
 
 def remove_tree(path: Path) -> None:
-    """Delete a directory that holds git clones (their object files are read-only on Windows)."""
-    for root, _, files in os.walk(path):
-        for name in files:
-            os.chmod(os.path.join(root, name), stat.S_IWRITE | stat.S_IREAD)
-    shutil.rmtree(path, ignore_errors=True)
+    """Delete a directory that holds git clones. rmtree unlinks symlinks without following them; only a path
+    that fails to delete (a read-only git object on Windows) is made writable and retried, and never a link,
+    so nothing outside the directory changes. What still can't be deleted is logged and left."""
+    def writable_then_retry(func, failed, _):
+        if not os.path.islink(failed):
+            os.chmod(failed, stat.S_IWRITE | stat.S_IREAD)
+        func(failed)
+
+    handler = {"onexc": writable_then_retry} if sys.version_info >= (3, 12) else {"onerror": writable_then_retry}
+    try:
+        shutil.rmtree(path, **handler)
+    except OSError as err:
+        log(f"could not remove {path}: {err}")
 
 
 def cmd_watch(args) -> None:
