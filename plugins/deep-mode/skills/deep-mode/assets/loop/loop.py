@@ -69,9 +69,8 @@ def parse(goal_path):
     return fields, hashlib.sha256(match.group(1).encode()).hexdigest()
 
 
-def git(root, *args, env=None):
-    return subprocess.run(["git", "-C", root, *args], capture_output=True, text=True, encoding="utf-8",
-                          errors="replace", env=env)
+def git(root, *args):
+    return subprocess.run(["git", "-C", root, *args], capture_output=True, text=True, encoding="utf-8", errors="replace")
 
 
 def project_root(path):
@@ -97,38 +96,46 @@ def protected_paths(fields, root, goal_path):
     return paths
 
 
+def walk_files(root, rel, skip=()):
+    """Yield the root-relative path of every file under rel, git-ignored or not, in sorted order, without following
+    symlinked folders. Skips .git, tool caches, and the root-relative folders in skip. A missing rel yields itself."""
+    full = os.path.join(root, rel)
+    if not os.path.isdir(full):
+        yield rel
+        return
+    for folder, dirs, files in os.walk(full):
+        dirs[:] = sorted(d for d in dirs if d != ".git" and d not in CACHE_PARTS
+                         and os.path.relpath(os.path.join(folder, d), root).replace(os.sep, "/") not in skip)
+        for name in sorted(files):
+            yield os.path.relpath(os.path.join(folder, name), root).replace(os.sep, "/")
+
+
 def protect_digest(root, paths):
-    """Hash every tracked or untracked-not-ignored file under the protected paths, plus each named path that is a file,
-    so edits, deletions, and new files (a conftest.py that skips every test) all change the digest. Tool caches are
-    skipped: running the check writes them."""
-    if not paths:
-        return ""
-    listed = git(root, "ls-files", "-z", "-c", "-o", "--exclude-standard", "--", *paths)
-    if listed.returncode:
-        raise SystemExit(f"git ls-files failed: {listed.stdout.strip()}")
-    digest = hashlib.sha256()
-    named = [rel for rel in paths if not os.path.isdir(os.path.join(root, rel))]
-    for rel in sorted(set(filter(None, listed.stdout.split("\0"))).union(named)):
-        if CACHE_PARTS.intersection(rel.split("/")):
-            continue
-        digest.update(rel.encode() + b"\0")
+    """Content hash of every file under the protected paths, git-ignored files included, so edits, deletions, and new
+    files (a conftest.py that skips every test) all show up. Tool caches are skipped: running the check writes them."""
+    digests = {}
+    for path in paths:
+        for rel in walk_files(root, path):
+            try:
+                with open(os.path.join(root, rel), "rb") as handle:
+                    digests[rel] = hashlib.sha256(handle.read()).hexdigest()
+            except FileNotFoundError:
+                digests[rel] = "missing"
+    return digests
+
+
+def workspace_state(root, skip):
+    """HEAD plus the path, size, and mtime of every file in the working tree, git-ignored files included, minus .git,
+    tool caches, and the loop's own logs and temp folder. Read-only: nothing is written to git's object store.
+    Changes when the agent edits, adds, deletes, or commits anything."""
+    state = hashlib.sha256(git(root, "rev-parse", "--verify", "-q", "HEAD").stdout.encode())
+    for rel in walk_files(root, ".", skip):
         try:
-            with open(os.path.join(root, rel), "rb") as handle:
-                digest.update(hashlib.sha256(handle.read()).digest())
+            info = os.stat(os.path.join(root, rel), follow_symlinks=False)
         except FileNotFoundError:
-            digest.update(b"missing")
-    return digest.hexdigest()
-
-
-def workspace_state(root, scratch_tmp):
-    """HEAD plus a tree hash of the working tree (tracked and untracked-not-ignored), built in a throwaway index so the
-    user's staging area is untouched. Changes when the agent edits, adds, or commits anything."""
-    env = dict(os.environ, GIT_INDEX_FILE=os.path.join(scratch_tmp, "loop-index"))
-    head = git(root, "rev-parse", "--verify", "-q", "HEAD").stdout.strip()
-    git(root, "read-tree", *(["HEAD"] if head else ["--empty"]), env=env)
-    git(root, "add", "-A", env=env)
-    tree = git(root, "write-tree", env=env).stdout.strip()
-    return f"{head}:{tree}"
+            continue
+        state.update(f"{rel}\0{info.st_size}\0{info.st_mtime_ns}\0".encode())
+    return state.hexdigest()
 
 
 def find_bash():
@@ -236,8 +243,9 @@ def main():
     env.update(TMPDIR=tmp, TMP=tmp, TEMP=tmp)
     run_id = f"{time.strftime('%Y%m%dT%H%M%S')}-{os.getpid()}"
     guard = protect_digest(root, protect)
+    own = {os.path.relpath(path, root).replace(os.sep, "/") for path in (tmp, log_dir)}
 
-    last_output, last_state, unchanged = output, workspace_state(root, tmp), 0
+    last_output, last_state, unchanged = output, workspace_state(root, own), 0
     for i in range(1, limit + 1):
         cmd = harness_command(fields, harness, prompt(i), cost)
         started = time.time()
@@ -246,8 +254,10 @@ def main():
         if parse(opts.goal)[1] != digest:
             print(f"iteration {i}: the agent changed the goal's frontmatter; stopping")
             return 4
-        if protect_digest(root, protect) != guard:
-            print(f"iteration {i}: the agent changed a protected file ({protect_text}); stopping")
+        current = protect_digest(root, protect)
+        if current != guard:
+            changed = sorted(rel for rel in guard.keys() | current.keys() if guard.get(rel) != current.get(rel))
+            print(f"iteration {i}: the agent changed protected files ({', '.join(changed[:5])}); stopping")
             return 4
         code, output = run_check(fields["check"], root)
         with open(trail, "a", encoding="utf-8") as handle:
@@ -260,7 +270,7 @@ def main():
             print(f"harness exited {harness_exit} (a cost cap, auth, or terminal failure); stopping. Log: "
                   f"{os.path.relpath(log.name, root)}")
             return 5
-        state = workspace_state(root, tmp)
+        state = workspace_state(root, own)
         unchanged = unchanged + 1 if output == last_output and state == last_state else 0
         last_output, last_state = output, state
         if unchanged >= stall_after:
