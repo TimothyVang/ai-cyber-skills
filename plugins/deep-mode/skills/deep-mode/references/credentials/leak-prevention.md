@@ -53,6 +53,7 @@ Claude Code baseline (user settings `~/.claude/settings.json`, so a repo cannot 
   "permissions": { "deny": ["Read(.env)", "Read(.env.*)", "Read(!.env.example)", "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(**/*.pem)"] },
   "sandbox": {
     "enabled": true, "allowUnsandboxedCommands": false, "failIfUnavailable": true,
+    "filesystem": { "denyRead": ["~/**/.env*", "~/**/*.env", "~/**/*.pem", "~/**/id_rsa", "~/**/id_ed25519", "~/**/.aws/credentials"] },
     "network": { "allowedDomains": ["registry.npmjs.org", "pypi.org", "files.pythonhosted.org"], "strictAllowlist": true },
     "credentials": {
       "files": [{ "path": "~/.ssh", "mode": "deny" }, { "path": "~/.aws/credentials", "mode": "deny" }],
@@ -62,6 +63,7 @@ Claude Code baseline (user settings `~/.claude/settings.json`, so a repo cannot 
 }
 ```
 Settings keys and the `!` carve-out syntax come from [permissions](https://code.claude.com/docs/en/permissions) and [sandboxing](https://code.claude.com/docs/en/sandboxing). The `!` carve-out reaches only rules in the same settings file. On Windows, paths are normalized to `/c/...` form, and `//**/.env` matches every drive.
+`filesystem.denyRead` is what stops shell commands (`grep -r .`, `cat`, scripts) from reading project `.env` and key files, and its globs match the same names as the hook below (`.env*` covers `.env`, `.env.local`, `.env-local`, `.envrc`): the sandbox has no built-in deny list, and `credentials.files` above covers only `~/.ssh` and `~/.aws/credentials`. In user settings a `~/` glob covers projects under your home directory; add the same entries for each other top-level directory that holds projects (`/srv/**/.env*`), because on Linux and WSL2 a wildcard works only after the first directory name ([path prefixes](https://code.claude.com/docs/en/settings-reference)). It also hides `.env.example` from shell commands; the Read tool still reaches it.
 
 Codex baseline (`~/.codex/config.toml`), following [advanced config](https://developers.openai.com/codex/config-file/config-advanced):
 
@@ -82,17 +84,18 @@ Hook that blocks secret-file access (`.claude/hooks/deny-secrets.sh`, registered
 #!/usr/bin/env bash
 in=$(cat)
 deny() { jq -n --arg r "$1" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$r}}'; exit 0; }
-hit=$(jq -r '.tool_input | tostring' <<<"$in" | grep -Eio '(\.env[.a-z]*|id_rsa|id_ed25519|\.pem|\.aws/credentials)' | grep -Eiv '^\.env\.(example|sample|template)$' | head -n1)
+hit=$(jq -r '.tool_input | tostring' <<<"$in" | grep -Eio '(\.env[^"/\\[:space:]]*|id_rsa|id_ed25519|\.pem|\.aws/credentials)' | grep -Eiv '^\.env\.(example|sample|template)$' | head -n1)
 [ -n "$hit" ] && deny "secret path blocked: $hit"
-# Grep over a directory reads every file below it, so check what it would reach. A `type` filter skips secret files.
-if [ "$(jq -r .tool_name <<<"$in")" = Grep ] && [ -z "$(jq -r '.tool_input.type // empty' <<<"$in")" ]; then
+# Grep over a directory reads every file below it, so check what it would reach. `type` and `glob` are not trusted:
+# `type: json` with a hidden-file glob still reaches .env.production.json.
+if [ "$(jq -r .tool_name <<<"$in")" = Grep ]; then
   dir=$(jq -r '.tool_input.path // .cwd' <<<"$in"); case "$dir" in /*|[A-Za-z]:*) ;; *) dir="$(jq -r .cwd <<<"$in")/$dir" ;; esac
-  sec=$(find "$dir" \( -name .git -o -name node_modules \) -prune -o -type f -print 2>/dev/null | grep -Ei '/(\.env[.a-z]*|id_rsa|id_ed25519|[^/]*\.pem)$|/\.aws/credentials$' | grep -Eiv '/\.env\.(example|sample|template)$' | head -n1)
-  [ -n "$sec" ] && deny "Grep over $dir would read $sec; narrow path to files or dirs without secrets, or set type"
+  sec=$(find "$dir" \( -name .git -o -name node_modules \) -prune -o -type f -print 2>/dev/null | grep -Ei '/([^/]*\.env|\.env[^/]*|id_rsa|id_ed25519|[^/]*\.pem)$|/\.aws/credentials$' | grep -Eiv '/\.env\.(example|sample|template)$' | head -n1)
+  [ -n "$sec" ] && deny "Grep over $dir would read $sec; narrow path to files or dirs without secrets"
 fi
 exit 0
 ```
-The hook sees only the tool call, so a Bash `grep -r .` or a script that opens files still reaches secrets; the sandbox closes that path.
+The hook sees only the tool call, so a Bash `grep -r .` or a script that opens files still reaches secrets; the baseline's sandbox `filesystem.denyRead` globs close that path.
 
 MCP rules from the official [security best practices](https://modelcontextprotocol.io/docs/draft/tutorials/security/security_best_practices) (draft-track page) and [spec](https://modelcontextprotocol.io/specification/2025-11-25):
 - **Token passthrough is forbidden:** servers MUST NOT accept tokens not issued for them, and forwarding a client token downstream creates a confused deputy and breaks audit trails.
