@@ -96,7 +96,7 @@ Contributor, after installing the plugin:
 
 ## Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: branch, edit, run `python scripts/check.py`, open a PR. CI runs the same check.
+See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: branch, edit, run `python scripts/check.py` (there is no CI, so this is the gate), open a PR.
 
 ## License
 
