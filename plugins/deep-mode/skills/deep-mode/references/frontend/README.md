@@ -1,6 +1,6 @@
 # Frontend UI/UX rules (bundled)
 
-Exported from the private repo `TimothyVang/frontend` at `d404df22` by its `scripts/export_deep_mode.py`. Edit there and re-export; don't edit here. These files are complete on their own.
+Exported from the private repo `TimothyVang/frontend` at `ca27e738` by its `scripts/export_deep_mode.py`. Edit there and re-export; don't edit here. These files are complete on their own.
 
 Paths written `TimothyVang/frontend:<path>` and bracketed citations like `[youtube/...]` point at that repo's evidence (transcripts, clips, screenshots, vendored skills). If `gh` can read it, shallow-clone it to `~/.omp/agent/frontend` (`gh repo clone TimothyVang/frontend ~/.omp/agent/frontend -- --depth 1`), never into the project you're working on. Otherwise skip the evidence; the rules below stand alone.
 
