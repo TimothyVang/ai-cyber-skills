@@ -65,6 +65,7 @@ AGENT_TIMEOUT = 3600
 CHECK_WAIT = 1800
 LIST_LIMIT = 100_000  # open PRs or issues listed per repo per cycle: gh pages through all of them
 MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for a new push or comment
+MERGE_SETTLE = 60  # seconds a merge read-back polls for MERGED before calling the merge not done
 # Statuses after which the next cycle runs the item again without a new push or comment.
 AWAITING = {"awaiting-checks": "required checks were pending", "awaiting-issues": "linked issues were waiting",
              "awaiting-base": "the base moved past the panel's head"}
@@ -1217,20 +1218,21 @@ class PRConversation:
         try:
             step["method"] = merge_pr(self.repo, self.n, sha, admin)
         except Blocked:
-            if self.merge_state() != "MERGED":  # refused: nothing to finish
+            if self.merge_state() != "MERGED":  # refused, and still not merged after the settle window
                 self.item.pop("afterMerge")
                 raise
         self.bot.save()
         return self.finish_merge()
 
-    def merge_state(self, tries: int = 1) -> str:
-        """The PR's state, polled up to `tries` times until MERGED (GitHub settles a merge asynchronously)."""
-        for attempt in range(tries):
+    def merge_state(self) -> str:
+        """The PR's state, polled every 3 s for up to MERGE_SETTLE seconds until it reads MERGED: GitHub settles
+        an accepted merge asynchronously, so no caller drops its merge record on an earlier read."""
+        deadline = time.monotonic() + MERGE_SETTLE
+        while True:
             state = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "state")["state"]
-            if state == "MERGED" or attempt == tries - 1:
+            if state == "MERGED" or time.monotonic() >= deadline:
                 return state
             time.sleep(3)
-        return ""
 
     def finish_merge(self) -> str:
         """After `gh pr merge`: confirm MERGED, then the merge note, then the trunk check. Each step is recorded,
@@ -1238,7 +1240,7 @@ class PRConversation:
         step = self.item["afterMerge"]
         sha = step["pr"]["headRefOid"]
         if not step.get("confirmed"):
-            state = self.merge_state(tries=10)
+            state = self.merge_state()
             if state != "MERGED":
                 self.item.pop("afterMerge")
                 raise Blocked(f"`gh pr merge` ran but the PR reads back as {state}, not MERGED")
