@@ -11,7 +11,7 @@ Read before any task that touches API keys, tokens, `.env` files, passwords, use
 
 ## Rules for the agent
 
-1. **Never read, print, paste, or commit a secret value.** Use `.env.example` or `.env.schema` for names, check presence with `[ -n "$VAR" ]`, and run commands through an injector (`dotenvx run -- <cmd>`, `sops exec-env <file> '<cmd>'`, `infisical secrets-manager run -- <cmd>`, `bws run -- '<cmd>'`). A value the model sees lands in the session transcript on disk (`~/.claude/projects/`, `~/.codex/sessions/`, `~/.omp/agent/sessions/`) and at the model provider: rotate it, deleting the message is not enough.
+1. **Never print, paste, or commit a secret value.** The agent may read `.env` files when the task needs them; prefer `.env.example` or `.env.schema` for names, check presence with `[ -n "$VAR" ]`, and run commands through an injector (`dotenvx run -- <cmd>`, `sops exec-env <file> '<cmd>'`, `infisical secrets-manager run -- <cmd>`, `bws run -- '<cmd>'`). A value the model sees lands in the session transcript on disk (`~/.claude/projects/`, `~/.codex/sessions/`, `~/.omp/agent/sessions/`) and at the model provider: rotate it if it may have leaked, deleting the message is not enough.
 2. **Prefer, in order:** (a) a broker that keeps the real value out of the agent entirely (Claude Code sandbox `mask`, Varlock proxy in a container, Infisical Agent Vault, Bitwarden Agent Access `aac run`, Pomerium or Composio for OAuth tokens); (b) a session or token for the agent's own account; (c) a value read from a vault, only for low-value accounts.
 3. **Agents get their own identities.** A machine or bot account, a fine-grained token scoped to the repos or project the task needs, the shortest expiry that works, one identity per agent so you can revoke one. Never a human's personal login, admin token, TOTP seed, or passkey.
 4. **Logins without passwords.** A human signs in once; the agent reuses the browser session (Playwright `--storage-state` or a dedicated `--user-data-dir` under `.scratch/auth/`) or the CLI's keychain login (`gh`, `az`, `gcloud`, `aws sso`). Headless logins use the OAuth device flow; the human checks the `user_code`.
@@ -25,13 +25,13 @@ Read before any task that touches API keys, tokens, `.env` files, passwords, use
 
 ## What deep-mode enforces
 
-The containment guard (`assets/contain/claude_guard.py` for Claude Code, `assets/contain/omp-contain.ts` for omp) denies file-tool reads of `.env` and `.env.*` (except `.env.example`, `.sample`, `.template`, `.defaults`, `.schema`), private keys (`*.pem`, `*.key`, `id_rsa`, `id_ed25519`, ...), `*.kdbx`, `~/.aws/credentials`, `.netrc`, `.git-credentials`, and `.scratch/auth/`. That stops the common path, not a determined one: a shell command or script can still open those files. Close the rest with the harness settings below.
+The containment guard (`assets/contain/claude_guard.py` for Claude Code, `assets/contain/omp-contain.ts` for omp) denies file-tool reads of `.env.keys` (dotenvx decryption keys), private keys (`*.pem`, `*.key`, `id_rsa`, `id_ed25519`, ...), `*.kdbx`, `~/.aws/credentials`, `.netrc`, `.git-credentials`, and `.scratch/auth/`. `.env` and other `.env.*` files are readable. The guard stops the common path, not a determined one: a shell command or script can still open those files. Close the rest with the harness settings below.
 
 ## Harness settings that close the gaps (user-level, the user applies them)
 
 | Harness | Setting | Why |
 |---|---|---|
-| Claude Code | `permissions.deny` for `Read(.env)`, `Read(.env.*)`, `Read(~/.ssh/**)`, `Read(~/.aws/**)`; `sandbox.enabled` with `allowUnsandboxedCommands: false`, `failIfUnavailable: true`, a strict network allowlist, and `sandbox.credentials` deny or `mask` entries; `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` | Deny rules miss `grep -r` and scripts; only the sandbox blocks at the OS level. The sandbox is off by default, inherits env, and does not run on native Windows (use WSL2) |
+| Claude Code | `permissions.deny` for `Read(.env.keys)`, `Read(~/.ssh/**)`, `Read(~/.aws/**)`; `sandbox.enabled` with `allowUnsandboxedCommands: false`, `failIfUnavailable: true`, a strict network allowlist, and `sandbox.credentials` deny or `mask` entries; `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` | Deny rules miss `grep -r` and scripts; only the sandbox blocks at the OS level. The sandbox is off by default, inherits env, and does not run on native Windows (use WSL2) |
 | Codex | `[shell_environment_policy] inherit = "core"`, `ignore_default_excludes = false`; keep `workspace-write` with network off | By default Codex passes variables named `*KEY*`, `*SECRET*`, `*TOKEN*` to every command |
 | omp | `secrets.enabled: true` in `config.yml`; install `assets/contain/omp-contain.ts`; `bash.patterns` deny rules if needed | Secret obfuscation is off by default; it swaps secret-looking values for placeholders before provider calls |
 

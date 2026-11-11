@@ -1,6 +1,6 @@
 // omp tool_call hook for deep-mode. Blocks write/edit/ast_edit calls whose target path is outside the project root
-// ("Contain the work"), and read/grep/edit calls that name a secret file (.env, .env.keys, private keys, .kdbx,
-// ~/.aws/credentials, .scratch/auth/). Install: copy to ~/.omp/agent/hooks/pre/ (all sessions) or
+// ("Contain the work"), and read/grep/edit calls that name a secret file (.env.keys, private keys, .kdbx,
+// ~/.aws/credentials, .scratch/auth/; .env itself is readable). Install: copy to ~/.omp/agent/hooks/pre/ (all sessions) or
 // <repo>/.omp/hooks/pre/ (one repo), or pass `--hook <this file>` for one run.
 // Roots = the worktree holding the session cwd plus its main checkout (they differ in a linked worktree, e.g. one
 // under <root>/.worktrees/ or an Orca workspace), or the cwd outside git. Also allowed: omp session stores (local://,
@@ -13,8 +13,7 @@ import * as path from "node:path";
 
 const WRITE_TOOLS: Record<string, true> = { write: true, edit: true, ast_edit: true };
 const SECRET_READ_TOOLS: Record<string, true> = { read: true, grep: true, edit: true };
-const SECRET_FILE = /^(\.env(\..+)?|id_(rsa|dsa|ecdsa|ed25519)|\.netrc|\.pgpass|\.git-credentials)$|\.(pem|key|p12|pfx|kdbx|jks|keystore)$/i;
-const SECRET_TEMPLATE = /^\.env\.(example|sample|template|defaults|schema)$/i;
+const SECRET_FILE = /^(\.env\.keys|id_(rsa|dsa|ecdsa|ed25519)|\.netrc|\.pgpass|\.git-credentials)$|\.(pem|key|p12|pfx|kdbx|jks|keystore)$/i;
 const SECRET_DIR = /[\\/](\.aws[\\/]credentials|\.scratch[\\/]auth[\\/].*)$/i;
 const SESSION_URL = /^(local|artifact|agent|proc|xd):\/\//i;
 const ANY_URL = /^[a-z][a-z0-9+.-]*:\/\//i;
@@ -91,8 +90,7 @@ function targets(input: Record<string, unknown>): string[] {
 
 function isSecret(file: string): boolean {
 	const p = file.replace(/:[^\\/]*$/, "");
-	const name = path.basename(p);
-	return !SECRET_TEMPLATE.test(name) && (SECRET_FILE.test(name) || SECRET_DIR.test(p));
+	return SECRET_FILE.test(path.basename(p)) || SECRET_DIR.test(p);
 }
 
 export default function (pi: HookApi): void {
@@ -107,9 +105,9 @@ export default function (pi: HookApi): void {
 				return {
 					block: true,
 					reason:
-						`deep-mode never reads secret files, and ${secret} is one. Take variable names from .env.example, run commands ` +
-						"through an injector (`dotenvx run -- <cmd>`, `sops exec-env`, `infisical run --`), and ask the user to set " +
-						"or change secret values. Rules: deep-mode references/credentials/README.md.",
+						`deep-mode never reads key, password-database, credential, or saved-session files, and ${secret} is one. ` +
+						"Let the tool that needs it load it (`dotenvx run -- <cmd>`, `ssh`, `bw`), and ask the user for anything only " +
+						"they should see. Rules: deep-mode references/credentials/README.md.",
 				};
 			}
 		}

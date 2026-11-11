@@ -62,17 +62,13 @@ def allowed_roots(roots):
 WRITE_TOOLS = {"Write", "Edit", "NotebookEdit"}
 SECRET_READ_TOOLS = {"Read", "Grep", "Edit"}
 SECRET_FILE = re.compile(
-    r"^(\.env(\..+)?|id_(rsa|dsa|ecdsa|ed25519)|\.netrc|\.pgpass|\.git-credentials)$"
+    r"^(\.env\.keys|id_(rsa|dsa|ecdsa|ed25519)|\.netrc|\.pgpass|\.git-credentials)$"
     r"|\.(pem|key|p12|pfx|kdbx|jks|keystore)$", re.I)
-SECRET_TEMPLATE = re.compile(r"^\.env\.(example|sample|template|defaults|schema)$", re.I)
 SECRET_DIR = re.compile(r"[\\/](\.aws[\\/]credentials|\.scratch[\\/]auth[\\/].*)$", re.I)
 
 
 def is_secret(path):
-    name = os.path.basename(path)
-    if SECRET_TEMPLATE.match(name):
-        return False
-    return bool(SECRET_FILE.search(name) or SECRET_DIR.search(path))
+    return bool(SECRET_FILE.search(os.path.basename(path)) or SECRET_DIR.search(path))
 
 
 def deny(reason):
@@ -112,9 +108,9 @@ def main():
     cwd = event.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
     path = real(target if os.path.isabs(os.path.expanduser(target)) else os.path.join(cwd, target))
     if tool in SECRET_READ_TOOLS and is_secret(path):
-        deny(f"deep-mode never reads secret files, and {target} is one. Take variable names from .env.example, "
-             "run commands through an injector (`dotenvx run -- <cmd>`, `sops exec-env`, `infisical run --`), and ask "
-             "the user to set or change secret values. Rules: deep-mode references/credentials/README.md.")
+        deny(f"deep-mode never reads key, password-database, credential, or saved-session files, and {target} is one. "
+             "Let the tool that needs it load it (`dotenvx run -- <cmd>`, `ssh`, `bw`), and ask the user for anything "
+             "only they should see. Rules: deep-mode references/credentials/README.md.")
         return 0
     if tool not in WRITE_TOOLS:
         return 0
