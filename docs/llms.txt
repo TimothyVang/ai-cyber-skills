@@ -1,0 +1,35 @@
+# deep-mode
+
+> deep-mode is an open-source (MIT) AI code review GitHub App and a set of rigor skills for coding agents. It is one replacement for Greptile, CodeRabbit, pstack and Matt Pocock's software-factory skills. A private GitHub App plus a poller on your own machine runs ACP agents through acpx (omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others) on your own subscription logins, with no API keys, webhooks or server. The bots review PRs in the thread, fix their own findings, vote on a three-agent verifier panel, and merge your own PRs behind a code-enforced gate; they plan and build the issues you open. One brand name white-labels every user-visible name.
+
+Key facts:
+
+- Self-hosted: `bot.py watch` polls the repos where your app is installed every 120 seconds. Installing the app on a repo is the opt-in.
+- Subscriptions, not API keys: each agent CLI uses its own subscription login, such as Claude Code with Claude.ai or Codex with ChatGPT.
+- Agent agnostic: each role in `~/.config/deep-mode/bot.json` is `{"agent": "omp", "model": "<optional>"}`, so one harness can seat an author and a reviewer on different model families.
+- Merge gate in code: only your own PRs merge, at the head the panel voted on, with every required check green, no conflict, and `autonomousMerge` allowed. Others' PRs get review comments only.
+- Conflicts are resolved by merging the base into the head. Never rebase or force-push.
+- Install: `git clone https://github.com/TimothyVang/deep-mode`, `cd deep-mode/plugins/deep-mode/skills/deep-mode`, `py -3 assets/github-app/install.py`.
+- White-label: `install.py --brand <name>` or `"name"` in `brand.json`.
+- Lineage: adapted from pstack (poteto-mode) by Lauren Tan, MIT; the grill technique and wayfinder playbook come from Matt Pocock's skills, MIT.
+
+## Docs
+
+- [Site](https://timothyvang.github.io/deep-mode/): overview, diagrams, install, comparison with Greptile, CodeRabbit, pstack and Matt Pocock's skills, safety, FAQ
+- [README](https://github.com/TimothyVang/deep-mode/blob/main/README.md): what the plugin ships, install for omp and Claude Code, the GitHub App bots, comparison table, FAQ
+- [github-app technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/github-app.md): setup with install.py, running the poller, bot.json, opt-out, safety
+- [pr-conversation technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/pr-conversation.md): the author, reviewer and verifier turns over ACP, the panel, and every merge gate
+- [issue-conversation technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/issue-conversation.md): plan, critique and answer in the issue thread, then build on the owner's issues
+- [White-label guide](https://github.com/TimothyVang/deep-mode/blob/main/docs/white-label.md): brand.json fields, install.py --brand, what changes and what stays
+
+## Code
+
+- [install.py](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/assets/github-app/install.py): one-command setup: tools, agent logins, ACP round trip, the GitHub App, bot.json, autostart
+- [bot.py](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/assets/github-app/bot.py): the poller and coordinator that runs the conversations and enforces the gates
+- [ghapp.py](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/assets/github-app/ghapp.py): creates your private GitHub App with the manifest flow and mints installation tokens
+- [brand.py](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/assets/github-app/brand.py): derives every user-visible name from one brand name
+
+## Optional
+
+- [llms-full.txt](https://timothyvang.github.io/deep-mode/llms-full.txt): the docs above concatenated as plain markdown
+- [License](https://github.com/TimothyVang/deep-mode/blob/main/LICENSE): MIT, with pstack and Matt Pocock's skills credited

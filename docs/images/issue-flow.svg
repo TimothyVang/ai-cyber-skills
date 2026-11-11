@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="t d">
+<title id="t">The deep-mode issue conversation</title>
+<desc id="d">A new issue or mention is read as untrusted data. The author plans, the reviewer critiques, the author answers. If the owner opened the issue or said @deep-mode implement, the author builds it on branch deep-mode/issue-&lt;n&gt;, opens a PR with Closes #&lt;n&gt;, and the PR conversation lands it. Otherwise the bots stop at the discussion.</desc>
+<defs>
+<marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9fb0c8"/></marker>
+<marker id="ahA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#fbbf24"/></marker>
+<marker id="ahV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker>
+<marker id="ahS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#38bdf8"/></marker>
+</defs>
+<rect x="1" y="1" width="1198" height="628" rx="24" fill="#0b1220" stroke="#22304d" stroke-width="2"/>
+<text x="40" y="58" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#e6edf3" text-anchor="start">An issue, from report to merged PR</text>
+<text x="40" y="86" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#9fb0c8" text-anchor="start">Every turn is posted on the issue as [bot]. Only the owner's issues get built.</text>
+<rect x="40" y="150" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="40" y="150" width="200" height="5" rx="2" fill="#a78bfa"/>
+<text x="58" y="186" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Trigger</text>
+<text x="58" y="213" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">new issue or</text>
+<text x="58" y="234" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">@deep-mode mention</text>
+<rect x="270" y="150" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="270" y="150" width="200" height="5" rx="2" fill="#38bdf8"/>
+<text x="288" y="186" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Read as data</text>
+<text x="288" y="213" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">untrusted, delimited,</text>
+<text x="288" y="234" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">@path defanged</text>
+<rect x="500" y="150" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="500" y="150" width="200" height="5" rx="2" fill="#f08a5d"/>
+<text x="518" y="186" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Plan</text>
+<text x="518" y="213" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">author, read-only:</text>
+<text x="518" y="234" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">files, check, risks</text>
+<rect x="730" y="150" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="730" y="150" width="200" height="5" rx="2" fill="#34d399"/>
+<text x="748" y="186" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Critique</text>
+<text x="748" y="213" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">reviewer, read-only:</text>
+<text x="748" y="234" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">premise, cases, path</text>
+<rect x="960" y="150" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="960" y="150" width="200" height="5" rx="2" fill="#f08a5d"/>
+<text x="978" y="186" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Answer</text>
+<text x="978" y="213" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">author revises or</text>
+<text x="978" y="234" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">answers with proof</text>
+<line x1="240" y1="202" x2="270" y2="202" stroke="#9fb0c8" stroke-width="2" marker-end="url(#ah)"/>
+<line x1="470" y1="202" x2="500" y2="202" stroke="#9fb0c8" stroke-width="2" marker-end="url(#ah)"/>
+<line x1="700" y1="202" x2="730" y2="202" stroke="#9fb0c8" stroke-width="2" marker-end="url(#ah)"/>
+<line x1="930" y1="202" x2="960" y2="202" stroke="#9fb0c8" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M1060 150 C1060 112 600 112 600 146" fill="none" stroke="#9fb0c8" stroke-width="1.5" stroke-dasharray="5 5" marker-end="url(#ah)"/>
+<text x="830" y="116" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13" font-weight="400" fill="#9fb0c8" text-anchor="middle">the next human comment starts another round</text>
+<line x1="1060" y1="254" x2="1060" y2="316" stroke="#9fb0c8" stroke-width="2" marker-end="url(#ah)"/>
+<path d="M1060 316 L1170 400 L1060 484 L950 400z" fill="#111b2f" stroke="#fbbf24" stroke-width="1.8"/>
+<text x="1060" y="378" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#e6edf3" text-anchor="middle">Owner opened it,</text>
+<text x="1060" y="396" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#e6edf3" text-anchor="middle">or owner said</text>
+<text x="1060" y="414" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#e6edf3" text-anchor="middle">@deep-mode</text>
+<text x="1060" y="432" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#e6edf3" text-anchor="middle">implement?</text>
+<rect x="730" y="348" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="730" y="348" width="200" height="5" rx="2" fill="#f08a5d"/>
+<text x="748" y="384" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Implement</text>
+<text x="748" y="411" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">worktree, branch</text>
+<text x="748" y="432" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#f08a5d" text-anchor="start">deep-mode/issue-&lt;n&gt;</text>
+<rect x="500" y="348" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="500" y="348" width="200" height="5" rx="2" fill="#38bdf8"/>
+<text x="518" y="384" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Open a ready PR</text>
+<text x="518" y="411" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">body has</text>
+<text x="518" y="432" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#38bdf8" text-anchor="start">Closes #&lt;n&gt;</text>
+<rect x="270" y="348" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="270" y="348" width="200" height="5" rx="2" fill="#a78bfa"/>
+<text x="288" y="384" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">pr-conversation</text>
+<text x="288" y="411" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">review, fixes, panel,</text>
+<text x="288" y="432" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#a78bfa" text-anchor="start">merge gate</text>
+<rect x="40" y="348" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="40" y="348" width="200" height="5" rx="2" fill="#8957e5"/>
+<text x="58" y="384" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Issue closes</text>
+<text x="58" y="411" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">on merge, by the</text>
+<text x="58" y="432" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#a78bfa" text-anchor="start">Closes link</text>
+<line x1="950" y1="400" x2="932" y2="400" stroke="#fbbf24" stroke-width="2" marker-end="url(#ahA)"/>
+<text x="940" y="388" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#fbbf24" text-anchor="start">yes</text>
+<line x1="730" y1="400" x2="702" y2="400" stroke="#9fb0c8" stroke-width="2" marker-end="url(#ah)"/>
+<line x1="500" y1="400" x2="472" y2="400" stroke="#9fb0c8" stroke-width="2" marker-end="url(#ah)"/>
+<line x1="270" y1="400" x2="242" y2="400" stroke="#9fb0c8" stroke-width="2" marker-end="url(#ah)"/>
+<line x1="1060" y1="484" x2="1060" y2="520" stroke="#fbbf24" stroke-width="2" marker-end="url(#ahA)"/>
+<text x="1070" y="506" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#fbbf24" text-anchor="start">no</text>
+<rect x="580" y="524" width="580" height="74" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<text x="600" y="554" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#e6edf3" text-anchor="start">The thread keeps the plan and its critique.</text>
+<text x="600" y="580" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">The bots never build, label, assign or close anyone else's issue.</text>
+<text x="40" y="520" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#e6edf3" text-anchor="start">Gates</text>
+<circle cx="46" cy="541" r="3.5" fill="#fbbf24"/><text x="58" y="546" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">One branch per issue; a second turn joins its open PR.</text>
+<circle cx="46" cy="565" r="3.5" fill="#fbbf24"/><text x="58" y="570" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">Not a bug, can't reproduce, or too risky: answered with evidence.</text>
+<circle cx="46" cy="589" r="3.5" fill="#fbbf24"/><text x="58" y="594" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">Only the merge closes the issue. Never by hand.</text>
+</svg>

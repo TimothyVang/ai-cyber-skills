@@ -2,3 +2,4 @@ __pycache__/
 *.pyc
 *.json.tmp
 out*.json
+plugins/deep-mode/skills/deep-mode/assets/github-app/brand.local.json

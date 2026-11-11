@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>deep-mode: open-source AI code review and merge bots for GitHub, on your own subscription</title>
+<meta name="description" content="deep-mode is one open-source replacement for Greptile, CodeRabbit, pstack and Matt Pocock's software-factory skills. AI agents review, fix, verify and merge your GitHub PRs and build your issues, on your own machine and subscription logins. No API keys. White-label.">
+<meta name="author" content="TimothyVang">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://timothyvang.github.io/deep-mode/">
+<link rel="alternate" type="text/markdown" href="llms.txt" title="llms.txt">
+<meta name="theme-color" content="#0b1220">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="deep-mode">
+<meta property="og:title" content="deep-mode: open-source AI code review and merge bots for GitHub">
+<meta property="og:description" content="Agents review, fix, verify and merge your PRs and build your issues. Runs on your machine and your subscription logins. No API keys. White-label.">
+<meta property="og:url" content="https://timothyvang.github.io/deep-mode/">
+<meta property="og:image" content="https://timothyvang.github.io/deep-mode/images/og.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="deep-mode: autonomous AI code review and merge bots for GitHub PRs and issues, on your own subscriptions.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="deep-mode: open-source AI code review and merge bots for GitHub">
+<meta name="twitter:description" content="Agents review, fix, verify and merge your PRs and build your issues. Your machine, your subscription logins, no API keys.">
+<meta name="twitter:image" content="https://timothyvang.github.io/deep-mode/images/og.png">
+<meta name="twitter:image:alt" content="deep-mode: autonomous AI code review and merge bots for GitHub PRs and issues.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "deep-mode",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "description": "Open-source AI code review and merge bots for GitHub. A private GitHub App plus a poller on your machine runs ACP agents (omp by default, or Claude Code, Codex and others) on your own subscription logins. Agents review, fix, verify with a three-agent panel, and merge your own PRs; they plan and build your issues. White-label with one brand.json.",
+  "url": "https://timothyvang.github.io/deep-mode/",
+  "downloadUrl": "https://github.com/TimothyVang/deep-mode",
+  "codeRepository": "https://github.com/TimothyVang/deep-mode",
+  "license": "https://opensource.org/licenses/MIT",
+  "image": "https://timothyvang.github.io/deep-mode/images/og.png",
+  "screenshot": "https://timothyvang.github.io/deep-mode/images/how-it-works.svg",
+  "dateModified": "2026-11-11",
+  "author": {"@type": "Person", "name": "TimothyVang", "url": "https://github.com/TimothyVang"},
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "keywords": "AI code review, GitHub App, autonomous merge, Claude Code, Codex, omp, ACP, acpx, Greptile alternative, CodeRabbit alternative, self-hosted, white-label"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "dateModified": "2026-11-11",
+  "mainEntity": [
+    {"@type": "Question", "name": "Is there an open-source alternative to Greptile or CodeRabbit that uses my Claude or ChatGPT subscription?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. deep-mode is MIT-licensed. Its GitHub App bots review PRs in the thread, and the models run in agent CLIs logged in with your own subscriptions, such as Claude Code with Claude.ai or Codex with ChatGPT. Nothing runs on a hosted service; a poller on your machine does the work."}},
+    {"@type": "Question", "name": "Is deep-mode a Greptile alternative?",
+     "acceptedAnswer": {"@type": "Answer", "text": "For PR review in the thread, yes. You install your own private GitHub App and its bot posts the review as a [bot] comment. deep-mode also fixes its own findings, runs a three-agent verifier panel, and merges your own PRs behind a code-enforced gate. Greptile is a hosted service on its own paid plans; deep-mode runs on your machine and your subscriptions."}},
+    {"@type": "Question", "name": "Is deep-mode a CodeRabbit alternative?",
+     "acceptedAnswer": {"@type": "Answer", "text": "For AI review comments on PRs, yes. deep-mode's reviewer agent posts findings with evidence, and an author agent answers each one with a fix or a reason. CodeRabbit is a hosted GitHub App on paid plans; deep-mode is MIT-licensed and self-hosted, and it uses your own agent logins instead of an API key."}},
+    {"@type": "Question", "name": "How do Claude Code and Codex review each other's PRs?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Each runs as an ACP agent through acpx. The author agent and the reviewer agent each keep a session per PR, and a coordinator passes every turn from one to the other and posts it to the PR thread. The reviewer returns findings as JSON; the author fixes or dismisses each with proof; they repeat until no P0 or P1 is open. omp can fill both seats on different model families."}},
+    {"@type": "Question", "name": "Can I white-label an AI code review GitHub App?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. Run install.py --brand acme-review, or set name in brand.json in a fork. The app name, comment author and signature, @mention, issue branch prefix, repo opt-out file, config directory and autostart task all derive from that one name."}},
+    {"@type": "Question", "name": "Does it need an API key?",
+     "acceptedAnswer": {"@type": "Answer", "text": "No. The agents are CLIs that each use their own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. deep-mode never asks for a model API key. Every call counts against that subscription's usage."}},
+    {"@type": "Question", "name": "How does deep-mode relate to pstack and Matt Pocock's skills?",
+     "acceptedAnswer": {"@type": "Answer", "text": "deep-mode is adapted from pstack (poteto-mode) by Lauren Tan, MIT, and credits it. Its grill technique and wayfinder playbook come from Matt Pocock's skills, MIT. Its factory and board playbooks cover the spec to tickets to merged PRs flow, and it works alongside Matt Pocock's skills when both are installed."}},
+    {"@type": "Question", "name": "Which agents and harnesses does it work with?",
+     "acceptedAnswer": {"@type": "Answer", "text": "The bots use any agent acpx can reach over ACP: omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each role can pick a model, so one harness can give cross-family review. The skill itself runs in omp, Claude Code, Codex, Cursor and other harnesses."}}
+  ]
+}
+</script>
+<style>
+:root{--bg:#f7f8fb;--fg:#0f172a;--muted:#475569;--card:#ffffff;--edge:#dbe2ee;--accent:#6d28d9;--code:#eef2f8;--ok:#047857}
+@media (prefers-color-scheme:dark){:root{--bg:#070c16;--fg:#e6edf3;--muted:#9fb0c8;--card:#0f1828;--edge:#22304d;--accent:#a78bfa;--code:#111b2f;--ok:#34d399}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
+nav{max-width:1100px;margin:0 auto;padding:10px 24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+nav .brand{font-weight:800;color:var(--fg);text-decoration:none;margin-right:auto}
+nav a{text-decoration:none;color:var(--muted);font-size:15px}
+nav a:hover{color:var(--fg)}
+main{max-width:1100px;margin:0 auto;padding:0 24px 64px}
+section{padding:56px 0 8px}
+h1{font-size:clamp(34px,5vw,54px);line-height:1.1;margin:0 0 16px;letter-spacing:-.02em}
+h2{font-size:30px;margin:0 0 12px;letter-spacing:-.01em}
+h3{font-size:19px;margin:24px 0 6px}
+p.lead{font-size:20px;color:var(--muted);max-width:820px;margin:0 0 24px}
+.hero{padding-top:64px}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:0;list-style:none}
+.pills li{border:1px solid var(--edge);background:var(--card);border-radius:999px;padding:4px 12px;font-size:14px;color:var(--muted)}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
+.btn{display:inline-block;padding:10px 18px;border-radius:10px;font-weight:600;text-decoration:none;border:1px solid var(--edge);background:var(--card);color:var(--fg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+figure{margin:24px 0}
+figure img{display:block;width:100%;height:auto;border-radius:18px}
+figcaption{color:var(--muted);font-size:14px;margin-top:8px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:18px 20px}
+.card h3{margin-top:0}
+pre{background:var(--code);border:1px solid var(--edge);border-radius:12px;padding:16px 18px;overflow:auto;font:14px/1.6 ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,monospace}
+code{font-family:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,monospace;font-size:.92em;background:var(--code);padding:1px 5px;border-radius:5px}
+pre code{background:none;padding:0}
+.table-wrap{overflow-x:auto;border:1px solid var(--edge);border-radius:14px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:14.5px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--edge)}
+thead th{position:sticky;top:0;background:var(--card)}
+tbody th{font-weight:600}
+td.us{color:var(--ok);font-weight:600}
+tr:last-child td,tr:last-child th{border-bottom:0}
+ul.check{padding-left:20px}
+ul.check li{margin:6px 0}
+.note{color:var(--muted);font-size:14px}
+footer{border-top:1px solid var(--edge);color:var(--muted);font-size:14px}
+footer div{max-width:1100px;margin:0 auto;padding:24px}
+</style>
+</head>
+<body>
+<header class="top">
+<nav aria-label="Main">
+<a class="brand" href="#top">deep-mode</a>
+<a href="#how">How it works</a>
+<a href="#install">Install</a>
+<a href="#compare">Compare</a>
+<a href="#white-label">White-label</a>
+<a href="#safety">Safety</a>
+<a href="#faq">FAQ</a>
+<a href="https://github.com/TimothyVang/deep-mode">GitHub</a>
+</nav>
+</header>
+<main id="top">
+
+<section class="hero" aria-labelledby="hero-title">
+<h1 id="hero-title">AI code review bots that fix, verify and merge your PRs, on your own subscription</h1>
+<p class="lead">deep-mode is one open-source replacement for Greptile, CodeRabbit, pstack and Matt Pocock's software-factory skills. Install a private GitHub App on your repos. A poller on your machine runs ACP agents (omp by default, or Claude Code, Codex and others) on your own subscription logins. They review each PR in the thread, fix their own findings, vote on a three-agent panel, and merge your own PRs behind a gate enforced in code. They also plan and build the issues you open. No API keys, no webhooks, no server. Rename it to your own brand with one flag.</p>
+<ul class="pills" aria-label="Key facts">
+<li>MIT licensed</li><li>Self-hosted on your machine</li><li>Subscription logins, no API keys</li><li>Any ACP agent via acpx</li><li>3-agent verifier panel</li><li>White-label</li>
+</ul>
+<div class="cta">
+<a class="btn primary" href="#install">Install in 3 commands</a>
+<a class="btn" href="https://github.com/TimothyVang/deep-mode">View on GitHub</a>
+<a class="btn" href="https://github.com/TimothyVang/deep-mode/blob/main/docs/white-label.md">White-label guide</a>
+</div>
+<figure>
+<img src="images/pr-conversation.gif" width="960" height="540" alt="Animated walk-through of a PR conversation: kickoff, conflict merge, review findings, the author's fixes, re-review, three verifier votes, and the merge gate, each posted to the PR thread as deep-mode-login[bot].">
+<figcaption>An illustration of the seven steps. Each turn is a comment in the PR thread, signed with its role and agent.</figcaption>
+</figure>
+</section>
+
+<section id="how" aria-labelledby="how-title">
+<h2 id="how-title">How it works</h2>
+<p>Three parts. A private GitHub App gives the bots a name in your threads. A poller, <code>bot.py watch</code>, runs on your machine and checks the repos the app is installed on every 120 seconds. The agents run through <a href="https://github.com/openclaw/acpx">acpx</a>, a client for the Agent Client Protocol, so any ACP agent can take a seat. The agents only return text. The poller posts it as the app, and it pushes and merges with your own <code>gh</code> and git.</p>
+<figure>
+<img src="images/how-it-works.svg" width="1200" height="650" alt="Diagram: on GitHub, your private app deep-mode-login, PR and issue threads, and branches and checks. On your machine, the config directory, bot.py watch, your gh and git, and acpx connecting an author agent and a reviewer agent, omp by default.">
+</figure>
+<h3>The PR conversation</h3>
+<p>On a PR, the coordinator posts a kickoff. When the branch conflicts with its base, the author agent merges the base into the head and pushes. It never rebases or force-pushes. The reviewer agent returns findings as JSON with evidence. The author fixes each one or dismisses it with proof. They repeat until no P0 or P1 is open, for at most three rounds. Then three verifier agents, each in its own worktree at the final head, vote PASS or FAIL. Two PASS votes are needed.</p>
+<figure>
+<img src="images/pr-conversation.svg" width="1200" height="940" alt="Sequence diagram of the PR conversation: kickoff, conflict merge, review and answer rounds over ACP mirrored to the thread, a three-verifier panel, and the merge gate checks before a squash merge.">
+</figure>
+<p>The merge gate is code, not a prompt. It merges only your own PR, at the same head the panel voted on, with every required check reported and green, with no conflict, and with merges allowed by <code>autonomousMerge</code>. Anyone else's PR gets review comments only.</p>
+<h3>The issue conversation</h3>
+<p>On a new issue, the author agent plans, the reviewer critiques, and the author answers, all read-only and all in the issue thread. When you opened the issue, or you comment <code>@deep-mode implement</code>, the author builds it on <code>deep-mode/issue-&lt;n&gt;</code> and opens a PR that closes the issue. The PR conversation then lands it.</p>
+<figure>
+<img src="images/issue-flow.svg" width="1200" height="630" alt="Flow diagram: trigger, read as untrusted data, plan, critique, answer, then if the owner opened the issue or said implement, build on a branch, open a PR with Closes, land it with the PR conversation, and the merge closes the issue.">
+</figure>
+</section>
+
+<section id="install" aria-labelledby="install-title">
+<h2 id="install-title">Install</h2>
+<p>You need git, <code>gh</code> logged in, openssl (Git for Windows ships one), Node and npm, Python 3.10 or newer, and at least one agent CLI logged in with a subscription. Then run three commands:</p>
+<pre><code>git clone https://github.com/TimothyVang/deep-mode
+cd deep-mode/plugins/deep-mode/skills/deep-mode
+py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre>
+<p>The installer checks your tools, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private GitHub App in the browser, waits while you install it on the repos you pick, writes <code>bot.json</code>, and registers the poller to start on its own (Task Scheduler, launchd, systemd or cron). It asks before each change. <code>--yes</code> accepts every default, and <code>--check</code> reports what is missing and changes nothing.</p>
+<figure>
+<img src="images/install.gif" width="827" height="515" alt="Terminal recording of a real run of install.py --check: tools, the agent harnesses found (omp, Claude Code, Codex, OpenCode), an ACP round trip to omp, and the GitHub App installation all report ok.">
+<figcaption>A real run of <code>install.py --check</code>, recorded to <a href="images/install.cast">an asciicast</a> and rendered with agg.</figcaption>
+</figure>
+<p>Day to day, <code>bot.py status</code> shows what it is doing, and <code>bot.py once --repo &lt;owner/repo&gt; --dry-run</code> previews a cycle without posting.</p>
+</section>
+
+<section id="compare" aria-labelledby="compare-title">
+<h2 id="compare-title">How it compares</h2>
+<p>deep-mode covers several tools' jobs in one MIT plugin. The table marks only what is well known about the others. A dash means not claimed here, not that the tool lacks it; check each vendor's docs.</p>
+<div class="table-wrap">
+<table>
+<caption class="note" style="caption-side:bottom;padding:10px">"Their plan" means the vendor's own pricing and models. pstack and Matt Pocock's skills are skill packs, not GitHub Apps.</caption>
+<thead><tr><th scope="col">Capability</th><th scope="col">deep-mode</th><th scope="col">Greptile</th><th scope="col">CodeRabbit</th><th scope="col">pstack</th><th scope="col">Matt Pocock skills</th></tr></thead>
+<tbody>
+<tr><th scope="row">AI PR review in the thread</th><td class="us">Yes, as your app's [bot]</td><td>Yes</td><td>Yes</td><td>—</td><td>—</td></tr>
+<tr><th scope="row">Bots fix their own findings</th><td class="us">Yes, on your PRs: fix or dismiss each with proof</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><th scope="row">Autonomous merge after a verifier panel</th><td class="us">Yes: 3 verifiers, 2 PASS, then a code gate</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><th scope="row">Merge-conflict resolution</th><td class="us">Yes: merges base into head, no force-push</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+<tr><th scope="row">Issue to plan to PR</th><td class="us">Yes: plan and critique in the thread; builds your issues</td><td>—</td><td>—</td><td>—</td><td>Partly: skills for the flow, run in your agent</td></tr>
+<tr><th scope="row">Rigorous agent playbooks</th><td class="us">Yes, adapted from pstack (poteto-mode), MIT, credited</td><td>—</td><td>—</td><td>Yes, the origin</td><td>Yes (e.g. TDD, grilling)</td></tr>
+<tr><th scope="row">Software factory, board, spec to tickets to implement</th><td class="us">Factory and board playbooks; works alongside Matt Pocock's skills</td><td>—</td><td>—</td><td>—</td><td>Yes</td></tr>
+<tr><th scope="row">Runs on your Claude or ChatGPT subscription</th><td class="us">Yes, no API key</td><td>Their plan</td><td>Their plan</td><td>In Cursor</td><td>In your agent</td></tr>
+<tr><th scope="row">Self-hosted on your machine</th><td class="us">Yes: a poller, no server, no webhooks</td><td>Hosted service</td><td>Hosted service</td><td>Runs in your editor</td><td>Runs in your agent</td></tr>
+<tr><th scope="row">Harness and agent agnostic</th><td class="us">Any ACP agent via acpx, omp by default; the skill runs in omp, Claude Code, Codex, Cursor</td><td>—</td><td>—</td><td>Cursor plugin</td><td>Agent skills</td></tr>
+<tr><th scope="row">White-label</th><td class="us">Yes, one <code>brand.json</code></td><td>—</td><td>—</td><td>MIT, forkable</td><td>MIT, forkable</td></tr>
+<tr><th scope="row">Price</th><td class="us">Free, MIT; uses subscriptions you have</td><td>Paid plans</td><td>Paid plans</td><td>Free, MIT</td><td>Free, MIT</td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section id="white-label" aria-labelledby="wl-title">
+<h2 id="wl-title">White-label</h2>
+<p>Every name a user or a repo sees comes from one brand name. Run <code>install.py --brand acme-review</code>, or set <code>"name"</code> in <code>brand.json</code> in your fork. The app, the comment author and signature, the mention, the issue branches, the opt-out file, the config directory and the autostart task all follow.</p>
+<figure>
+<img src="images/white-label.svg" width="1200" height="584" alt="Diagram: brand.local.json with name acme-review, written by install.py --brand, derives the GitHub App name acme-review-login, comments by acme-review-login[bot], the signature, the @acme-review mention, acme-review/issue-n branches, .acme-review.json, ~/.config/acme-review/, and the acme-review-bot autostart task.">
+</figure>
+<p><a href="https://github.com/TimothyVang/deep-mode/blob/main/docs/white-label.md">The white-label guide</a> lists every field and what stays the same.</p>
+</section>
+
+<section id="safety" aria-labelledby="safety-title">
+<h2 id="safety-title">Safety</h2>
+<div class="grid">
+<div class="card"><h3>Installing is the opt-in</h3><p>The bots work only in repos where you installed your app. A base-branch <code>.deep-mode.json</code> with <code>"bot": false</code> skips a repo, and <code>"autonomousMerge": false</code> stops at merge-ready.</p></div>
+<div class="card"><h3>Only your PRs merge</h3><p>Your account authored the PR and every commit, and it is not from a fork. Contributors' and forks' PRs get review comments only. No agent runs with write approval on their code.</p></div>
+<div class="card"><h3>A gate in code</h3><p>Same head as the panel, every required check green, no conflict, merge authorized. The opt-out file is read from the base branch, so a PR cannot grant itself a merge.</p></div>
+<div class="card"><h3>Thread text is data</h3><p>PR and issue text is wrapped as untrusted input, and <code>@path</code> mentions are defanged. A request in it to merge, push or post elsewhere is reported as a finding.</p></div>
+<div class="card"><h3>History stays intact</h3><p>Conflicts are fixed by merging the base into the head. No rebase, no force-push, no branch deletion.</p></div>
+<div class="card"><h3>Secrets stay local</h3><p>The app's private key and one-hour installation tokens stay in <code>~/.config/deep-mode/</code>. They never go into prompts, logs or repos.</p></div>
+</div>
+</section>
+
+<section id="faq" aria-labelledby="faq-title">
+<h2 id="faq-title">FAQ</h2>
+<h3>Is there an open-source alternative to Greptile or CodeRabbit that uses my Claude or ChatGPT subscription?</h3>
+<p>Yes. deep-mode is MIT-licensed. Its GitHub App bots review PRs in the thread, and the models run in agent CLIs logged in with your own subscriptions, such as Claude Code with Claude.ai or Codex with ChatGPT. Nothing runs on a hosted service; a poller on your machine does the work.</p>
+<h3>Is deep-mode a Greptile alternative?</h3>
+<p>For PR review in the thread, yes. You install your own private GitHub App and its bot posts the review as a [bot] comment. deep-mode also fixes its own findings, runs a three-agent verifier panel, and merges your own PRs behind a code-enforced gate. Greptile is a hosted service on its own paid plans; deep-mode runs on your machine and your subscriptions.</p>
+<h3>Is deep-mode a CodeRabbit alternative?</h3>
+<p>For AI review comments on PRs, yes. deep-mode's reviewer agent posts findings with evidence, and an author agent answers each one with a fix or a reason. CodeRabbit is a hosted GitHub App on paid plans; deep-mode is MIT-licensed and self-hosted, and it uses your own agent logins instead of an API key.</p>
+<h3>How do Claude Code and Codex review each other's PRs?</h3>
+<p>Each runs as an ACP agent through acpx. The author agent and the reviewer agent each keep a session per PR, and a coordinator passes every turn from one to the other and posts it to the PR thread. The reviewer returns findings as JSON; the author fixes or dismisses each with proof; they repeat until no P0 or P1 is open. omp can fill both seats on different model families.</p>
+<h3>Can I white-label an AI code review GitHub App?</h3>
+<p>Yes. Run <code>install.py --brand acme-review</code>, or set <code>name</code> in <code>brand.json</code> in a fork. The app name, comment author and signature, @mention, issue branch prefix, repo opt-out file, config directory and autostart task all derive from that one name.</p>
+<h3>Does it need an API key?</h3>
+<p>No. The agents are CLIs that each use their own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. deep-mode never asks for a model API key. Every call counts against that subscription's usage.</p>
+<h3>How does deep-mode relate to pstack and Matt Pocock's skills?</h3>
+<p>deep-mode is adapted from pstack (poteto-mode) by Lauren Tan, MIT, and credits it. Its grill technique and wayfinder playbook come from Matt Pocock's skills, MIT. Its factory and board playbooks cover the spec to tickets to merged PRs flow, and it works alongside Matt Pocock's skills when both are installed.</p>
+<h3>Which agents and harnesses does it work with?</h3>
+<p>The bots use any agent acpx can reach over ACP: omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each role can pick a model, so one harness can give cross-family review. The skill itself runs in omp, Claude Code, Codex, Cursor and other harnesses.</p>
+</section>
+</main>
+<footer>
+<div>
+<p>deep-mode is MIT licensed, by <a href="https://github.com/TimothyVang">TimothyVang</a>. Adapted from <a href="https://github.com/cursor/plugins/tree/main/pstack">pstack</a> by Lauren Tan (MIT). The grill technique and wayfinder playbook are adapted from <a href="https://github.com/mattpocock/skills">Matt Pocock's skills</a> (MIT). Agents are reached through <a href="https://github.com/openclaw/acpx">acpx</a>. Images: diagrams are hand-written SVG; the PR walk-through frames are drawn with Pillow and encoded with <a href="https://github.com/ImageOptim/gifski">gifski</a>; the install recording is rendered with <a href="https://github.com/asciinema/agg">agg</a>.</p>
+<p><a href="https://github.com/TimothyVang/deep-mode">Source</a> · <a href="llms.txt">llms.txt</a> · <a href="https://github.com/TimothyVang/deep-mode/blob/main/LICENSE">License</a></p>
+</div>
+</footer>
+</body>
+</html>
