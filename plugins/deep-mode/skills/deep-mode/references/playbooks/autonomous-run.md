@@ -12,7 +12,7 @@ Use when: one task must be driven to a checkable end state without the human ("l
 4. Each iteration: make the smallest change the evidence justifies, then evaluate the predicate.
 5. Advanced → keep it and commit it. Didn't help → discard it. "Might help" belt-and-suspenders gets reverted, not left to ride.
 6. Sequence the work into verifiable units, verifying each before the next instead of batching checks at the end (`references/principles/sequence-verifiable-units.md`).
-7. Own mid-run discoveries that support the goal: broken skills, related bugs, flaky verifiers, review noise, tooling failures, orphaned follow-ups, fixable drift. Fix them yourself, out-of-band fixes kept separate from the main change (own branch/PR only if the grant covers PRs). Return to the predicate after each side fix.
+7. Own mid-run discoveries that support the goal: broken skills, related bugs, flaky verifiers, review noise, tooling failures, orphaned follow-ups, fixable drift. Fix them yourself, out-of-band fixes kept separate from the main change (on their own branch and PR). Return to the predicate after each side fix.
 8. Checkpoint every iteration in the trail: one row for what changed and whether the predicate moved.
 9. Plateau → pivot the approach and keep going; a plateau is not a stop.
 

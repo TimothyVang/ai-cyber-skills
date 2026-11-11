@@ -16,7 +16,7 @@ Use when: the user asks to babysit, get green, make merge-ready, address review 
    - `gh pr checks <pr> --required`; in `drive`, `gh pr checks <pr> --watch` as a background `bash` job (`timeout: 0`); re-read the PR and threads every time it returns.
    - Threads: `gh api graphql` over `pullRequest.reviewThreads` (`id isResolved isOutdated comments{databaseId author body path line}`).
    - Review (not `check`): alongside the CI watch, run the **pr-review** technique (`references/techniques/pr-review.md`) in PR mode for the current `headRefOid` as a background subagent: steps 1-4 on the first head, then step 6 (Re-review) on each new head. A review for an older SHA is stale: never triage it; after any push, the new head needs its own round before the PR counts as review-clean. `check` mode only reads the latest `<!-- deep-mode:review -->` review; it never runs one.
-5. Work blockers in order — conflicts, then review threads, then CI — and batch every known fix into one push wave. The babysit request authorizes pushing fixes to the PR's own branch; nothing more.
+5. Work blockers in order — conflicts, then review threads, then CI — and batch every known fix into one push wave. Push fixes to the PR's own branch; landing goes through `references/playbooks/shipping.md`.
 6. Conflict (`mergeStateStatus: DIRTY`) or stale base (`BEHIND`): report, don't resolve. Name the branch that needs the rebase and stop; don't fall through to CI to look busy. Name the drift sweep in the report: trunk may have grown callers of code the stack deletes or moves, and the rebase must reconcile them in the same wave.
 7. Triage each review thread (human or bot) and each pr-review finding skeptically — see Review-comment triage below; pr-review findings go through the same fix / dismiss / ask (technique step 5). Fix real findings red-first in the lowest PR that owns the code, never at the tip unless the owning PR merged (then step 9's follow-up PR). Upstack fixes wait for the next frontier push wave. Push the wave before replying so the reply cites the commit.
 8. Reply via a JSON file, never interpolating comment text into a shell command: `gh api --method POST repos/<owner>/<repo>/pulls/<pr>/comments/<comment-id>/replies --input <payload.json>`; resolve with the `resolveReviewThread` GraphQL mutation. Report pr-review results per technique step 5 (posting needs the human's yes), then re-review per steps 6-7 on each new head until it stops (no P0/P1 open and every P2 fixed or dismissed, 3-round cap, or oscillation — report the last two upward); never relax a finding into a dismissal to stop.
@@ -27,7 +27,7 @@ Use when: the user asks to babysit, get green, make merge-ready, address review 
     - Only a failure in the diff's own code gets a commit.
 11. Trust the forge's merge verdict, not a green check list. For a stack, capture the PR list bottom-to-top once and reuse that frozen list on every re-arm. If another actor merges the frontier, continue with the new frontier.
 12. Answer user questions mid-loop and continue; only an explicit stop ends `drive` early.
-13. At the stop, sweep the run's triage decisions once. Offer any team-useful dismissal pattern as a candidate entry for the repo's shared review-triage doc (own PR, only on the user's go); never keep it only in private memory.
+13. At the stop, sweep the run's triage decisions once. Offer any team-useful dismissal pattern as a candidate entry for the repo's shared review-triage doc (its own PR); never keep it only in private memory.
 
 ## Review-comment triage
 
@@ -56,4 +56,4 @@ Verify every claim against the code before acting. Not every comment is a requir
 - Each thread: fix / dismiss / escalate, with the commit or the proof behind the dismissal.
 - Per PR, the pr-review technique's one-line report: `review: <ready|changes needed|needs discussion> at <short sha>, <k> rounds, open P0/P1/P2 <a>/<b>/<c>, fixed <d>, dismissed <e>`.
 - CI classifications and any rerun; any rebase reported upward (branch + drift sweep).
-- What waits on the human (approvals, escalated threads, landing).
+- What waits on the human (hard stops, escalated threads).

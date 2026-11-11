@@ -5,6 +5,6 @@ argument-hint: "<PR number>"
 
 Read `skill://deep-mode/references/techniques/pr-review.md` in full and follow it to review PR $ARGUMENTS in PR mode on this repo.
 
-Run every step yourself, including the parallel `reviewer` subagents and the verification checks. Don't ask me which lenses or models to use. Show me the review body and ask before posting it. Never approve, request changes, push, or merge unless I say so below.
+Run every step yourself, including the parallel `reviewer` subagents and the verification checks. Don't ask me which lenses or models to use. Post the review as a comment on my repo's PR without asking; on someone else's repo, show me the body and ask first. Never approve or request changes. Fix-ups and merges follow deep-mode's Autonomy section: merge only on a panel pass.
 
 PR: $ARGUMENTS

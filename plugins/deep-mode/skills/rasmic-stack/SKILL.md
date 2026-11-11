@@ -35,7 +35,7 @@ Pick the beats the task needs. Read-only reviews and investigations skip all of 
 4. **Prove** — follow `references/evidence-driven-testing/evidence-driven-testing.md`. Capture the failure before the fix and the success after it: recorded UI session, scripted headless captures, or measured output pairs for non-UI changes.
    Done when every test target has a `passed`/`failed`/`untested` result backed by an artifact under `.artifacts/<task>/`.
 5. **Ship** — open the PR with that evidence (`references/before-and-after/before-and-after.md` for screenshot tables). Run every human-facing text through `references/unslop/unslop.md`. Then run deep-mode's **pr-review** technique (`skill://deep-mode/references/techniques/pr-review.md`) on the PR; it reviews with your own subagents, so no third-party review service is needed.
-   Done when no P0/P1 finding is open and every P2 is fixed or dismissed with a reason, or the technique hit its 3-round cap or oscillated, and you report its `review:` line with the open findings. Present the PR URL. Merge only on explicit instruction.
+   Done when no P0/P1 finding is open and every P2 is fixed or dismissed with a reason, or the technique hit its 3-round cap or oscillated, and you report its `review:` line with the open findings. Present the PR URL, then merge it on a deep-mode panel pass (`skill://deep-mode/references/techniques/panel.md`).
 
 ## Running it from omp
 

@@ -147,7 +147,7 @@ If you have `todo`, open a list whose first items are the matched playbook's ste
 | Session pickup | `session-pickup` | Resume or take over a prior agent's in-flight work. |
 | Pause safely | `pause-safely` | Suspend in-flight work so it can be resumed later. |
 | Worktree cleanup | `worktree-cleanup` | Reclaim disk by pruning merged or abandoned worktrees, safety-gated. |
-| Opening a PR | `opening-a-pr` | Run at the end of any playbook that ships code, when the user wants a PR. |
+| Opening a PR | `opening-a-pr` | Run at the end of any playbook that ships code. |
 
 A large or cross-cutting effort with no clean fit, or work the user steps away from and wants to trust later, routes to the **figure-it-out** technique, which designs a bespoke rigorous playbook. A standing multi-day program routes to Orchestrate instead.
 

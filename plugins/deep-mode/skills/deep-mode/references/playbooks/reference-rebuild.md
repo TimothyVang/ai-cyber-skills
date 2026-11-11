@@ -7,7 +7,7 @@ Use when: rebuilding or redesigning a product UI to the standard of an app the u
 1. **Study the reference by using it.** Launch the real app (installed build, or an unpacked Electron build with `--remote-debugging-port`) and drive it with computer use or CDP: every main screen, empty states, approvals, settings. Save screenshots and a measured system sheet from computed styles (type scale, colour tokens, radii, spacing, row heights, icon library, motion). Marketing pages and model-generated mockups are not a reference. Read-only: navigation only, nothing sent, created or approved.
 2. **Map the product's real data** before drawing: list every field the backend actually emits for each screen (`/state.json`, API responses). The canvas may only show fields on that list; invented values are labelled sample data.
 3. **Design first on a canvas.** One frame per screen and key state, product fidelity, real labels and real data shapes. Tool order: Paper MCP, then Figma MCP, then a static self-contained HTML canvas page of frames. The canvas carries the design system as tokens, not adjectives.
-4. **Review the canvas before code.** Run the restraint check below on every frame, then show the user the canvas and get the direction approved. Code starts from an approved canvas.
+4. **Review the canvas before code.** Run the restraint check below on every frame, then pick the direction yourself, log why (SKILL.md Autonomy), and show the user the canvas in the report. Code starts from the chosen canvas.
 5. **Build from the canvas**, one screen per owner, shared tokens and primitives first (`references/playbooks/visual-parity.md` for the harness and per-component loop).
 6. **Prove it in the real app**, not a mock: screenshot each built screen in the running app at the canvas size and compare it frame by frame with the canvas; fix and reshoot until each matches. Add real-data and worst-case passes (long names, empty, every state, outages, narrow widths).
 
@@ -25,7 +25,7 @@ Ship only when every frame passes:
 
 ## Gates
 
-- No canvas, no build. No approved canvas, no build.
+- No canvas, no build. Code builds only from the chosen canvas.
 - A field on the canvas that the backend does not emit is either removed or added to the backend as separate, named work.
 - Take layout, density, type and interaction patterns from the reference; never its code, logos, icons, images or brand name.
 - Claims of parity cite a running-app screenshot next to its canvas frame.

@@ -81,14 +81,16 @@ function main() {
     }
   }
 
-  const blocked = blocking.length > 0 || blockingLeads.length > 0;
+  // An unfinished audit proves nothing about the code it didn't reach, so it blocks too.
+  const incomplete = status.run_status !== "complete";
+  const blocked = incomplete || blocking.length > 0 || blockingLeads.length > 0;
   lines.push(
     "",
     blocked ? "**Blocked.**" : "**Passed.**",
     `${confirmed.length} confirmed (${blocking.length} at or above ${failAt}), ${leads.length} need validation, ${rejected.length} rejected.`,
   );
-  if (status.run_status && status.run_status !== "complete") {
-    lines.push(`Run status: \`${status.run_status}\`${status.incomplete_reason ? ` (${status.incomplete_reason})` : ""}. Coverage is partial.`);
+  if (incomplete) {
+    lines.push(`The audit did not finish: run status \`${status.run_status || "missing"}\`${status.incomplete_reason ? ` (${status.incomplete_reason})` : ""}. Rerun it, with a larger AUDIT_AGENTS or AUDIT_BUDGET_USD if it ran out.`);
   }
   if (confirmed.length) {
     lines.push("", "| Severity | Finding | Where | Fix |", "|---|---|---|---|");

@@ -18,7 +18,8 @@ The factory is the `factory` CLI (source: `github.com/TimothyVang/softwarefactor
 4. Run: `factory run` as a background `bash` job with `timeout: 0`; its result auto-delivers. While it runs, relay each one-line transition only when it changes what the user should do. Done when the run exits.
 5. Clear what waits on people. For each `needs-human` job, read its newest `escalation-*.md` and the PR:
    - A cause you can observe (flaky check, environment, factory bug) → fix the cause, then `factory feedback <job> "<what changed>"`.
-   - A product or risk call → put the escalation's question to the user verbatim. Their answer goes in through `factory feedback`. If they decide to drop the job, use `factory reject`.
+   - A product or risk call → decide it yourself, log it, and send the decision in through `factory feedback`; drop a job that isn't worth building with `factory reject`.
+   - An escalation whose approver said APPROVE but the merge policy held it → run the **panel** technique (`references/techniques/panel.md`) on the PR head; pass → `gh pr merge --match-head-commit <sha>`, and the next `factory run` records it as merged.
 
    `needs-info` jobs wait on the issue author: report the questions; `factory answer` only with the author's words.
 6. Learn: after a run with failures or escalations, `factory lookback`. Turn each recurring finding into structure through the **correct** technique (`references/techniques/correct.md`): first a check in `checks`, then a `factory.json` rule, then an AGENTS.md line. Done when every proposal is applied or dismissed with a reason.

@@ -44,6 +44,6 @@ Only edit the verification skill's own directory (its `SKILL.md`, `features/`, a
    - Working behavior the harness can't drive → harness gap; fix it (scripts executable, invocation documented in the skill body).
    - App behavior that's actually broken → product gap; record it for the user, keep it out of this change.
 
-6. **Ship or stop.** For **changed**: re-read every changed file, then present one change set. Commit or open a PR only if the user asked. For **clean** or **blocked**: no changes; report the outcome and coverage honestly.
+6. **Ship or stop.** For **changed**: re-read every changed file, then present one change set. Commit it and open a PR per deep-mode's Opening a PR playbook (`skill://deep-mode/references/playbooks/opening-a-pr.md`). For **clean** or **blocked**: no changes; report the outcome and coverage honestly.
 
 Keep run notes (features covered, unreachable prerequisites, confirmed drift, outcome) in a scratch location; don't commit them.
