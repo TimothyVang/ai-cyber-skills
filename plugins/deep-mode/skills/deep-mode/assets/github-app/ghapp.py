@@ -209,8 +209,9 @@ def setup(args) -> None:
         os.chmod(key_path, 0o600)
     except OSError:
         pass
+    # `owner` is the human running the bots (PR and issue authors are people); the app may belong to an org.
     config = {"app_id": result["id"], "client_id": result["client_id"], "slug": result["slug"],
-              "html_url": result["html_url"], "owner": result["owner"]["login"],
+              "html_url": result["html_url"], "owner": login, "app_owner": result["owner"]["login"],
               "private_key_path": str(key_path)}
     CONFIG_PATH.write_text(json.dumps(config, indent=2), encoding="utf-8")
     print(json.dumps({"slug": config["slug"], "bot": bot_login(config),

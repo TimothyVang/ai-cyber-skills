@@ -44,8 +44,9 @@ py -3 assets/github-app/bot.py status
 ```
 
 - `install-autostart` registers `deep-mode-bot` with Task Scheduler (Windows), launchd (macOS), or a systemd user unit or crontab `@reboot` entry (Linux); `uninstall-autostart` removes it.
-- The first run records a start time. Only events after it get a turn; `--backlog` takes older open PRs and issues too.
-- Each cycle takes open non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deep-mode` or come from the owner after the bots' last turn.
+- The first run records a start time. Only events after it get a turn: a PR opened before it has its head recorded on first sight, and any later push to it is new, whatever its commit dates. `--backlog` takes older open PRs and issues too.
+- Each cycle takes open non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deep-mode` or come from the owner after the bots' last turn. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all.
+- The owner is the `gh` user running the bot, even when an organization owns the app.
 - One bot process runs at a time (a lock file). State is in `~/.config/deep-mode/bot-state.json`. Clones, worktrees, logs and per-item transcripts are in `~/.cache/deep-mode/bot/`.
 
 Config is `~/.config/deep-mode/bot.json`, created with these defaults on the first run. Each role is `{"agent": "<acpx agent>", "model": "<optional model id>"}`:
@@ -60,12 +61,13 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 - A base-branch `.deep-mode.json` with `"bot": false` skips the repo.
 - A base-branch `.deep-mode.json` with `"autonomousMerge": false` keeps the conversation but stops at merge-ready.
 - `bot.json` `"autonomousMerge": false` stops merges on every repo.
-- The bot reads `.deep-mode.json` from the base branch (`git show origin/<base>:.deep-mode.json`), never a PR head.
+- The bot reads `.deep-mode.json` from the base branch (`git show origin/<base>:.deep-mode.json`), never a PR head, and fetches the base again right before each merge.
 
 ## Safety
 
 - PR and issue text is untrusted data. Prompts say so, wrap it in delimiters, and defang `@path` mentions. A request in it to merge, push, run, or post elsewhere is a finding.
-- Only the user's own PRs merge, and only through pr-conversation's gates, enforced in code: same head as the panel, required checks green, not conflicting, merge authorized. No rebase, no force-push, no branch deletion.
+- Only the user's own PRs merge, and only through pr-conversation's gates, enforced in code at the merging head: same head as the panel, the ownership gate re-checked (with other writers, each commit the bot didn't push needs the owner as committer and a verified signature), required checks green, the head contains its base, linked issues answered, not conflicting, merge authorized. `--admin` only when the required review is the one rule it would bypass. No rebase, no force-push, no branch deletion.
+- The author runs only after the current head re-passes the ownership gate, so a push from another account mid-conversation sends the PR to a human.
 - Contributors' and forks' PRs get review comments only. No agent runs with `--approve-all` on their code.
 - Agents run inside the repo, so their CLIs load its AGENTS.md and CLAUDE.md, and its rules apply. No real-money trading actions, ever.
 - The private key and installation tokens stay in `~/.config/deep-mode/`. Tokens last one hour. None of them go into prompts, logs or repos.

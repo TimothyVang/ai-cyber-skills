@@ -29,14 +29,18 @@ import brand  # noqa: E402
 
 
 def apply_brand_flag() -> None:
-    """Write the brand before ghapp reads it at import, so --brand takes effect on this run."""
+    """Set the brand before ghapp reads it at import, so --brand takes effect on this run. It is written to
+    brand.local.json except under --check, which changes nothing."""
     pre = argparse.ArgumentParser(add_help=False)
     pre.add_argument("--brand")
     pre.add_argument("--homepage")
+    pre.add_argument("--check", action="store_true")
     known, _ = pre.parse_known_args()
     if known.brand:
-        brand.write_local(known.brand, known.homepage)
-        brand.BRAND = brand.load()
+        if known.check:
+            brand.BRAND = brand.derive(known.brand, {"homepage": known.homepage})
+        else:
+            brand.BRAND = brand.write_local(known.brand, known.homepage)
         brand.CONFIG_DIR = Path.home() / ".config" / brand.BRAND["configDirName"]
         brand.CACHE_DIR = Path.home() / ".cache" / brand.BRAND["configDirName"] / "bot"
 

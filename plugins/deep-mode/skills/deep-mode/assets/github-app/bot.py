@@ -61,6 +61,12 @@ SIGNATURE = f"**{NAME} "
 SEVERITIES = ("P0", "P1", "P2")
 AGENT_TIMEOUT = 3600
 CHECK_WAIT = 1800
+MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for a new push or comment
+# Statuses after which the next cycle runs the item again without a new push or comment.
+AWAITING = {"awaiting-checks": "required checks were pending", "awaiting-issues": "linked issues were waiting",
+             "awaiting-base": "the base moved past the panel's head"}
+# Branch rules an admin merge may pass: the review it replaces, checks the gate verifies, and push-only rules.
+BENIGN_RULES = {"creation", "deletion", "non_fast_forward", "pull_request", "required_status_checks"}
 MAX_DIFF = 150_000
 MAX_COMMENT = 60_000
 PR_FIELDS = ("number,title,body,url,isDraft,author,headRefName,headRefOid,baseRefName,isCrossRepository,"
@@ -288,15 +294,20 @@ def human_triggers(comments: list, floor, owner: str, mention: str, is_ours) -> 
 
 
 def pr_reasons(pr: dict, item: dict, since, owner: str, mention: str, is_ours):
-    """Why this PR needs a turn (empty when it doesn't) and the human comments that triggered it."""
+    """Why this PR needs a turn (empty when it doesn't) and the human comments that triggered it.
+
+    A head is new when it isn't recorded and the PR is known (repo_cycle records a PR opened before `since`
+    on first sight) or was opened after `since`. Commit dates never decide: an old commit can be pushed late.
+    """
     if pr.get("isDraft"):
         return [], []
-    reasons, head = [], pr["headRefOid"]
-    pushed = max(pr.get("createdAt", ""), pr.get("headDate") or "")
-    if head not in item.get("heads", {}) and (since is None or pushed > since):
+    reasons, head, known = [], pr["headRefOid"], item.get("heads") or {}
+    if head not in known and (since is None or known or pr.get("createdAt", "") > since):
         reasons.append(f"new head {head[:7]}")
-    if item.get("status") == "awaiting-checks" and item.get("panelSha") == head:
-        reasons.append("required checks were pending")
+    if item.get("status") in AWAITING and item.get("panelSha") == head:
+        reasons.append(AWAITING[item["status"]])
+    if item.get("status") == "error" and item.get("errors", 0) < MAX_ATTEMPTS:
+        reasons.append(f"retry after an error ({item.get('errors', 0)}/{MAX_ATTEMPTS})")
     floor = max(since or "", item.get("lastCommentAt") or "")
     comments = human_triggers(pr.get("comments") or [], floor, owner, mention, is_ours)
     if comments:
@@ -308,6 +319,8 @@ def issue_reasons(issue: dict, item: dict, since, owner: str, mention: str, is_o
     reasons = []
     if not item.get("handled") and (since is None or issue.get("createdAt", "") > since):
         reasons.append("new issue")
+    if item.get("status") == "error" and item.get("errors", 0) < MAX_ATTEMPTS:
+        reasons.append(f"retry after an error ({item.get('errors', 0)}/{MAX_ATTEMPTS})")
     floor = max(since or "", item.get("lastCommentAt") or "")
     comments = human_triggers(issue.get("comments") or [], floor, owner, mention, is_ours)
     if comments:
@@ -327,12 +340,37 @@ def wants_implementation(issue: dict, comments: list, item: dict, owner: str, me
                                                                                          "discussion-only"}
 
 
-def is_own_pr(pr: dict, owner: str) -> bool:
-    """Authored by the owner, from a branch of the base repo, and every commit authored by the owner."""
+def is_own_pr(pr: dict, owner: str, trusted=frozenset()) -> bool:
+    """The user's own work (pr-conversation Gates). `pr` carries `commits` (pr_commits) and `writers`
+    (push_writers; None when they couldn't be listed).
+
+    Authored by the owner, from a branch of the base repo, its head among the listed commits, and every
+    commit authored by the owner. An author login comes from the commit email, which any writer can forge,
+    so when anyone else can push, each commit the bot didn't create itself (`trusted`) also needs the owner
+    as committer and a verified signature.
+    """
     if not same(login_of(pr), owner) or pr.get("isCrossRepository"):
         return False
-    authors = pr.get("commitAuthors") or []  # REST lists at most 250 commits: a longer PR can't be proven own
-    return 0 < len(authors) < 250 and {a.lower() for a in authors} == {owner.lower()}
+    commits = pr.get("commits") or []
+    if not 0 < len(commits) < 250 or pr.get("headRefOid") not in {c["sha"] for c in commits}:
+        return False  # REST lists at most 250 commits: a longer PR can't be proven own
+    writers = pr.get("writers")
+    solo = writers is not None and {w.lower() for w in writers} == {owner.lower()}
+    for c in commits:
+        if c["sha"] in trusted:
+            continue
+        if not same(c.get("author"), owner):
+            return False
+        if not solo and not (same(c.get("committer"), owner) and c.get("verified") is True):
+            return False
+    return True
+
+
+def unanswered(comments: list, is_ours) -> bool:
+    """A human commented after the bots' last reply (or the bots never answered a human comment)."""
+    last = max((c.get("createdAt", "") for c in comments if is_ours(c)), default="")
+    return any(c.get("createdAt", "") > last for c in comments
+               if not is_ours(c) and not login_of(c).endswith("[bot]"))
 
 
 def gate_decision(f: dict):
@@ -340,8 +378,18 @@ def gate_decision(f: dict):
     reasons = []
     if not f["panelSha"] or f["head"] != f["panelSha"]:
         reasons.append(f"head `{f['head'][:7]}` is not the panel's head `{(f['panelSha'] or 'none')[:7]}`")
+    if not f["own"]:
+        reasons.append("the PR fails the ownership gate at this head: a commit from another account, or one "
+                       "without the owner as committer and a verified signature while others can push")
     if f["mergeable"] == "CONFLICTING":
         reasons.append("the PR conflicts with its base")
+    if f["behindBy"] < 0:
+        reasons.append("cannot tell whether the head contains its base")
+    elif f["behindBy"]:
+        reasons.append(f"the head is {f['behindBy']} commit(s) behind its base; the base gets merged in and "
+                       "the new head needs a fresh panel")
+    for issue in f["openIssues"]:
+        reasons.append(f"linked issue {issue} has a human comment the bots haven't answered")
     if not f["botAutonomous"]:
         reasons.append("autonomousMerge is off in bot.json")
     if f["repoAutonomous"] is False:
@@ -366,6 +414,8 @@ def gate_decision(f: dict):
             reasons.append("branch rules block the merge (mergeStateStatus BLOCKED)")
         elif not f["isAdmin"]:
             reasons.append("a required review blocks the merge and you are not a repo admin")
+        elif f["otherRules"]:
+            reasons.append(f"--admin would also bypass {', '.join(f['otherRules'])}, not just the required review")
         else:
             admin = True
     elif state not in ("CLEAN", "HAS_HOOKS", "UNSTABLE"):
@@ -409,7 +459,8 @@ class Identity:
     def __init__(self):
         path = ghapp.CONFIG_PATH
         self.app = json.loads(path.read_text(encoding="utf-8")) if path.is_file() else None
-        self.owner = (self.app or {}).get("owner") or gh("api", "user", "--jq", ".login").strip()
+        # The human whose gh pushes and merges: PR and issue authors are people, even when an org owns the app.
+        self.owner = gh("api", "user", "--jq", ".login").strip()
         self.bot = ghapp.bot_login(self.app) if self.app else None
         # GraphQL (gh pr/issue list) reports app bots without the [bot] suffix that REST uses.
         self.logins = {self.bot.lower(), self.bot[:-len("[bot]")].lower()} if self.bot else set()
@@ -482,14 +533,19 @@ def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
     return path
 
 
-def required_contexts(repo: str, base: str, is_admin: bool):
-    """Required status-check names from branch protection plus rulesets, and why they couldn't be read."""
-    contexts, error = [], None
+def branch_rules(repo: str, base: str, is_admin: bool):
+    """From branch protection plus rulesets: the required status-check names, the other rules an admin merge
+    would bypass besides the required review (BENIGN_RULES aside), and why the rules couldn't be read."""
+    contexts, other, error = [], [], None
     proc = run(["gh", "api", f"repos/{repo}/branches/{base}/protection"], check=False)
     if proc.returncode == 0:
-        rsc = json.loads(proc.stdout).get("required_status_checks") or {}
+        protection = json.loads(proc.stdout)
+        rsc = protection.get("required_status_checks") or {}
         contexts += rsc.get("contexts") or []
         contexts += [c["context"] for c in rsc.get("checks") or []]
+        other += [key for key in ("required_signatures", "required_linear_history",
+                                  "required_conversation_resolution", "lock_branch")
+                  if (protection.get(key) or {}).get("enabled")]
     elif "Branch not protected" in proc.stdout + proc.stderr:
         if not is_admin:
             error = "the base branch reads as unprotected but you are not a repo admin, so that is unverified"
@@ -498,11 +554,40 @@ def required_contexts(repo: str, base: str, is_admin: bool):
     proc = run(["gh", "api", f"repos/{repo}/rules/branches/{base}"], check=False)
     if proc.returncode == 0:
         for rule in json.loads(proc.stdout or "[]"):
-            if rule.get("type") == "required_status_checks":
-                contexts += [c["context"] for c in rule["parameters"]["required_status_checks"]]
+            kind, params = rule.get("type"), rule.get("parameters") or {}
+            if kind == "required_status_checks":
+                contexts += [c["context"] for c in params["required_status_checks"]]
+            elif kind == "pull_request" and params.get("required_review_thread_resolution"):
+                other.append("required_review_thread_resolution")
+            elif kind not in BENIGN_RULES:
+                other.append(kind)
     else:
         error = error or f"cannot read rulesets: {(proc.stderr or proc.stdout).strip()[-200:]}"
-    return sorted(set(contexts)), error
+    return sorted(set(contexts)), sorted(set(other)), error
+
+
+def pr_commits(repo: str, number: int) -> list:
+    """The PR's commits (REST lists at most 250): sha, author and committer logins ("" when GitHub can't link
+    the email to a user), and whether the signature verified."""
+    out = gh("api", "--paginate", f"repos/{repo}/pulls/{number}/commits?per_page=100", "--jq",
+             '.[] | {sha, author: (.author.login // ""), committer: (.committer.login // ""), '
+             'verified: (.commit.verification.verified == true)} | @json')
+    return [json.loads(line) for line in out.splitlines() if line.strip()]
+
+
+def push_writers(repo: str):
+    """Logins with push access to the repo, or None when they can't be listed (the ownership gate goes strict)."""
+    proc = run(["gh", "api", "--paginate", f"repos/{repo}/collaborators?per_page=100", "--jq",
+                ".[] | select(.permissions.push) | .login"], check=False)
+    return None if proc.returncode else [line for line in proc.stdout.split() if line]
+
+
+def behind_by(clone: Path, base: str, sha: str) -> int:
+    """Commits on origin/<base> that `sha` lacks, or -1 when git can't tell. mergeStateStatus says BEHIND only
+    under an up-to-date rule, and --admin skips that rule, so the gate counts it itself."""
+    proc = run(["git", "rev-list", "--count", f"{sha}..origin/{base}"], cwd=clone, check=False)
+    count = proc.stdout.strip()
+    return int(count) if proc.returncode == 0 and count.isdigit() else -1
 
 
 def pr_checks(repo: str, number: int, required=False) -> list:
@@ -732,7 +817,7 @@ class PRConversation:
         self.cfg, self.repo, self.n = bot.cfg, it.repo, pr["number"]
         self.base, self.branch, self.head = pr["baseRefName"], pr["headRefName"], pr["headRefOid"]
         self.heads = {self.head}
-        self.own = is_own_pr(pr, bot.ident.owner)
+        self.own = is_own_pr(pr, bot.ident.owner, bot.trusted(self.repo))
         self.author, self.reviewer = self.cfg["author"], self.cfg["reviewer"]
         trees = WORK / "worktrees" / slug(self.repo)
         self.review_tree, self.author_tree = trees / f"pr{self.n}-review", trees / f"pr{self.n}-author"
@@ -747,7 +832,8 @@ class PRConversation:
             if not self.own:
                 self.review(1)
                 return "reviewed"
-            if self.item.get("status") == "awaiting-checks" and self.item.get("panelSha") == self.head \
+            if self.item.get("status") in ("awaiting-checks", "awaiting-issues") \
+                    and self.item.get("panelSha") == self.head \
                     and not self.comments:
                 return self.land(self.item.get("panelTally", "?"))
             return self.converse()
@@ -818,7 +904,8 @@ class PRConversation:
 
     def converse(self) -> str:
         view = self.refresh()
-        if view["mergeStateStatus"] in ("DIRTY", "BEHIND") or view["mergeable"] == "CONFLICTING":
+        if view["mergeStateStatus"] in ("DIRTY", "BEHIND") or view["mergeable"] == "CONFLICTING" \
+                or behind_by(self.clone, self.base, self.head):
             self.sync_base()
         rounds = 0
         while True:
@@ -836,7 +923,37 @@ class PRConversation:
             self.answer(open_)
 
     def author_checkout(self) -> Path:
-        return worktree_at(self.clone, self.author_tree, f"origin/{self.branch}", branch=self.branch)
+        """The author's worktree on the PR branch at the current head, once that head re-passes the ownership
+        gate: the author runs with --approve-all, so another account's push since the cycle began must not
+        reach it."""
+        self.refresh()
+        self.require_own()
+        return worktree_at(self.clone, self.author_tree, self.head, branch=self.branch)
+
+    def ownership(self, head: str) -> bool:
+        """is_own_pr freshly from GitHub, and only when GitHub's head is still `head`."""
+        view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "author,isCrossRepository,headRefOid")
+        if view["headRefOid"] != head:
+            return False
+        view["commits"], view["writers"] = pr_commits(self.repo, self.n), push_writers(self.repo)
+        return is_own_pr(view, self.bot.ident.owner, self.bot.trusted(self.repo))
+
+    def require_own(self) -> None:
+        if not self.ownership(self.head):
+            raise Blocked(f"head `{self.head[:7]}` no longer passes the ownership gate (a commit from another "
+                          "account, or one without the owner as committer and a verified signature while others "
+                          "can push), or it moved while being checked; a human takes it from here")
+
+    def open_issues(self) -> list:
+        """Issues this PR closes that hold a human comment newer than the bots' last reply there."""
+        refs = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "closingIssuesReferences") or {}
+        waiting = []
+        for ref in refs.get("closingIssuesReferences") or []:
+            target = [ref["url"]] if ref.get("url") else [str(ref["number"]), "-R", self.repo]
+            comments = (gh_json("issue", "view", *target, "--json", "comments") or {}).get("comments") or []
+            if unanswered(comments, self.bot.ident.is_ours):
+                waiting.append(ref.get("url") or f"#{ref['number']}")
+        return waiting
 
     def push(self, old: str) -> None:
         """Push the author's new commits as a fast-forward (never force) and wait for GitHub to see them."""
@@ -844,6 +961,8 @@ class PRConversation:
         if new != old:
             if run(["git", "merge-base", "--is-ancestor", old, new], cwd=self.author_tree, check=False).returncode:
                 raise Blocked("the author rewrote pushed history (rebase/amend); refusing to force-push")
+            # Commits made here, not fetched from any remote: the ownership gate trusts them without a signature.
+            self.bot.trust(self.repo, git(self.author_tree, "rev-list", new, "--not", old, "--remotes").split())
             git(self.author_tree, "push", "--quiet", "origin", f"HEAD:refs/heads/{self.branch}", timeout=600)
         for _ in range(10):
             self.refresh()
@@ -935,7 +1054,7 @@ class PRConversation:
     def gate_facts(self, panel_sha: str, wait: bool) -> dict:
         deadline = time.time() + (CHECK_WAIT if wait else 0)
         is_admin = gh("api", f"repos/{self.repo}", "--jq", ".permissions.admin").strip() == "true"
-        contexts, error = required_contexts(self.repo, self.base, is_admin)
+        contexts, other, error = branch_rules(self.repo, self.base, is_admin)
         while True:
             for _ in range(6):  # GitHub computes mergeability lazily
                 view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json",
@@ -952,10 +1071,16 @@ class PRConversation:
                 break
             log(f"{self.it.key}: waiting for required checks")
             time.sleep(30)
-        return {"head": view["headRefOid"], "panelSha": panel_sha, "mergeable": view["mergeable"],
+        head = view["headRefOid"]
+        # Fetch now, after any check wait: the base's opt-out and the behind count must not come from a stale ref.
+        git(self.clone, "fetch", "origin", "--quiet", f"+refs/heads/{self.base}:refs/remotes/origin/{self.base}",
+            f"+refs/pull/{self.n}/head:refs/{B['branchPrefix']}/pr/{self.n}", timeout=1800)
+        return {"head": head, "panelSha": panel_sha, "mergeable": view["mergeable"],
                 "mergeStateStatus": view["mergeStateStatus"], "reviewDecision": view.get("reviewDecision") or "",
-                "isAdmin": is_admin, "requiredContexts": contexts, "requiredError": error, "checks": checks,
-                "required": required, "pending": pending, "botAutonomous": bool(self.cfg["autonomousMerge"]),
+                "isAdmin": is_admin, "requiredContexts": contexts, "otherRules": other, "requiredError": error,
+                "checks": checks, "required": required, "pending": pending,
+                "own": self.ownership(head), "behindBy": behind_by(self.clone, self.base, head),
+                "openIssues": self.open_issues(), "botAutonomous": bool(self.cfg["autonomousMerge"]),
                 "repoAutonomous": base_config(self.clone, self.base).get("autonomousMerge")}
 
     def land(self, tally: str) -> str:
@@ -963,9 +1088,17 @@ class PRConversation:
         facts = self.gate_facts(sha, wait=True)
         ok, admin, reasons = gate_decision(facts)
         if not ok:
-            status = "awaiting-checks" if facts["pending"] and facts["head"] == sha else "merge-ready" \
-                if all("autonomousMerge" in r for r in reasons) else "blocked"
-            if not (status == "awaiting-checks" and self.item.get("status") == "awaiting-checks"):
+            # Retried by the next cycle (AWAITING) when the head is the panel's and nothing else blocks.
+            rest = gate_decision({**facts, "openIssues": [], "behindBy": 0})[2]
+            if facts["pending"] and facts["head"] == sha:
+                status = "awaiting-checks"
+            elif not rest and facts["head"] == sha:
+                status = "awaiting-base" if facts["behindBy"] > 0 else "awaiting-issues"
+            elif all("autonomousMerge" in r for r in reasons):
+                status = "merge-ready"
+            else:
+                status = "blocked"
+            if not (status in AWAITING and self.item.get("status") == status):
                 self.it.say("coordinator", "bot.py", facts["head"], "Not merging. Panel " + tally + " PASS at `"
                             + (sha or "")[:7] + "`, but:\n" + "\n".join(f"- {r}" for r in reasons))
             return status
@@ -1032,6 +1165,8 @@ class IssueConversation:
         if run(["git", "merge-base", "--is-ancestor", old, new], cwd=tree, check=False).returncode:
             self.it.say("coordinator", "bot.py", new, "The author rewrote the pushed branch; not force-pushing.")
             return "blocked"
+        # Commits made here, not fetched from any remote: the PR's ownership gate trusts them without a signature.
+        self.bot.trust(self.repo, git(tree, "rev-list", "HEAD", "--not", "--remotes").split())
         git(tree, "push", "--quiet", "-u", "origin", f"HEAD:refs/heads/{branch}", timeout=600)
         meta = json_block(reply, "title") or {}
         title = str(meta.get("title") or f"{NAME}: resolve issue #{self.n}").strip()[:200]
@@ -1056,6 +1191,15 @@ class Bot:
     def save(self) -> None:
         if not self.dry:
             save_state(self.state)
+
+    def trusted(self, repo: str) -> set:
+        return set(self.state.get("ownCommits", {}).get(repo, []))
+
+    def trust(self, repo: str, shas: list) -> None:
+        """Record commits the bot created and pushed itself (kept in state, the newest 5000 per repo)."""
+        own = self.state.setdefault("ownCommits", {}).setdefault(repo, [])
+        own.extend(s for s in shas if s not in own)
+        del own[:-5000]
 
     def cycle(self) -> None:
         if not self.dry and not self.state.get("since"):
@@ -1085,14 +1229,13 @@ class Bot:
                     continue
                 found = True
                 item = self.state["items"].get(f"{repo}#{key}", {})
-                if not pr["isDraft"] and since and pr["headRefOid"] not in item.get("heads", {}):
-                    pr["headDate"] = gh("api", f"repos/{repo}/commits/{pr['headRefOid']}", "--jq",
-                                        ".commit.committer.date").strip()
                 reasons, comments = pr_reasons(pr, item, since, owner, mention, ours)
                 if want and not pr["isDraft"] and not reasons:
                     reasons = ["requested with --item"]
                 if not reasons:
-                    if "headDate" in pr and not want:  # an older head: remember it so later cycles skip the lookup
+                    if since and not item.get("heads") and pr.get("createdAt", "") <= since:
+                        # First sight of a PR opened before the install: its head is backlog; any later push,
+                        # whatever its commit dates, is a new head (pr_reasons).
                         self.state["items"].setdefault(f"{repo}#{key}", {"heads": {}}).setdefault(
                             "heads", {})[pr["headRefOid"]] = "before-install"
                     log(f"{repo}#{key}: skip ({'draft' if pr['isDraft'] else 'no new head or comment'})")
@@ -1125,11 +1268,10 @@ class Bot:
         if base_config(clone, default).get("bot") is False:
             log(f"{repo}: opted out ({REPO_CONFIG} bot: false)")
             return
+        writers = push_writers(repo) if any(kind == "pr" for kind, *_ in todo) else None
         for kind, data, reasons, comments in todo:
             if kind == "pr":
-                # one line per commit; an author GitHub can't link to a user is an empty line, never the owner
-                data["commitAuthors"] = gh("api", "--paginate", f"repos/{repo}/pulls/{data['number']}/commits"
-                                           "?per_page=100", "--jq", '.[] | (.author.login // "")').splitlines()
+                data["commits"], data["writers"] = pr_commits(repo, data["number"]), writers
             self.handle(repo, kind, data, reasons, comments, clone, default)
 
     def handle(self, repo, kind, data, reasons, comments, clone, default) -> None:
@@ -1147,13 +1289,20 @@ class Bot:
         log(f"{it.key}: {status}")
         if self.dry:
             return
+        if status == "error":
+            item["errors"] = item.get("errors", 0) + 1
+            log(f"{it.key}: attempt {item['errors']}/{MAX_ATTEMPTS} failed"
+                + ("; the next cycle retries" if item["errors"] < MAX_ATTEMPTS else "; waiting for a push or comment"))
+        else:
+            item.pop("errors", None)
+        retry = status == "error" and item["errors"] < MAX_ATTEMPTS
         item.update(status=status, updated=now_iso())
-        if comments:
+        if comments and not retry:
             item["lastCommentAt"] = max(c["createdAt"] for c in comments)
         if kind == "pr":
             for head in conversation.heads:  # our own pushes must not retrigger the conversation
                 item["heads"][head] = status
-        else:
+        elif not retry:
             item["handled"] = True
         self.save()
 
