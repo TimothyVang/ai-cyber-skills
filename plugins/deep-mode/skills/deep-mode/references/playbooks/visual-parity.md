@@ -12,7 +12,7 @@ Use when: migrating or reimplementing UI that must stay pixel-identical. You own
 
 ## Gates
 - No baseline, no parity claim — a blocking prerequisite, not a follow-up.
-- Baseline looks wrong → stop and `ask`; never edit it.
+- Baseline looks wrong → stop that comparison and report it with evidence; never edit it.
 - Any nonzero diff is a fail.
 
 ## Evidence

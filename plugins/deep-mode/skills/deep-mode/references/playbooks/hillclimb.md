@@ -6,7 +6,7 @@ Core discipline: one change, one measurement, keep or revert. Never stack untest
 
 ## Steps
 1. Ground workload and architecture with the **how** technique (`references/techniques/how.md`): name the workload dimensions that move the result (data size, history, state, concurrency) and pick a case that reproduces the user's complaint.
-2. Fix one metric, the better direction, and a checkable stop predicate pairing a target with a minimum attempt count (e.g. "≥50% better than baseline and ≥10 iterations"). Use the user's numbers, else agree them.
+2. Fix one metric, the better direction, and a checkable stop predicate pairing a target with a minimum attempt count (e.g. "≥50% better than baseline and ≥10 iterations"). Use the user's numbers, else pick them yourself and log why.
 3. Build the harness (`references/principles/build-the-lever.md`): run contrasting realistic workloads; confirm the target case shows the symptom and easier cases separate. Can't distinguish → revise workload or metric.
 4. Vet the harness with the **benchmark-checklist** technique (`references/techniques/benchmark-checklist.md`); make it print its error count and a work-done count. Freeze it: one repeatable command, median of N samples to clear noise.
 5. Record the baseline metric and a green run of the regression gate before any change.

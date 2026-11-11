@@ -8,7 +8,7 @@
    - **Types** so the bad state can't be written; if it still compiles, a **lint/CI check** whose error names the file, type, or function to use instead; if the pattern is already common, fail only when a change adds more.
    - **Tests** of behavior; fix or delete tests that pass when behavior breaks or fail when only internals change.
    - **Docs/agent rules last**, only for judgment calls (nothing fails when skipped).
-3. Fix the most frequent classes now, one unit per class (one commit each). Prove each new check fails on a real past mistake. Same command locally and in CI. Exceptions go on the offending line with reason, expiry, and a human's approval.
+3. Fix the most frequent classes now, one unit per class (one commit each). Prove each new check fails on a real past mistake. Same command locally and in CI. Exceptions go on the offending line with reason, expiry, and a decision-trail row.
 4. Keep a rule table in the agent instruction file pairing each rule with its enforcer. On a correction: fix the mistake, add the rule; an existing unenforced rule is a repeat → enforce it at the highest level in the same change. Drop rules whose mistake can no longer happen.
 
 **Output:** each class with its evidence, the level picked, and why a higher level didn't work.
