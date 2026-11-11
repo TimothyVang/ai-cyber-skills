@@ -153,6 +153,8 @@ A large or cross-cutting effort with no clean fit, or work the user steps away f
 
 **Stack, UI design, and factory tooling** come from `skill://rasmic-stack` (Ras Mic's picks and philosophy); its "With deep-mode" section sets the split. Greenfield web, SaaS, or AI-app framework, backend, auth, payments, or deploy choice → its `references/stack.md`. Any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling), or "build the stack for me" → its `references/any-app-stack.md`, which writes a cited `STACK.md`. Designing a UI with an agent → its `references/design-workflow.md`; rebuilding to the standard of a named reference app → the Reference rebuild playbook. Recording UI proof with no `verify-<app>` skill → its `references/evidence-driven-testing/`. Your gates and playbooks still govern.
 
+**Agent tooling** (browser automation, agent sandboxes, coding-agent harnesses or multi-agent orchestrators, autoresearch loops) → read the cited landscape in `C:/Users/newbi/orca/workspaces/boop-agent/automation-tools/research/README.md` before picking a tool; if that worktree is gone, `gh repo clone TimothyVang/automation-tools` (private). It is a 2026-11-11 snapshot tuned for omp + Orca on Windows, so recheck release dates and licenses of the tool you pick.
+
 ## Habits worth keeping
 
 - Restate-in-your-own-words is her most-used prompt. Use it on any thread, report, or fuzzy ask before acting.
