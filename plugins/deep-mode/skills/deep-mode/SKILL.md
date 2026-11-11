@@ -21,17 +21,19 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 | The request or repo looks like | Route |
 |---|---|
 | A PR number, a PR URL, or "review" a PR | **pr-review** in PR mode (`references/techniques/pr-review.md`) |
+| "land / finish / merge this PR on your own", "bots talk it out in the PR", "no human approval" | **pr-conversation** technique (`references/techniques/pr-conversation.md`) |
 | "check on / babysit / get green" a PR | Babysit playbook |
 | "help on / contribute to / what can I work on" a project, or a repo the user can't push to that has a brief | `skill://contribute` |
 | "set up / publish this project for contributors", "make issues for helpers" | `skill://project-brief` |
 | "run the factory / work the issue queue / turn issues into PRs / set up a software factory" | Factory playbook |
 | "drive the board / work the backlog / run this project autonomously / keep going on the roadmap" | Board playbook |
 | "grill me / grill this plan / stress-test this idea" | **grill** technique (`references/techniques/grill.md`) |
+| "scrape / pull / archive" a page, video, channel, or playlist, or "get his diagram" | **scrape** technique (`references/techniques/scrape.md`) |
 | An effort too big for one session with a foggy route: "wayfinder", "chart the way to X", "plan this migration before anyone builds it" | Wayfinder playbook |
-| "security-audit PRs / audit every PR / add a security gate to CI", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`) |
+| "security-audit PRs / audit every PR / add a security gate", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`), run by your own agent, no CI |
 | "run pr-agent / describe, review, improve this PR with PR-Agent" | **pr-agent** technique (`references/techniques/pr-agent.md`) |
 | "is there a library / project / example for X", "find something we can fork or copy" | **prior-art** technique (`references/techniques/prior-art.md`) |
-| A new app, an empty repo, "start / build me <app>", "what stack" | `skill://rasmic-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
+| A new app, an empty repo, "start / build me <app>", "what stack" | **prior-art** first (newest repos to copy or learn from), then `skill://rasmic-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
 | Anything else | The Playbooks table below |
 
 **3. Size it**, then follow that size's rules. Re-size if the work turns out bigger.
@@ -52,7 +54,7 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 - **Name your principles, in plain words.** For size M and L, add one short "Why I chose this" line naming each principle that changed a decision and the choice it changed, phrased so a non-expert follows ("I fixed the comparison where stock is checked, not the caller, because that's where it goes wrong"). Cite only principles whose file you read this session in `references/principles/`. Skip it for size S.
 - **Prove it on the real artifact.** Before calling anything done, run the real app, CLI, or service path and capture evidence. If the repo has `.omp/skills/verify-<app>/`, use it. If not and the task changes user-visible behavior: when the user pre-authorized it (the `/poteto` command does), run `skill://create-verification-skill` first; otherwise offer `/skill:create-verification-skill` once and prove the change by hand. Tests passing and "it compiles" are not proof.
 - **Decide; don't ask.** About to `ask` "which approach" or "what should this do"? Settle it yourself, by kind. A fact → look it up. An observable fork (behavior, timing, layout, output, perf, whether an eval separates) → run the Prototype playbook and let the result decide. A product, design, or preference call → make it (Autonomy). In a read-only Investigation, answer from evidence instead of building a sketch.
-- **Before building anything new** (a feature, tool, integration, or project) → **prior-art** (`references/techniques/prior-art.md`): search GitHub, the package registries, and official docs for code to depend on, copy, fork, or clone, and check its license first.
+- **Before building anything new** (a feature, tool, integration, or project) → **prior-art** (`references/techniques/prior-art.md`): start from the trending catalog (`references/trending/README.md`, refreshed by `scripts/trending.py find` when over a day old) so newer projects can beat the idea you already know, then search GitHub, the package registries, and official docs for code to depend on, copy, fork, or clone, and check its license first.
 - **Name the data shape before any code**, and choose its organizing structure per `references/principles/model-the-domain.md`.
 - **A new or changed module or public interface with two or more viable shapes** → the **architect** technique before implementing. A small edit that merely crosses a function boundary doesn't need it.
 - **Nontrivial change, architecture decision, or "are we sure?"** → the **how** technique. Motivation questions → **why**.
@@ -65,7 +67,8 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 - **Repeated correction** (yours or the user's) → **correct**. Fix it at the highest rung that works: architecture or data structures, then a lint rule or test, then a skill or rule, and human review last.
 - **Long, autonomous, or step-away work** → keep a decision trail with **show-me-your-work**.
 - **PR-status requests** ("check on PR X", "get it green") → Babysit playbook. **Land a green stack** → Shipping playbook. Green is not safe.
-- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it. A repo with the PR security gate (**security-audit**, `references/techniques/security-audit.md`) also needs that check green; its findings are review findings.
+- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it, and the repo's own checks locally.
+- **Deep-mode is the gate layer**: no GitHub Actions, Greptile, or CodeRabbit. When the repo opted into the security gate or the change touches auth, permissions, input parsing, or secrets, run **security-audit** (`references/techniques/security-audit.md`) on the head that will merge; its blocking findings are P0 review findings.
 - **Fuzzy request?** → **in-your-own-words** before work. Prompt worth deepening before sending → **sharpen**.
 - **Learning a subsystem or a change** → **teach**. **Resuming a topic from past sessions** → **recall**. **"What could this break?"** → **blast-radius**. **User says "reflect"** → **reflect**.
 
@@ -86,7 +89,8 @@ One file per principle in `references/principles/<name>.md`. Read the file befor
 - **Just do it.** Work proceeds without asking, including commits, pushes, PRs, issues, board cards, and merges.
 - **Done means a panel pass.** No task is done and nothing merges until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. Then merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
 - **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself: pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal. Log each one as a show-me-your-work trail row (choice, why, evidence, how to reverse), and list them in the final reply under "Decisions I made" so the user can override any. Where a playbook or technique says to ask the user before deciding, committing, pushing, opening a PR, or merging, this rule wins.
-- **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has. A request that already asks for one of these is its yes.
+- **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has. A request that already asks for one of these is its yes. One standing yes: a repo whose base branch has `.deep-mode.json` `{"autonomousMerge": true}` lets the **pr-conversation** technique admin-merge your own PRs past a required review, never past a failing check.
+- **Your subscription, not an API.** Every model call runs on the session's model through omp `task` subagents, or `omp -p` from scripts, so it draws on the user's Claude or Codex subscription usage. Never set up an API key or wait on a hosted review bot.
 - **Session overrides.** "Don't stop", "going to bed", "run until done" mean keep going until the work is done or only hard stops remain, and report every decision at the end.
 - **No is an acceptable answer.** When asked whether to do something or shown an approach, give your real judgment. Push back or say "this doesn't earn its place" when true. Candor over agreement.
 
@@ -165,6 +169,15 @@ A large or cross-cutting effort with no clean fit, or work the user steps away f
 - Unfamiliar codebase, stuck on an error, slowness, memory, or race debugging, legacy code, PR or commit text, production incident, estimates, or pushing back on scope → `references/cloudxberry/engineering-practice.md`.
 
 **Frontend UI/UX** (building, restyling, or reviewing UI; motion; color; accessibility; chat or agent UI) → before writing UI code, read `AGENTS.md` in a local checkout of `TimothyVang/frontend`, then the `PLAYBOOK.md` section it routes to. Its `reference/` holds the cited evidence (articles, talks, clips, live demos) and its `.claude/skills/` the vendored design skills. No checkout: `gh repo clone TimothyVang/frontend` (private; skip if you can't access it). It adds component, motion, color, and agent-UI rules on top of rasmic-stack's design workflow.
+
+**Cloud security and DevSecOps rules** come from `references/cloud-devsecops/` (cited reports in `TimothyVang/cloud-devsecops`; its `README.md` lists them). They cover securing and wiring up a cloud, where `cloudxberry/aws-networking.md` covers how AWS networking works. Read the file the task touches before designing, reviewing, or changing cloud access, policy, or pipelines:
+
+- AWS accounts, Organizations, SCP/RCP, IAM, GuardDuty or Security Hub, KMS, or CI access to AWS → `references/cloud-devsecops/aws.md`.
+- Azure subscriptions, management groups, Entra ID, RBAC, Azure Policy, Defender for Cloud, Key Vault, Private Endpoints, AKS, or CI access to Azure → `references/cloud-devsecops/azure.md`.
+- Google Cloud orgs or projects, IAM or service accounts, org policy, VPC Service Controls, Security Command Center, Binary Authorization, GKE, or CI access to GCP → `references/cloud-devsecops/gcp.md`.
+- A CI/CD pipeline's security stages, supply chain (SBOM, signing, SLSA provenance), scanners, policy as code, container or Kubernetes hardening, or GitHub Actions hardening → `references/cloud-devsecops/devsecops-pipeline.md`.
+- Testing cloud or IaC code without a real account (Floci, LocalStack, moto, Azurite, Google emulators) → `references/cloud-devsecops/local-emulators.md`. Run infra changes there first when the emulator covers the service.
+- Choosing terminal, container, Kubernetes, Terraform, or code-review tooling → `references/cloud-devsecops/devops-tools.md`.
 
 ## Habits worth keeping
 

@@ -2,7 +2,7 @@
 """Detect overlapping work between open pull requests and active issue claims.
 
 Stdlib only (Python 3.10+). Talks to GitHub through the `gh` CLI, which must be
-installed and authenticated (or have GH_TOKEN set, as in GitHub Actions).
+installed and authenticated (or have GH_TOKEN set).
 
 Subcommands (all take --repo owner/name):
   check   --files a,b,dir/ [--exclude-pr N] [--exclude-issue N] [--json]
