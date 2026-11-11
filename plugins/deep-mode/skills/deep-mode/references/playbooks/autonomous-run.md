@@ -9,6 +9,7 @@ Use when: one task must be driven to a checkable end state without the human ("l
 3. Pick the wake mechanism:
    - An event to watch (CI, a merge, a ref advancing) → a background `bash` job that blocks on it (`gh pr checks <pr> --watch`, `gh run watch <id>`, `timeout: 0`); its result auto-delivers. Add a long time-based heartbeat as fallback (background `sleep` with `timeout: 0`, or `sleep 3300` with `timeout: 3600`).
    - No event → a fixed-interval heartbeat (background `bash` `sleep`) sized to when the result is worth re-checking; set `timeout: 0` (or `sleep 3300` with `timeout: 3600`) — the default 300s deadline kills longer sleeps.
+   - Unattended across sessions, from a script or CI, or in another harness → write a goal file and run `python <deep-mode skill>/assets/loop/loop.py run <goal.md>` (headless omp, Claude Code, or Codex until the check passes; capped, stall-stopped, tamper-checked). Interactive in one session → the harness's native `/goal` with the predicate's command named in it. Details: `references/playbooks/self-authoring.md`.
 4. Each iteration: make the smallest change the evidence justifies, then evaluate the predicate.
 5. Advanced → keep it and commit it. Didn't help → discard it. "Might help" belt-and-suspenders gets reverted, not left to ride.
 6. Sequence the work into verifiable units, verifying each before the next instead of batching checks at the end (`references/principles/sequence-verifiable-units.md`).

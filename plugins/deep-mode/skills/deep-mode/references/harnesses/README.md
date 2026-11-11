@@ -11,6 +11,8 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 | `codex.md` | Running in Codex CLI, IDE, app, or cloud; `codex exec`, `config.toml`, sandbox and approvals, plugins |
 | `protocols.md` | Building, configuring, testing, or securing MCP servers and clients; ACP; A2A; WebMCP |
 | `ai-native-tooling.md` | Portable `AGENTS.md` and Agent Skills, plugin and marketplace formats, other harnesses (Gemini, Antigravity, Cursor, Copilot, OpenCode, Amp, Goose, Zed, Devin, Kiro), browser automation, docs for agents, orchestrators |
+| `self-authoring.md` | Writing prompts, commands, or skills from inside a session; native goal and loop modes (`/goal`, `/loop`, ralph-loop, `/autoresearch`); headless loop flags and cost caps; skill spec and validation; self-modification risks |
+| `delegation-efficiency.md` | Whether to delegate; which model and effort per task type in omp, Claude Code, and Codex; current model line-ups and prices; subscription limits; caching and token-saving; spend caps |
 
 ## Cross-harness map
 
