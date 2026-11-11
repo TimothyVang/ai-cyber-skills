@@ -2,6 +2,9 @@
 # whole shell command. Lines starting with # and blank lines are ignored. Keep to syntax that both
 # grep -E and JavaScript accept: ( ) | [ ] * + ? ^ $ and literal spaces. No \b, \s, or [[:space:]].
 # The prefix "git( +-[cC] +[^ ]+)* +" also catches "git -C dir ..." and "git -c key=value ...".
+# A line "@branch <branch regex> <command regex>" blocks the command only while the branch checked out in
+# the command's working directory fully matches the branch regex (no spaces in it). Outside a repo or on a
+# detached HEAD it never blocks.
 
 # Discards uncommitted work
 git( +-[cC] +[^ ]+)* +reset( +[^ ]+)* +--hard
@@ -24,8 +27,12 @@ git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +\+[^ ]+
 git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +(--mirror|--delete|-d|--prune)( |$)
 git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +:[^ ]+
 
-# Pushes straight to the default branch (merges go through a reviewed PR)
+# Pushes straight to the default branch (merges go through a reviewed PR): a destination that names it,
+# --all, and, while it is checked out, a push that names no destination or pushes HEAD.
 git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +([^ ]*:)?(refs/heads/)?(main|master|trunk)( |;|&|\||$)
+git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +--all( |;|&|\||$)
+@branch (main|master|trunk) git( +-[cC] +[^ ]+)* +push( +-[^ ]+)*( +[^- ;&|][^ ;&|]*)?( +-[^ ]+)* *(;|&|\||$)
+@branch (main|master|trunk) git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +(HEAD|@)( |;|&|\||$)
 
 # Strict mode: remove the # below to block every push, so only the human pushes.
 # git( +-[cC] +[^ ]+)* +push( |$)
