@@ -21,6 +21,7 @@ Needs: `omp` or `claude` (logged in), `gh` (logged in), and `uvx` (or `pr-agent`
 import argparse
 import json
 import os
+import re
 import secrets
 import shutil
 import subprocess
@@ -34,16 +35,25 @@ PR_AGENT = "pr-agent[github]==0.50.0"
 SYSTEM = ("You are the language model behind PR-Agent, a code review tool. The user message holds the "
           "tool's instructions and the pull request data. Follow those instructions exactly and reply with "
           "only the output they ask for, in the format they ask for.")
-API_KEYS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "OPENAI_API_KEY", "OPENROUTER_API_KEY")
-# Every discovery provider that can contribute MCP servers, skills, rules, or tools. `--no-tools`
-# only drops built-in tools; without this overlay omp still loads the user's MCP servers.
-OMP_OVERLAY = "disabledProviders:\n" + "".join(f"  - {p}\n" for p in (
-    "native", "mcp-json", "claude", "codex", "gemini", "cursor", "windsurf", "vscode", "cline",
-    "claude-plugins", "omp-plugins", "agent-plugins"))
+# Credential-shaped variables (provider API keys, cloud credentials, provider routing switches) are removed
+# from every child, so no model call can fall back to API-key or cloud billing. CLAUDE_CODE_OAUTH_TOKEN is
+# Claude Code's subscription login and stays; GitHub tokens stay only for `gh` and PR-Agent.
+CREDENTIAL = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|CREDENTIALS)(_ID)?$"
+                        r"|^(AWS|AZURE|GOOGLE|GCLOUD|VERTEX|BEDROCK|ANTHROPIC|OPENAI|CLAUDE_CODE_USE)_")
+KEEP = {"CLAUDE_CODE_OAUTH_TOKEN"}
+GITHUB = {"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"}
+# omp's full discovery-provider registry (omp docs, context-files.md). `--no-tools` only drops built-in
+# tools; without this overlay omp still loads MCP servers from these sources. `enabledProviders: []`
+# also keeps foreign user sources (opencode, claude, ...) off even if the user opted in to them.
+OMP_OVERLAY = "enabledProviders: []\ndisabledProviders:\n" + "".join(f"  - {p}\n" for p in (
+    "native", "omp-plugins", "claude", "agent-plugins", "codex", "agents", "claude-plugins", "gemini",
+    "opencode", "cursor", "windsurf", "cline", "github", "vscode", "agents-md", "claude-md",
+    "custom-context", "mcp-json", "ssh-json", "builtin-defaults"))
 
 
-def _oauth_env() -> dict:
-    return {k: v for k, v in os.environ.items() if k not in API_KEYS}
+def _oauth_env(github: bool = False) -> dict:
+    keep = KEEP | GITHUB if github else KEEP
+    return {k: v for k, v in os.environ.items() if k.upper() in keep or not CREDENTIAL.search(k.upper())}
 
 
 def _prompt(messages: list[dict]) -> str:
@@ -218,7 +228,8 @@ def main() -> int:
         if not shutil.which(tool):
             sys.exit(f"pr_agent_local: `{tool}` is not on PATH")
     model = opts.model or (omp_default_model() if backend == "omp" else "sonnet")
-    token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, env=_oauth_env()).stdout.strip()
+    token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True,
+                           env=_oauth_env(github=True)).stdout.strip()
     if not token:
         sys.exit("pr_agent_local: `gh auth token` returned nothing; run `gh auth login`")
 
