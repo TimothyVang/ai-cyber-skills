@@ -91,8 +91,8 @@ Use the PR template. Every PR must have:
 
 ## 7. Review
 
-- **CI** must pass: {{CI_CHECKS}}.
-- **Overlap bot:** a workflow comments on your PR if it touches the same files as another open PR or an active claim, and updates that comment as things change. Resolve the overlap with the other author before merge.
+- **Checks** must pass, run locally before you open the PR and again after each fix: {{CI_CHECKS}}. Paste the output in the PR. There is no CI.
+- **Overlap check:** your agent runs `python scripts/pr-overlap.py comment --repo {{OWNER/REPO}} --pr <N>` after opening the PR, and the maintainer's agent re-runs it on open PRs. It posts one comment when your PR touches the same files as another open PR or an active claim. Resolve the overlap with the other author before merge.
 - **Review:** before opening a PR, your agent self-reviews its branch with deep-mode's pr-review technique (local mode) and fixes or dismisses each finding. Maintainers review PRs with `/deep-mode:review-pr`; address or reply to each finding.
 - A maintainer reviews and merges. Push follow-up commits to the same branch; don't open a second PR for the same issue.
 

@@ -30,7 +30,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 | "grill me / grill this plan / stress-test this idea" | **grill** technique (`references/techniques/grill.md`) |
 | "scrape / pull / archive" a page, video, channel, or playlist, or "get his diagram" | **scrape** technique (`references/techniques/scrape.md`) |
 | An effort too big for one session with a foggy route: "wayfinder", "chart the way to X", "plan this migration before anyone builds it" | Wayfinder playbook |
-| "security-audit PRs / audit every PR / add a security gate to CI", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`) |
+| "security-audit PRs / audit every PR / add a security gate", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`), run by your own agent, no CI |
 | "run pr-agent / describe, review, improve this PR with PR-Agent" | **pr-agent** technique (`references/techniques/pr-agent.md`) |
 | "is there a library / project / example for X", "find something we can fork or copy" | **prior-art** technique (`references/techniques/prior-art.md`) |
 | A new app, an empty repo, "start / build me <app>", "what stack" | **prior-art** first (newest repos to copy or learn from), then `skill://rasmic-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
@@ -67,7 +67,8 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 - **Repeated correction** (yours or the user's) → **correct**. Fix it at the highest rung that works: architecture or data structures, then a lint rule or test, then a skill or rule, and human review last.
 - **Long, autonomous, or step-away work** → keep a decision trail with **show-me-your-work**.
 - **PR-status requests** ("check on PR X", "get it green") → Babysit playbook. **Land a green stack** → Shipping playbook. Green is not safe.
-- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it. A repo with the PR security gate (**security-audit**, `references/techniques/security-audit.md`) also needs that check green; its findings are review findings.
+- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it, and the repo's own checks locally.
+- **Deep-mode is the gate layer**: no GitHub Actions, Greptile, or CodeRabbit. When the repo opted into the security gate or the change touches auth, permissions, input parsing, or secrets, run **security-audit** (`references/techniques/security-audit.md`) on the head that will merge; its blocking findings are P0 review findings.
 - **Fuzzy request?** → **in-your-own-words** before work. Prompt worth deepening before sending → **sharpen**.
 - **Learning a subsystem or a change** → **teach**. **Resuming a topic from past sessions** → **recall**. **"What could this break?"** → **blast-radius**. **User says "reflect"** → **reflect**.
 

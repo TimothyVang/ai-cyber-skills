@@ -1,6 +1,6 @@
 # deep-mode
 
-**deep-mode** brings rigorous engineering habits to [omp](https://github.com/can1357/oh-my-pi) and Claude Code agents. It ships the `/poteto` command, verification skills, its own PR review loop, and `rasmic-stack`. Built for the Ai Cyber community; anyone can use and improve it.
+**deep-mode** brings rigorous engineering habits to [omp](https://github.com/can1357/oh-my-pi) and Claude Code agents. It ships the `/poteto` command, verification skills, its own PR review loop, and `rasmic-stack`. It replaces GitHub Actions, Greptile, and CodeRabbit: checks, reviews, security audits, overlap comments, and roadmap syncs are run by your own agent on your own subscription. Built for the Ai Cyber community; anyone can use and improve it.
 
 deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/pstack) by Lauren Tan (MIT). Her idea is "if you want to go fast, go deep first": agents prove their work instead of claiming it.
 
@@ -9,13 +9,13 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 | Piece | What it does |
 |---|---|
 | `/poteto <anything>` | The one command. It reads your request and the repo, routes it (fix, feature, review a PR, drive a kanban board, chart a big effort, grill a plan, contribute to a project, set up a project for helpers, start a new app and pick its stack), sizes it (fast path for small jobs, full playbook for big ones), proves the result on the real app, lands it on a 3-agent panel pass, and reports what it decided. |
-| `deep-mode` skill | 26 playbooks (bug fix, feature, board, wayfinder, factory, perf, refactor, prototype, babysit, shipping, autopilot, and more), 24 principles, and 28 techniques, including the verdict panel, grill, coworkers, prior-art search (GitHub, package registries, docs) before building, a CI security audit of every PR, and PR-Agent run locally on the subscription your omp is logged into (Claude or Codex). |
+| `deep-mode` skill | 26 playbooks (bug fix, feature, board, wayfinder, factory, perf, refactor, prototype, babysit, shipping, autopilot, and more), 24 principles, and 28 techniques, including the verdict panel, grill, coworkers, prior-art search (GitHub, package registries, docs) before building, a security audit of each PR run by your agent, and PR-Agent run locally on the subscription your omp is logged into (Claude or Codex). |
 | `create-verification-skill` | Builds a per-repo `verify-<app>` skill: a control CLI plus a feature map, so agents can drive your app and capture proof. |
 | `maintain-verification-skill` | Keeps that verify skill accurate as the app changes. |
 | `rasmic-stack` skill | Ras Mic's stack picks and the philosophy behind them: 57 cited decision rules from 166 of his videos. For web and SaaS apps it uses his exact picks. For any other app (CLI, desktop, mobile, AI agent, data/ML, security tooling) it applies his rules, labels those picks **inferred**, prototypes the risky ones, and writes a cited `STACK.md`. It also carries his UI design workflow and rstack software factory. |
 | PR review | `/deep-mode:review-pr <PR number>` reviews a PR with your own agent and parallel reviewer subagents, keeps only findings a code read or run proves, posts one comment-only GitHub review (on your own repo without asking), and re-reviews new commits until clean. Agents also self-review before opening a PR. No outside review service; code stays where the agent runs. |
 | Land a PR | `/deep-mode:land-pr <PR number>` finishes and merges your own PR with no human: reviewer bots post findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. Where the branch requires an approving review, it admin-merges only on your request or when the base branch's `.deep-mode.json` sets `"autonomousMerge": true`, and never over a failing check. Every bot runs on your own subscription in omp; no API keys. |
-| `project-brief` (maintainer) | Publishes a project for contributors: a newcomer brief (`docs/PROJECT_BRIEF.md`), small claimable tasks as GitHub Issues, a generated `ROADMAP.md`, PR and issue templates, `CONTRIBUTING.md`, and two GitHub Actions: one flags PRs that touch the same files, one keeps the roadmap current. |
+| `project-brief` (maintainer) | Publishes a project for contributors: a newcomer brief (`docs/PROJECT_BRIEF.md`), small claimable tasks as GitHub Issues, a generated `ROADMAP.md`, PR and issue templates, `CONTRIBUTING.md`, and two scripts the agent runs (no GitHub Actions): one comments when PRs touch the same files, one regenerates the roadmap. |
 | `contribute` (contributor) | `/deep-mode:contribute <what you'd like to work on>` briefs a newcomer's agent on the project, finds an unclaimed task that doesn't overlap open PRs or other claims, claims it, builds and proves it through deep-mode, and opens a PR that closes the issue. |
 | Trending catalog | `scripts/trending.py` collects new and trending repos (GitHub Trending, GitHub search for new fast risers and agent topics like skills and MCP, and githubawesome.com), enriches them with stars, license, and language, and writes a categorized digest to `references/trending/`. Before building anything, deep-mode searches it, refreshing it first when it is over a day old, so newer projects can beat the idea it already knows. |
 
@@ -86,8 +86,8 @@ Contributor, after installing the plugin:
 ```
 
 - **Claims:** a contributor's agent posts a claim comment on the issue (who, plan, files, expiry in 7 days). Other agents read claims and skip claimed work.
-- **Overlap check:** before starting and before opening a PR, the agent compares its files with every open PR and active claim. On overlap it picks other work, coordinates on the issue, or builds on top. A GitHub Action also comments on any PR that touches the same files as another.
-- **Limits:** claims are a convention, not a lock. The overlap check catches shared files, not logic conflicts in different files; CI and review catch those.
+- **Overlap check:** before starting and before opening a PR, the agent compares its files with every open PR and active claim. On overlap it picks other work, coordinates on the issue, or builds on top. After opening the PR it runs `scripts/pr-overlap.py comment` so the PR carries an overlap comment; the maintainer's agent re-runs it on open PRs.
+- **Limits:** claims are a convention, not a lock. The overlap check catches shared files, not logic conflicts in different files; local checks, review, and the panel catch those.
 - **Review:** the maintainer reviews each PR with `/deep-mode:review-pr <PR number>`; contributors' agents self-review before opening one.
 
 ## Trending catalog
