@@ -80,12 +80,19 @@ Hook that blocks secret-file access (`.claude/hooks/deny-secrets.sh`, registered
 
 ```bash
 #!/usr/bin/env bash
-hit=$(jq -r '.tool_input | tostring' | grep -Eio '(\.env[.a-z]*|id_rsa|id_ed25519|\.pem|\.aws/credentials)' | grep -Eiv '^\.env\.(example|sample|template)$' | head -n1)
-if [ -n "$hit" ]; then
-  jq -n --arg h "$hit" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:("secret path blocked: " + $h)}}'
+in=$(cat)
+deny() { jq -n --arg r "$1" '{hookSpecificOutput:{hookEventName:"PreToolUse",permissionDecision:"deny",permissionDecisionReason:$r}}'; exit 0; }
+hit=$(jq -r '.tool_input | tostring' <<<"$in" | grep -Eio '(\.env[.a-z]*|id_rsa|id_ed25519|\.pem|\.aws/credentials)' | grep -Eiv '^\.env\.(example|sample|template)$' | head -n1)
+[ -n "$hit" ] && deny "secret path blocked: $hit"
+# Grep over a directory reads every file below it, so check what it would reach. A `type` filter skips secret files.
+if [ "$(jq -r .tool_name <<<"$in")" = Grep ] && [ -z "$(jq -r '.tool_input.type // empty' <<<"$in")" ]; then
+  dir=$(jq -r '.tool_input.path // .cwd' <<<"$in"); case "$dir" in /*|[A-Za-z]:*) ;; *) dir="$(jq -r .cwd <<<"$in")/$dir" ;; esac
+  sec=$(find "$dir" \( -name .git -o -name node_modules \) -prune -o -type f -print 2>/dev/null | grep -Ei '/(\.env[.a-z]*|id_rsa|id_ed25519|[^/]*\.pem)$|/\.aws/credentials$' | grep -Eiv '/\.env\.(example|sample|template)$' | head -n1)
+  [ -n "$sec" ] && deny "Grep over $dir would read $sec; narrow path to files or dirs without secrets, or set type"
 fi
 exit 0
 ```
+The hook sees only the tool call, so a Bash `grep -r .` or a script that opens files still reaches secrets; the sandbox closes that path.
 
 MCP rules from the official [security best practices](https://modelcontextprotocol.io/docs/draft/tutorials/security/security_best_practices) (draft-track page) and [spec](https://modelcontextprotocol.io/specification/2025-11-25):
 - **Token passthrough is forbidden:** servers MUST NOT accept tokens not issued for them, and forwarding a client token downstream creates a confused deputy and breaks audit trails.
