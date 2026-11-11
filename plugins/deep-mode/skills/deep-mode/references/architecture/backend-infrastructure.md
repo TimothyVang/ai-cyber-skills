@@ -128,13 +128,15 @@ Pick rule [inference]: Python/TS app already on Postgres and small team -> DBOS 
 
 Transactional outbox (when the queue is not in your database) ([AWS Prescriptive Guidance](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html)):
 ```sql
-BEGIN;
-  UPDATE orders SET status = 'paid' WHERE id = $1;
-  INSERT INTO outbox (id, topic, payload) VALUES (gen_random_uuid(), 'order.paid', $2);
-COMMIT;
+-- one statement, one transaction: the event exists only if this call changed the order
+WITH paid AS (
+  UPDATE orders SET status = 'paid' WHERE id = $1 AND status = 'pending' RETURNING id
+)
+INSERT INTO outbox (id, topic, payload)
+SELECT uuidv7(), 'order.paid', $2 FROM paid;  -- 0 rows: order missing or already paid; no event
 -- relay: SELECT ... FROM outbox WHERE sent_at IS NULL ORDER BY id LIMIT 100 FOR UPDATE SKIP LOCKED; publish; mark sent
 ```
-Consumers must be idempotent: the relay delivers at least once ([AWS](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html)).
+Guard the state transition (`status = 'pending'`) so a retried request inserts no second event, and check the inserted row count to tell the caller whether anything changed. `uuidv7()` (Postgres 18) is time-ordered, so the relay's `ORDER BY id` approximates insert order; on older Postgres generate v7 IDs in the app. Consumers must still be idempotent by event `id`: the relay delivers at least once ([AWS](https://docs.aws.amazon.com/prescriptive-guidance/latest/cloud-design-patterns/transactional-outbox.html)).
 
 ## 4. Caching and CDNs
 
