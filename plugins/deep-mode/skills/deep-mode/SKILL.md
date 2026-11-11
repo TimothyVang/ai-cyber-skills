@@ -27,6 +27,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 | "run the factory / work the issue queue / turn issues into PRs / set up a software factory" | Factory playbook |
 | "drive the board / work the backlog / run this project autonomously / keep going on the roadmap" | Board playbook |
 | "grill me / grill this plan / stress-test this idea" | **grill** technique (`references/techniques/grill.md`) |
+| "scrape / pull / archive" a page, video, channel, or playlist, or "get his diagram" | **scrape** technique (`references/techniques/scrape.md`) |
 | An effort too big for one session with a foggy route: "wayfinder", "chart the way to X", "plan this migration before anyone builds it" | Wayfinder playbook |
 | "security-audit PRs / audit every PR / add a security gate to CI", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`) |
 | "run pr-agent / describe, review, improve this PR with PR-Agent" | **pr-agent** technique (`references/techniques/pr-agent.md`) |
