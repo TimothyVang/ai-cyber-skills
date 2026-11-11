@@ -2,6 +2,7 @@
 
     python test_bot.py
 """
+import json
 import unittest
 
 import bot
@@ -275,6 +276,20 @@ class GateTest(unittest.TestCase):
         self.assertFalse(bot.checks_pending(["check"], done, done, {"check": {"1": ["fail"]}}))  # done, red
         self.assertEqual([bot.run_bucket("in_progress", None), bot.run_bucket("completed", "skipped"),
                           bot.run_bucket("completed", "timed_out")], ["pending", "pass", "fail"])
+
+    def test_app_pinned_check_reported_as_a_commit_status(self):
+        statuses = [{"login": "ci-app[bot]", "type": "Bot", "state": "success"},  # newest first
+                    {"login": "ci-app[bot]", "type": "Bot", "state": "pending"},
+                    {"login": "someone", "type": "User", "state": "success"}]
+        replies = {"check-runs": "", "statuses": "\n".join(json.dumps(s) for s in statuses)}
+        gh, app_id_of = bot.gh, bot.app_id_of
+        bot.gh = lambda *a, **kw: next(v for k, v in replies.items() if k in a[2])
+        bot.app_id_of = lambda slug: {"ci-app": 42}.get(slug)
+        try:
+            self.assertEqual(bot.app_checks("o/r", "s" * 40, "check", [42]), {"42": ["pass"]})
+            self.assertEqual(bot.app_checks("o/r", "s" * 40, "check", [7]), {"7": []})  # not that app's status
+        finally:
+            bot.gh, bot.app_id_of = gh, app_id_of
 
 
 class TextTest(unittest.TestCase):

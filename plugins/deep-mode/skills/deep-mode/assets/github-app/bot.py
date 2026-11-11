@@ -25,6 +25,7 @@ on its base branch.
 import argparse
 import concurrent.futures
 import datetime as dt
+import functools
 import json
 import os
 import plistlib
@@ -601,8 +602,8 @@ def branch_rules(repo: str, base: str, is_admin: bool):
 
 
 def app_checks(repo: str, sha: str, name: str, apps: list) -> dict:
-    """Buckets of the check runs named `name` on `sha`, per required app id: {"<app id>": ["pass", ...]}.
-    A same-named run from any other source doesn't count toward it."""
+    """Results named `name` on `sha` per required app id, {"<app id>": ["pass", ...]}: that app's check runs,
+    and the latest commit status its bot account set for that context. Any other source doesn't count."""
     out = gh("api", "--paginate", f"repos/{repo}/commits/{sha}/check-runs?per_page=100&check_name={quote(name)}",
              "--jq", ".check_runs[] | {app: .app.id, status, conclusion} | @json")
     seen = {str(app): [] for app in apps}
@@ -610,7 +611,29 @@ def app_checks(repo: str, sha: str, name: str, apps: list) -> dict:
         run_ = json.loads(line)
         if str(run_["app"]) in seen:
             seen[str(run_["app"])].append(run_bucket(run_["status"], run_["conclusion"]))
+    out = gh("api", "--paginate", f"repos/{repo}/commits/{sha}/statuses?per_page=100", "--jq",
+             f'.[] | select(.context == {json.dumps(name)}) | {{login: .creator.login, type: .creator.type, '
+             'state} | @json')
+    latest = {}
+    for line in out.splitlines():  # newest first: the first status per creator is the one in force
+        status = json.loads(line)
+        latest.setdefault(status["login"], status)
+    for login, status in latest.items():
+        app = app_id_of(login[:-len("[bot]")]) if status["type"] == "Bot" and login.endswith("[bot]") else None
+        if str(app) in seen:
+            seen[str(app)].append(status_bucket(status["state"]))
     return seen
+
+
+@functools.lru_cache(maxsize=None)
+def app_id_of(app_slug: str):
+    """The GitHub App id behind a `<slug>[bot]` account, or None when it can't be read."""
+    proc = run(["gh", "api", f"apps/{app_slug}", "--jq", ".id"], check=False)
+    return int(proc.stdout.strip()) if proc.returncode == 0 and proc.stdout.strip().isdigit() else None
+
+
+def status_bucket(state: str) -> str:
+    return {"success": "pass", "pending": "pending"}.get(state, "fail")
 
 
 def run_bucket(status: str, conclusion) -> str:
@@ -896,6 +919,12 @@ class PRConversation:
         self.answered, self.author_reply = set(), None
 
     def run(self) -> str:
+        if self.item.get("afterMerge"):  # merged already: only the post-merge steps are left
+            if self.bot.dry:
+                print(f"  [dry-run] would finish after the merge: note {self.item['afterMerge'].get('noted', False)}, "
+                      "then the trunk check", flush=True)
+                return "dry-run"
+            return self.finish_merge()
         log(f"{self.it.key}: {'own PR' if self.own else 'not own PR: reviewer only, never merged'}")
         try:
             if self.bot.dry:
@@ -1180,11 +1209,31 @@ class PRConversation:
             return status
         method = merge_pr(self.repo, self.n, sha, admin)
         checks = ", ".join(f"`{c['name']}` {c.get('bucket')}" for c in facts["required"]) or "none required"
-        self.it.say("coordinator", "bot.py", sha,
-                    f"Merged `{sha[:7]}` ({method}). Panel {tally} PASS at this head; required checks: {checks}; "
-                    f"admin: {'yes, the required review was replaced by the panel' if admin else 'no'}.")
-        merged = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "mergeCommit")["mergeCommit"]["oid"]
-        return self.trunk_check(merged)
+        # Saved before anything else can fail: a closed PR is never listed again, so repo_cycle resumes from this.
+        self.item["afterMerge"] = {
+            "note": f"Merged `{sha[:7]}` ({method}). Panel {tally} PASS at this head; required checks: {checks}; "
+                    f"admin: {'yes, the required review was replaced by the panel' if admin else 'no'}.",
+            "pr": {"number": self.n, "baseRefName": self.base, "headRefName": self.branch, "headRefOid": sha,
+                   "title": self.pr.get("title", ""), "body": self.pr.get("body") or "", "merged": True}}
+        self.bot.save()
+        return self.finish_merge()
+
+    def finish_merge(self) -> str:
+        """After a merge: the merge note, then the trunk check. Each step is recorded, so a failed attempt
+        resumes where it stopped (repo_cycle schedules merged PRs that still have `afterMerge`)."""
+        step = self.item["afterMerge"]
+        sha = step["pr"]["headRefOid"]
+        if not step.get("noted"):
+            self.it.say("coordinator", "bot.py", sha, step["note"])
+            step["noted"] = True
+            self.bot.save()
+        if not step.get("commit"):
+            view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "mergeCommit")
+            step["commit"] = view["mergeCommit"]["oid"]
+            self.bot.save()
+        status = self.trunk_check(step["commit"])
+        self.item.pop("afterMerge")
+        return status
 
     def trunk_check(self, merged: str) -> str:
         """pr-conversation step 8: the repo's checks on the new trunk. Red opens a revert PR, which the next
@@ -1391,6 +1440,14 @@ class Bot:
                 todo.append(("pr", pr, reasons, comments))
             if first_poll:
                 starts[repo] = since  # every open PR is listed and baselined: later heads are new
+            for key, item in list(self.state["items"].items()):  # merged PRs whose post-merge steps failed
+                step = item.get("afterMerge")
+                if not key.startswith(f"{repo}#pr:") or not step or item.get("errors", 0) >= MAX_ATTEMPTS:
+                    continue
+                if want and want != f"pr:{step['pr']['number']}":
+                    continue
+                found = True
+                todo.append(("pr", dict(step["pr"]), ["finishing after the merge (trunk check)"], []))
         if not want or want.startswith("issue:"):
             listed = run(["gh", "issue", "list", "-R", repo, "--state", "open", "--limit", str(LIST_LIMIT), "--json",
                           ISSUE_FIELDS], check=False)
@@ -1421,9 +1478,9 @@ class Bot:
         if base_config(clone, default).get("bot") is False:
             log(f"{repo}: opted out ({REPO_CONFIG} bot: false)")
             return
-        writers = push_writers(repo) if any(kind == "pr" for kind, *_ in todo) else None
+        writers = push_writers(repo) if any(kind == "pr" and not d.get("merged") for kind, d, *_ in todo) else None
         for kind, data, reasons, comments in todo:
-            if kind == "pr":
+            if kind == "pr" and not data.get("merged"):
                 data["commits"], data["writers"] = pr_commits(repo, data["number"]), writers
             self.handle(repo, kind, data, reasons, comments, clone, default)
 
