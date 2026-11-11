@@ -924,7 +924,11 @@ class PRConversation:
                     print("  [dry-run] would confirm the merge, then post the note and run the trunk check",
                           flush=True)
                     return "dry-run"
-                return self.finish_merge()
+                status = self.finish_merge(settle=False)
+                if status != "merge-pending" or self.pr.get("merged"):
+                    return status
+                # Still open: the merge hasn't landed (yet). The record stays, so a late merge is still caught,
+                # and a real trigger on the open PR runs the conversation as usual.
             log(f"{self.it.key}: {'own PR' if self.own else 'not own PR: reviewer only, never merged'}")
             if self.bot.dry:
                 return self.dry_run()
@@ -1215,45 +1219,51 @@ class PRConversation:
             "pr": {"number": self.n, "baseRefName": self.base, "headRefName": self.branch, "headRefOid": sha,
                    "title": self.pr.get("title", ""), "body": self.pr.get("body") or "", "merged": True}}
         self.bot.save()
+        # On an error (even a refusal) the record stays: if GitHub accepted the merge after all, repo_cycle reads
+        # MERGED on a later cycle, however late, and finishes it.
         try:
             step["method"] = merge_pr(self.repo, self.n, sha, admin)
-        except Blocked:
-            if self.merge_state() != "MERGED":  # refused, and still not merged after the settle window
-                self.item.pop("afterMerge")
-                raise
-        self.bot.save()
-        return self.finish_merge()
+        finally:
+            self.bot.save()
+        status = self.finish_merge(settle=True)
+        if status == "merge-pending":
+            self.it.say("coordinator", "bot.py", sha, f"`gh pr merge` succeeded, but the PR doesn't read as merged "
+                        f"after {MERGE_SETTLE} s. The bot keeps checking each cycle and runs the trunk check once it "
+                        "does.")
+        return status
 
-    def merge_state(self) -> str:
-        """The PR's state, polled every 3 s for up to MERGE_SETTLE seconds until it reads MERGED: GitHub settles
-        an accepted merge asynchronously, so no caller drops its merge record on an earlier read."""
-        deadline = time.monotonic() + MERGE_SETTLE
+    def merge_view(self, settle: bool) -> dict:
+        """The PR's state, head and merge commit. With `settle`, polled every 3 s for up to MERGE_SETTLE seconds
+        until it reads MERGED (GitHub settles an accepted merge asynchronously)."""
+        deadline = time.monotonic() + (MERGE_SETTLE if settle else 0)
         while True:
-            state = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "state")["state"]
-            if state == "MERGED" or time.monotonic() >= deadline:
-                return state
+            view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "state,headRefOid,mergeCommit")
+            if view["state"] == "MERGED" or time.monotonic() >= deadline:
+                return view
             time.sleep(3)
 
-    def finish_merge(self) -> str:
+    def finish_merge(self, settle: bool) -> str:
         """After `gh pr merge`: confirm MERGED, then the merge note, then the trunk check. Each step is recorded,
-        so a failed attempt resumes where it stopped (repo_cycle schedules PRs that still have `afterMerge`)."""
+        so a failed attempt resumes where it stopped (repo_cycle schedules PRs that still have `afterMerge`).
+        No time limit drops the record: only a definitive outcome does (merged and finished, or closed)."""
         step = self.item["afterMerge"]
         sha = step["pr"]["headRefOid"]
         if not step.get("confirmed"):
-            state = self.merge_state()
-            if state != "MERGED":
+            view = self.merge_view(settle)
+            if view["state"] == "CLOSED":  # closed without merging: nothing to finish
                 self.item.pop("afterMerge")
-                raise Blocked(f"`gh pr merge` ran but the PR reads back as {state}, not MERGED")
-            step["confirmed"] = True
+                return "closed"
+            if view["state"] != "MERGED":
+                return "merge-pending"  # kept: repo_cycle reads the state again next cycle
+            if view["headRefOid"] != sha:  # merged later at another head, not by this bot's merge
+                self.item.pop("afterMerge")
+                return "merged"
+            step.update(confirmed=True, commit=view["mergeCommit"]["oid"])
             self.bot.save()
         if not step.get("noted"):
             self.it.say("coordinator", "bot.py", sha, f"Merged `{sha[:7]}` ({step.get('method') or 'merged'}). "
                         + step["summary"])
             step["noted"] = True
-            self.bot.save()
-        if not step.get("commit"):
-            view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "mergeCommit")
-            step["commit"] = view["mergeCommit"]["oid"]
             self.bot.save()
         status = self.trunk_check(step["commit"])
         self.item.pop("afterMerge")
