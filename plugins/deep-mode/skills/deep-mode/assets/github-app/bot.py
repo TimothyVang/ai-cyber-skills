@@ -283,9 +283,10 @@ def thread_text(comments: list) -> str:
 
 # ---------------------------------------------------------------- triggers and gates (pure)
 
-def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, anyone: bool = False) -> list:
+def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, anyone: bool = False,
+                   owner_only: bool = False) -> list:
     """Comments after `floor` and after the bot's last turn, by a human, from the owner or mentioning the bot
-    (from any human when `anyone`: a linked issue a PR's merge waits on)."""
+    (from any human when `anyone`: a linked issue a PR's merge waits on; only the owner's when `owner_only`)."""
     last_turn = max((c.get("createdAt", "") for c in comments if is_ours(c)), default="")
     floor = max(floor or "", last_turn)
     picked = []
@@ -293,7 +294,7 @@ def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, any
         login = login_of(c)
         if c.get("createdAt", "") <= floor or is_ours(c) or login.endswith("[bot]"):
             continue
-        if anyone or same(login, owner) or mention.lower() in (c.get("body") or "").lower():
+        if same(login, owner) or (not owner_only and (anyone or mention.lower() in (c.get("body") or "").lower())):
             picked.append(c)
     return picked
 
@@ -314,7 +315,10 @@ def pr_reasons(pr: dict, item: dict, since, owner: str, mention: str, is_ours):
     if item.get("status") == "error" and item.get("errors", 0) < MAX_ATTEMPTS:
         reasons.append(f"retry after an error ({item.get('errors', 0)}/{MAX_ATTEMPTS})")
     floor = max(since or "", item.get("lastCommentAt") or "")
-    comments = human_triggers(pr.get("comments") or [], floor, owner, mention, is_ours)
+    # On the owner's own PR the author agent runs with --approve-all, so only the owner's comments trigger a
+    # turn or reach a prompt there; anyone else's text never steers a write-enabled agent.
+    comments = human_triggers(pr.get("comments") or [], floor, owner, mention, is_ours,
+                              owner_only=same(login_of(pr), owner))
     if comments:
         reasons.append(f"{len(comments)} new comment(s)")
     return reasons, comments
@@ -1333,6 +1337,8 @@ class IssueConversation:
         sha = git(self.clone, "rev-parse", f"origin/{self.default}")
         implement = wants_implementation(self.issue, self.comments, self.item, self.bot.ident.owner,
                                          self.cfg["mention"])
+        if implement:  # the build runs with --approve-all: only the owner's comments shape its plan
+            self.comments = [c for c in self.comments if same(login_of(c), self.bot.ident.owner)]
         worktree_at(self.clone, self.tree, sha)
         if self.bot.dry:
             print(f"  [dry-run] author {role_label(self.author)} would propose a plan, reviewer "

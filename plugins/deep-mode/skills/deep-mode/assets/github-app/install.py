@@ -66,10 +66,10 @@ def say(mark: str, text: str) -> None:
 
 
 def confirm(question: str, args) -> bool:
+    if args.check:  # --check changes nothing, even with --yes
+        return False
     if args.yes:
         return True
-    if args.check:
-        return False
     return input(f"  {question} [Y/n] ").strip().lower() in ("", "y", "yes")
 
 
