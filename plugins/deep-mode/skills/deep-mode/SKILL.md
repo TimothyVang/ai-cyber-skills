@@ -2,11 +2,17 @@
 name: deep-mode
 description: "Rigorous engineering mode distilled from pstack (poteto-mode) plus Lauren Tan's later guidance: restate the goal, route to a playbook, apply named principles, prove behavior on the real app, and report with evidence. Invoked by /poteto, or when the user asks for deep-mode, poteto-mode, pstack, or rigor on large or risky work."
 disable-model-invocation: true
+hooks:
+  PreToolUse:
+    - matcher: "Write|Edit|NotebookEdit"
+      hooks:
+        - type: command
+          command: 'for f in "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/deep-mode/assets/contain/claude_guard.py" "$HOME/.claude/skills/deep-mode/assets/contain/claude_guard.py"; do if [ -f "$f" ]; then if command -v python >/dev/null 2>&1; then exec python "$f"; fi; exec python3 "$f"; fi; done; exit 0'
 ---
 
 # Deep mode
 
-Adapted for omp from pstack's `poteto-mode` (MIT, Lauren Tan / Cursor; see `LICENSE`), updated with her later posts and articles. Paths below are relative to this skill (`skill://deep-mode/...`).
+Adapted from pstack's `poteto-mode` (MIT, Lauren Tan / Cursor; see `LICENSE`), updated with her later posts and articles. Written for omp; it also runs in Claude Code and Codex. Tool names below are omp's; `references/harnesses/README.md` maps each to Claude Code and Codex. Paths below are relative to this skill (`skill://deep-mode/...` in omp).
 
 The thesis: if you want to go fast, go deep first. Verification is the limiting step. Write less code, prove more of it.
 
@@ -14,7 +20,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 
 `/poteto <anything>` is the only command a user needs. Before anything else, decide **what** they want and **how big** it is, then go. Never ask which skill, playbook, or mode to use.
 
-**1. Look around (seconds, read-only).** `git rev-parse --show-toplevel`, `gh repo view --json nameWithOwner,viewerPermission,isEmpty`, `gh api user -q .login`, and whether `docs/PROJECT_BRIEF.md`, `STACK.md`, and `.omp/skills/verify-*` exist. Outside a repo or in an empty one, treat it as a new project.
+**1. Look around (seconds, read-only).** `git rev-parse --show-toplevel`, `gh repo view --json nameWithOwner,viewerPermission,isEmpty`, `gh api user -q .login`, and whether `docs/PROJECT_BRIEF.md`, `STACK.md`, and a verify skill (`.omp/skills/verify-*`, `.claude/skills/verify-*`, or `.agents/skills/verify-*`) exist. Note which harness you run in (omp, Claude Code, Codex). Outside a repo or in an empty one, treat it as a new project and make its named repo first (Contain the work).
 
 **2. Pick the route.** First match wins.
 
@@ -46,13 +52,36 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 
 **4. Act, then report.** Git and forge work in the user's repo is yours: branches, commits, pushes, PRs, reviews and comments on your own PRs, issues, labels, board cards, and merges after a **panel** pass (`references/techniques/panel.md`). Do it as the work needs it and report it at the end. Ask, once and at the end, only for the hard stops in Autonomy.
 
+## Contain the work
+
+Every task has one project root, and every file you create or change lives inside it: code, scratch and temp files, logs, downloads, reference clones, prototypes, worktrees, evidence, and delegates' output.
+
+- **Find the root first.** In a repo, the root is the worktree you're in (`git rev-parse --show-toplevel`). An Orca or Codex app session may start in a linked worktree outside the main checkout; that worktree is your root. Worktrees you create go under the main checkout's `.worktrees/`. Name the root's absolute path in your restate.
+- **No repo? Make a named one.** Outside a repo, in a folder that isn't a project, or for a new project that isn't the current repo: pick a short kebab-case name from the goal (`sigma-rule-converter`), create `<parent>/<name>/`, and run `git init -b main` in it. `<parent>` is the current folder; the current repo's parent folder when you are inside another project (never nest a repo in a repo); or `~/code/` when the current folder is your home, a drive or filesystem root, a temp dir, or a system folder. Never reuse an existing folder; on a clash add a suffix. Creating that folder is the one write allowed outside a root. From then on, work only inside it and report its path.
+- **Scratch goes in `<root>/.scratch/`, worktrees in `<root>/.worktrees/<branch>/`.** Each holds a `.gitignore` of `*`, so neither shows in `git status` or a commit, and no file under `.git/` changes (Codex's sandbox makes `.git` read-only). Set them up once per root:
+
+  ```bash
+  ROOT=$(git rev-parse --show-toplevel); mkdir -p "$ROOT/.scratch/tmp" "$ROOT/.worktrees"
+  for d in .scratch .worktrees; do [ -f "$ROOT/$d/.gitignore" ] || printf '*\n' > "$ROOT/$d/.gitignore"; done
+  ```
+
+- **Never system temp.** No `/tmp`, `$TMPDIR`, `%TEMP%`, files in your home folder, or sibling folders. Use `mktemp -p "$ROOT/.scratch/tmp"` (`-d` for a folder) and, in Python, `tempfile.mkdtemp(dir=...)`. Before a command that makes its own temp files, set `TMPDIR`, `TMP`, and `TEMP` to `$ROOT/.scratch/tmp` in the same shell call. A harness scratchpad outside the repo (Claude Code's session scratchpad) counts as system temp.
+- **Install into the root.** Dependencies go in the project (`node_modules`, `.venv`, a local tool folder). Global installs (`npm i -g`, `pip install --user`, `cargo install`, `uv tool install`) and edits to user config (`~/.gitconfig`, shell profiles, harness settings) are hard stops.
+- **Reads are free; writes are fenced.** Reading skills, docs, harness config, or a checkout the user names is fine. Writes outside the root are allowed only for: the new repo's folder; state the harness and tools manage themselves (omp `local://` and `artifact://`, package and browser caches, Claude Code plan and memory files); a path the user explicitly named, which you list in `<root>/.deep-mode.json` under `"extraWriteRoots"`; and the deep-mode scripts that isolate a model run from the repo's own agent config (`assets/pr-agent/pr_agent_local.py`, the **security-audit** CI job), which create and delete their own folder. Any other outside write is a hard stop.
+- **Durable notes stay in the repo.** Resume notes, trails, and anything a later session needs go under `.scratch/` or `$(git rev-parse --git-common-dir)/omp-resume/`, never only in a session store.
+- **Delegates inherit the fence.** Every brief names the absolute root and says: write only inside it, scratch in `.scratch/`, worktrees in `.worktrees/`.
+- **The guard enforces it.** Claude Code: `assets/contain/claude_guard.py` denies `Write`, `Edit`, and `NotebookEdit` outside the root. The plugin's `hooks/hooks.json` arms it for the rest of a session once any `/deep-mode:` command runs; this skill's frontmatter hook arms it when the skill itself is invoked (including a manual install at `~/.claude/skills/deep-mode`). omp: `assets/contain/omp-contain.ts` blocks `write`, `edit`, and `ast_edit` outside the root once copied to `~/.omp/agent/hooks/pre/` or loaded with `--hook`.
+- **Codex fences natively.** Its `workspace-write` sandbox limits writes to the workspace; also set `[sandbox_workspace_write] exclude_tmpdir_env_var = true` and `exclude_slash_tmp = true` in `config.toml` so temp dirs are fenced too.
+- **No guard fully covers shell commands,** so the rule still binds `bash`. A denial means move the file into the root; never route around the guard. Per-harness details: `references/harnesses/README.md`.
+- **Before reporting done,** `git status --porcelain` lists only intended changes, `.scratch/tmp/` is emptied, and evidence the report links sits under `.scratch/evidence/`.
+
 ## Non-negotiables
 
 For size **S**, only the one-line restate and proving it on the real artifact apply. The rest of this section applies when a rule would change the fix.
 
 - **Restate first.** Your first message on a task states, in your own words, the user's goal, the problem they are solving, and, if the task ships a change, the smallest change you expect to meet it. Don't wait for confirmation. If the evidence rules out the requested change, show it and stop. Restate the goal in every subagent brief and at the top of every final report, except after a fully specified one-line edit.
 - **Name your principles, in plain words.** For size M and L, add one short "Why I chose this" line naming each principle that changed a decision and the choice it changed, phrased so a non-expert follows ("I fixed the comparison where stock is checked, not the caller, because that's where it goes wrong"). Cite only principles whose file you read this session in `references/principles/`. Skip it for size S.
-- **Prove it on the real artifact.** Before calling anything done, run the real app, CLI, or service path and capture evidence. If the repo has `.omp/skills/verify-<app>/`, use it. If not and the task changes user-visible behavior: when the user pre-authorized it (the `/poteto` command does), run `skill://create-verification-skill` first; otherwise offer `/skill:create-verification-skill` once and prove the change by hand. Tests passing and "it compiles" are not proof.
+- **Prove it on the real artifact.** Before calling anything done, run the real app, CLI, or service path and capture evidence. If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it. If not and the task changes user-visible behavior: when the user pre-authorized it (the `/poteto` command does), run `skill://create-verification-skill` first; otherwise offer `/skill:create-verification-skill` once and prove the change by hand. Tests passing and "it compiles" are not proof.
 - **Decide; don't ask.** About to `ask` "which approach" or "what should this do"? Settle it yourself, by kind. A fact → look it up. An observable fork (behavior, timing, layout, output, perf, whether an eval separates) → run the Prototype playbook and let the result decide. A product, design, or preference call → make it (Autonomy). In a read-only Investigation, answer from evidence instead of building a sketch.
 - **Before building anything new** (a feature, tool, integration, or project) → **prior-art** (`references/techniques/prior-art.md`): search GitHub, the package registries, and official docs for code to depend on, copy, fork, or clone, and check its license first.
 - **Name the data shape before any code**, and choose its organizing structure per `references/principles/model-the-domain.md`.
@@ -88,16 +117,17 @@ One file per principle in `references/principles/<name>.md`. Read the file befor
 - **Just do it.** Work proceeds without asking, including commits, pushes, PRs, issues, board cards, and merges.
 - **Done means a panel pass.** No task is done and nothing merges until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. Then merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
 - **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself: pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal. Log each one as a show-me-your-work trail row (choice, why, evidence, how to reverse), and list them in the final reply under "Decisions I made" so the user can override any. Where a playbook or technique says to ask the user before deciding, committing, pushing, opening a PR, or merging, this rule wins.
-- **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has. A request that already asks for one of these is its yes. One standing yes: a repo whose base branch has `.deep-mode.json` `{"autonomousMerge": true}` lets the **pr-conversation** technique admin-merge your own PRs past a required review, never past a failing check.
-- **Your subscription, not an API.** Every model call runs on the session's model through omp `task` subagents, or `omp -p` from scripts, so it draws on the user's Claude or Codex subscription usage. Never set up an API key or wait on a hosted review bot.
+- **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has; writes outside the project root (Contain the work). A request that already asks for one of these is its yes.
+- **One standing yes:** a repo whose base branch has `.deep-mode.json` `{"autonomousMerge": true}` lets the **pr-conversation** technique admin-merge your own PRs past a required review, never past a failing check.
+- **Your subscription, not an API.** Every model call runs on the session's model: subagents, or a headless run from scripts (`omp -p`, `claude -p`, `codex exec`), so it draws on the user's Claude or ChatGPT subscription. Never set up an API key or wait on a hosted review bot. A set `ANTHROPIC_API_KEY` makes `claude -p` bill the API, and a set `OPENAI_API_KEY` or `CODEX_API_KEY` does the same for `codex exec`; unset them in the child's environment.
 - **Session overrides.** "Don't stop", "going to bed", "run until done" mean keep going until the work is done or only hard stops remain, and report every decision at the end.
 - **No is an acceptable answer.** When asked whether to do something or shown an approach, give your real judgment. Push back or say "this doesn't earn its place" when true. Candor over agreement.
 
 ## Subagents
 
 - You run the playbook. Delegates do bounded steps. Never delegate the playbook itself.
-- Use omp `task`. Read-only research uses `agent: "scout"`. Anything that edits, runs the app, or reads transcripts uses the default agent. `reviewer` is read-only: use it only to review a diff. Give every parallel task exclusive file ownership; subagents share one workspace.
-- Every brief restates the user's goal, names the exact files and acceptance check, and tells code-writing delegates which `skill://deep-mode/references/principles/<name>.md` files apply. Subagents do not receive AGENTS.md, so put anything they must follow in the brief.
+- Use your harness's subagent tool: omp `task`, Claude Code `Agent`, Codex `spawn_agent` (Codex spawns only when told to). Read-only research uses omp `agent: "scout"`, Claude Code `Explore`, or Codex `explorer`. Anything that edits, runs the app, or reads transcripts uses the default agent. omp `reviewer` is read-only: use it only to review a diff. Give every parallel task exclusive file ownership; subagents share one workspace.
+- Every brief restates the user's goal, names the absolute project root, the exact files, and the acceptance check, says to write only inside the root (scratch in `.scratch/`), and tells code-writing delegates which `skill://deep-mode/references/principles/<name>.md` files apply. omp subagents do not receive AGENTS.md, so put anything they must follow in the brief.
 - Delegates working at the same time are coworkers: give each the roster (agent ids, roles, files owned) and the **coworkers** technique (`references/techniques/coworkers.md`), so they ask, hand off, and push back on each other directly instead of through you. Panel verifiers are the exception: they vote before they talk.
 - Tier by difficulty. The hardest changes (cross-cutting design, concurrency, subtle algorithms) go to your strongest judgment model. Mechanical edits go to a fast model. For a second opinion or a judge, use a different model family when one is available. Agreement across families is high signal.
 - You own every delegate's work. Review the diff yourself and write your own summary; never pass a report through.
@@ -156,7 +186,9 @@ A large or cross-cutting effort with no clean fit, or work the user steps away f
 
 **Stack, UI design, and factory tooling** come from `skill://rasmic-stack` (Ras Mic's picks and philosophy); its "With deep-mode" section sets the split. Greenfield web, SaaS, or AI-app framework, backend, auth, payments, or deploy choice → its `references/stack.md`. Any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling), or "build the stack for me" → its `references/any-app-stack.md`, which writes a cited `STACK.md`. Designing a UI with an agent → its `references/design-workflow.md`; rebuilding to the standard of a named reference app → the Reference rebuild playbook. Recording UI proof with no `verify-<app>` skill → its `references/evidence-driven-testing/`. Your gates and playbooks still govern.
 
-**Agent tooling** (browser automation, agent sandboxes, coding-agent harnesses or multi-agent orchestrators, autoresearch loops) → read the cited landscape in `research/README.md` of a local checkout of `TimothyVang/automation-tools` before picking a tool. No checkout: `gh repo clone TimothyVang/automation-tools` (private; skip if you can't access it). It is a 2026-11-11 snapshot tuned for omp + Orca on Windows, so recheck release dates and licenses of the tool you pick.
+**Harnesses, protocols, and AI-native tooling** (using, configuring, or scripting omp, Claude Code, or Codex; MCP, ACP, A2A, WebMCP; skills, plugins, `AGENTS.md`, hooks, sandboxes, headless runs) → read `references/harnesses/README.md`, then only the file the task touches. Those files carry the cited, dated facts (paths, flags, tool names) and the traps for deep-mode in each harness.
+
+**Agent tooling** (browser automation, agent sandboxes, coding-agent harnesses or multi-agent orchestrators, autoresearch loops) → read the cited landscape in `research/README.md` of a local checkout of `TimothyVang/automation-tools` before picking a tool. No checkout: `gh repo clone TimothyVang/automation-tools .scratch/refs/automation-tools` from the project root (private; skip if you can't access it). It is a 2026-11-11 snapshot tuned for omp + Orca on Windows, so recheck release dates and licenses of the tool you pick.
 
 **Engineering domain rules** come from `references/cloudxberry/` (Cloud X Berry's videos; its `README.md` lists sources). Read only the file the task touches, before designing or reviewing in that area:
 
@@ -167,7 +199,7 @@ A large or cross-cutting effort with no clean fit, or work the user steps away f
 - Linux, shell tools, git, containers, Kubernetes, Terraform, CI/CD, deploy strategy, secrets, or a bug rooted in data structures, complexity, memory, floats, concurrency, or network protocols → `references/cloudxberry/devops-and-fundamentals.md`.
 - Unfamiliar codebase, stuck on an error, slowness, memory, or race debugging, legacy code, PR or commit text, production incident, estimates, or pushing back on scope → `references/cloudxberry/engineering-practice.md`.
 
-**Frontend UI/UX** (building, restyling, or reviewing UI; motion; color; accessibility; chat or agent UI) → before writing UI code, read `AGENTS.md` in a local checkout of `TimothyVang/frontend`, then the `PLAYBOOK.md` section it routes to. Its `reference/` holds the cited evidence (articles, talks, clips, live demos) and its `.claude/skills/` the vendored design skills. No checkout: `gh repo clone TimothyVang/frontend` (private; skip if you can't access it). It adds component, motion, color, and agent-UI rules on top of rasmic-stack's design workflow.
+**Frontend UI/UX** (building, restyling, or reviewing UI; motion; color; accessibility; chat or agent UI) → before writing UI code, read `AGENTS.md` in a local checkout of `TimothyVang/frontend`, then the `PLAYBOOK.md` section it routes to. Its `reference/` holds the cited evidence (articles, talks, clips, live demos) and its `.claude/skills/` the vendored design skills. No checkout: `gh repo clone TimothyVang/frontend .scratch/refs/frontend` from the project root (private; skip if you can't access it). It adds component, motion, color, and agent-UI rules on top of rasmic-stack's design workflow.
 
 **Cloud security and DevSecOps rules** come from `references/cloud-devsecops/` (cited reports in `TimothyVang/cloud-devsecops`; its `README.md` lists them). They cover securing and wiring up a cloud, where `cloudxberry/aws-networking.md` covers how AWS networking works. Read the file the task touches before designing, reviewing, or changing cloud access, policy, or pipelines:
 

@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Run a self-contained capture script with dependencies outside the project.
+# Run a self-contained capture script with dependencies kept out of the project's own package files.
+# The capture dir lives in the repo's git-excluded .scratch/, never system temp (deep-mode "Contain the work").
 set -euo pipefail
 
 if [[ $# -lt 1 || ! -f "$1" ]]; then
@@ -10,7 +11,10 @@ fi
 CAPTURE_SCRIPT="$1"
 shift
 SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-CAPTURE_DIR=$(mktemp -d "${TMPDIR:-/tmp}/skill-playwright.XXXXXXXX")
+SCRATCH="$(git rev-parse --show-toplevel 2>/dev/null || pwd)/.scratch"
+mkdir -p -- "$SCRATCH"
+[ -f "$SCRATCH/.gitignore" ] || printf '*\n' > "$SCRATCH/.gitignore"
+CAPTURE_DIR=$(mktemp -d "$SCRATCH/skill-playwright.XXXXXXXX")
 trap 'rm -rf -- "$CAPTURE_DIR"' EXIT
 
 # ESM resolves imports beside the script, independently of the working directory.

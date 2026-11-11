@@ -13,7 +13,7 @@ All deep-mode rules apply (`skill://deep-mode`). Three matter most here:
 - **Restate the goal first** with the **in-your-own-words** technique (`skill://deep-mode/references/techniques/in-your-own-words.md`).
 - **Prove it on the real app** and put the evidence in the PR.
 
-Shell notes: use `mktemp` for scratch files, never `/tmp`. Use `python` (or `python3` where `python` is missing). Below, `R` is `owner/name` and `N` is the issue number.
+Shell notes: all work stays inside the project's clone (deep-mode's "Contain the work" section). Scratch files go in its git-excluded `.scratch/` (`f=$(mktemp -p .scratch)` from the clone's root), never `/tmp`, system temp, or your home folder. Use `python` (or `python3` where `python` is missing). Below, `R` is `owner/name` and `N` is the issue number.
 
 ## Overlap tool
 
@@ -53,7 +53,7 @@ Released by @<login>: <one-line reason>
 
 1. **Find the repo.**
    - In a git clone → `gh repo view --json nameWithOwner,defaultBranchRef,viewerPermission`.
-   - Given a URL or `owner/name` → `gh repo clone R` into a directory the human picks (default: the current directory), then the same `gh repo view`.
+   - Given a URL or `owner/name` → `gh repo clone R <name>` into a folder named after the repo under the current directory (beside the current repo, never inside it, when the current directory is another project; a folder the human names wins). That clone is the project root for all later work. Then the same `gh repo view`.
    - `viewerPermission` is not `WRITE`, `MAINTAIN`, or `ADMIN` → you can't push branches here. Tell the human you need a fork, and on their yes run `gh repo fork R --remote` (the fork becomes `origin`, the project becomes `upstream`). From then on "main" means `upstream`'s default branch.
    - Below, "main" means the default branch from `defaultBranchRef`, whatever its name.
 
@@ -92,7 +92,7 @@ Released by @<login>: <one-line reason>
 
 6. **Claim it.** Show the human the exact claim comment (format above, with the real login, plan, files, and date). On their yes:
    - Right before posting, run `python "$OVERLAP" claims --repo R --json`. Issue N already has an active claim or an assignee from another login → stop, tell the human, and go back to step 4 or coordinate as in step 5.
-   - Write the body to a `mktemp` file and post it: `gh issue comment N --repo R --body-file "$f"`.
+   - Write the body to a `mktemp -p .scratch` file and post it: `gh issue comment N --repo R --body-file "$f"`.
    - Self-assign if the repo permits: `gh issue edit N --repo R --add-assignee @me`. A permission error is fine; the claim comment is the record.
    - Right after posting, run `gh issue view N --repo R --comments` and confirm no other author posted a claim comment after your step-4 read. One did → post the unclaim comment (format above) for yourself, tell the human, and pick other work (step 4) or coordinate with them (step 5).
 

@@ -62,7 +62,7 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
    - Make **Area / files** concrete repo paths; overlap checks depend on them. Split tasks so open tasks touch disjoint paths where you can. Size L means split it first.
    - Label every task `help wanted`; add `good first issue` to S tasks that need no deep context.
    - Prefer adding a task shape to an existing issue over a duplicate; list those as "edit #N" rather than "new".
-   - Draft the full list (title, size, labels, area/files, new vs. edit) and the issue bodies, but create nothing yet; step 7 asks about it together with shipping. Write each body to a `mktemp` file using `### <field label>` headings in form order (the shape GitHub renders for form issues).
+   - Draft the full list (title, size, labels, area/files, new vs. edit) and the issue bodies, but create nothing yet; step 7 asks about it together with shipping. Write each body to a `mktemp -p .scratch` file (the repo's git-excluded scratch folder; never system temp) using `### <field label>` headings in form order (the shape GitHub renders for form issues).
 
 4. **Install the assets** per the table above, into the working tree only.
    - Missing file → copy it. Existing identical file → leave it. Existing different file → show the diff and merge by hand: keep the maintainer's content, add only missing sections. Never overwrite.

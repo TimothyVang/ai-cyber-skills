@@ -7,7 +7,7 @@ This playbook inverts the laziness protocol's "smallest change" and the verifica
 ## Steps
 1. Scope the decision the prototype exists to make.
 2. Open design space → gather references: search prior art, summarize a moodboard (themes, palettes, layouts), pick the directions to build, and log why. Skip when the direction is set.
-3. Build throwaway in an isolated scratch dir outside production source:
+3. Build throwaway in `<root>/.scratch/prototype-<decision>/`: inside the project root, git-excluded, outside production source (SKILL.md "Contain the work"). No project yet → create the named repo first.
    - Visual: vanilla HTML/CSS/JS or the lightest stack that renders it, CDN deps, hot-reload dev server.
    - Behavioral/timing: the smallest script that exercises the question.
 4. Comparing alternatives → put variants behind one labeled switcher (buttons or keypress) (`references/principles/exhaust-the-design-space.md`).

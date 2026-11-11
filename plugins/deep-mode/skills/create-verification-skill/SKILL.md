@@ -10,6 +10,8 @@ Adapted for omp from pstack's `create-verification-skill` (MIT, Lauren Tan / Cur
 
 Every serious project needs a scripted way to drive the real app and prove behavior: launch it, exercise a feature the way a user would, and capture evidence. This skill generates that as a project-local omp skill at `<repo>/.omp/skills/verify-<app>/`, which omp discovers automatically for every session in the repo. Write the output for the next agent, not for a human: it will be read cold, mid-task, by an agent that has never seen the app.
 
+Outside omp, write the same skill to the folder your harness discovers and substitute that path for `.omp/skills/` below: Claude Code reads `.claude/skills/verify-<app>/`, and Codex and most other agents read `.agents/skills/verify-<app>/` (`skill://deep-mode/references/harnesses/README.md` has the map). Codex's sandbox makes `.agents/` read-only, so creating it there needs the user's approval.
+
 ## 1. Interview the repo, not the user
 
 Answer these from the codebase. Ask the user (via `ask`) only what you cannot observe:

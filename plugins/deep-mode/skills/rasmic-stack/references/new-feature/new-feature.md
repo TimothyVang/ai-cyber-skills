@@ -40,10 +40,11 @@ prefix alone. Otherwise follow all steps.
      -b <branch-prefix>/<task-name> origin/main
    ```
 
-   Use a directory outside the checkout, or a **gitignored** directory inside
-   it, so worktrees cannot be committed by accident. Use a
-   consistent branch prefix (e.g. `agent/`). Follow the repo's conventions
-   if it defines them.
+   Use `<repo>/.worktrees/` as `<worktrees-dir>`, with a `.gitignore` of
+   `*` inside it, so worktrees stay inside the project and cannot be
+   committed by accident. Never put a worktree in a sibling or temp folder.
+   Use a consistent branch prefix (e.g. `agent/`). Follow the repo's
+   conventions if it defines them.
 
 5. **Enter and verify**:
 
