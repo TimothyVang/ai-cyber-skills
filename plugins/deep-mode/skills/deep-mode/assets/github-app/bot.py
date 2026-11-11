@@ -14,9 +14,10 @@ posts their replies as the app (`<slug>[bot]`), or as the user's `gh` when no ap
 every deterministic step itself with the user's own git/gh credentials: pushes, PR creation, the merge
 gate and the merge.
 
---dry-run posts, pushes, commits and merges nothing and saves no state. It prints what each triggered item
-would get; with --item it also runs that item's first read-only agent turn (the reviewer on a PR, the
-author's plan on an issue) and prints the reply.
+--dry-run posts, pushes, commits and merges nothing and saves no state, so it takes no lock and works in its own
+clones and worktrees (<cache>/dry-run) beside a running bot. It prints what each triggered item would get; with
+--item it also runs that item's first read-only agent turn (the reviewer on a PR, the author's plan on an issue)
+and prints the reply.
 
 Config: <CONFIG_DIR>/bot.json (defaults for missing keys; never overwritten). A repo opts out with
 `"bot": false`, and turns merging off with `"autonomousMerge": false`, in the brand's repo config file
@@ -444,6 +445,10 @@ def gate_decision(f: dict):
             reasons.append("a required review blocks the merge and you are not a repo admin")
         elif f["otherRules"]:
             reasons.append(f"--admin would also bypass {', '.join(f['otherRules'])}, not just the required review")
+        elif failing := sorted({c["name"] for c in f["checks"] if c.get("bucket") in ("fail", "cancel")}):
+            # SKILL.md Autonomy: an admin merge goes past a required review, never past a failing check,
+            # required or not.
+            reasons.append(f"--admin would merge over failing check(s) {', '.join(f'`{n}`' for n in failing)}")
         else:
             admin = True
     elif state not in ("CLEAN", "HAS_HOOKS", "UNSTABLE"):
@@ -1603,6 +1608,13 @@ class Lock:
 
 
 def cmd_once(args) -> None:
+    if args.dry_run:
+        # Posts, pushes, merges and saves nothing, so it runs beside a running bot without its lock, in its own
+        # clones and worktrees, so it never resets a worktree the bot is using.
+        global WORK
+        WORK = WORK / "dry-run"
+        Bot(args).cycle()
+        return
     with Lock():
         Bot(args).cycle()
 

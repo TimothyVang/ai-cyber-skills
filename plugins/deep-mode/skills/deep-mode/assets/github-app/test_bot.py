@@ -268,7 +268,8 @@ class GateTest(unittest.TestCase):
             self.assertTrue(reasons, name)
 
     def test_admin_only_when_review_is_the_only_blocker(self):
-        review = {"mergeStateStatus": "BLOCKED", "reviewDecision": "REVIEW_REQUIRED"}
+        green = [{"name": "check", "bucket": "pass"}, {"name": "lint", "bucket": "skipping"}]
+        review = {"mergeStateStatus": "BLOCKED", "reviewDecision": "REVIEW_REQUIRED", "checks": green}
         self.assertEqual(bot.gate_decision(self.facts(**review)), (True, True, []))
         self.assertFalse(bot.gate_decision(self.facts(**review, isAdmin=False))[0])
         self.assertEqual(bot.gate_decision(self.facts(**review, mergeable="CONFLICTING"))[:2], (False, False))
@@ -277,14 +278,25 @@ class GateTest(unittest.TestCase):
         signed = self.facts(**review, otherRules=["required_signatures"])  # --admin would skip it too
         self.assertEqual(bot.gate_decision(signed)[:2], (False, False))
 
+    def test_admin_never_merges_over_a_failing_check_required_or_not(self):
+        # the base facts carry a failing non-required `lint`: a plain merge may go ahead, --admin may not
+        self.assertTrue(bot.gate_decision(self.facts())[0])
+        review = {"mergeStateStatus": "BLOCKED", "reviewDecision": "REVIEW_REQUIRED"}
+        ok, admin, reasons = bot.gate_decision(self.facts(**review))
+        self.assertEqual((ok, admin), (False, False))
+        self.assertIn("`lint`", reasons[0])
+        cancelled = [{"name": "check", "bucket": "pass"}, {"name": "tests", "bucket": "cancel"}]
+        self.assertFalse(bot.gate_decision(self.facts(**review, checks=cancelled))[0])
+
     def test_app_pinned_check_counts_only_that_apps_runs(self):
         review = {"mergeStateStatus": "BLOCKED", "reviewDecision": "REVIEW_REQUIRED"}
         # a same-named run from another source passes, but the pinned app's run never reported
         impostor = self.facts(**review, pinnedChecks={"check": {"15368": []}})
         self.assertEqual(bot.gate_decision(impostor)[:2], (False, False))
         self.assertFalse(bot.gate_decision(self.facts(pinnedChecks={"check": {"15368": ["fail"]}}))[0])
-        self.assertEqual(bot.gate_decision(self.facts(**review, pinnedChecks={"check": {"15368": ["pass"]}}))[:2],
-                         (True, True))
+        green = [{"name": "check", "bucket": "pass"}]
+        self.assertEqual(bot.gate_decision(self.facts(**review, checks=green,
+                                                      pinnedChecks={"check": {"15368": ["pass"]}}))[:2], (True, True))
 
     def test_checks_pending(self):
         done = [{"name": "check", "bucket": "pass"}]
