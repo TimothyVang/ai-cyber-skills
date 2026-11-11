@@ -176,6 +176,14 @@ class TriggerTest(unittest.TestCase):
         issue = {"author": {"login": "x"}, "body": "do it", "labels": []}
         self.assertTrue(bot.wants_implementation(issue, merged, {"handled": True}, OWNER, MENTION))
 
+    def test_a_build_never_reuses_a_discussion_session(self):
+        talk = bot.issue_sessions("o-r-issue7", False)
+        self.assertEqual(talk, bot.issue_sessions("o-r-issue7", False))  # discussion keeps its context
+        first, second = bot.issue_sessions("o-r-issue7", True), bot.issue_sessions("o-r-issue7", True)
+        self.assertFalse(set(first) & set(talk))  # no third-party context from earlier discussion turns
+        self.assertFalse(set(first) & set(second))  # nor from an earlier build
+        self.assertEqual(len(set(first)), 3)
+
     def test_signature_counts_only_from_the_app_or_the_owner(self):
         ident = object.__new__(bot.Identity)
         ident.owner, ident.logins = OWNER, {"app-slug[bot]", "app-slug"}

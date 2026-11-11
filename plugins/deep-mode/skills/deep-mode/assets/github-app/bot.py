@@ -850,6 +850,16 @@ Vote FAIL only when a documented check fails on this commit; a red trunk gets th
 """
 
 
+def issue_sessions(tag: str, build: bool):
+    """ACP session names for an issue's (author, reviewer, implement) turns. Discussion reuses one pair per
+    issue so the thread keeps its context. A build gets three new sessions: acpx sessions keep every earlier
+    turn, and an earlier discussion may hold other people's comments that must not steer a --approve-all agent."""
+    if not build:
+        return f"{tag}-author", f"{tag}-reviewer", None
+    fresh = f"{tag}-build-{uuid.uuid4().hex[:8]}"
+    return f"{fresh}-author", f"{fresh}-reviewer", f"{fresh}-implement"
+
+
 def issue_text(issue: dict) -> str:
     return f"title: {issue.get('title', '')}\nauthor: {login_of(issue)}\n\n{issue.get('body') or ''}"
 
@@ -1349,7 +1359,7 @@ class IssueConversation:
                 self.it.say("author", self.author, sha,
                             self.it.ask(self.author, plan_prompt(self), self.tree, "--approve-reads"))
             return "dry-run"
-        author_session, reviewer_session = f"{self.it.tag}-author", f"{self.it.tag}-reviewer"
+        author_session, reviewer_session, build_session = issue_sessions(self.it.tag, implement)
         plan = self.it.ask(self.author, plan_prompt(self), self.tree, "--approve-reads", author_session)
         self.it.say("author", self.author, sha, plan)
         critique = self.it.ask(self.reviewer, critique_prompt(self, plan), self.tree, "--approve-reads",
@@ -1359,9 +1369,9 @@ class IssueConversation:
         self.it.say("author", self.author, sha, answer)
         if not implement:
             return "discussed"
-        return self.implement(f"Plan:\n{plan}\n\nReview:\n{critique}\n\nAnswer:\n{answer}")
+        return self.implement(f"Plan:\n{plan}\n\nReview:\n{critique}\n\nAnswer:\n{answer}", build_session)
 
-    def implement(self, discussion: str) -> str:
+    def implement(self, discussion: str, session: str) -> str:
         branch = f"{B['branchPrefix']}/issue-{self.n}"
         existing = gh_json("pr", "list", "-R", self.repo, "--head", branch, "--state", "open", "--json", "url") or []
         if existing:
@@ -1382,8 +1392,7 @@ class IssueConversation:
         tree = worktree_at(self.clone, self.tree.with_name(f"issue{self.n}-impl"),
                            f"origin/{branch}" if on_remote else f"origin/{self.default}", branch=branch)
         old = git(tree, "rev-parse", "HEAD")
-        reply = self.it.ask(self.author, implement_prompt(self, branch, discussion), tree, "--approve-all",
-                            f"{self.it.tag}-implement")
+        reply = self.it.ask(self.author, implement_prompt(self, branch, discussion), tree, "--approve-all", session)
         new = git(tree, "rev-parse", "HEAD")
         if int(git(tree, "rev-list", "--count", f"origin/{self.default}..HEAD")) == 0:
             self.it.say("coordinator", "bot.py", new, "The author made no commits, so no PR was opened.\n\n" + reply)
