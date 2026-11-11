@@ -99,7 +99,7 @@ def omp_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
     }
 
 
-def make_handler(model: str | None, log: list, secret: str):
+def make_handler(model: str | None, log: list, failures: list, secret: str):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -138,12 +138,17 @@ def make_handler(model: str | None, log: list, secret: str):
             if not isinstance(messages, list) or not all(isinstance(m, dict) for m in messages):
                 self._json(400, {"error": {"message": "invalid request body"}})
                 return
+            if failures:
+                # PR-Agent retries a failed call several times; each retry would spend another omp run.
+                self._json(500, {"error": {"message": f"an earlier call failed: {failures[0]}", "type": "server_error"}})
+                return
             started = time.monotonic()
             try:
                 text, usage = omp_complete(request.get("messages", []), model)
                 # The model may echo flatten()'s word joiners; they must not reach suggested code.
                 text = text.replace("\u2060", "")
             except Exception as exc:  # reported to PR-Agent as an API error
+                failures.append(str(exc)[:300])
                 self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
                 return
             log.append({"seconds": round(time.monotonic() - started, 1), "text": text, **usage})
@@ -187,8 +192,9 @@ def main() -> int:
         sys.exit("pr_agent_local: `gh auth token` returned nothing; run `gh auth login`")
 
     calls: list = []
+    failures: list = []
     secret = secrets.token_urlsafe(32)
-    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(opts.model, calls, secret))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(opts.model, calls, failures, secret))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}/v1"
 
@@ -202,6 +208,9 @@ def main() -> int:
         "CONFIG__CUSTOM_MODEL_MAX_TOKENS": "150000",
         "CONFIG__MAX_MODEL_TOKENS": "150000",
         "CONFIG__PUBLISH_OUTPUT": "false" if opts.dry_run else "true",
+        # PR-Agent gives up on a model call after 120 s by default; a large diff on a subscription model takes
+        # longer, and the abandoned omp child would keep spending usage. Match the child's own timeout.
+        "CONFIG__AI_TIMEOUT": "900",
         "OPENAI__KEY": secret,
         "OPENAI__API_BASE": base,
         "OPENAI_API_BASE": base,
@@ -216,6 +225,9 @@ def main() -> int:
           f"{spent:.0f}s, "
           f"{sum(c['prompt_tokens'] for c in calls)} in / {sum(c['completion_tokens'] for c in calls)} out tokens",
           file=sys.stderr)
+    if failures:
+        print(f"pr_agent_local: a model call failed, so the run is incomplete: {failures[0]}", file=sys.stderr)
+        return code or 1
     if not calls and code == 0:
         print("pr_agent_local: PR-Agent made no model calls; check its output above", file=sys.stderr)
     if opts.dry_run:
