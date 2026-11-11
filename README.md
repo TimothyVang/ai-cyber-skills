@@ -9,11 +9,12 @@ deep-mode is adapted from [pstack](https://github.com/cursor/plugins/tree/main/p
 | Piece | What it does |
 |---|---|
 | `/poteto <anything>` | The one command. It reads your request and the repo, routes it (fix, feature, review a PR, drive a kanban board, chart a big effort, grill a plan, contribute to a project, set up a project for helpers, start a new app and pick its stack), sizes it (fast path for small jobs, full playbook for big ones), proves the result on the real app, lands it on a 3-agent panel pass, and reports what it decided. |
-| `deep-mode` skill | 26 playbooks (bug fix, feature, board, wayfinder, factory, perf, refactor, prototype, babysit, shipping, autopilot, and more), 24 principles, and 27 techniques, including the verdict panel, grill, coworkers, prior-art search (GitHub, package registries, docs) before building, a CI security audit of every PR, and PR-Agent run locally on your Claude subscription. |
+| `deep-mode` skill | 26 playbooks (bug fix, feature, board, wayfinder, factory, perf, refactor, prototype, babysit, shipping, autopilot, and more), 24 principles, and 28 techniques, including the verdict panel, grill, coworkers, prior-art search (GitHub, package registries, docs) before building, a CI security audit of every PR, and PR-Agent run locally on the subscription your omp is logged into (Claude or Codex). |
 | `create-verification-skill` | Builds a per-repo `verify-<app>` skill: a control CLI plus a feature map, so agents can drive your app and capture proof. |
 | `maintain-verification-skill` | Keeps that verify skill accurate as the app changes. |
 | `rasmic-stack` skill | Ras Mic's stack picks and the philosophy behind them: 57 cited decision rules from 166 of his videos. For web and SaaS apps it uses his exact picks. For any other app (CLI, desktop, mobile, AI agent, data/ML, security tooling) it applies his rules, labels those picks **inferred**, prototypes the risky ones, and writes a cited `STACK.md`. It also carries his UI design workflow and rstack software factory. |
 | PR review | `/deep-mode:review-pr <PR number>` reviews a PR with your own agent and parallel reviewer subagents, keeps only findings a code read or run proves, posts one comment-only GitHub review (on your own repo without asking), and re-reviews new commits until clean. Agents also self-review before opening a PR. No outside review service; code stays where the agent runs. |
+| Land a PR | `/deep-mode:land-pr <PR number>` finishes and merges your own PR with no human: reviewer bots post findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. Where the branch requires an approving review, it admin-merges only on your request or when the base branch's `.deep-mode.json` sets `"autonomousMerge": true`, and never over a failing check. Every bot runs on your own subscription in omp; no API keys. |
 | `project-brief` (maintainer) | Publishes a project for contributors: a newcomer brief (`docs/PROJECT_BRIEF.md`), small claimable tasks as GitHub Issues, a generated `ROADMAP.md`, PR and issue templates, `CONTRIBUTING.md`, and two GitHub Actions: one flags PRs that touch the same files, one keeps the roadmap current. |
 | `contribute` (contributor) | `/deep-mode:contribute <what you'd like to work on>` briefs a newcomer's agent on the project, finds an unclaimed task that doesn't overlap open PRs or other claims, claims it, builds and proves it through deep-mode, and opens a PR that closes the issue. |
 
@@ -67,7 +68,7 @@ Copy every folder in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` (or `
 - Small jobs take the fast path. Big ones get the full playbook, subagents, and a decision log.
 - It decides and acts without asking: commits, pushes, PRs, board cards, and merges after a panel pass. It asks once at the end only for hard stops (deploys, deletions, shared-history rewrites, outside messages, money, secrets), and lists every decision it made so you can reverse any.
 - On a new repo, medium and large jobs first build a `verify-<app>` skill so the agent can prove changes. Later runs reuse it.
-- The direct commands still work: `/deep-mode:review-pr`, `/deep-mode:contribute`, `/deep-mode:project-brief`.
+- The direct commands still work: `/deep-mode:review-pr`, `/deep-mode:land-pr`, `/deep-mode:contribute`, `/deep-mode:project-brief`.
 
 ## Collaborate on a project
 
