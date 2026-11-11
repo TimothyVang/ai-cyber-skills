@@ -40,14 +40,18 @@ HTTP/1.1 401 Unauthorized
 WWW-Authenticate: Bearer resource_metadata="https://mcp.example.com/.well-known/oauth-protected-resource", scope="files:read"
 ```
 
-On-behalf-of token exchange per RFC 8693 (agent backend, never the model, makes this call):
+On-behalf-of token exchange per RFC 8693 (agent backend, never the model, makes this call). The tokens and client secret reach curl as a config file on stdin (`-K -`); `printf` is a shell builtin, so none of them appear in the process list:
 
 ```sh
-curl -s https://as.example.com/token \
+printf '%s\n' \
+  "user = \"$CLIENT_ID:$CLIENT_SECRET\"" \
+  "data-urlencode = \"subject_token=$USER_ACCESS_TOKEN\"" \
+  "data-urlencode = \"actor_token=$AGENT_TOKEN\"" |
+curl -s -K - https://as.example.com/token \
   -d grant_type=urn:ietf:params:oauth:grant-type:token-exchange \
-  -d subject_token="$USER_ACCESS_TOKEN" -d subject_token_type=urn:ietf:params:oauth:token-type:access_token \
-  -d actor_token="$AGENT_TOKEN" -d actor_token_type=urn:ietf:params:oauth:token-type:jwt \
-  -d resource=https://api.example.com -d scope="calendar:read" -u "$CLIENT_ID:$CLIENT_SECRET"
+  -d subject_token_type=urn:ietf:params:oauth:token-type:access_token \
+  -d actor_token_type=urn:ietf:params:oauth:token-type:jwt \
+  -d resource=https://api.example.com -d scope="calendar:read"
 ```
 
 Rules:
