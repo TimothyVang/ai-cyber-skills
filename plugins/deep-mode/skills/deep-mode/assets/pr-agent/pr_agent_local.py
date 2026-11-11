@@ -82,7 +82,11 @@ def make_handler(model: str, log: list, secret: str):
             if not self.path.rstrip("/").endswith("/chat/completions"):
                 self._json(404, {"error": {"message": f"unsupported path {self.path}"}})
                 return
-            request = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+            try:
+                request = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
+            except (ValueError, TypeError):
+                self._json(400, {"error": {"message": "invalid request body"}})
+                return
             started = time.monotonic()
             try:
                 text, usage = claude_complete(request.get("messages", []), model)

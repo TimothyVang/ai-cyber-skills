@@ -66,9 +66,11 @@ jobs:
           SKILL="$RUNNER_TEMP/skill/skills/security-audit"
           OUT="$RUNNER_TEMP/audit"
           mkdir -p "$OUT"
-          # The base branch's prompt, so a PR can't rewrite the audit it is judged by.
-          git show "$BASE_SHA:.github/security-audit/prompt.md" > "$RUNNER_TEMP/prompt.md" 2>/dev/null \
-            || git show "HEAD:.github/security-audit/prompt.md" > "$RUNNER_TEMP/prompt.md"
+          # Prompt, gate, and acceptances come only from the base branch: a PR can't vouch for itself.
+          if ! git show "$BASE_SHA:.github/security-audit/prompt.md" > "$RUNNER_TEMP/prompt.md" 2>/dev/null; then
+            echo "::error::.github/security-audit/ is not on the base branch yet. Merge the PR that installs it first."
+            exit 1
+          fi
           sed -i -e "s|{{SKILL}}|$SKILL|g" -e "s|{{OUT}}|$OUT|g" -e "s|{{BASE}}|$BASE_SHA|g" \
             -e "s|{{HEAD}}|$HEAD_SHA|g" -e "s|{{AGENTS}}|$AUDIT_AGENTS|g" "$RUNNER_TEMP/prompt.md"
           npm install --global --silent @anthropic-ai/claude-code
@@ -88,18 +90,25 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           # The agent could write to $RUNNER_TEMP, so restore the pinned skill and read the gate
-          # from git, never from a file the agent could have touched.
-          git -C "$RUNNER_TEMP/skill" reset --quiet --hard "$SKILL_SHA"
-          git -C "$RUNNER_TEMP/skill" clean -fdxq
-          git show "$BASE_SHA:.github/security-audit/gate.cjs" > "$RUNNER_TEMP/gate.cjs" 2>/dev/null \
-            || git show "HEAD:.github/security-audit/gate.cjs" > "$RUNNER_TEMP/gate.cjs"
-          # Accepted findings come from the PR's committed head, so every acceptance shows in its diff.
-          git show "HEAD:.github/security-audit/accepted.txt" > "$RUNNER_TEMP/accepted.txt" 2>/dev/null || : > "$RUNNER_TEMP/accepted.txt"
-          set +e
-          node "$RUNNER_TEMP/gate.cjs" "$RUNNER_TEMP/audit" "$RUNNER_TEMP/skill/skills/security-audit" \
-            "$FAIL_AT" "$BLOCK_ON_UNVALIDATED" "$RUNNER_TEMP/accepted.txt" > "$RUNNER_TEMP/comment.md"
-          code=$?
-          set -e
+          # from the base branch, never from a file the agent or the PR could have touched.
+          if [ -d "$RUNNER_TEMP/skill" ]; then
+            git -C "$RUNNER_TEMP/skill" reset --quiet --hard "$SKILL_SHA"
+            git -C "$RUNNER_TEMP/skill" clean -fdxq
+          fi
+          if git show "$BASE_SHA:.github/security-audit/gate.cjs" > "$RUNNER_TEMP/gate.cjs" 2>/dev/null; then
+            git show "$BASE_SHA:.github/security-audit/accepted.txt" > "$RUNNER_TEMP/accepted.txt" 2>/dev/null \
+              || : > "$RUNNER_TEMP/accepted.txt"
+            set +e
+            node "$RUNNER_TEMP/gate.cjs" "$RUNNER_TEMP/audit" "$RUNNER_TEMP/skill/skills/security-audit" \
+              "$FAIL_AT" "$BLOCK_ON_UNVALIDATED" "$RUNNER_TEMP/accepted.txt" > "$RUNNER_TEMP/comment.md"
+            code=$?
+            set -e
+          else
+            printf '%s\n' '<!-- deep-mode-security-audit -->' '## Security audit' '' \
+              '**Blocked:** the gate is not on the base branch yet. Merge the PR that installs `.github/security-audit/` first; a PR is never judged by a gate it brings itself.' \
+              > "$RUNNER_TEMP/comment.md"
+            code=1
+          fi
           cat "$RUNNER_TEMP/comment.md" >> "$GITHUB_STEP_SUMMARY"
           id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
             --jq '.[] | select(.body | contains("<!-- deep-mode-security-audit -->")) | .id' | tail -n 1)
