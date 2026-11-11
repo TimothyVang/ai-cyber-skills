@@ -151,6 +151,9 @@ class TriggerTest(unittest.TestCase):
                                                  OWNER, MENTION))
         self.assertFalse(bot.wants_implementation(issue, [comment("x", "t", f"{MENTION} implement")],
                                                   {"handled": True}, OWNER, MENTION))
+        # an old owner issue answered because a PR's merge waits on it: answer only, never a second build
+        self.assertFalse(bot.wants_implementation(issue, [], {"answerAll": True}, OWNER, MENTION))
+        self.assertTrue(bot.wants_implementation(issue, asked, {"answerAll": True}, OWNER, MENTION))
 
     def test_retry_keeps_the_triggering_comments(self):
         request = comment(OWNER, "2026-01-01T00:00:01Z", f"{MENTION} implement, and keep the API stable")
@@ -220,7 +223,8 @@ class GateTest(unittest.TestCase):
                 "reviewDecision": "", "isAdmin": True, "requiredContexts": ["check"], "requiredError": None,
                 "checks": [{"name": "check", "bucket": "pass"}, {"name": "lint", "bucket": "fail"}],
                 "required": [{"name": "check", "bucket": "pass"}], "pending": False, "otherRules": [],
-                "own": True, "behindBy": 0, "openIssues": [], "botAutonomous": True, "repoAutonomous": None}
+                "pinnedChecks": {}, "own": True, "behindBy": 0, "openIssues": [], "botAutonomous": True,
+                "repoAutonomous": None}
         return {**base, **kw}
 
     def test_clean_merge(self):
@@ -252,6 +256,25 @@ class GateTest(unittest.TestCase):
         self.assertEqual(bot.gate_decision(failing)[:2], (False, False))
         signed = self.facts(**review, otherRules=["required_signatures"])  # --admin would skip it too
         self.assertEqual(bot.gate_decision(signed)[:2], (False, False))
+
+    def test_app_pinned_check_counts_only_that_apps_runs(self):
+        review = {"mergeStateStatus": "BLOCKED", "reviewDecision": "REVIEW_REQUIRED"}
+        # a same-named run from another source passes, but the pinned app's run never reported
+        impostor = self.facts(**review, pinnedChecks={"check": {"15368": []}})
+        self.assertEqual(bot.gate_decision(impostor)[:2], (False, False))
+        self.assertFalse(bot.gate_decision(self.facts(pinnedChecks={"check": {"15368": ["fail"]}}))[0])
+        self.assertEqual(bot.gate_decision(self.facts(**review, pinnedChecks={"check": {"15368": ["pass"]}}))[:2],
+                         (True, True))
+
+    def test_checks_pending(self):
+        done = [{"name": "check", "bucket": "pass"}]
+        self.assertFalse(bot.checks_pending(["check"], done, done, {}))
+        self.assertTrue(bot.checks_pending(["check", "e2e"], done, done, {}))  # not reported yet
+        self.assertTrue(bot.checks_pending(["check"], done, done, {"check": {"1": []}}))  # pinned app not yet
+        self.assertTrue(bot.checks_pending(["check"], done, done, {"check": {"1": ["pending"]}}))
+        self.assertFalse(bot.checks_pending(["check"], done, done, {"check": {"1": ["fail"]}}))  # done, red
+        self.assertEqual([bot.run_bucket("in_progress", None), bot.run_bucket("completed", "skipped"),
+                          bot.run_bucket("completed", "timed_out")], ["pending", "pass", "fail"])
 
 
 class TextTest(unittest.TestCase):

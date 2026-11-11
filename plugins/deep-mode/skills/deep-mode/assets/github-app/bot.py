@@ -37,6 +37,7 @@ import time
 import traceback
 import uuid
 from pathlib import Path
+from urllib.parse import quote
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import brand  # noqa: E402
@@ -343,11 +344,12 @@ def with_pending(pending: list, comments: list) -> list:
 
 
 def wants_implementation(issue: dict, comments: list, item: dict, owner: str, mention: str) -> bool:
-    """The owner asked (`<mention> implement`), or opened the issue and didn't mark it discussion-only."""
+    """The owner asked (`<mention> implement`), or opened the issue and didn't mark it discussion-only. An issue
+    flagged because a PR's merge waits on it (`answerAll`) is only answered: that PR is its implementation."""
     command = f"{mention} implement".lower()
     if any(same(login_of(c), owner) and command in (c.get("body") or "").lower() for c in comments):
         return True
-    if item.get("handled") or item.get("implemented") or not same(login_of(issue), owner):
+    if item.get("handled") or item.get("implemented") or item.get("answerAll") or not same(login_of(issue), owner):
         return False
     labels = {(label.get("name") or "").lower() for label in issue.get("labels") or []}
     return "discussion only" not in (issue.get("body") or "").lower() and not labels & {"discussion",
@@ -421,6 +423,12 @@ def gate_decision(f: dict):
             reasons.append(f"required check `{name}` never reported")
         elif any(b != "pass" for b in seen):
             reasons.append(f"required check `{name}` is {'/'.join(sorted(set(seen)))}")
+    for name, apps in sorted(f["pinnedChecks"].items()):  # a check the rules tie to one app: only its runs count
+        for app, seen in sorted(apps.items()):
+            if not seen:
+                reasons.append(f"required check `{name}` from app {app} never reported")
+            elif any(b != "pass" for b in seen):
+                reasons.append(f"required check `{name}` from app {app} is {'/'.join(sorted(set(seen)))}")
     admin = False
     state = f["mergeStateStatus"]
     if state == "BLOCKED":
@@ -551,15 +559,23 @@ def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
 
 
 def branch_rules(repo: str, base: str, is_admin: bool):
-    """From branch protection plus rulesets: the required status-check names, the other rules an admin merge
-    would bypass besides the required review (BENIGN_RULES aside), and why the rules couldn't be read."""
-    contexts, other, error = [], [], None
+    """From branch protection plus rulesets: the required status-check names, the ones tied to a GitHub App
+    ({name: [app ids]}), the other rules an admin merge would bypass besides the required review (BENIGN_RULES
+    aside), and why the rules couldn't be read."""
+    contexts, pinned, other, error = [], {}, [], None
+
+    def require(name: str, app) -> None:
+        contexts.append(name)
+        if app not in (None, -1):  # -1 lets any source report it; unset means GitHub picked none to pin
+            pinned.setdefault(name, set()).add(int(app))
+
     proc = run(["gh", "api", f"repos/{repo}/branches/{base}/protection"], check=False)
     if proc.returncode == 0:
         protection = json.loads(proc.stdout)
         rsc = protection.get("required_status_checks") or {}
         contexts += rsc.get("contexts") or []
-        contexts += [c["context"] for c in rsc.get("checks") or []]
+        for check in rsc.get("checks") or []:
+            require(check["context"], check.get("app_id"))
         other += [key for key in ("required_signatures", "required_linear_history",
                                   "required_conversation_resolution", "lock_branch")
                   if (protection.get(key) or {}).get("enabled")]
@@ -573,14 +589,43 @@ def branch_rules(repo: str, base: str, is_admin: bool):
         for rule in json.loads(proc.stdout or "[]"):
             kind, params = rule.get("type"), rule.get("parameters") or {}
             if kind == "required_status_checks":
-                contexts += [c["context"] for c in params["required_status_checks"]]
+                for check in params["required_status_checks"]:
+                    require(check["context"], check.get("integration_id"))
             elif kind == "pull_request" and params.get("required_review_thread_resolution"):
                 other.append("required_review_thread_resolution")
             elif kind not in BENIGN_RULES:
                 other.append(kind)
     else:
         error = error or f"cannot read rulesets: {(proc.stderr or proc.stdout).strip()[-200:]}"
-    return sorted(set(contexts)), sorted(set(other)), error
+    return sorted(set(contexts)), {k: sorted(v) for k, v in pinned.items()}, sorted(set(other)), error
+
+
+def app_checks(repo: str, sha: str, name: str, apps: list) -> dict:
+    """Buckets of the check runs named `name` on `sha`, per required app id: {"<app id>": ["pass", ...]}.
+    A same-named run from any other source doesn't count toward it."""
+    out = gh("api", "--paginate", f"repos/{repo}/commits/{sha}/check-runs?per_page=100&check_name={quote(name)}",
+             "--jq", ".check_runs[] | {app: .app.id, status, conclusion} | @json")
+    seen = {str(app): [] for app in apps}
+    for line in out.splitlines():
+        run_ = json.loads(line)
+        if str(run_["app"]) in seen:
+            seen[str(run_["app"])].append(run_bucket(run_["status"], run_["conclusion"]))
+    return seen
+
+
+def run_bucket(status: str, conclusion) -> str:
+    if status != "completed":
+        return "pending"
+    return "pass" if conclusion in ("success", "neutral", "skipped") else "fail"
+
+
+def checks_pending(contexts: list, checks: list, required: list, pinned: dict) -> bool:
+    """A required check still running or not yet reported (the gate waits on these up to CHECK_WAIT)."""
+    names = {c["name"] for c in checks}
+    return any(c.get("bucket") == "pending" for c in required) or \
+        any(c.get("bucket") == "pending" for c in checks if c["name"] in contexts) or \
+        any(name not in names for name in contexts) or \
+        any(not seen or "pending" in seen for apps in pinned.values() for seen in apps.values())
 
 
 def pr_commits(repo: str, number: int) -> list:
@@ -767,6 +812,15 @@ Vote FAIL when a check fails or anything the PR claims does not hold.
 {untrusted('pr', f"title: {pr.get('title', '')}{chr(10)}{chr(10)}{pr.get('body') or ''}")}
 
 {untrusted('diffstat', stat)}
+"""
+
+
+def trunk_prompt(c, sha: str) -> str:
+    return f"""You are the {NAME} trunk check after pull request {c.repo}#{c.n} merged. Your working directory is a disposable checkout of `{c.base}` at the merge commit `{sha}`. Run the repo's documented checks (AGENTS.md, CONTRIBUTING, scripts, tests) on it. You may run commands and create scratch files here; do not commit, push, post to GitHub or change anything outside this directory. {RULES}
+
+Reply with a short summary, then exactly one fenced ```json block:
+{{"vote":"PASS","evidence":"the commands you ran and what they showed"}}
+Vote FAIL only when a documented check fails on this commit; a red trunk gets the merge reverted.
 """
 
 
@@ -1076,8 +1130,9 @@ class PRConversation:
     def gate_facts(self, panel_sha: str, wait: bool) -> dict:
         deadline = time.time() + (CHECK_WAIT if wait else 0)
         is_admin = gh("api", f"repos/{self.repo}", "--jq", ".permissions.admin").strip() == "true"
-        contexts, other, error = branch_rules(self.repo, self.base, is_admin)
         while True:
+            # Rules are read on every pass, so the gate decides on the ones in force after any check wait.
+            contexts, pinned_rules, other, error = branch_rules(self.repo, self.base, is_admin)
             for _ in range(6):  # GitHub computes mergeability lazily
                 view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json",
                                "headRefOid,mergeStateStatus,mergeable,reviewDecision")
@@ -1085,10 +1140,9 @@ class PRConversation:
                     break
                 time.sleep(5)
             checks, required = pr_checks(self.repo, self.n), pr_checks(self.repo, self.n, required=True)
-            names = {c["name"] for c in checks}
-            pending = any(c.get("bucket") == "pending" for c in required) or \
-                any(c.get("bucket") == "pending" for c in checks if c["name"] in contexts) or \
-                any(name not in names for name in contexts)
+            pinned = {name: app_checks(self.repo, view["headRefOid"], name, apps)
+                      for name, apps in pinned_rules.items()}
+            pending = checks_pending(contexts, checks, required, pinned)
             if not pending or time.time() > deadline:
                 break
             log(f"{self.it.key}: waiting for required checks")
@@ -1099,8 +1153,8 @@ class PRConversation:
             f"+refs/pull/{self.n}/head:refs/{B['branchPrefix']}/pr/{self.n}", timeout=1800)
         return {"head": head, "panelSha": panel_sha, "mergeable": view["mergeable"],
                 "mergeStateStatus": view["mergeStateStatus"], "reviewDecision": view.get("reviewDecision") or "",
-                "isAdmin": is_admin, "requiredContexts": contexts, "otherRules": other, "requiredError": error,
-                "checks": checks, "required": required, "pending": pending,
+                "isAdmin": is_admin, "requiredContexts": contexts, "pinnedChecks": pinned, "otherRules": other,
+                "requiredError": error, "checks": checks, "required": required, "pending": pending,
                 "own": self.ownership(head), "behindBy": behind_by(self.clone, self.base, head),
                 "openIssues": self.open_issues(), "botAutonomous": bool(self.cfg["autonomousMerge"]),
                 "repoAutonomous": base_config(self.clone, self.base).get("autonomousMerge")}
@@ -1129,7 +1183,58 @@ class PRConversation:
         self.it.say("coordinator", "bot.py", sha,
                     f"Merged `{sha[:7]}` ({method}). Panel {tally} PASS at this head; required checks: {checks}; "
                     f"admin: {'yes, the required review was replaced by the panel' if admin else 'no'}.")
-        return "merged"
+        merged = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "mergeCommit")["mergeCommit"]["oid"]
+        return self.trunk_check(merged)
+
+    def trunk_check(self, merged: str) -> str:
+        """pr-conversation step 8: the repo's checks on the new trunk. Red opens a revert PR, which the next
+        cycle runs this conversation on."""
+        agent = self.cfg["verifiers"][0]
+        git(self.clone, "fetch", "origin", "--quiet", f"+refs/heads/{self.base}:refs/remotes/origin/{self.base}",
+            timeout=1800)
+        tree = worktree_at(self.clone, self.verifier_trees[0], merged)
+        try:
+            reply = self.it.ask(agent, trunk_prompt(self, merged), tree, "--approve-all")
+        except Exception as err:  # no verdict is not a red trunk: say so, revert nothing
+            self.it.say("coordinator", "bot.py", merged, f"The trunk check at `{merged[:7]}` could not run ({err}). "
+                        f"Run the repo's checks on `{self.base}` by hand.")
+            return "merged"
+        self.it.say("trunk check", agent, merged, reply)
+        if json_block(reply, "vote") is None:
+            self.it.say("coordinator", "bot.py", merged, "The trunk check returned no vote. Run the repo's checks "
+                        f"on `{self.base}` by hand.")
+            return "merged"
+        vote, evidence = parse_vote(reply)
+        if vote == "PASS":
+            return "merged"
+        try:
+            url = self.open_revert(merged, evidence)
+        except Exception as err:
+            self.it.say("coordinator", "bot.py", merged, f"Trunk is red after `{merged[:7]}`, and opening a revert "
+                        f"PR failed ({err}). Revert it by hand.")
+            return "merged-red"
+        self.it.say("coordinator", "bot.py", merged, f"Trunk is red after `{merged[:7]}`. Opened {url} to revert "
+                    "it; the next cycle runs the conversation on that PR.")
+        return "merged-reverting"
+
+    def open_revert(self, merged: str, evidence: str) -> str:
+        branch = f"{B['branchPrefix']}/revert-pr-{self.n}"
+        tree = worktree_at(self.clone, self.author_tree.with_name(f"pr{self.n}-revert"), f"origin/{self.base}",
+                           branch=branch)
+        parents = git(tree, "rev-list", "--parents", "-n", "1", merged).split()
+        proc = run(["git", "revert", "--no-edit", *(["-m", "1"] if len(parents) > 2 else []), merged], cwd=tree,
+                   check=False)
+        if proc.returncode:
+            run(["git", "revert", "--abort"], cwd=tree, check=False)
+            raise RuntimeError(f"`git revert` failed: {(proc.stderr or proc.stdout).strip()[-300:]}")
+        # Made here, not fetched: the revert PR's ownership gate trusts it without a signature.
+        self.bot.trust(self.repo, git(tree, "rev-list", "HEAD", "--not", "--remotes").split())
+        git(tree, "push", "--quiet", "origin", f"HEAD:refs/heads/{branch}", timeout=600)
+        body = (f"Reverts #{self.n} (`{merged[:7]}`): the {NAME} trunk check failed on `{self.base}` after the "
+                f"merge.\n\n{untrusted('evidence', evidence)}")
+        return gh("pr", "create", "-R", self.repo, "--base", self.base, "--head", branch, "--title",
+                  f"Revert #{self.n}: trunk checks failed after merge", "--body-file", "-", stdin=body,
+                  cwd=self.clone).strip()
 
 
 # ---------------------------------------------------------------- issue conversation
