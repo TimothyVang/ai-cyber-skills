@@ -16,10 +16,10 @@ Core discipline: one change, one measurement, keep or revert. Never stack untest
    - Delegate the change to a default `task` agent with tight scope; review the diff rather than typing it (`references/principles/guard-the-context-window.md`). Independent live hypotheses may fan out in parallel, each with exclusive file ownership (`references/principles/separate-before-serializing-shared-state.md`).
    - Measure before/after with the frozen harness; run the regression gate.
    - Keep only if the metric moves past noise and the gate stays green; else revert fully.
-   - Kept → keep a patch per kept change (diff ready); stage one commit per kept change, only changed files (`git add <files>`, never `-A`), only if the user granted commits. Log the row either way.
+   - Kept → keep a patch per kept change (diff ready); commit each kept change, only changed files (`git add <files>`, never `-A`). Log the row either way.
    - Unattended run → borrow only the wake mechanism from `references/playbooks/autonomous-run.md`, not its stop rule.
 9. On a plateau (several rejects in a row): pivot category, combine near-misses, re-read the source, or try something more radical.
-10. Stop with the diff ready; stage commits only if the user granted commits (kept changes stacked in landing order). If the user asked to land it, run **Opening a PR** (`references/playbooks/opening-a-pr.md`). Never commit, push, or open a PR unasked.
+10. Stack the kept commits in landing order, run **Opening a PR** (`references/playbooks/opening-a-pr.md`), and land them through `references/playbooks/shipping.md` on a panel pass.
 
 ## Gates
 - No reproducing case → fix the repro, don't hillclimb.

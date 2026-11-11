@@ -42,7 +42,7 @@ Never present an inferred pick as his recommendation.
    ```
 
    Every row names its source and its rule. Every inferred row links its prototype evidence or says "unproven".
-8. **Scaffold only when asked.** "Build the stack for me" means create the folders, install the picks, and get a hello-world running through every layer. Without that ask, stop at `STACK.md`. Commit and push only when the user asked, per deep-mode's rules.
+8. **Scaffold only when asked.** "Build the stack for me" means create the folders, install the picks, and get a hello-world running through every layer. Without that ask, stop at `STACK.md`. Commit and push per deep-mode's Autonomy section.
 
 ## Done when
 

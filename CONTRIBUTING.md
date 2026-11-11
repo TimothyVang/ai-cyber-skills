@@ -31,4 +31,4 @@ Report what the agent did before and after in the PR. For bigger changes, follow
 
 - Short declarative sentences. One rule per line.
 - Prefer a lint, test, or script over more prose (see the `encode-lessons-in-structure` principle).
-- Never let a skill commit, push, open a PR, or merge without the user asking.
+- Git and forge actions follow the Autonomy section of `plugins/deep-mode/skills/deep-mode/SKILL.md`: agents commit, push, open PRs, and merge on a panel pass, and stop only at its hard stops. A skill that needs a new hard stop adds it there, not in its own text.

@@ -8,7 +8,7 @@ Use when: migrating or reimplementing UI that must stay pixel-identical. You own
 3. Migrate shared primitives first as a blocking phase.
 4. Migrate one component at a time; parallelize with `task` agents, one owner per component with exclusive file ownership (`references/principles/separate-before-serializing-shared-state.md`).
 5. Verify each component against its baseline by image diff on the matching surface via the repo's `verify-<app>` skill (`.omp/skills/verify-<app>/`); if none, omp `eval` `browser` or bash. Nonzero diff → investigate the pixel delta, fix, re-diff; loop per component until zero.
-6. Stop with the diff ready; stage commits only if the user granted commits (then per component or per safe batch). If the user asked to land it, run **Opening a PR** (`references/playbooks/opening-a-pr.md`). Never commit, push, or open a PR unasked.
+6. Commit per component or per safe batch, run **Opening a PR** (`references/playbooks/opening-a-pr.md`), and land it through `references/playbooks/shipping.md` on a panel pass.
 
 ## Gates
 - No baseline, no parity claim — a blocking prerequisite, not a follow-up.

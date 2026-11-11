@@ -16,7 +16,7 @@ Use when: resuming work a prior agent or session started ("pick up where X left 
 
 - Redoing completed work is a failure of this playbook unless step 7's check shows the inherited claim is false.
 - Never cross project boundaries to find a trail.
-- Pickup inherits no new permissions: commits, pushes, PRs, and merges still need the user's ask.
+- Pickup follows SKILL.md Autonomy like any run: commits, pushes, and PRs proceed; merges need a panel pass; hard stops need the user.
 
 ## Evidence
 

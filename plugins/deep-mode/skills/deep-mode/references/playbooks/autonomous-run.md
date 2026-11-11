@@ -10,9 +10,9 @@ Use when: one task must be driven to a checkable end state without the human ("l
    - An event to watch (CI, a merge, a ref advancing) → a background `bash` job that blocks on it (`gh pr checks <pr> --watch`, `gh run watch <id>`, `timeout: 0`); its result auto-delivers. Add a long time-based heartbeat as fallback (background `sleep` with `timeout: 0`, or `sleep 3300` with `timeout: 3600`).
    - No event → a fixed-interval heartbeat (background `bash` `sleep`) sized to when the result is worth re-checking; set `timeout: 0` (or `sleep 3300` with `timeout: 3600`) — the default 300s deadline kills longer sleeps.
 4. Each iteration: make the smallest change the evidence justifies, then evaluate the predicate.
-5. Advanced → keep it (commit if the user's grant covers commits; otherwise leave it as the checkpoint). Didn't help → discard it. "Might help" belt-and-suspenders gets reverted, not left to ride.
+5. Advanced → keep it and commit it. Didn't help → discard it. "Might help" belt-and-suspenders gets reverted, not left to ride.
 6. Sequence the work into verifiable units, verifying each before the next instead of batching checks at the end (`references/principles/sequence-verifiable-units.md`).
-7. Own mid-run discoveries that support the goal: broken skills, related bugs, flaky verifiers, review noise, tooling failures, orphaned follow-ups, fixable drift. Fix them yourself, out-of-band fixes kept separate from the main change (own branch/PR only if the grant covers PRs). Return to the predicate after each side fix.
+7. Own mid-run discoveries that support the goal: broken skills, related bugs, flaky verifiers, review noise, tooling failures, orphaned follow-ups, fixable drift. Fix them yourself, out-of-band fixes kept separate from the main change (on their own branch and PR). Return to the predicate after each side fix.
 8. Checkpoint every iteration in the trail: one row for what changed and whether the predicate moved.
 9. Plateau → pivot the approach and keep going; a plateau is not a stop.
 
@@ -20,8 +20,8 @@ Use when: one task must be driven to a checkable end state without the human ("l
 
 - Stop only when the predicate is met, or on a genuine dead end (surface it rather than spin).
 - Never relax the predicate to declare victory.
-- Don't park reversible work for the human or use `ask`. Surface only irreversible actions, product/preference calls no experiment can settle, or a real dead end.
-- Never push, open PRs, or merge unless the user's grant covers it; landing still follows `references/playbooks/shipping.md`.
+- Don't park reversible work for the human or use `ask`. Decide product and design calls yourself and log them (SKILL.md Autonomy). Surface only irreversible actions outside the grant, what only the user can supply, or a real dead end.
+- Push and open PRs as the work needs; merges need a panel pass and go through `references/playbooks/shipping.md`.
 
 ## Evidence
 
