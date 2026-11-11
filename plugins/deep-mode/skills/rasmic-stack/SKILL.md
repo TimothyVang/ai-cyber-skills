@@ -51,4 +51,4 @@ When `deep-mode` is active (`/poteto`, deep-mode, or poteto-mode), it owns the p
 - deep-mode's playbooks, autonomy rules, and reply rules win. Commits, pushes, PRs, and merges follow deep-mode's Autonomy section: merges need its panel pass.
 - `stack.md` and `design-workflow.md` feed its Feature and Prototype playbooks as the default picks on greenfield work.
 - `evidence-driven-testing` is the recorder for its "prove it on the real artifact" step when no `verify-<app>` skill exists.
-- Ship beat → its Opening a PR playbook, then its pr-review technique (`skill://deep-mode/references/techniques/pr-review.md`). Posting the review to GitHub waits for the user's yes, and the review never approves or merges on its own.
+- Ship beat → its Opening a PR playbook, then its pr-review technique (`skill://deep-mode/references/techniques/pr-review.md`). The review posts as a comment and never approves; merging takes a deep-mode panel pass.

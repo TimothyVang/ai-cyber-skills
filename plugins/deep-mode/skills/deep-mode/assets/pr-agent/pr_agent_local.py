@@ -70,14 +70,20 @@ def make_handler(model: str, log: list, secret: str):
             self.end_headers()
             self.wfile.write(raw)
 
+        def _authorized(self) -> bool:
+            # Only PR-Agent, holding this run's secret, may reach the subscription.
+            host = (self.headers.get("Host") or "").split(":")[0]
+            if host in ("127.0.0.1", "localhost") and self.headers.get("Authorization") == f"Bearer {secret}":
+                return True
+            self._json(401, {"error": {"message": "unauthorized"}})
+            return False
+
         def do_GET(self):  # model listing, for clients that probe it
-            self._json(200, {"object": "list", "data": [{"id": "subscription", "object": "model"}]})
+            if self._authorized():
+                self._json(200, {"object": "list", "data": [{"id": "subscription", "object": "model"}]})
 
         def do_POST(self):
-            # Only PR-Agent, holding this run's secret, may spend the subscription.
-            host = (self.headers.get("Host") or "").split(":")[0]
-            if host not in ("127.0.0.1", "localhost") or self.headers.get("Authorization") != f"Bearer {secret}":
-                self._json(401, {"error": {"message": "unauthorized"}})
+            if not self._authorized():
                 return
             if not self.path.rstrip("/").endswith("/chat/completions"):
                 self._json(404, {"error": {"message": f"unsupported path {self.path}"}})
@@ -85,6 +91,8 @@ def make_handler(model: str, log: list, secret: str):
             try:
                 request = json.loads(self.rfile.read(int(self.headers.get("Content-Length") or 0)) or b"{}")
             except (ValueError, TypeError):
+                request = None
+            if not isinstance(request, dict) or not isinstance(request.get("messages", []), list):
                 self._json(400, {"error": {"message": "invalid request body"}})
                 return
             started = time.monotonic()

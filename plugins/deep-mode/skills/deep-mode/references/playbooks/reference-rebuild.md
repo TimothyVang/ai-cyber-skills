@@ -32,4 +32,4 @@ Ship only when every frame passes:
 
 ## Evidence
 
-- Reference screenshots and system sheet; the data-field map; canvas location and the user's approval; per-screen canvas-vs-app screenshot pairs; worst-case pass results; what still differs and why.
+- Reference screenshots and system sheet; the data-field map; canvas location and the direction you chose, with why; per-screen canvas-vs-app screenshot pairs; worst-case pass results; what still differs and why.

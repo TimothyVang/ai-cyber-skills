@@ -72,20 +72,30 @@ jobs:
             exit 1
           fi
           # The diff is computed here, not by the agent: git's --output flag would let a Bash git
-          # permission write files anywhere.
-          git diff "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/pr.diff"
+          # permission write files anywhere. --text and --no-textconv stop the PR's
+          # .gitattributes from hiding changed lines as "binary".
+          git diff --no-ext-diff --no-textconv --text "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/pr.diff"
           git diff --name-only "$BASE_SHA...$HEAD_SHA" > "$RUNNER_TEMP/pr.files"
           sed -i -e "s|{{SKILL}}|$SKILL|g" -e "s|{{OUT}}|$OUT|g" -e "s|{{BASE}}|$BASE_SHA|g" \
-            -e "s|{{HEAD}}|$HEAD_SHA|g" -e "s|{{AGENTS}}|$AUDIT_AGENTS|g" \
+            -e "s|{{HEAD}}|$HEAD_SHA|g" -e "s|{{AGENTS}}|$AUDIT_AGENTS|g" -e "s|{{TARGET}}|$GITHUB_WORKSPACE|g" \
             -e "s|{{DIFF}}|$RUNNER_TEMP/pr.diff|g" -e "s|{{FILES}}|$RUNNER_TEMP/pr.files|g" "$RUNNER_TEMP/prompt.md"
           npm install --global --silent @anthropic-ai/claude-code
+          # Run from an empty folder with user settings only, no hooks, and no MCP servers, so the
+          # PR's .claude/ settings, hooks, .mcp.json, and CLAUDE.md never load. Reads are limited to
+          # the checkout and $RUNNER_TEMP (not /proc, where the step's secrets live).
+          mkdir -p "$RUNNER_TEMP/agent-cwd"
+          cd "$RUNNER_TEMP/agent-cwd"
+          W="$GITHUB_WORKSPACE"
+          T="$RUNNER_TEMP"
+          READS="Read(/$W/**),Grep(/$W/**),Glob(/$W/**),Read(/$T/**),Grep(/$T/**),Glob(/$T/**)"
           claude -p --model "$AUDIT_MODEL" --output-format json --permission-mode dontAsk \
-            --allowedTools "Read,Grep,Glob,Write(/$OUT/**),Edit(/$OUT/**),Task,TodoWrite,Bash(node $SKILL/validate-findings.cjs:*),Bash(node $SKILL/validate-coverage-ledger.cjs:*)" \
+            --setting-sources user --settings '{"disableAllHooks": true}' --strict-mcp-config \
+            --allowedTools "$READS,Write(/$OUT/**),Edit(/$OUT/**),Task,TodoWrite,Bash(node $SKILL/validate-findings.cjs:*),Bash(node $SKILL/validate-coverage-ledger.cjs:*)" \
             --disallowedTools "WebFetch,WebSearch" \
-            --add-dir "$RUNNER_TEMP" --max-budget-usd "$AUDIT_BUDGET_USD" \
-            < "$RUNNER_TEMP/prompt.md" > "$RUNNER_TEMP/claude.json" \
+            --add-dir "$W" --add-dir "$T" --max-budget-usd "$AUDIT_BUDGET_USD" \
+            < "$T/prompt.md" > "$T/claude.json" \
             || echo "::warning::The audit agent exited non-zero; the gate decides from its output."
-          jq -r '"cost $\(.total_cost_usd): \(.result // "")"' "$RUNNER_TEMP/claude.json" || true
+          jq -r '"cost $\(.total_cost_usd): \(.result // "")"' "$T/claude.json" || true
 
       - name: Gate and comment
         if: always() && steps.creds.outputs.ok == 'true'
@@ -93,6 +103,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ github.event.pull_request.number }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          # Only to scrub them from the comment, in case a steered agent copied one into a finding.
+          REDACT_1: ${{ secrets.ANTHROPIC_API_KEY }}
+          REDACT_2: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
           # The agent could write to $RUNNER_TEMP, so restore the pinned skill and read the gate
           # from the base branch, never from a file the agent or the PR could have touched.
@@ -114,6 +127,9 @@ jobs:
               > "$RUNNER_TEMP/comment.md"
             code=1
           fi
+          node -e 'const fs = require("fs"); const f = process.argv[1]; let t = fs.readFileSync(f, "utf8");
+            for (const v of [process.env.REDACT_1, process.env.REDACT_2]) if (v) t = t.split(v).join("[redacted]");
+            fs.writeFileSync(f, t);' "$RUNNER_TEMP/comment.md"
           cat "$RUNNER_TEMP/comment.md" >> "$GITHUB_STEP_SUMMARY"
           id=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate \
             --jq '.[] | select(.body | contains("<!-- deep-mode-security-audit -->")) | .id' | tail -n 1)

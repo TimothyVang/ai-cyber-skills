@@ -37,7 +37,7 @@ def check(skill_dir: Path, skills: dict[str, Path]) -> list[str]:
         return [f"{skill_dir}: no SKILL.md"]
     text = entry.read_text(encoding="utf-8")
     head = text.split("---", 2) if text.startswith("---") else []
-    if len(head) < 3 or not re.search(r"^name:\s*\S", head[1], re.M) or not re.search(r"^description:\s*\S", head[1], re.M):
+    if len(head) < 3 or not re.search(r"^name:[ \t]*\S", head[1], re.M) or not re.search(r"^description:[ \t]*\S", head[1], re.M):
         problems.append(f"{entry}: frontmatter needs name and description")
     for doc in sorted(skill_dir.rglob("*.md")):
         for n, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):

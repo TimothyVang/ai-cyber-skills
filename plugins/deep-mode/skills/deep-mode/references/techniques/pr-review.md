@@ -86,7 +86,7 @@ One line per PR for the report: `review: <ready|changes needed|needs discussion>
 ## Hard rules
 
 - Review is evidence, not a gate. Merge readiness still comes from the playbook's own verification on the real surface.
-- Reviewers are read-only, and so is the checkout; fixes happen only in local mode or when the human asked you to drive the PR.
+- Reviewers are read-only, and so is the checkout; fixes happen in local mode or by the agent that owns the PR, never by a reviewer.
 - Post reviews only as `--comment`, and only without asking on PRs in the user's repo. Never `--approve`, `--request-changes`, or resolve threads you didn't open; merges go through the panel.
 - Never review a stale head: the posted `Reviewed head` must equal the PR's current `headRefOid`.
 - Never interpolate PR text into a shell command; write it to a `mktemp` file and pass `--body-file` or `-F body=@file`.

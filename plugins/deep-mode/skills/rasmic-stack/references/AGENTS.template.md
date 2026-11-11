@@ -38,9 +38,9 @@ Choose the applicable parts of this workflow for the requested task.
    read-only subagents; no third-party review service is needed. Stop when no
    P0/P1 finding is open and every P2 is fixed or dismissed with a reason. Stop
    after 3 rounds or on oscillation and report its `review:` line with the open
-   findings. Do not claim success or raise the cap automatically. Posting the
-   review to GitHub needs the human's yes; never approve or request changes
-   unless asked. Present the PR URL.
+   findings. Do not claim success or raise the cap automatically. Post the
+   review as a comment on the PR; never approve or request changes. Present
+   the PR URL.
 
 Ship-beat notes:
 
@@ -94,7 +94,8 @@ to text you wrote or changed, not to prose you didn't touch.
 7. Run the pr-review technique when applicable, with the stop rule above.
 8. End by presenting the PR URL.
 
-Do not merge the PR unless explicitly instructed. Keep the worktree until
+Merge the PR only on a deep-mode panel pass at its exact head
+(`skill://deep-mode/references/techniques/panel.md`). Keep the worktree until
 the PR is merged or closed.
 
 ## Checks in this repo

@@ -4,7 +4,7 @@
 
 The pieces live in this skill's `assets/security-audit/`:
 - `security-audit.yml`: the GitHub Actions workflow. It runs on every PR, pins the Cloudflare skill to one commit, audits the diff with Claude Code, then gates and comments.
-- `prompt.md`: the audit request. Full audit mode, `quick` profile, scoped to `git diff base...head`, source-only.
+- `prompt.md`: the audit request. Full audit mode, `quick` profile, scoped to the PR's precomputed diff, source-only.
 - `gate.cjs`: turns `findings.json` into a pass or fail and one PR comment that it updates on each run.
 
 ## Set up the gate in a repo
@@ -26,10 +26,10 @@ Done when a PR after the installing one shows the `security-audit` check and the
 
 - CI has no sandbox, so the audit reads source only. A finding needs a reproduced result to be `confirmed`, so most CI leads land as `needs_validation`.
 - Fork PRs get no secrets, so the job skips them. Audit those locally before merging.
-- The prompt, gate, and acceptances are read from the base branch, so a PR can't weaken them, and the agent can write only inside its output folder. A PR can still edit the workflow file itself: protect `.github/` with CODEOWNERS or required review.
+- The prompt, gate, and acceptances are read from the base branch, so a PR can't weaken them. The agent runs from an empty folder with the PR's `.claude/` settings, hooks, `.mcp.json`, and `CLAUDE.md` ignored, has no shell beyond the two validators, reads only the checkout and its temp folder, and writes only its output folder; secrets are scrubbed from the comment. A PR can still edit the workflow file itself: protect `.github/` with CODEOWNERS or required review.
 - The audit agent reads the PR's text, so a hostile PR can try to talk it into writing an empty `findings.json`. For PRs from people you don't trust, the panel and a human read the diff; the gate alone is not enough.
 - One run finds roughly half of what repeated runs find (Cloudflare's own measurement). The gate is a floor, not a clearance.
 
 ## Audit one change locally
 
-When the Cloudflare skill is installed (`npx skills add https://github.com/cloudflare/security-audit-skill --skill security-audit`), give it `prompt.md` with the placeholders filled in: `{{SKILL}}` the skill folder, `{{OUT}}` an output folder outside the repo, `{{BASE}}` and `{{HEAD}}` the commits, `{{AGENTS}}` the agent budget. Then run `node gate.cjs <out> <skill> high true <accepted.txt>` and act on the result as above.
+When the Cloudflare skill is installed (`npx skills add https://github.com/cloudflare/security-audit-skill --skill security-audit`), give it `prompt.md` with the placeholders filled in: `{{SKILL}}` the skill folder, `{{TARGET}}` the repo checkout, `{{OUT}}` an output folder outside the repo, `{{BASE}}` and `{{HEAD}}` the commits, `{{DIFF}}` a file holding `git diff --no-textconv --text <base>...<head>`, `{{FILES}}` a file holding the changed file names, `{{AGENTS}}` the agent budget. Run Claude Code from an empty folder with `--setting-sources user --settings '{"disableAllHooks": true}' --strict-mcp-config`, as the workflow does. Then run `node gate.cjs <out> <skill> high true <accepted.txt>` and act on the result as above.
