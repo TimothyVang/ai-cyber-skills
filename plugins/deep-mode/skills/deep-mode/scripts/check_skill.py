@@ -12,7 +12,7 @@ import sys
 from pathlib import Path
 
 REF = re.compile(r"(?<![\w/])((?:references|scripts)/[\w./-]+\.(?:md|py|sh|json|txt))")
-LINK = re.compile(r"skill://([\w-]+(?:/[\w-]+)?)")
+LINK = re.compile(r"skill://([\w-]+(?:/[\w-]+)?)(?![\w<-])")
 
 
 def installed_skills(skill_dir: Path) -> dict[str, Path]:
@@ -48,8 +48,12 @@ def check(skill_dir: Path, skills: dict[str, Path]) -> list[str]:
             for ref in REF.findall(line):
                 # A path resolves from the skill root, the citing file's folder, or a skill named on the line.
                 roots = [skill_dir, doc.parent] + [skills[l.split("/")[0]] for l in links if l.split("/")[0] in skills]
-                if not any((root / ref).exists() for root in roots):
-                    problems.append(f"{doc.relative_to(skill_dir)}:{n}: {ref} does not exist")
+                if any((root / ref).exists() for root in roots):
+                    continue
+                # scripts/<name> may be where a skill copies a shipped asset into the user's repo.
+                if ref.startswith("scripts/") and any(skill_dir.parent.rglob(Path(ref).name)):
+                    continue
+                problems.append(f"{doc.relative_to(skill_dir)}:{n}: {ref} does not exist")
     return problems
 
 
