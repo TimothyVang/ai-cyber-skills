@@ -1,6 +1,6 @@
 # grill
 
-**Use when:** a plan, design, or idea needs stress-testing before work starts ("grill me", "grill this plan", "stress-test it", "poke holes in this"), or a Wayfinder ticket labeled `wayfinder:grilling`. Adapted from Matt Pocock's grilling and grill-me skills (MIT, github.com/mattpocock/skills).
+**Use when:** a plan, design, or idea needs stress-testing before work starts ("grill me", "grill this plan", "stress-test it", "poke holes in this"), or a Wayfinder ticket labeled `wayfinder:grilling`.
 
 You run the interview, and by default you also answer it: the user prefers the agent decide. A grilling that ends in questions nobody answered has failed.
 
@@ -17,4 +17,6 @@ You run the interview, and by default you also answer it: the user prefers the a
 
 **Live mode.** Only when the user asks to answer themselves ("interview me", "wait for my answers", "ask me live"): present each round with your recommended answer, worded so "yes" accepts it, and wait for their answers before the next round. Facts are still yours to look up; never ask the user for one.
 
-**Done when** the frontier is empty and every decision has a trail row.
+**With docs.** On by default in a repo that has `GLOSSARY.md` or `docs/adr/`, and whenever the user asks for it ("grill with docs", "record the decisions", "keep the glossary current"). Run the **domain-model** technique (`references/techniques/domain-model.md`) alongside the rounds. Load the glossary and ADR titles in step 1, and treat a question an accepted ADR already answers as settled. In step 3, a term that gets sharpened goes into `GLOSSARY.md` at once, and a decision that passes the ADR test becomes `docs/adr/NNNN-<slug>.md`; its trail row links the ADR path. The step 5 report lists the glossary terms and ADRs written. Commit them with the work they shaped.
+
+**Done when** the frontier is empty and every decision has a trail row. With docs, also: every settled term is in `GLOSSARY.md` and every decision that passed the ADR test has its file.

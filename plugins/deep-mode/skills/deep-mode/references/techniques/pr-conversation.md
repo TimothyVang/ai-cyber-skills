@@ -4,7 +4,7 @@
 
 The review, the fixes and the verdict happen as a conversation of bots, so anyone can read why a PR merged. The bots are separate ACP (Agent Client Protocol) agents driven through `acpx`: omp by default, or any other ACP agent (Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode, and more). Each role can pick its own model, so one harness can still give a cross-family review: an omp author on a Claude model and an omp reviewer on a GPT model. A coordinator passes each turn from one agent's session to the next and mirrors it to the PR thread.
 
-Every model call runs in a harness logged in with the user's own subscription: weekly usage, never an API key. Hosted review apps (Codex connector, Greptile, CodeRabbit) are never waited on; when one comments, its findings are input like any other.
+Every model call runs in a harness logged in with the user's own subscription: weekly usage, never an API key. Hosted review apps (such as the Codex connector) are never waited on; when one comments, its findings are input like any other.
 
 ## Who coordinates
 

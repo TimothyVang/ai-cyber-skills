@@ -6,8 +6,6 @@ disable-model-invocation: true
 
 # Create a verification skill
 
-Adapted for omp from pstack's `create-verification-skill` (MIT, Lauren Tan / Cursor; see `LICENSE`).
-
 Every serious project needs a scripted way to drive the real app and prove behavior: launch it, exercise a feature the way a user would, and capture evidence. This skill generates that as a project-local omp skill at `<repo>/.omp/skills/verify-<app>/`, which omp discovers automatically for every session in the repo. Write the output for the next agent, not for a human: it will be read cold, mid-task, by an agent that has never seen the app.
 
 ## 1. Interview the repo, not the user

@@ -1,14 +1,15 @@
 {
   "name": "deep-mode",
   "version": "0.3.2",
-  "description": "Rigorous agent engineering mode adapted from pstack (poteto-mode) for omp and Claude Code: /poteto routes any task to a playbook, applies named principles, proves behavior on the real app, and runs the deep-mode PR review loop.",
+  "description": "Rigorous agent engineering mode for omp and Claude Code: /deep routes any task to a playbook, applies named principles, proves behavior on the real app, and runs the deep-mode PR review loop.",
   "author": {
     "name": "Timothy Vang"
   },
   "license": "MIT",
   "keywords": [
-    "pstack",
-    "poteto-mode",
+    "deep-mode",
+    "rigor",
+    "agent-playbooks",
     "verification",
     "code-review",
     "playbooks",

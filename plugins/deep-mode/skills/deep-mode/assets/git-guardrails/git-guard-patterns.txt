@@ -1,0 +1,31 @@
+# Commands the git guard blocks. One extended regular expression per line, matched against the
+# whole shell command. Lines starting with # and blank lines are ignored. Keep to syntax that both
+# grep -E and JavaScript accept: ( ) | [ ] * + ? ^ $ and literal spaces. No \b, \s, or [[:space:]].
+# The prefix "git( +-[cC] +[^ ]+)* +" also catches "git -C dir ..." and "git -c key=value ...".
+
+# Discards uncommitted work
+git( +-[cC] +[^ ]+)* +reset( +[^ ]+)* +--hard
+git( +-[cC] +[^ ]+)* +clean( +[^ ]+)* +(-[a-zA-Z]*f|--force)
+git( +-[cC] +[^ ]+)* +(checkout|restore)( +-[^ ]+)* +\.( |;|&|\||\)|$)
+git( +-[cC] +[^ ]+)* +stash +(clear|drop)
+git( +-[cC] +[^ ]+)* +worktree +remove( +[^ ]+)* +(-f|--force)
+
+# Deletes branches or rewrites history
+git( +-[cC] +[^ ]+)* +branch( +[^ ]+)* +(-D|--delete +--force|--force +--delete|-d +-f|-f +-d)( |$)
+git( +-[cC] +[^ ]+)* +(filter-branch|filter-repo)
+git( +-[cC] +[^ ]+)* +update-ref +-d
+git( +-[cC] +[^ ]+)* +reflog +expire
+git( +-[cC] +[^ ]+)* +gc( +[^ ]+)* +--prune=now
+
+# Pushes that overwrite or delete remote history. --force-with-lease to a feature branch stays allowed.
+git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +(--force|-f)( |$)
+git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +-[a-zA-Z]*f[a-zA-Z]*( |$)
+git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +\+[^ ]+
+git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +(--mirror|--delete|-d|--prune)( |$)
+git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +:[^ ]+
+
+# Pushes straight to the default branch (merges go through a reviewed PR)
+git( +-[cC] +[^ ]+)* +push( +[^ ]+)* +([^ ]*:)?(refs/heads/)?(main|master|trunk)( |;|&|\||$)
+
+# Strict mode: remove the # below to block every push, so only the human pushes.
+# git( +-[cC] +[^ ]+)* +push( |$)

@@ -22,7 +22,7 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 A wording change can change what agents do. Before a PR that changes a playbook or technique, run the change on a throwaway repo with a small planted bug:
 
 ```bash
-omp -p "/poteto <task that exercises your change>"
+omp -p "/deep <task that exercises your change>"
 ```
 
 Report what the agent did before and after in the PR. For bigger changes, follow the Eval playbook (`plugins/deep-mode/skills/deep-mode/references/playbooks/eval.md`).

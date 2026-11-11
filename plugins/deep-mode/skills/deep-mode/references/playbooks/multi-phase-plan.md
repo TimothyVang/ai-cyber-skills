@@ -35,7 +35,7 @@ Use when: a change spans multiple phases or PRs. You own the plan, not the code.
 
 ## Gates
 
-Plan checklist (replaces pstack's `check-plan.mjs`); every item must pass, outside code fences:
+Plan checklist; every item must pass, outside code fences:
 - No long dashes (– —), no curly quotes, no mid-sentence `: ` in prose (code spans and links excepted).
 - H1 present; intro under 10 non-blank lines; How to read this contains the four markers above, a `playbooks/` path, and the rule.
 - Program checklist has the five `###` in order and contains `skill://deep-mode/`, the recurring tick, and "status message".
