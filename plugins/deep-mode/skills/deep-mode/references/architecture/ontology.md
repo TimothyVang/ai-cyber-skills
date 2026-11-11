@@ -122,19 +122,26 @@ Map the pattern onto your own stack [inference]:
 
 ### Typed domain model = the agent's ontology
 
-- The tool contract is JSON Schema. Claude tools take an `input_schema`, and `strict: true` guarantees calls match it ([Claude tool use](https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview)). OpenAI Structured Outputs follows a supplied JSON Schema but supports only **a subset** of the language ([OpenAI structured outputs](https://platform.openai.com/docs/guides/structured-outputs)).
-- Generate that schema from the domain type; never hand-write it. Use Pydantic `BaseModel.model_json_schema()` ([Pydantic JSON Schema](https://docs.pydantic.dev/latest/concepts/json_schema/); v2.14.3, 2026-11-05, MIT) or Zod 4 `z.toJSONSchema()` ([Zod JSON Schema](https://zod.dev/json-schema); v4.6.7, 2026-10-12, MIT).
+- The tool contract is JSON Schema. Claude tools take an `input_schema`, and `strict: true` guarantees calls match it ([Claude tool use](https://docs.claude.com/en/docs/agents-and-tools/tool-use/overview)). Strict mode takes a subset: objects need `additionalProperties: false`, and `minimum`, `maximum`, `minLength`, `maxLength` are rejected with HTTP 400 ([Claude JSON Schema limitations](https://platform.claude.com/docs/en/build-with-claude/structured-outputs#json-schema-limitations)). OpenAI Structured Outputs follows a supplied JSON Schema but supports only **a subset** of the language ([OpenAI structured outputs](https://platform.openai.com/docs/guides/structured-outputs)).
+- Generate that schema from the domain type; never hand-write it. Use Pydantic `BaseModel.model_json_schema()` ([Pydantic JSON Schema](https://docs.pydantic.dev/latest/concepts/json_schema/); v2.14.3, 2026-11-05, MIT) or Zod 4 `z.toJSONSchema()` ([Zod JSON Schema](https://zod.dev/json-schema); v4.6.7, 2026-10-12, MIT). For a strict Claude tool, pass the model through the Python SDK's `transform_schema()` (anthropic 2.8.0, 2026-11-10, Apache-2.0), which strips unsupported constraints into field descriptions and adds `additionalProperties: false` ([SDK transformation](https://platform.claude.com/docs/en/build-with-claude/structured-outputs#how-sdk-transformation-works)). Apply the same rewrite to a Zod schema before setting `strict: true` [inference].
 - Put glossary definitions into field `description`s. They are the only ontology text the model sees at call time [inference].
-- Parse model output back through the same type at the boundary (parse, don't validate), as in deep-mode's type-system-discipline principle.
+- Parse model output back through the same type at the boundary (parse, don't validate), as in deep-mode's type-system-discipline principle. That parse is also where constraints the provider stripped from the wire schema get enforced.
 
 ```python
+from anthropic import transform_schema
+from pydantic import BaseModel, Field
+
 # Pydantic: one type drives DB mapping, API, and the agent tool schema
 class IssueInvoice(BaseModel):
     """Action type: issue a draft invoice. Glossary: Invoice (Billing)."""
     invoice_id: str = Field(description="Invoice.id of a DRAFT invoice")
     due_in_days: int = Field(ge=1, le=90)
+
+# model_json_schema() emits minimum/maximum and no additionalProperties: false, which
+# strict mode rejects. transform_schema() moves the bounds into the description and closes objects.
 tool = {"name": "issue_invoice", "description": IssueInvoice.__doc__,
-        "input_schema": IssueInvoice.model_json_schema(), "strict": True}
+        "input_schema": transform_schema(IssueInvoice), "strict": True}
+args = IssueInvoice.model_validate(tool_use.input)  # enforces ge=1, le=90 again
 ```
 
 ### Semantic layers (governed metrics for agents)
