@@ -1,6 +1,6 @@
 # Wayfinder
 
-Use when: an effort is too big for one session and the route is foggy ("wayfinder", "chart the way to X", "figure out how we'd migrate to Y", "plan this before anyone builds it"). You find the way; you don't charge at the destination. Adapted from Matt Pocock's wayfinder skill (MIT, github.com/mattpocock/skills). A multi-phase build whose design is already settled is the Multi-phase plan playbook; a multi-day build program is Orchestrate.
+Use when: an effort is too big for one session and the route is foggy ("wayfinder", "chart the way to X", "figure out how we'd migrate to Y", "plan this before anyone builds it"). You find the way; you don't charge at the destination. A multi-phase build whose design is already settled is the Multi-phase plan playbook; a multi-day build program is Orchestrate.
 
 The **map** is one issue labeled `wayfinder:map`. Its **tickets** are child issues, each one question whose answer is a decision, sized to one agent session. The map is an index: a decision lives in its ticket, and the map links to it by the ticket's title, never a bare number. Asking for a map grants creating and editing its issues and labels.
 

@@ -7,6 +7,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_LINE_BYTES = 760  # omp read truncates lines at 768 characters
+BANNED = re.compile(
+    r"(?<![a-z0-9])[pr]stack(?![a-z0-9])|poteto|lauren\s+tan|cursor/plugins|pocock|ras\s*mic"
+    r"|cloud\s*x\s*berry|greptile|code\s*rabbit|james\s+clements",
+    re.I,
+)
+WHITE_LABEL_EXEMPT = {Path("scripts/check.py"), Path("plugins/deep-mode/skills/deep-mode/references/trending")}
 problems = []
 
 
@@ -66,6 +72,19 @@ for md in ROOT.rglob("*.md"):
             problems.append(f"{rel}: broken link {link}")
     for anchor in re.findall(r"[\w\-]+\.md#[\w\-]+", text):
         problems.append(f"{rel}: anchor link {anchor} (omp can't read anchors; link the file)")
+
+for path in ROOT.rglob("*"):
+    rel = path.relative_to(ROOT)
+    if not path.is_file() or ".git" in rel.parts or rel.name.upper().startswith(("LICENSE", "NOTICE")):
+        continue
+    if any(rel == exempt or exempt in rel.parents for exempt in WHITE_LABEL_EXEMPT):
+        continue
+    text = path.read_bytes().decode("utf-8", errors="ignore")
+    for number, line in enumerate(text.splitlines(), 1):
+        for match in BANNED.finditer(line):
+            problems.append(f"{rel}:{number}: banned name {match.group(0)!r}")
+    if BANNED.search(str(rel)):
+        problems.append(f"{rel}: banned name in path")
 
 if problems:
     print("\n".join(problems))

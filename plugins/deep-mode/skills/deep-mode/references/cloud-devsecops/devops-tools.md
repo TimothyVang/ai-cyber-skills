@@ -8,7 +8,7 @@ Full report: https://github.com/TimothyVang/cloud-devsecops/blob/main/research/d
 
 1. Local AWS: [Floci](https://github.com/floci-io/floci) (MIT) instead of LocalStack. Claimed 24 ms start, ~13 MB RAM, 19 MB image versus LocalStack's >3 s, ~150 MB, >1 GB.
 2. Learn Terraform even if AI writes it: read every plan, use remote locked state, apply only a saved plan. OpenTofu is a drop-in with state encryption.
-3. Open-source AI PR review ([PR-Agent](https://github.com/The-PR-Agent/pr-agent)) instead of SaaS reviewers. The creator runs it in GitHub Actions; deep-mode runs it locally through its **pr-agent** technique and needs no Actions, CodeRabbit, or Greptile.
+3. Open-source AI PR review ([PR-Agent](https://github.com/The-PR-Agent/pr-agent)) instead of SaaS reviewers. The creator runs it in GitHub Actions; deep-mode runs it locally through its **pr-agent** technique and needs no Actions or hosted review service.
 4. Encrypt `.env` with [dotenvx](https://github.com/dotenvx/dotenvx); keep `.env.keys` out of git and the Docker build context.
 5. [Gitleaks](https://github.com/gitleaks/gitleaks) as a CI circuit breaker, including dangling git objects; [Trivy](https://github.com/aquasecurity/trivy) on images and lockfiles before push.
 6. Short-lived JIT credentials (Teleport, Descope) for humans and agents; no static keys in agent configs.
@@ -65,8 +65,8 @@ Aliases the creator uses: `k`=kubectl, `tf`=terraform/tofu, `l`=`eza --icons --g
 | [Worktrunk](https://github.com/max-sixty/worktrunk) (`wt`) | Worktrees (`wt switch -c`, `wt merge`) | Essential | Raw `git worktree`, stash |
 | gh-dash + Octo.nvim | PRs/issues in terminal and Neovim | Indispensable | GitHub web UI |
 | Twik/tweaker | Review TUI that submits to GitHub/GitLab | "The missing piece" | Browser review |
-| [PR-Agent](https://github.com/The-PR-Agent/pr-agent) | OSS AI reviewer (creator: in Actions; deep-mode: local, **pr-agent** technique) | Adopted | CodeRabbit on private repos |
-| CodeRabbit | SaaS AI reviewer | Good at layering huge AI PRs; deep-mode's **pr-review** replaces it | — |
+| [PR-Agent](https://github.com/The-PR-Agent/pr-agent) | OSS AI reviewer (creator: in Actions; deep-mode: local, **pr-agent** technique) | Adopted | Hosted AI reviewers on private repos |
+| Hosted AI reviewer | SaaS AI reviewer | Good at layering huge AI PRs; deep-mode's **pr-review** replaces it | — |
 
 PR-Agent `.pr_agent.toml`:
 

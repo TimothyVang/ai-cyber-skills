@@ -1,8 +1,9 @@
 MIT License
 
 Copyright (c) 2026 Timothy Vang and deep-mode contributors
-Portions derived from pstack, Copyright (c) 2026 Lauren Tan
-(https://github.com/cursor/plugins/tree/main/pstack)
+Portions Copyright (c) 2026 Lauren Tan
+Portions Copyright (c) 2026 Matt Pocock
+NOTICE.md lists the portions and their license files.
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -1,6 +1,6 @@
 # github-app
 
-**Use when:** the user wants deep-mode's bots working their repos without a session: "install deep-mode on my repos", "run the bots on their own", "like Greptile but on my subscription". Also to set the bots up, start, stop, check on, or opt a repo out.
+**Use when:** the user wants deep-mode's bots working their repos without a session: "install deep-mode on my repos", "run the bots on their own", "AI review on my own subscription". Also to set the bots up, start, stop, check on, or opt a repo out.
 
 ## What it is
 
@@ -27,7 +27,7 @@ py -3 assets/github-app/install.py --check    # report what is missing, change n
 4. **The app:** runs `ghapp.py setup` in the browser, then waits while the user installs it. Installing is the opt-in: pick "Only select repositories" to name the repos the bots may work in.
 5. **Config and autostart:** writes `~/.config/deep-mode/bot.json` with the agents found, then runs `bot.py install-autostart` on a yes.
 
-`--yes` accepts every default, `--no-autostart` skips step 5's autostart, and `--brand <name>` white-labels the run (below).
+`--yes` accepts every default, `--no-autostart` skips step 5's autostart, and `--brand <name>` renames the bots (below).
 
 **Manual path.** `py -3 assets/github-app/ghapp.py setup` creates the app on its own: a browser page opens; click "Create GitHub App". The app id and private key stay in `~/.config/deep-mode/`, outside every repo. Pass `--org <org>` to create it under an organization. Install it at the `install` URL it prints, then `py -3 assets/github-app/ghapp.py whoami` lists the bot login and its installations.
 
@@ -78,6 +78,6 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 - The private key and installation tokens stay in `~/.config/deep-mode/`. Tokens last one hour. None of them go into prompts, logs or repos.
 - Usage is the user's subscription. Raise `interval` or install on fewer repos to spend less.
 
-## White-label
+## Bot name
 
-Every name above that contains `deep-mode` comes from `assets/github-app/brand.json` through `brand.py`: the app name, the comment signature, the mention, the branch prefix, the repo config file, the config and cache directories, and the autostart task. `py -3 assets/github-app/install.py --brand acme-review` writes `brand.local.json` and sets up under that name. The fields, and what stays the same, are in `docs/white-label.md` at the repo root.
+Rename the bots with `install.py --brand <name>`. It writes `assets/github-app/brand.local.json`, and `brand.py` derives the app name, comment signature, mention, branch prefix, repo config file, config and cache directories, and autostart task from it.
