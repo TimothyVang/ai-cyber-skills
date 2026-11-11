@@ -85,7 +85,7 @@ class TriggerTest(unittest.TestCase):
         args = (OWNER, MENTION, ours)
         new = [f"new head {'a' * 7}"]
         self.assertEqual(bot.pr_reasons(self.pr(), {}, "2025-12-31T00:00:00Z", *args)[0], new)  # opened after
-        self.assertEqual(bot.pr_reasons(self.pr(), {}, "2026-01-03T00:00:00Z", *args)[0], [])  # backlog PR
+        self.assertEqual(bot.pr_reasons(self.pr(backlog=True), {}, "2026-01-03T00:00:00Z", *args)[0], [])
         self.assertEqual(bot.pr_reasons(self.pr(), {"heads": {"a" * 40: "blocked"}}, None, *args)[0], [])
         self.assertEqual(bot.pr_reasons(self.pr(isDraft=True), {}, None, *args)[0], [])
         self.assertEqual(len(bot.pr_reasons(self.pr(), {}, None, *args)[0]), 1)  # backlog
@@ -95,12 +95,10 @@ class TriggerTest(unittest.TestCase):
         self.assertEqual(bot.pr_reasons(self.pr(), baseline, "2026-01-03T00:00:00Z", OWNER, MENTION, ours)[0],
                          [f"new head {'a' * 7}"])
 
-    def test_backlog_pr_first_seen_late_with_post_install_head_is_new(self):
-        since = "2026-01-03T00:00:00Z"
-        late = self.pr(headDate="2026-01-04T00:00:00Z")  # pushed after the install, polled later
-        self.assertEqual(bot.pr_reasons(late, {}, since, OWNER, MENTION, ours)[0], [f"new head {'a' * 7}"])
-        self.assertEqual(bot.pr_reasons(self.pr(headDate="2026-01-02T00:00:00Z"), {}, since, OWNER, MENTION,
-                                        ours)[0], [])
+    def test_old_pr_first_seen_after_the_repos_first_poll_is_new(self):
+        # not on the first poll's list (reopened later, say): no baseline exists, so its head counts
+        self.assertEqual(bot.pr_reasons(self.pr(), {}, "2026-01-03T00:00:00Z", OWNER, MENTION, ours)[0],
+                         [f"new head {'a' * 7}"])
 
     def test_pr_retries_waiting_gate(self):
         item = {"heads": {"a" * 40: "awaiting-checks"}, "status": "awaiting-checks", "panelSha": "a" * 40}
@@ -132,10 +130,14 @@ class TriggerTest(unittest.TestCase):
     def test_linked_issue_waiting_on_a_merge_answers_anyone(self):
         issue = {"createdAt": "2026-01-01T00:00:00Z", "comments": [comment("stranger", "2026-01-02T00:00:00Z",
                                                                           "is this still needed?")]}
-        handled = {"handled": True}
-        self.assertEqual(bot.issue_reasons(issue, handled, None, OWNER, MENTION, ours)[0], [])
-        self.assertEqual(bot.issue_reasons(issue, {**handled, "answerAll": True}, None, OWNER, MENTION, ours)[0],
+        handled = {"handled": True, "lastCommentAt": "2026-01-03T00:00:00Z"}
+        later = "2026-01-04T00:00:00Z"  # the comment predates both floors, yet unanswered() blocks the merge
+        self.assertEqual(bot.issue_reasons(issue, handled, later, OWNER, MENTION, ours)[0], [])
+        self.assertEqual(bot.issue_reasons(issue, {**handled, "answerAll": True}, later, OWNER, MENTION, ours)[0],
                          ["1 new comment(s)"])
+        answered = {**issue, "comments": issue["comments"] + [comment("app-slug", "2026-01-02T01:00:00Z")]}
+        self.assertEqual(bot.issue_reasons(answered, {**handled, "answerAll": True}, later, OWNER, MENTION,
+                                           ours)[0], [])
 
     def test_wants_implementation(self):
         issue = {"author": {"login": OWNER}, "body": "do it", "labels": []}
@@ -149,10 +151,15 @@ class TriggerTest(unittest.TestCase):
                                                  OWNER, MENTION))
         self.assertFalse(bot.wants_implementation(issue, [comment("x", "t", f"{MENTION} implement")],
                                                   {"handled": True}, OWNER, MENTION))
-        # the owner's request survives a failed attempt whose retry no longer sees the comment
-        retry = {"handled": False, "implementRequested": True}
-        self.assertTrue(bot.wants_implementation({**issue, "author": {"login": "x"}}, [], retry, OWNER, MENTION))
-        self.assertFalse(bot.wants_implementation(issue, [], {**retry, "implemented": True}, OWNER, MENTION))
+
+    def test_retry_keeps_the_triggering_comments(self):
+        request = comment(OWNER, "2026-01-01T00:00:01Z", f"{MENTION} implement, and keep the API stable")
+        newer = comment("x", "2026-01-01T00:00:05Z", f"{MENTION} also docs")
+        merged = bot.with_pending([request], [newer])
+        self.assertEqual(merged, [request, newer])
+        self.assertEqual(bot.with_pending([request], [request, newer]), [request, newer])  # no duplicates
+        issue = {"author": {"login": "x"}, "body": "do it", "labels": []}
+        self.assertTrue(bot.wants_implementation(issue, merged, {"handled": True}, OWNER, MENTION))
 
     def test_signature_counts_only_from_the_app_or_the_owner(self):
         ident = object.__new__(bot.Identity)

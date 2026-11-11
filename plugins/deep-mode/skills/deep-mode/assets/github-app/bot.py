@@ -61,6 +61,7 @@ SIGNATURE = f"**{NAME} "
 SEVERITIES = ("P0", "P1", "P2")
 AGENT_TIMEOUT = 3600
 CHECK_WAIT = 1800
+LIST_LIMIT = 100_000  # open PRs or issues listed per repo per cycle: gh pages through all of them
 MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for a new push or comment
 # Statuses after which the next cycle runs the item again without a new push or comment.
 AWAITING = {"awaiting-checks": "required checks were pending", "awaiting-issues": "linked issues were waiting",
@@ -297,15 +298,13 @@ def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, any
 def pr_reasons(pr: dict, item: dict, since, owner: str, mention: str, is_ours):
     """Why this PR needs a turn (empty when it doesn't) and the human comments that triggered it.
 
-    A head is new when it isn't recorded and the PR is known (repo_cycle records a PR opened before `since`
-    on first sight), was opened after `since`, or its head commit is dated after `since` (`headDate`, read on
-    first sight: such a commit was pushed after the install, whenever the PR is first polled).
+    A head is new unless it is recorded, or the PR is `backlog`: open before `since` and listed on the repo's
+    first poll (repo_cycle), whose head is recorded then. Commit dates never decide.
     """
     if pr.get("isDraft"):
         return [], []
     reasons, head, known = [], pr["headRefOid"], item.get("heads") or {}
-    if head not in known and (since is None or known or pr.get("createdAt", "") > since
-                              or (pr.get("headDate") or "") > since):
+    if head not in known and not pr.get("backlog"):
         reasons.append(f"new head {head[:7]}")
     if item.get("status") in AWAITING and item.get("panelSha") == head:
         reasons.append(AWAITING[item["status"]])
@@ -324,19 +323,27 @@ def issue_reasons(issue: dict, item: dict, since, owner: str, mention: str, is_o
         reasons.append("new issue")
     if item.get("status") == "error" and item.get("errors", 0) < MAX_ATTEMPTS:
         reasons.append(f"retry after an error ({item.get('errors', 0)}/{MAX_ATTEMPTS})")
+    # An issue a PR's merge waits on: any human comment after the bots' last reply, whatever its age (the
+    # same comments `unanswered` blocks the merge on).
     floor = max(since or "", item.get("lastCommentAt") or "")
-    comments = human_triggers(issue.get("comments") or [], floor, owner, mention, is_ours,
-                              anyone=bool(item.get("answerAll")))
+    answer_all = bool(item.get("answerAll"))
+    comments = human_triggers(issue.get("comments") or [], None if answer_all else floor, owner, mention,
+                              is_ours, anyone=answer_all)
     if comments:
         reasons.append(f"{len(comments)} new comment(s)")
     return reasons, comments
 
 
+def with_pending(pending: list, comments: list) -> list:
+    """The triggering comments of a failed attempt (which its retry no longer sees: the bots may have posted
+    since) merged with the new ones, oldest first."""
+    seen = {(login_of(c), c.get("createdAt")) for c in comments}
+    return sorted([c for c in pending if (login_of(c), c.get("createdAt")) not in seen] + list(comments),
+                  key=lambda c: c.get("createdAt", ""))
+
+
 def wants_implementation(issue: dict, comments: list, item: dict, owner: str, mention: str) -> bool:
-    """The owner asked (`<mention> implement`, now or on an attempt that failed), or opened the issue and
-    didn't mark it discussion-only."""
-    if item.get("implementRequested") and not item.get("implemented"):
-        return True
+    """The owner asked (`<mention> implement`), or opened the issue and didn't mark it discussion-only."""
     command = f"{mention} implement".lower()
     if any(same(login_of(c), owner) and command in (c.get("body") or "").lower() for c in comments):
         return True
@@ -955,8 +962,8 @@ class PRConversation:
                           "can push), or it moved while being checked; a human takes it from here")
 
     def open_issues(self) -> list:
-        """Issues this PR closes that hold a human comment newer than the bots' last reply there. Each one in
-        this repo is flagged so the issue conversation answers any human there, not just the owner or a mention."""
+        """Issues this PR closes that hold a human comment newer than the bots' last reply there. Each one is
+        flagged so the issue conversation answers any human there (in a repo the app is installed on)."""
         refs = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "closingIssuesReferences") or {}
         waiting = []
         for ref in refs.get("closingIssuesReferences") or []:
@@ -964,11 +971,9 @@ class PRConversation:
             comments = (gh_json("issue", "view", *target, "--json", "comments") or {}).get("comments") or []
             if unanswered(comments, self.bot.ident.is_ours):
                 waiting.append(ref.get("url") or f"#{ref['number']}")
-                local = not ref.get("url") or ref["url"].lower().startswith(
-                    f"https://github.com/{self.repo}/issues/".lower())
-                if local:
-                    self.bot.state["items"].setdefault(f"{self.repo}#issue:{ref['number']}", {"heads": {}})[
-                        "answerAll"] = True
+                where = re.search(r"github\.com/([^/]+/[^/]+)/issues/\d+", ref.get("url") or "")
+                key = f"{where.group(1) if where else self.repo}#issue:{ref['number']}"
+                self.bot.state["items"].setdefault(key, {"heads": {}})["answerAll"] = True
         return waiting
 
     def push(self, old: str) -> None:
@@ -1140,8 +1145,6 @@ class IssueConversation:
         sha = git(self.clone, "rev-parse", f"origin/{self.default}")
         implement = wants_implementation(self.issue, self.comments, self.item, self.bot.ident.owner,
                                          self.cfg["mention"])
-        if implement and not self.bot.dry:
-            self.item["implementRequested"] = True  # a retry after an error still implements
         worktree_at(self.clone, self.tree, sha)
         if self.bot.dry:
             print(f"  [dry-run] author {role_label(self.author)} would propose a plan, reviewer "
@@ -1250,36 +1253,48 @@ class Bot:
     def repo_cycle(self, repo: str, since) -> None:
         want, found, todo = self.args.item, False, []
         mention, owner, ours = self.cfg["mention"], self.ident.owner, self.ident.is_ours
+        # Each repo's events count from its own first full poll; for a repo polled since the install (or before
+        # repo start times existed) that is the install moment, for one added to the app later its first poll.
+        starts = self.state.setdefault("repoSince", {})
+        first_poll = since is not None and repo not in starts and not want
+        if since is not None:
+            polled = not self.state.get("lastCycle") or any(k.startswith(f"{repo}#") for k in self.state["items"])
+            since = starts.get(repo) or (since if polled else now_iso())
         if not want or want.startswith("pr:"):
-            prs = gh_json("pr", "list", "-R", repo, "--state", "open", "--limit", "100", "--json", PR_FIELDS)
-            for pr in prs or []:
+            prs = gh_json("pr", "list", "-R", repo, "--state", "open", "--limit", str(LIST_LIMIT), "--json",
+                          PR_FIELDS) or []
+            if len(prs) >= LIST_LIMIT:
+                log(f"{repo}: {LIST_LIMIT}+ open PRs; the oldest beyond that are not polled")
+            for pr in prs:
                 key = f"pr:{pr['number']}"
                 if want and want != key:
                     continue
                 found = True
                 item = self.state["items"].get(f"{repo}#{key}", {})
-                first_sight = since and not item.get("heads") and pr.get("createdAt", "") <= since
-                if first_sight:  # a head commit dated after the install was pushed after it
-                    pr["headDate"] = gh("api", f"repos/{repo}/commits/{pr['headRefOid']}", "--jq",
-                                        ".commit.committer.date").strip()
+                # On the repo's first poll, a PR opened before `since` is backlog: its head is recorded below.
+                # Any PR seen later for the first time (reopened, say) has its head treated as new.
+                pr["backlog"] = first_poll and not item.get("heads") and pr.get("createdAt", "") <= since
                 reasons, comments = pr_reasons(pr, item, since, owner, mention, ours)
                 if want and not pr["isDraft"] and not reasons:
                     reasons = ["requested with --item"]
                 if not reasons:
-                    if first_sight and pr["headDate"] <= since:
-                        # A PR opened before the install, first seen now, with an older head: backlog. Any
-                        # later push, whatever its commit dates, is a new head (pr_reasons).
+                    if pr["backlog"]:
                         self.state["items"].setdefault(f"{repo}#{key}", {"heads": {}}).setdefault(
                             "heads", {})[pr["headRefOid"]] = "before-install"
                     log(f"{repo}#{key}: skip ({'draft' if pr['isDraft'] else 'no new head or comment'})")
                     continue
                 todo.append(("pr", pr, reasons, comments))
+            if first_poll:
+                starts[repo] = since  # every open PR is listed and baselined: later heads are new
         if not want or want.startswith("issue:"):
-            listed = run(["gh", "issue", "list", "-R", repo, "--state", "open", "--limit", "100", "--json",
+            listed = run(["gh", "issue", "list", "-R", repo, "--state", "open", "--limit", str(LIST_LIMIT), "--json",
                           ISSUE_FIELDS], check=False)
             if listed.returncode and "disabled issues" not in listed.stderr:
                 raise RuntimeError(f"gh issue list failed: {listed.stderr.strip()[-300:]}")
-            for issue in json.loads(listed.stdout or "[]") if listed.returncode == 0 else []:
+            issues = json.loads(listed.stdout or "[]") if listed.returncode == 0 else []
+            if len(issues) >= LIST_LIMIT:
+                log(f"{repo}: {LIST_LIMIT}+ open issues; the oldest beyond that are not polled")
+            for issue in issues:
                 key = f"issue:{issue['number']}"
                 if want and want != key:
                     continue
@@ -1310,6 +1325,7 @@ class Bot:
     def handle(self, repo, kind, data, reasons, comments, clone, default) -> None:
         it = Item(self, repo, kind, data["number"])
         item = self.state["items"].setdefault(it.key, {"heads": {}})
+        comments = with_pending(item.get("pendingComments") or [], comments)
         log(f"{it.key}: {'; '.join(reasons)}")
         conversation = PRConversation(self, it, data, comments, clone, item) if kind == "pr" else \
             IssueConversation(self, it, data, comments, clone, item, default)
@@ -1330,12 +1346,15 @@ class Bot:
             item.pop("errors", None)
         retry = status == "error" and item["errors"] < MAX_ATTEMPTS
         item.update(status=status, updated=now_iso())
-        if not retry:
-            item.pop("implementRequested", None)
+        if retry:  # keep what triggered this attempt: the owner's request and instructions reach the retry
+            item["pendingComments"] = [{"author": {"login": login_of(c)}, "createdAt": c.get("createdAt", ""),
+                                        "body": c.get("body") or ""} for c in comments]
+        else:
+            item.pop("pendingComments", None)
             if kind == "issue" and status != "error":
                 item.pop("answerAll", None)
-        if comments and not retry:
-            item["lastCommentAt"] = max(c["createdAt"] for c in comments)
+            if comments:
+                item["lastCommentAt"] = max(c["createdAt"] for c in comments)
         if kind == "pr":
             for head in conversation.heads:  # our own pushes must not retrigger the conversation
                 item["heads"][head] = status
