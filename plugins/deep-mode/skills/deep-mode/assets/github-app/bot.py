@@ -14,10 +14,10 @@ posts their replies as the app (`<slug>[bot]`), or as the user's `gh` when no ap
 every deterministic step itself with the user's own git/gh credentials: pushes, PR creation, the merge
 gate and the merge.
 
---dry-run posts, pushes, commits and merges nothing and saves no state, so it takes no lock and works in its own
-clones and worktrees (<cache>/dry-run) beside a running bot. It prints what each triggered item would get; with
---item it also runs that item's first read-only agent turn (the reviewer on a PR, the author's plan on an issue)
-and prints the reply.
+--dry-run posts, pushes, commits and merges nothing and saves no state, so it takes no lock and works in a
+workspace of its own (<cache>/dry-run/<pid>-<id>, removed afterwards) beside a running bot or another dry run. It
+prints what each triggered item would get; with --item it also runs that item's first read-only agent turn (the
+reviewer on a PR, the author's plan on an issue) and prints the reply.
 
 Config: <CONFIG_DIR>/bot.json (defaults for missing keys; never overwritten). A repo opts out with
 `"bot": false`, and turns merging off with `"autonomousMerge": false`, in the brand's repo config file
@@ -33,6 +33,7 @@ import plistlib
 import re
 import shlex
 import shutil
+import stat
 import subprocess
 import sys
 import time
@@ -1609,14 +1610,26 @@ class Lock:
 
 def cmd_once(args) -> None:
     if args.dry_run:
-        # Posts, pushes, merges and saves nothing, so it runs beside a running bot without its lock, in its own
-        # clones and worktrees, so it never resets a worktree the bot is using.
+        # Posts, pushes, merges and saves nothing, so it takes no lock. It works in a workspace of its own,
+        # removed afterwards, so it never resets a worktree the bot or another dry run is using.
         global WORK
-        WORK = WORK / "dry-run"
-        Bot(args).cycle()
+        private = WORK / "dry-run" / f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
+        WORK = private
+        try:
+            Bot(args).cycle()
+        finally:
+            remove_tree(private)
         return
     with Lock():
         Bot(args).cycle()
+
+
+def remove_tree(path: Path) -> None:
+    """Delete a directory that holds git clones (their object files are read-only on Windows)."""
+    for root, _, files in os.walk(path):
+        for name in files:
+            os.chmod(os.path.join(root, name), stat.S_IWRITE | stat.S_IREAD)
+    shutil.rmtree(path, ignore_errors=True)
 
 
 def cmd_watch(args) -> None:
