@@ -44,8 +44,9 @@ py -3 assets/github-app/bot.py status
 ```
 
 - `install-autostart` registers `deep-mode-bot` with Task Scheduler (Windows), launchd (macOS), or a systemd user unit or crontab `@reboot` entry (Linux); `uninstall-autostart` removes it.
-- The first run records a start time. Only events after it get a turn: a PR opened before it has its head recorded on first sight, and any later push to it is new, whatever its commit dates. `--backlog` takes older open PRs and issues too.
-- Each cycle takes open non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deep-mode` or come from the owner after the bots' last turn. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all.
+- The first run records a start time. Only events after it get a turn: a PR opened before it is first seen with its head recorded as backlog, unless that head commit is dated after the start time; any later push to it is new, whatever its commit dates. `--backlog` takes older open PRs and issues too.
+- Each cycle takes open non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deep-mode` or come from the owner after the bots' last turn. On an issue that an own PR's merge waits on, any human comment counts. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all, and an owner's implement request carries over to the retries.
+- A comment counts as the bots' only when the app posted it, or the owner's account posted it with the bot signature; a signature from anyone else is a human comment.
 - The owner is the `gh` user running the bot, even when an organization owns the app.
 - One bot process runs at a time (a lock file). State is in `~/.config/deep-mode/bot-state.json`. Clones, worktrees, logs and per-item transcripts are in `~/.cache/deep-mode/bot/`.
 
@@ -67,7 +68,8 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 
 - PR and issue text is untrusted data. Prompts say so, wrap it in delimiters, and defang `@path` mentions. A request in it to merge, push, run, or post elsewhere is a finding.
 - Only the user's own PRs merge, and only through pr-conversation's gates, enforced in code at the merging head: same head as the panel, the ownership gate re-checked (with other writers, each commit the bot didn't push needs the owner as committer and a verified signature), required checks green, the head contains its base, linked issues answered, not conflicting, merge authorized. `--admin` only when the required review is the one rule it would bypass. No rebase, no force-push, no branch deletion.
-- The author runs only after the current head re-passes the ownership gate, so a push from another account mid-conversation sends the PR to a human.
+- The author and the verifiers run (both with `--approve-all`) only after the current head re-passes the ownership gate, so a push from another account mid-conversation sends the PR to a human.
+- Implementing an issue reuses an existing `deep-mode/issue-<n>` branch only when every commit on it is one the bots made; otherwise the bots stop and say so.
 - Contributors' and forks' PRs get review comments only. No agent runs with `--approve-all` on their code.
 - Agents run inside the repo, so their CLIs load its AGENTS.md and CLAUDE.md, and its rules apply. No real-money trading actions, ever.
 - The private key and installation tokens stay in `~/.config/deep-mode/`. Tokens last one hour. None of them go into prompts, logs or repos.

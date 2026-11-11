@@ -279,8 +279,9 @@ def thread_text(comments: list) -> str:
 
 # ---------------------------------------------------------------- triggers and gates (pure)
 
-def human_triggers(comments: list, floor, owner: str, mention: str, is_ours) -> list:
-    """Comments after `floor` and after the bot's last turn, by a human, from the owner or mentioning the bot."""
+def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, anyone: bool = False) -> list:
+    """Comments after `floor` and after the bot's last turn, by a human, from the owner or mentioning the bot
+    (from any human when `anyone`: a linked issue a PR's merge waits on)."""
     last_turn = max((c.get("createdAt", "") for c in comments if is_ours(c)), default="")
     floor = max(floor or "", last_turn)
     picked = []
@@ -288,7 +289,7 @@ def human_triggers(comments: list, floor, owner: str, mention: str, is_ours) -> 
         login = login_of(c)
         if c.get("createdAt", "") <= floor or is_ours(c) or login.endswith("[bot]"):
             continue
-        if same(login, owner) or mention.lower() in (c.get("body") or "").lower():
+        if anyone or same(login, owner) or mention.lower() in (c.get("body") or "").lower():
             picked.append(c)
     return picked
 
@@ -297,12 +298,14 @@ def pr_reasons(pr: dict, item: dict, since, owner: str, mention: str, is_ours):
     """Why this PR needs a turn (empty when it doesn't) and the human comments that triggered it.
 
     A head is new when it isn't recorded and the PR is known (repo_cycle records a PR opened before `since`
-    on first sight) or was opened after `since`. Commit dates never decide: an old commit can be pushed late.
+    on first sight), was opened after `since`, or its head commit is dated after `since` (`headDate`, read on
+    first sight: such a commit was pushed after the install, whenever the PR is first polled).
     """
     if pr.get("isDraft"):
         return [], []
     reasons, head, known = [], pr["headRefOid"], item.get("heads") or {}
-    if head not in known and (since is None or known or pr.get("createdAt", "") > since):
+    if head not in known and (since is None or known or pr.get("createdAt", "") > since
+                              or (pr.get("headDate") or "") > since):
         reasons.append(f"new head {head[:7]}")
     if item.get("status") in AWAITING and item.get("panelSha") == head:
         reasons.append(AWAITING[item["status"]])
@@ -322,14 +325,18 @@ def issue_reasons(issue: dict, item: dict, since, owner: str, mention: str, is_o
     if item.get("status") == "error" and item.get("errors", 0) < MAX_ATTEMPTS:
         reasons.append(f"retry after an error ({item.get('errors', 0)}/{MAX_ATTEMPTS})")
     floor = max(since or "", item.get("lastCommentAt") or "")
-    comments = human_triggers(issue.get("comments") or [], floor, owner, mention, is_ours)
+    comments = human_triggers(issue.get("comments") or [], floor, owner, mention, is_ours,
+                              anyone=bool(item.get("answerAll")))
     if comments:
         reasons.append(f"{len(comments)} new comment(s)")
     return reasons, comments
 
 
 def wants_implementation(issue: dict, comments: list, item: dict, owner: str, mention: str) -> bool:
-    """The owner asked (`<mention> implement`), or opened the issue and didn't mark it discussion-only."""
+    """The owner asked (`<mention> implement`, now or on an attempt that failed), or opened the issue and
+    didn't mark it discussion-only."""
+    if item.get("implementRequested") and not item.get("implemented"):
+        return True
     command = f"{mention} implement".lower()
     if any(same(login_of(c), owner) and command in (c.get("body") or "").lower() for c in comments):
         return True
@@ -480,8 +487,11 @@ class Identity:
         return names
 
     def is_ours(self, comment: dict) -> bool:
-        return login_of(comment).lower() in self.logins or \
-            (comment.get("body") or "").lstrip().startswith(SIGNATURE)
+        """Posted by the app, or signed by the owner's account (the bots post as the owner without an app).
+        A signature from anyone else is a human comment pretending to be a bot."""
+        login = login_of(comment).lower()
+        return login in self.logins or \
+            (same(login, self.owner) and (comment.get("body") or "").lstrip().startswith(SIGNATURE))
 
     def post(self, repo: str, number: int, body: str) -> None:
         if self.app:
@@ -945,7 +955,8 @@ class PRConversation:
                           "can push), or it moved while being checked; a human takes it from here")
 
     def open_issues(self) -> list:
-        """Issues this PR closes that hold a human comment newer than the bots' last reply there."""
+        """Issues this PR closes that hold a human comment newer than the bots' last reply there. Each one in
+        this repo is flagged so the issue conversation answers any human there, not just the owner or a mention."""
         refs = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "closingIssuesReferences") or {}
         waiting = []
         for ref in refs.get("closingIssuesReferences") or []:
@@ -953,6 +964,11 @@ class PRConversation:
             comments = (gh_json("issue", "view", *target, "--json", "comments") or {}).get("comments") or []
             if unanswered(comments, self.bot.ident.is_ours):
                 waiting.append(ref.get("url") or f"#{ref['number']}")
+                local = not ref.get("url") or ref["url"].lower().startswith(
+                    f"https://github.com/{self.repo}/issues/".lower())
+                if local:
+                    self.bot.state["items"].setdefault(f"{self.repo}#issue:{ref['number']}", {"heads": {}})[
+                        "answerAll"] = True
         return waiting
 
     def push(self, old: str) -> None:
@@ -1021,6 +1037,7 @@ class PRConversation:
         self.answered |= {r["id"] for r in responses}
 
     def panel(self):
+        self.require_own()  # verifiers run with --approve-all: the head must still be the owner's own work
         sha, verifiers = self.head, self.cfg["verifiers"]
         for tree in self.verifier_trees:
             worktree_at(self.clone, tree, sha)
@@ -1123,6 +1140,8 @@ class IssueConversation:
         sha = git(self.clone, "rev-parse", f"origin/{self.default}")
         implement = wants_implementation(self.issue, self.comments, self.item, self.bot.ident.owner,
                                          self.cfg["mention"])
+        if implement and not self.bot.dry:
+            self.item["implementRequested"] = True  # a retry after an error still implements
         worktree_at(self.clone, self.tree, sha)
         if self.bot.dry:
             print(f"  [dry-run] author {role_label(self.author)} would propose a plan, reviewer "
@@ -1153,6 +1172,16 @@ class IssueConversation:
             return "implemented"
         on_remote = run(["git", "rev-parse", "-q", "--verify", f"origin/{branch}"], cwd=self.clone,
                         check=False).returncode == 0
+        if on_remote:  # the author runs with --approve-all: only on a branch of commits the bot made itself
+            trusted = self.bot.trusted(self.repo)
+            foreign = [s for s in git(self.clone, "rev-list", f"origin/{self.default}..origin/{branch}").split()
+                       if s not in trusted]
+            if foreign:
+                self.it.say("coordinator", "bot.py", "",
+                            f"`{branch}` already exists with {len(foreign)} commit(s) the bots didn't make (the "
+                            f"newest is `{foreign[0][:7]}`), so the author won't run on it. Delete or rename that "
+                            "branch to let the bots implement this issue.")
+                return "blocked"
         tree = worktree_at(self.clone, self.tree.with_name(f"issue{self.n}-impl"),
                            f"origin/{branch}" if on_remote else f"origin/{self.default}", branch=branch)
         old = git(tree, "rev-parse", "HEAD")
@@ -1229,13 +1258,17 @@ class Bot:
                     continue
                 found = True
                 item = self.state["items"].get(f"{repo}#{key}", {})
+                first_sight = since and not item.get("heads") and pr.get("createdAt", "") <= since
+                if first_sight:  # a head commit dated after the install was pushed after it
+                    pr["headDate"] = gh("api", f"repos/{repo}/commits/{pr['headRefOid']}", "--jq",
+                                        ".commit.committer.date").strip()
                 reasons, comments = pr_reasons(pr, item, since, owner, mention, ours)
                 if want and not pr["isDraft"] and not reasons:
                     reasons = ["requested with --item"]
                 if not reasons:
-                    if since and not item.get("heads") and pr.get("createdAt", "") <= since:
-                        # First sight of a PR opened before the install: its head is backlog; any later push,
-                        # whatever its commit dates, is a new head (pr_reasons).
+                    if first_sight and pr["headDate"] <= since:
+                        # A PR opened before the install, first seen now, with an older head: backlog. Any
+                        # later push, whatever its commit dates, is a new head (pr_reasons).
                         self.state["items"].setdefault(f"{repo}#{key}", {"heads": {}}).setdefault(
                             "heads", {})[pr["headRefOid"]] = "before-install"
                     log(f"{repo}#{key}: skip ({'draft' if pr['isDraft'] else 'no new head or comment'})")
@@ -1297,6 +1330,10 @@ class Bot:
             item.pop("errors", None)
         retry = status == "error" and item["errors"] < MAX_ATTEMPTS
         item.update(status=status, updated=now_iso())
+        if not retry:
+            item.pop("implementRequested", None)
+            if kind == "issue" and status != "error":
+                item.pop("answerAll", None)
         if comments and not retry:
             item["lastCommentAt"] = max(c["createdAt"] for c in comments)
         if kind == "pr":
