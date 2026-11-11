@@ -26,7 +26,8 @@ Done when a PR shows the `security-audit` check and the gate's comment.
 
 - CI has no sandbox, so the audit reads source only. A finding needs a reproduced result to be `confirmed`, so most CI leads land as `needs_validation`.
 - Fork PRs get no secrets, so the job skips them. Audit those locally before merging.
-- The prompt and gate are read from the base branch, so a PR can't weaken them. A PR can still edit the workflow file itself: protect `.github/` with CODEOWNERS or required review.
+- The prompt and gate are read from the base branch, so a PR can't weaken them, and the agent can write only inside its output folder. A PR can still edit the workflow file itself: protect `.github/` with CODEOWNERS or required review.
+- The audit agent reads the PR's text, so a hostile PR can try to talk it into writing an empty `findings.json`. For PRs from people you don't trust, the panel and a human read the diff; the gate alone is not enough.
 - One run finds roughly half of what repeated runs find (Cloudflare's own measurement). The gate is a floor, not a clearance.
 
 ## Audit one change locally

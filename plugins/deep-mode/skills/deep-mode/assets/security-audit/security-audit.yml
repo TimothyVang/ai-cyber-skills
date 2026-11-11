@@ -73,7 +73,7 @@ jobs:
             -e "s|{{HEAD}}|$HEAD_SHA|g" -e "s|{{AGENTS}}|$AUDIT_AGENTS|g" "$RUNNER_TEMP/prompt.md"
           npm install --global --silent @anthropic-ai/claude-code
           claude -p --model "$AUDIT_MODEL" --output-format json --permission-mode dontAsk \
-            --allowedTools "Read,Grep,Glob,Write,Edit,Task,TodoWrite,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(node $SKILL/validate-findings.cjs:*),Bash(node $SKILL/validate-coverage-ledger.cjs:*)" \
+            --allowedTools "Read,Grep,Glob,Write(/$OUT/**),Edit(/$OUT/**),Task,TodoWrite,Bash(git diff:*),Bash(git log:*),Bash(git show:*),Bash(node $SKILL/validate-findings.cjs:*),Bash(node $SKILL/validate-coverage-ledger.cjs:*)" \
             --disallowedTools "WebFetch,WebSearch" \
             --add-dir "$RUNNER_TEMP" --max-budget-usd "$AUDIT_BUDGET_USD" \
             < "$RUNNER_TEMP/prompt.md" > "$RUNNER_TEMP/claude.json" \

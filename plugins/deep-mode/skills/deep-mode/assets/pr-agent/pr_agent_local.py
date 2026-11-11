@@ -15,6 +15,7 @@ Needs: `claude` (logged in), `gh` (logged in), and `uvx` (or `pr-agent` on PATH)
 import argparse
 import json
 import os
+import secrets
 import shutil
 import subprocess
 import sys
@@ -56,7 +57,7 @@ def claude_complete(messages: list[dict], model: str) -> tuple[str, dict]:
     }
 
 
-def make_handler(model: str, log: list):
+def make_handler(model: str, log: list, secret: str):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -73,6 +74,11 @@ def make_handler(model: str, log: list):
             self._json(200, {"object": "list", "data": [{"id": "subscription", "object": "model"}]})
 
         def do_POST(self):
+            # Only PR-Agent, holding this run's secret, may spend the subscription.
+            host = (self.headers.get("Host") or "").split(":")[0]
+            if host not in ("127.0.0.1", "localhost") or self.headers.get("Authorization") != f"Bearer {secret}":
+                self._json(401, {"error": {"message": "unauthorized"}})
+                return
             if not self.path.rstrip("/").endswith("/chat/completions"):
                 self._json(404, {"error": {"message": f"unsupported path {self.path}"}})
                 return
@@ -83,7 +89,7 @@ def make_handler(model: str, log: list):
             except Exception as exc:  # reported to PR-Agent as an API error
                 self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
                 return
-            log.append({"seconds": round(time.monotonic() - started, 1), **usage})
+            log.append({"seconds": round(time.monotonic() - started, 1), "text": text, **usage})
             usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
             created = int(time.time())
             if request.get("stream"):
@@ -124,7 +130,8 @@ def main() -> int:
         sys.exit("pr_agent_local: `gh auth token` returned nothing; run `gh auth login`")
 
     calls: list = []
-    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(opts.model, calls))
+    secret = secrets.token_urlsafe(32)
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(opts.model, calls, secret))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}/v1"
 
@@ -134,9 +141,11 @@ def main() -> int:
         "CONFIG__GIT_PROVIDER": "github",
         "CONFIG__MODEL": "openai/subscription",
         "CONFIG__FALLBACK_MODELS": "[]",
+        # PR-Agent caps every model at max_model_tokens (32000 by default) and prunes the diff to fit.
         "CONFIG__CUSTOM_MODEL_MAX_TOKENS": "150000",
+        "CONFIG__MAX_MODEL_TOKENS": "150000",
         "CONFIG__PUBLISH_OUTPUT": "false" if opts.dry_run else "true",
-        "OPENAI__KEY": "local-subscription",
+        "OPENAI__KEY": secret,
         "OPENAI__API_BASE": base,
         "OPENAI_API_BASE": base,
         "GITHUB__USER_TOKEN": token,
@@ -151,6 +160,10 @@ def main() -> int:
           file=sys.stderr)
     if not calls and code == 0:
         print("pr_agent_local: PR-Agent made no model calls; check its output above", file=sys.stderr)
+    if opts.dry_run:
+        # With publishing off PR-Agent prints nothing, so show what the model returned.
+        for number, call in enumerate(calls, 1):
+            print(f"\n----- model output {number} -----\n{call['text']}")
     return code
 
 

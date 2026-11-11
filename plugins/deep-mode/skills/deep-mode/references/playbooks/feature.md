@@ -4,7 +4,7 @@ Use when: adding new behavior. You own the design: plan, review, verify. Size L:
 
 ## Steps
 
-1. Run the **how** technique (`references/techniques/how.md`) over the affected subsystem.
+1. Run the **how** technique (`references/techniques/how.md`) over the affected subsystem, then the **prior-art** technique (`references/techniques/prior-art.md`) for what the feature needs that the repo lacks.
 2. Run the **architect** technique (`references/techniques/architect.md`) for parallel design exploration.
 3. Write the throughput checkpoint as four `todo` items. A dimension that does not apply keeps its item as `n/a: <reason>`; never drop it:
    - Blocking first steps: gates that run before fan-out.
