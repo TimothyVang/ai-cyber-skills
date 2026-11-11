@@ -46,6 +46,7 @@ Files it may write:
 7. **Point to it.** Edit `AGENTS.md` when it exists, else `CLAUDE.md` when it exists, else create `AGENTS.md`. Add or update one `## deep-mode` section: one line each for the tracker file, the glossary, the ADR folder, and the standards file. Update the section in place on a re-run; never duplicate it or touch the rest of the file.
 8. **Optional guardrails.** When the user asks for commit-time checks or protection against destructive git commands, run the **pre-commit** technique (`references/techniques/pre-commit.md`) or the **git-guardrails** technique (`references/techniques/git-guardrails.md`).
 9. **Ship it** as one `chore(deep-mode): set up tracker and project docs` change through Opening a PR (`references/playbooks/opening-a-pr.md`).
+10. **Resume the request.** When setup ran because the user asked for Spec, Tickets, Implement spec, or Triage, run that playbook now, in the same session. Don't wait for the setup PR to merge: each flow detects the tracker on its own, and Setup has already created the labels.
 
 ## Gates
 
@@ -58,4 +59,4 @@ Files it may write:
 - The tracker kind and why; the label table with which labels were created and which were mapped to existing ones.
 - Each file written or updated, with its path.
 - The pointer section's location.
-- Done when `docs/deep-mode/tracker.md` exists, every mapped label exists on the tracker, and the setup PR is open.
+- Done when `docs/deep-mode/tracker.md` exists, every mapped label exists on the tracker, the setup PR is open, and any flow that routed here (step 10) has run to its own Evidence.

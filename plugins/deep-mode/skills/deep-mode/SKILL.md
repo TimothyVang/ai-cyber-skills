@@ -32,7 +32,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 | "set up / publish this project for contributors", "make issues for helpers" | `skill://project-brief` |
 | "run the factory / work the issue queue / turn issues into PRs / set up a software factory" | Factory playbook |
 | "drive the board / work the backlog / run this project autonomously / keep going on the roadmap" | Board playbook |
-| "set up deep-mode here", "configure the tracker / labels", "add a glossary and ADRs", or the first use of spec, tickets, or triage in a repo | Setup playbook |
+| "set up deep-mode here", "configure the tracker / labels", "add a glossary and ADRs", or the first use of spec, tickets, or triage in a repo (Setup then resumes the requested playbook) | Setup playbook |
 | "triage the issues", "what needs my attention", "is #42 ready for an agent", "move #42 to agent-ready" | Triage playbook |
 | "write the spec", "turn this into a spec", "spec it up" | Spec playbook |
 | "break this into tickets", "split the spec into issues", "make tickets for this" | Tickets playbook |
