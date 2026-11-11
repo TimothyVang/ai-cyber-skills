@@ -8,8 +8,10 @@ Usage:
 PR-Agent talks to an OpenAI-compatible endpoint. This script serves one on 127.0.0.1 and answers
 each request with a tool-less run of an agent CLI you are already logged in to:
 - `omp` (default when installed): uses the OAuth logins from omp's /provider (Anthropic, OpenAI
-  Codex, ...). The default model is omp's `modelRoles.default` in ~/.omp/agent/config.yml; pass
-  any omp model id, e.g. `--model openai-codex/gpt-6-luna:high`.
+  Codex, ...). The default model is omp's `modelRoles.default` (`omp config get modelRoles`); pass
+  any omp model id, e.g. `--model openai-codex/gpt-6-luna:high`. The run has no built-in tools,
+  and a config overlay disables every discovery provider, so no MCP server tools load either.
+  It runs in an empty temp directory, so no repo config can add them back.
 - `claude`: Claude Code's subscription login; the default model is `sonnet`.
 API-key environment variables are removed from the child, so a stray key can't turn this into API
 billing. GitHub access uses `gh auth token`. --dry-run prints the output instead of posting it.
@@ -33,6 +35,11 @@ SYSTEM = ("You are the language model behind PR-Agent, a code review tool. The u
           "tool's instructions and the pull request data. Follow those instructions exactly and reply with "
           "only the output they ask for, in the format they ask for.")
 API_KEYS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "OPENAI_API_KEY", "OPENROUTER_API_KEY")
+# Every discovery provider that can contribute MCP servers, skills, rules, or tools. `--no-tools`
+# only drops built-in tools; without this overlay omp still loads the user's MCP servers.
+OMP_OVERLAY = "disabledProviders:\n" + "".join(f"  - {p}\n" for p in (
+    "native", "mcp-json", "claude", "codex", "gemini", "cursor", "windsurf", "vscode", "cline",
+    "claude-plugins", "omp-plugins", "agent-plugins"))
 
 
 def _oauth_env() -> dict:
@@ -52,7 +59,7 @@ def _prompt(messages: list[dict]) -> str:
 def omp_default_model() -> str:
     """omp's default model role, the one /provider and /model set (honors omp profiles)."""
     proc = subprocess.run([shutil.which("omp") or "omp", "config", "get", "modelRoles", "--json"],
-                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+                          capture_output=True, text=True, encoding="utf-8", errors="replace", env=_oauth_env())
     if proc.returncode != 0:
         sys.exit(f"pr_agent_local: `omp config get modelRoles` failed: {(proc.stderr or proc.stdout).strip()[-400:]}")
     try:
@@ -62,17 +69,19 @@ def omp_default_model() -> str:
 
 
 def omp_complete(prompt: str, model: str) -> tuple[str, dict]:
-    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as fh:
-        fh.write(prompt)
-    try:
+    with tempfile.TemporaryDirectory(prefix="pr-agent-omp-") as work:
+        with open(os.path.join(work, "request.md"), "w", encoding="utf-8") as fh:
+            fh.write(prompt)
+        with open(os.path.join(work, "overlay.yml"), "w", encoding="utf-8") as fh:
+            fh.write(OMP_OVERLAY)
         proc = subprocess.run(
             [shutil.which("omp") or "omp", "-p", "--mode", "json", "--no-session", "--no-title", "--no-tools",
-             "--no-skills", "--no-rules", "--no-context-files", "--no-extensions", "--no-lsp", "--model", model,
-             "--system-prompt", SYSTEM, f"@{fh.name}", "Answer the attached PR-Agent request."],
-            capture_output=True, text=True, encoding="utf-8", errors="replace", env=_oauth_env(), timeout=900,
+             "--no-skills", "--no-rules", "--no-context-files", "--no-extensions", "--no-lsp",
+             "--config", "overlay.yml", "--model", model, "--system-prompt", SYSTEM, "@request.md",
+             "Answer the attached PR-Agent request."],
+            cwd=work, capture_output=True, text=True, encoding="utf-8", errors="replace", env=_oauth_env(),
+            timeout=900,
         )
-    finally:
-        os.unlink(fh.name)
     text, prompt_tokens, completion_tokens = "", 0, 0
     for line in proc.stdout.splitlines():
         try:
@@ -207,7 +216,7 @@ def main() -> int:
         if not shutil.which(tool):
             sys.exit(f"pr_agent_local: `{tool}` is not on PATH")
     model = opts.model or (omp_default_model() if backend == "omp" else "sonnet")
-    token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True).stdout.strip()
+    token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True, env=_oauth_env()).stdout.strip()
     if not token:
         sys.exit("pr_agent_local: `gh auth token` returned nothing; run `gh auth login`")
 

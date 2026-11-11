@@ -3,7 +3,7 @@
 **Use when:** after opening a PR and after each later push to it, or when the user asks for PR-Agent ("run pr-agent", "/describe", "/review", "/improve"). It runs PR-Agent (github.com/The-PR-Agent/pr-agent, MIT) from your machine, powered by the user's OAuth subscriptions. There is no GitHub Action and no API key.
 
 `assets/pr-agent/pr_agent_local.py` in this skill does the wiring. It serves an OpenAI-compatible endpoint on `127.0.0.1` that answers each PR-Agent call with a tool-less run of an agent CLI the user is logged in to, passes `gh auth token` to PR-Agent, and runs the pinned `pr-agent` through `uvx`. API-key variables are stripped from the child, so the subscription pays.
-- **`omp` backend** (default when `omp` is installed): uses the OAuth logins from omp's `/provider`, and by default the model in omp's `modelRoles.default` (`omp config get modelRoles`). `--model` takes any omp model id, such as `openai-codex/gpt-6-luna:high` for the ChatGPT subscription.
+- **`omp` backend** (default when `omp` is installed): uses the OAuth logins from omp's `/provider`, and by default the model in omp's `modelRoles.default` (`omp config get modelRoles`). `--model` takes any omp model id, such as `openai-codex/gpt-6-luna:high` for the ChatGPT subscription. The child runs in an empty temp directory with `--no-tools` plus a config overlay that disables every discovery provider, because `--no-tools` alone still loads the user's MCP servers and PR text could then drive them.
 - **`claude` backend** (`--backend claude`): Claude Code's subscription login; default model `sonnet`.
 
 1. **Check the tools:** `omp` (or `claude`) logged in, `gh` logged in, `uvx` on PATH. A missing login is a hard stop for the user (`/login` in omp, `claude /login`, `gh auth login`).
