@@ -68,7 +68,9 @@ def flatten(messages: list[dict]) -> str:
 DISCOVERY = ("native", "omp-plugins", "claude", "agent-plugins", "codex", "agents", "claude-plugins", "gemini",
              "opencode", "cursor", "windsurf", "cline", "github", "vscode", "agents-md", "claude-md",
              "custom-context", "mcp-json", "ssh-json", "builtin-defaults")
-NO_DISCOVERY = f"enabledProviders: []\ndisabledProviders: [{', '.join(DISCOVERY)}]\n"
+# Model fallback is off too: a fallback chain could hand a failed OAuth call to an API-key provider.
+NO_DISCOVERY = (f"enabledProviders: []\ndisabledProviders: [{', '.join(DISCOVERY)}]\n"
+                "retry:\n  modelFallback: false\n  fallbackChains: {}\n")
 
 
 def _omp(*args: str) -> subprocess.CompletedProcess:
@@ -91,10 +93,11 @@ def omp_default_model() -> str:
     return model
 
 
-def omp_require_oauth(model: str) -> None:
-    """Refuse a model whose omp provider could bill an API key instead of an OAuth subscription.
+def omp_oauth_credentials(model: str) -> set:
+    """Return the ids of the model provider's OAuth logins; exit if the provider could bill an API key.
 
-    Reads only the provider and credential-type columns of omp's auth store, never the credentials.
+    Reads only the id, provider and credential-type columns of omp's auth store, never the credentials.
+    omp_complete() also checks that each reply names one of these ids, whatever path omp took.
     """
     if "/" not in model:
         # A bare id lets omp pick the provider, maybe one the auth store doesn't hold (a models.yml key).
@@ -113,12 +116,12 @@ def omp_require_oauth(model: str) -> None:
         conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
         try:
             rows = conn.execute(
-                "SELECT provider, credential_type FROM auth_credentials WHERE disabled_cause IS NULL").fetchall()
+                "SELECT id, provider, credential_type FROM auth_credentials WHERE disabled_cause IS NULL").fetchall()
         finally:
             conn.close()
     except sqlite3.Error as error:
         sys.exit(f"pr_agent_local: can't read omp's auth store {db} ({error}) to confirm an OAuth login")
-    kinds = {kind for name, kind in rows if name == provider}
+    kinds = {kind for _, name, kind in rows if name == provider}
     if kinds != {"oauth"}:
         sys.exit(f"pr_agent_local: omp's `{provider}` logins are {sorted(kinds) or 'missing'}, not OAuth only; "
                  "log in with /login in omp or pick another --model")
@@ -134,9 +137,10 @@ def omp_require_oauth(model: str) -> None:
                          "an API key; pick another --model or remove that entry")
     # omp fills unset variables from its own .env files, after the scrub. Refuse if any of them holds a
     # credential-shaped name (only names are read and reported, never values).
+    # Config roots: the active profile's (parent of its agent dir) and the default one.
     home = os.path.expanduser("~")
-    config_root = os.path.join(home, os.environ.get("PI_CONFIG_DIR") or ".omp")
-    for path in dict.fromkeys(os.path.join(d, ".env") for d in (agent_dir, config_root, home)):
+    roots = (agent_dir, os.path.dirname(agent_dir), os.path.join(home, os.environ.get("PI_CONFIG_DIR") or ".omp"), home)
+    for path in dict.fromkeys(os.path.join(d, ".env") for d in roots):
         if os.path.isfile(path):
             with open(path, encoding="utf-8", errors="replace") as handle:
                 names = re.findall(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=", handle.read(), re.M)
@@ -144,9 +148,10 @@ def omp_require_oauth(model: str) -> None:
             if risky:
                 sys.exit(f"pr_agent_local: {path} sets {', '.join(risky)}, which omp loads after the scrub and "
                          "could bill an API key or reroute the login; remove them to run")
+    return {cid for cid, name, _ in rows if name == provider}
 
 
-def omp_complete(messages: list[dict], model: str) -> tuple[str, dict]:
+def omp_complete(messages: list[dict], model: str, credentials: set) -> tuple[str, dict]:
     env = scrubbed_env()
     with tempfile.TemporaryDirectory(prefix="pr-agent-omp-") as work:
         overlay = os.path.join(work, "no-discovery.yml")
@@ -182,6 +187,11 @@ def omp_complete(messages: list[dict], model: str) -> tuple[str, dict]:
         raise RuntimeError(f"omp exited {proc.returncode}: {(proc.stderr or proc.stdout)[-800:]}")
     if reply.get("stopReason") != "stop":  # length, aborted or error: never hand PR-Agent a partial reply
         raise RuntimeError(f"omp stopped with {reply.get('stopReason')}: {str(reply.get('errorMessage') or '')[:800]}")
+    if reply.get("provider") != model.split("/", 1)[0] or reply.get("credentialId") not in credentials:
+        # Tripwire: the answer must come from one of the provider's OAuth logins checked before the run. Any
+        # other credential (models.yml key, env key, fallback provider) means billing escaped; stop the run.
+        raise RuntimeError(f"omp answered via provider {reply.get('provider')} credential "
+                           f"{reply.get('credentialId')}, not an approved OAuth login; reply discarded")
     usage = reply.get("usage") or {}
     text = "".join(part.get("text", "") for part in reply.get("content") or []
                    if isinstance(part, dict) and part.get("type") == "text")
@@ -191,7 +201,7 @@ def omp_complete(messages: list[dict], model: str) -> tuple[str, dict]:
     }
 
 
-def make_handler(model: str, log: list, failures: list, secret: str):
+def make_handler(model: str, credentials: set, log: list, failures: list, secret: str):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -236,7 +246,7 @@ def make_handler(model: str, log: list, failures: list, secret: str):
                 return
             started = time.monotonic()
             try:
-                text, usage = omp_complete(request.get("messages", []), model)
+                text, usage = omp_complete(request.get("messages", []), model, credentials)
                 # The model may echo flatten()'s word joiners; they must not reach suggested code.
                 text = text.replace("\u2060", "")
             except Exception as exc:  # reported to PR-Agent as an API error
@@ -282,7 +292,7 @@ def main() -> int:
     if not (shutil.which("pr-agent") or shutil.which("uvx")):
         sys.exit("pr_agent_local: neither `pr-agent` nor `uvx` is on PATH")
     model = opts.model or omp_default_model()
-    omp_require_oauth(model)
+    credentials = omp_oauth_credentials(model)
     token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True,
                            env=scrubbed_env(github=True)).stdout.strip()
     if not token:
@@ -291,7 +301,7 @@ def main() -> int:
     calls: list = []
     failures: list = []
     secret = secrets.token_urlsafe(32)
-    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(model, calls, failures, secret))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(model, credentials, calls, failures, secret))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}/v1"
 

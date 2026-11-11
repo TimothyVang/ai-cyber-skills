@@ -4,7 +4,9 @@
 
 `assets/pr-agent/pr_agent_local.py` in this skill does the wiring. It serves an OpenAI-compatible endpoint on `127.0.0.1` that answers each PR-Agent call with `omp -p` on omp's default model (`modelRoles.default`, the one `/provider` and `/model` set) or `--model`, with no tools, MCP servers, plugins, skills or context files (a `--config` overlay turns off omp's whole discovery registry and foreign user sources, since `--no-tools` alone leaves MCP tools mounted). `@` mentions in the PR text are defanged, because omp would otherwise attach the named local file to the prompt. It passes `gh auth token` to PR-Agent and runs the pinned `pr-agent` through `uvx`.
 
-Only subscription logins pay. Before any call it reads the provider and credential-type columns of omp's auth store (never the credentials) and refuses a model whose provider has an API-key login or none, so a provider such as `openrouter` on an API key is never billed. It also refuses a bare model id (the provider must be named), a provider that `models.yml` configures (its `apiKey` outranks OAuth), and a provider that shares a discovery source's name (`cursor`, `gemini`), which the overlay would disable. Credential-shaped variables (API keys, cloud credentials, provider-routing switches) are removed from every child, and the run is refused while omp's own `.env` files (agent dir, `~/.omp`, `~`) set one, since omp loads those after the scrub.
+Only subscription logins should pay, and two checks enforce it. **Before the run** it reads the id, provider, and credential-type columns of omp's auth store (never the credentials). It refuses a model whose provider has an API-key login or none (such as `openrouter` on a key), a bare model id, a provider that `models.yml` configures (its `apiKey` outranks OAuth), and a provider that shares a discovery source's name (`cursor`, `gemini`). It also refuses while omp's own `.env` files (agent dir, profile and config roots, `~`) set a credential-shaped name, since omp loads those after the env scrub. The overlay also turns model fallback off.
+
+**After each call** the reply must name that provider and one of its OAuth credential ids. Any other credential discards the reply and stops the run, so a source the first check missed can cost at most one call.
 
 1. **Check the tools:** `omp` logged in to a subscription, `gh` logged in, `uvx` on PATH. A missing login is a hard stop for the user (`omp` → `/login`, `gh auth login`).
 2. **Run the three commands** on the PR, in order, from any directory:
@@ -22,4 +24,5 @@ Only subscription logins pay. Before any call it reads the provider and credenti
 ## Limits
 
 - Each command is one or a few model calls (about 30 to 120 seconds each) and counts against the subscription's usage limits.
+- omp has many credential sources. The checks above cover the known ones and catch the rest after one call, not before it.
 - PR-Agent sees the diff and some surrounding lines, not the whole repo; large PRs are compressed. It complements the panel and pr-review; it never replaces running the change.
