@@ -164,7 +164,7 @@ Expand-contract rules (zero-downtime) ([ParallelChange](https://martinfowler.com
 
 | Tenancy | Pattern | Why | Source |
 |---|---|---|---|
-| Many small tenants (B2C, SMB SaaS) | Pool: shared tables + `tenant_id` + RLS | One schema, one migration; isolation enforced in the DB | [AWS pool model](https://docs.aws.amazon.com/prescriptive-guidance/latest/saas-multitenant-managed-postgresql/pool.html), [AWS RLS blog](https://aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security/) |
+| Many small tenants (B2C, SMB SaaS) | Pool: shared tables + `tenant_id` + RLS | One schema, one migration; the DB filters rows even when app code forgets the `WHERE` (not a boundary against arbitrary SQL, see below) | [AWS pool model](https://docs.aws.amazon.com/prescriptive-guidance/latest/saas-multitenant-managed-postgresql/pool.html), [AWS RLS blog](https://aws.amazon.com/blogs/database/multi-tenant-data-isolation-with-postgresql-row-level-security/) |
 | Few large or regulated tenants, residency, per-tenant restore | Silo: database per tenant | Strongest isolation; migrations fan out per DB | [AWS isolation whitepaper](https://docs.aws.amazon.com/whitepapers/latest/saas-tenant-isolation-strategies/pooled-storage-isolation-strategies.html), [Neon per-tenant cost](https://neon.com/pricing) |
 | Mixed tiers | Bridge: schema per tenant or pool plus silo for premium | AWS describes mixing silo and pool | [AWS whitepaper PDF](https://docs.aws.amazon.com/pdfs/whitepapers/latest/saas-tenant-isolation-strategies/saas-tenant-isolation-strategies.pdf) |
 | Per-agent or per-user scratch data | SQLite DB per agent (Turso/D1) or Neon project | Cheap at high DB counts | [Turso](https://turso.tech/pricing), [D1](https://developers.cloudflare.com/d1/platform/pricing/) |
@@ -180,6 +180,8 @@ CREATE POLICY tenant_isolation ON invoices
 -- per request, inside the transaction (is_local = true survives transaction pooling):
 SELECT set_config('app.tenant_id', $1, true);
 ```
+
+Trust boundary: any role can set a custom setting such as `app.tenant_id` ([set_config](https://www.postgresql.org/docs/current/functions-admin.html#FUNCTIONS-ADMIN-SET)). This policy stops app bugs that omit the tenant filter. It does not stop a caller that can run arbitrary SQL as `app_rw` or `agent_ro`, such as SQL injection or an agent with a SQL tool: that caller calls `set_config` with another tenant's UUID and reads that tenant's rows. Never give agents a SQL connection to pooled multi-tenant data. Where the caller can run arbitrary SQL, key isolation on something it cannot change: a separate database per tenant (silo), or one `LOGIN` role per tenant, with no membership in other tenant roles, and the policy keyed on `current_user`.
 
 ## 10. Access layers (ORMs, query builders, type generation)
 
@@ -231,6 +233,8 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_rw;
 GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO app_rw;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO agent_ro;
 ALTER DEFAULT PRIVILEGES FOR ROLE app_owner IN SCHEMA public GRANT SELECT ON TABLES TO agent_ro;
+ALTER DEFAULT PRIVILEGES FOR ROLE app_owner IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_rw;
+ALTER DEFAULT PRIVILEGES FOR ROLE app_owner IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO app_rw;
 ALTER ROLE agent_ro SET default_transaction_read_only = on;
 ALTER ROLE agent_ro SET statement_timeout = '5s';
 ```
