@@ -105,12 +105,14 @@ def omp_complete(prompt: str, model: str) -> tuple[str, dict]:
 
 
 def claude_complete(prompt: str, model: str) -> tuple[str, dict]:
-    proc = subprocess.run(
-        [shutil.which("claude") or "claude", "-p", "--model", model, "--output-format", "json", "--tools", "",
-         "--no-session-persistence", "--system-prompt", SYSTEM],
-        input=prompt, capture_output=True, text=True, encoding="utf-8", errors="replace", env=_oauth_env(),
-        timeout=900,
-    )
+    with tempfile.TemporaryDirectory(prefix="pr-agent-claude-") as work:  # no project settings or CLAUDE.md
+        proc = subprocess.run(
+            [shutil.which("claude") or "claude", "-p", "--model", model, "--output-format", "json", "--tools", "",
+             "--strict-mcp-config", "--setting-sources", "user", "--settings", '{"disableAllHooks": true}',
+             "--no-session-persistence", "--system-prompt", SYSTEM],
+            input=prompt, cwd=work, capture_output=True, text=True, encoding="utf-8", errors="replace",
+            env=_oauth_env(), timeout=900,
+        )
     try:
         data = json.loads(proc.stdout)
     except json.JSONDecodeError:
