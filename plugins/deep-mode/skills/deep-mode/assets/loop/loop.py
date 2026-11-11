@@ -7,16 +7,21 @@
 A goal file is Markdown with frontmatter (one `key: value` per line):
     goal: one-line objective
     check: shell command; exit 0 means done
+    protect: tests/test_x.py scripts/check.sh  (required: files and folders the check runs, which the agent must not
+                                              change; `none` when the check reads nothing the agent could edit)
     harness: omp | claude | codex            (default omp)
     max_iterations: 10                       (hard cap, required)
-    max_cost_usd: 2                          (per iteration; omp --max-cost, claude --max-budget-usd; codex has none)
-    stall_after: 3                           (stop after N iterations whose check output did not change)
+    max_cost_usd: 2                          (per iteration; omp --max-cost, claude --max-budget-usd; required for
+                                              both; codex has none)
+    stall_after: 3                           (stop after N iterations that changed neither the check output nor
+                                              the working tree)
     harness_args: --model sonnet             (extra flags for the harness, split like a shell)
 
 Each iteration runs the harness headless in the project root on the user's subscription (API-key variables are
 removed from the child's environment), then runs the check. Logs go to <root>/.scratch/goals/<slug>/: trail.tsv plus
-one iteration-N.log per run. Exit codes: 0 done, 2 iteration cap, 3 stalled, 4 the agent changed the goal's
-frontmatter, 1 error.
+one <run>-iteration-N.log per iteration. --dry-run prints the harness command and runs nothing. Exit codes: 0 done,
+2 iteration cap, 3 stalled, 4 the agent changed the goal's frontmatter or a protected file, 5 the harness exited
+nonzero (omp exits 3 at its cost cap), 1 error.
 """
 import argparse
 import hashlib
@@ -29,12 +34,14 @@ import sys
 import time
 
 API_KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "OPENAI_API_KEY", "CODEX_API_KEY")
-REQUIRED = ("goal", "check", "max_iterations")
+REQUIRED = ("goal", "check", "protect", "max_iterations")
+COST_FLAGS = {"omp": "--max-cost", "claude": "--max-budget-usd"}
+CACHE_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 PROMPT = (
     "Work toward the goal in {goal_file}. Read it first, then the trail of earlier iterations in {trail} if it exists. "
     "Do the next smallest verifiable step toward the goal, run its check (`{check}`), and commit progress you would keep. "
-    "Stop after that one step. Never edit the goal file's frontmatter (goal, check, limits): if the goal itself is wrong, "
-    "say so and stop. This is iteration {i} of at most {n}."
+    "Stop after that one step. Never edit the goal file's frontmatter (goal, check, limits) or the files the check runs "
+    "({protect}): if the goal or the check is wrong, say so and stop. This is iteration {i} of at most {n}."
 )
 
 
@@ -57,15 +64,71 @@ def parse(goal_path):
         raise SystemExit(f"{goal_path}: frontmatter needs {', '.join(missing)}")
     if not fields["max_iterations"].isdigit() or int(fields["max_iterations"]) < 1:
         raise SystemExit(f"{goal_path}: max_iterations must be a positive integer")
+    if not fields.get("stall_after", "3").isdigit() or int(fields.get("stall_after", "3")) < 1:
+        raise SystemExit(f"{goal_path}: stall_after must be a positive integer")
     return fields, hashlib.sha256(match.group(1).encode()).hexdigest()
 
 
+def git(root, *args, env=None):
+    return subprocess.run(["git", "-C", root, *args], capture_output=True, text=True, encoding="utf-8",
+                          errors="replace", env=env)
+
+
 def project_root(path):
-    out = subprocess.run(["git", "-C", os.path.dirname(os.path.abspath(path)), "rev-parse", "--show-toplevel"],
-                         capture_output=True, text=True)
+    out = git(os.path.dirname(os.path.abspath(path)), "rev-parse", "--show-toplevel")
     if out.returncode:
         raise SystemExit("the goal file must live inside a git repo (deep-mode: Contain the work)")
     return os.path.normpath(out.stdout.strip())
+
+
+def protected_paths(fields, root, goal_path):
+    """Resolve `protect` to root-relative paths. Each must exist inside the root and not be the root itself."""
+    if fields["protect"].strip().lower() == "none":
+        return []
+    paths = []
+    for entry in shlex.split(fields["protect"]):
+        full = os.path.normpath(os.path.join(root, entry))
+        rel = os.path.relpath(full, root)
+        if rel == "." or rel.startswith(".."):
+            raise SystemExit(f"{goal_path}: protect path {entry!r} must be inside the project root and not the root")
+        if not os.path.exists(full):
+            raise SystemExit(f"{goal_path}: protect path {entry!r} does not exist")
+        paths.append(rel.replace(os.sep, "/"))
+    return paths
+
+
+def protect_digest(root, paths):
+    """Hash every tracked or untracked-not-ignored file under the protected paths, plus each named path that is a file,
+    so edits, deletions, and new files (a conftest.py that skips every test) all change the digest. Tool caches are
+    skipped: running the check writes them."""
+    if not paths:
+        return ""
+    listed = git(root, "ls-files", "-z", "-c", "-o", "--exclude-standard", "--", *paths)
+    if listed.returncode:
+        raise SystemExit(f"git ls-files failed: {listed.stdout.strip()}")
+    digest = hashlib.sha256()
+    named = [rel for rel in paths if not os.path.isdir(os.path.join(root, rel))]
+    for rel in sorted(set(filter(None, listed.stdout.split("\0"))).union(named)):
+        if CACHE_PARTS.intersection(rel.split("/")):
+            continue
+        digest.update(rel.encode() + b"\0")
+        try:
+            with open(os.path.join(root, rel), "rb") as handle:
+                digest.update(hashlib.sha256(handle.read()).digest())
+        except FileNotFoundError:
+            digest.update(b"missing")
+    return digest.hexdigest()
+
+
+def workspace_state(root, scratch_tmp):
+    """HEAD plus a tree hash of the working tree (tracked and untracked-not-ignored), built in a throwaway index so the
+    user's staging area is untouched. Changes when the agent edits, adds, or commits anything."""
+    env = dict(os.environ, GIT_INDEX_FILE=os.path.join(scratch_tmp, "loop-index"))
+    head = git(root, "rev-parse", "--verify", "-q", "HEAD").stdout.strip()
+    git(root, "read-tree", *(["HEAD"] if head else ["--empty"]), env=env)
+    git(root, "add", "-A", env=env)
+    tree = git(root, "write-tree", env=env).stdout.strip()
+    return f"{head}:{tree}"
 
 
 def find_bash():
@@ -73,9 +136,9 @@ def find_bash():
     bash = shutil.which("bash")
     if os.name != "nt" or (bash and "system32" not in bash.lower()):
         return bash
-    git = shutil.which("git")
+    git_exe = shutil.which("git")
     for rel in ("../bin/bash.exe", "../usr/bin/bash.exe", "../../bin/bash.exe"):
-        candidate = os.path.normpath(os.path.join(os.path.dirname(git), rel)) if git else ""
+        candidate = os.path.normpath(os.path.join(os.path.dirname(git_exe), rel)) if git_exe else ""
         if candidate and os.path.exists(candidate):
             return candidate
     return None
@@ -88,13 +151,27 @@ def run_check(command, root):
     return proc.returncode, (proc.stdout + proc.stderr)[-4000:]
 
 
-def harness_command(fields, harness, prompt):
-    extra = shlex.split(fields.get("harness_args", ""))
+def cost_cap(fields, harness, goal_path):
+    """omp and Claude Code have a per-run cost flag; the playbook requires it for unattended runs."""
     cost = fields.get("max_cost_usd")
+    if harness not in COST_FLAGS:
+        return None
+    if not cost:
+        raise SystemExit(f"{goal_path}: max_cost_usd is required for harness {harness} ({COST_FLAGS[harness]})")
+    try:
+        if float(cost) <= 0:
+            raise ValueError
+    except ValueError:
+        raise SystemExit(f"{goal_path}: max_cost_usd must be a positive number")
+    return cost
+
+
+def harness_command(fields, harness, prompt, cost):
+    extra = shlex.split(fields.get("harness_args", ""))
     if harness == "omp":
-        cmd = ["omp", "-p", "--no-title", *(["--max-cost", cost] if cost else []), *extra, prompt]
+        cmd = ["omp", "-p", "--no-title", "--max-cost", cost, *extra, prompt]
     elif harness == "claude":
-        cmd = ["claude", "-p", "--permission-mode", "acceptEdits", *(["--max-budget-usd", cost] if cost else []), *extra, prompt]
+        cmd = ["claude", "-p", "--permission-mode", "acceptEdits", "--max-budget-usd", cost, *extra, prompt]
     elif harness == "codex":
         cmd = ["codex", "exec", "--sandbox", "workspace-write", *extra, prompt]
     else:
@@ -110,64 +187,84 @@ def main():
     parser.add_argument("goal")
     parser.add_argument("--harness")
     parser.add_argument("--max-iterations", type=int)
-    parser.add_argument("--dry-run", action="store_true", help="print the harness command instead of running it")
+    parser.add_argument("--dry-run", action="store_true", help="print the harness command and run nothing, not even the check")
     opts = parser.parse_args()
 
     fields, digest = parse(opts.goal)
     root = project_root(opts.goal)
+    protect = protected_paths(fields, root, opts.goal)
+    harness = opts.harness or fields.get("harness", "omp")
+    if harness not in ("omp", "claude", "codex"):
+        raise SystemExit(f"unknown harness {harness!r}; use omp, claude, or codex")
+    cost = cost_cap(fields, harness, opts.goal)
     goal_rel = os.path.relpath(os.path.abspath(opts.goal), root).replace(os.sep, "/")
+    limit = min(opts.max_iterations or 10**9, int(fields["max_iterations"]))
+    stall_after = int(fields.get("stall_after", "3"))
+    slug = re.sub(r"[^A-Za-z0-9_-]+", "-", os.path.splitext(os.path.basename(opts.goal))[0]).strip("-") or "goal"
+    log_dir = os.path.join(root, ".scratch", "goals", slug)
+    trail = os.path.join(log_dir, "trail.tsv")
+    trail_rel = os.path.relpath(trail, root).replace(os.sep, "/")
+    protect_text = " ".join(protect) or "none"
+
+    def prompt(i):
+        return PROMPT.format(goal_file=goal_rel, trail=trail_rel, check=fields["check"], protect=protect_text, i=i, n=limit)
+
+    if opts.action == "run" and opts.dry_run:
+        print(" ".join(shlex.quote(part) for part in harness_command(fields, harness, prompt(1), cost)))
+        return 0
+
     code, output = run_check(fields["check"], root)
     if opts.action == "check":
-        print(f"goal ok: {fields['goal']}\ncheck exit {code}{' (already done)' if code == 0 else ''}\n{output.strip()}")
+        print(f"goal ok: {fields['goal']}\nprotected: {protect_text}\n"
+              f"check exit {code}{' (already done)' if code == 0 else ''}\n{output.strip()}")
         return 0
     if code == 0:
         print("check already passes; nothing to do")
         return 0
 
-    harness = opts.harness or fields.get("harness", "omp")
-    limit = min(opts.max_iterations or 10**9, int(fields["max_iterations"]))
-    stall_after = int(fields.get("stall_after", "3"))
-    slug = re.sub(r"[^A-Za-z0-9_-]+", "-", os.path.splitext(os.path.basename(opts.goal))[0]).strip("-") or "goal"
-    log_dir = os.path.join(root, ".scratch", "goals", slug)
-    os.makedirs(os.path.join(root, ".scratch", "tmp"), exist_ok=True)
+    tmp = os.path.join(root, ".scratch", "tmp")
+    os.makedirs(tmp, exist_ok=True)
     os.makedirs(log_dir, exist_ok=True)
     ignore = os.path.join(root, ".scratch", ".gitignore")
     if not os.path.exists(ignore):
         with open(ignore, "w") as handle:
             handle.write("*\n")
-    trail = os.path.join(log_dir, "trail.tsv")
     if not os.path.exists(trail):
         with open(trail, "w", encoding="utf-8") as handle:
-            handle.write("ts\titeration\tharness\tharness_exit\tcheck_exit\tseconds\n")
+            handle.write("ts\trun\titeration\tharness\tharness_exit\tcheck_exit\tseconds\n")
     env = {k: v for k, v in os.environ.items() if k not in API_KEY_VARS}
-    tmp = os.path.join(root, ".scratch", "tmp")
     env.update(TMPDIR=tmp, TMP=tmp, TEMP=tmp)
+    run_id = f"{time.strftime('%Y%m%dT%H%M%S')}-{os.getpid()}"
+    guard = protect_digest(root, protect)
 
-    last_output, unchanged = output, 0
+    last_output, last_state, unchanged = output, workspace_state(root, tmp), 0
     for i in range(1, limit + 1):
-        prompt = PROMPT.format(goal_file=goal_rel, trail=os.path.relpath(trail, root).replace(os.sep, "/"),
-                               check=fields["check"], i=i, n=limit)
-        cmd = harness_command(fields, harness, prompt)
-        if opts.dry_run:
-            print(" ".join(shlex.quote(part) for part in cmd))
-            return 0
+        cmd = harness_command(fields, harness, prompt(i), cost)
         started = time.time()
-        with open(os.path.join(log_dir, f"iteration-{i}.log"), "w", encoding="utf-8", errors="replace") as log:
+        with open(os.path.join(log_dir, f"{run_id}-iteration-{i}.log"), "x", encoding="utf-8", errors="replace") as log:
             harness_exit = subprocess.run(cmd, cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL).returncode
         if parse(opts.goal)[1] != digest:
             print(f"iteration {i}: the agent changed the goal's frontmatter; stopping")
             return 4
+        if protect_digest(root, protect) != guard:
+            print(f"iteration {i}: the agent changed a protected file ({protect_text}); stopping")
+            return 4
         code, output = run_check(fields["check"], root)
         with open(trail, "a", encoding="utf-8") as handle:
-            handle.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')}\t{i}\t{harness}\t{harness_exit}\t{code}\t{time.time() - started:.0f}\n")
+            handle.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')}\t{run_id}\t{i}\t{harness}\t{harness_exit}\t{code}\t{time.time() - started:.0f}\n")
         print(f"iteration {i}: harness exit {harness_exit}, check exit {code}")
         if code == 0:
             print("goal met")
             return 0
-        unchanged = unchanged + 1 if output == last_output else 0
-        last_output = output
+        if harness_exit != 0:
+            print(f"harness exited {harness_exit} (a cost cap, auth, or terminal failure); stopping. Log: "
+                  f"{os.path.relpath(log.name, root)}")
+            return 5
+        state = workspace_state(root, tmp)
+        unchanged = unchanged + 1 if output == last_output and state == last_state else 0
+        last_output, last_state = output, state
         if unchanged >= stall_after:
-            print(f"check output unchanged for {unchanged} iterations; stopping as stalled")
+            print(f"neither the check output nor the working tree changed for {unchanged} iterations; stopping as stalled")
             return 3
     print(f"iteration cap {limit} reached; goal not met")
     return 2
