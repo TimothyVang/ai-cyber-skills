@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Run PR-Agent locally on a GitHub PR, powered by your Claude subscription through Claude Code.
+"""Run PR-Agent locally on a GitHub PR, powered by your OAuth subscriptions, not an API key.
 
 Usage:
-  python pr_agent_local.py <pr-url> [review|describe|improve|ask "<question>"] [--model sonnet] [--dry-run]
+  python pr_agent_local.py <pr-url> [review|describe|improve|ask "<question>"]
+                           [--backend omp|claude] [--model <model>] [--dry-run]
 
 PR-Agent talks to an OpenAI-compatible endpoint. This script serves one on 127.0.0.1 and answers
-each request by running `claude -p` with no tools, so the calls go through your logged-in Claude
-Code subscription (OAuth), not an API key. ANTHROPIC_API_KEY is removed from Claude's environment so
-a stray key can't turn this into API billing. GitHub access uses `gh auth token`.
---dry-run prints PR-Agent's output instead of posting it on the PR.
-Needs: `claude` (logged in), `gh` (logged in), and `uvx` (or `pr-agent` on PATH).
+each request with a tool-less run of an agent CLI you are already logged in to:
+- `omp` (default when installed): uses the OAuth logins from omp's /provider (Anthropic, OpenAI
+  Codex, ...). The default model is omp's `modelRoles.default` in ~/.omp/agent/config.yml; pass
+  any omp model id, e.g. `--model openai-codex/gpt-6-luna:high`.
+- `claude`: Claude Code's subscription login; the default model is `sonnet`.
+API-key environment variables are removed from the child, so a stray key can't turn this into API
+billing. GitHub access uses `gh auth token`. --dry-run prints the output instead of posting it.
+Needs: `omp` or `claude` (logged in), `gh` (logged in), and `uvx` (or `pr-agent` on PATH).
 """
 
 import argparse
@@ -19,6 +23,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -27,20 +32,69 @@ PR_AGENT = "pr-agent[github]==0.50.0"
 SYSTEM = ("You are the language model behind PR-Agent, a code review tool. The user message holds the "
           "tool's instructions and the pull request data. Follow those instructions exactly and reply with "
           "only the output they ask for, in the format they ask for.")
+API_KEYS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "OPENAI_API_KEY", "OPENROUTER_API_KEY")
 
 
-def claude_complete(messages: list[dict], model: str) -> tuple[str, dict]:
+def _oauth_env() -> dict:
+    return {k: v for k, v in os.environ.items() if k not in API_KEYS}
+
+
+def _prompt(messages: list[dict]) -> str:
     parts = []
     for message in messages:
         content = message.get("content") or ""
         if isinstance(content, list):  # OpenAI content parts
             content = "\n".join(p.get("text", "") for p in content if isinstance(p, dict))
         parts.append(f"<{message.get('role', 'user')}>\n{content}\n</{message.get('role', 'user')}>")
-    env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")}
+    return "\n\n".join(parts)
+
+
+def omp_default_model() -> str:
+    """omp's default model role, the one /provider and /model set (honors omp profiles)."""
+    proc = subprocess.run([shutil.which("omp") or "omp", "config", "get", "modelRoles", "--json"],
+                          capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        return json.loads(proc.stdout)["value"]["default"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        sys.exit("pr_agent_local: omp has no modelRoles.default; pick one with /model in omp or pass --model")
+
+
+def omp_complete(prompt: str, model: str) -> tuple[str, dict]:
+    with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False, encoding="utf-8") as fh:
+        fh.write(prompt)
+    try:
+        proc = subprocess.run(
+            [shutil.which("omp") or "omp", "-p", "--mode", "json", "--no-session", "--no-title", "--no-tools",
+             "--no-skills", "--no-rules", "--no-context-files", "--no-extensions", "--no-lsp", "--model", model,
+             "--system-prompt", SYSTEM, f"@{fh.name}", "Answer the attached PR-Agent request."],
+            capture_output=True, text=True, encoding="utf-8", errors="replace", env=_oauth_env(), timeout=900,
+        )
+    finally:
+        os.unlink(fh.name)
+    text, prompt_tokens, completion_tokens = "", 0, 0
+    for line in proc.stdout.splitlines():
+        try:
+            event = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        message = event.get("message") or {}
+        if event.get("type") == "message_end" and message.get("role") == "assistant":
+            usage = message.get("usage") or {}
+            prompt_tokens += (usage.get("input") or 0) + (usage.get("cacheRead") or 0) + (usage.get("cacheWrite") or 0)
+            completion_tokens += usage.get("output") or 0
+            chunks = [c.get("text", "") for c in message.get("content", []) if c.get("type") == "text"]
+            if any(c.strip() for c in chunks):
+                text = "\n".join(chunks)
+    if proc.returncode != 0 or not text.strip():
+        raise RuntimeError(f"omp exited {proc.returncode}: {(proc.stderr or 'no assistant text')[-800:]}")
+    return text, {"prompt_tokens": prompt_tokens, "completion_tokens": completion_tokens}
+
+
+def claude_complete(prompt: str, model: str) -> tuple[str, dict]:
     proc = subprocess.run(
         [shutil.which("claude") or "claude", "-p", "--model", model, "--output-format", "json", "--tools", "",
          "--no-session-persistence", "--system-prompt", SYSTEM],
-        input="\n\n".join(parts), capture_output=True, text=True, encoding="utf-8", errors="replace", env=env,
+        input=prompt, capture_output=True, text=True, encoding="utf-8", errors="replace", env=_oauth_env(),
         timeout=900,
     )
     try:
@@ -57,7 +111,14 @@ def claude_complete(messages: list[dict], model: str) -> tuple[str, dict]:
     }
 
 
-def make_handler(model: str, log: list, secret: str):
+BACKENDS = {"omp": omp_complete, "claude": claude_complete}
+
+
+def complete(messages: list[dict], backend: str, model: str) -> tuple[str, dict]:
+    return BACKENDS[backend](_prompt(messages), model)
+
+
+def make_handler(backend: str, model: str, log: list, secret: str):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -98,7 +159,7 @@ def make_handler(model: str, log: list, secret: str):
                 return
             started = time.monotonic()
             try:
-                text, usage = claude_complete(request.get("messages", []), model)
+                text, usage = complete(request.get("messages", []), backend, model)
             except Exception as exc:  # reported to PR-Agent as an API error
                 self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
                 return
@@ -131,11 +192,14 @@ def main() -> int:
     parser.add_argument("pr_url")
     parser.add_argument("command", nargs="?", default="review")
     parser.add_argument("args", nargs="*", help="extra words for the command, e.g. the question for ask")
-    parser.add_argument("--model", default="sonnet", help="Claude Code model alias or id (default sonnet)")
+    parser.add_argument("--backend", choices=sorted(BACKENDS), help="omp (default when installed) or claude")
+    parser.add_argument("--model", help="omp: any omp model id (default: omp's modelRoles.default); claude: alias or id (default sonnet)")
     parser.add_argument("--dry-run", action="store_true", help="print the result instead of posting it")
     opts = parser.parse_args()
 
-    for tool in ("claude", "gh"):
+    backend = opts.backend or ("omp" if shutil.which("omp") else "claude")
+    model = opts.model or (omp_default_model() if backend == "omp" else "sonnet")
+    for tool in (backend, "gh"):
         if not shutil.which(tool):
             sys.exit(f"pr_agent_local: `{tool}` is not on PATH")
     token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True).stdout.strip()
@@ -144,12 +208,12 @@ def main() -> int:
 
     calls: list = []
     secret = secrets.token_urlsafe(32)
-    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(opts.model, calls, secret))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(backend, model, calls, secret))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}/v1"
 
     runner = [shutil.which("pr-agent")] if shutil.which("pr-agent") else [shutil.which("uvx") or "uvx", "--from", PR_AGENT, "pr-agent"]
-    env = {k: v for k, v in os.environ.items() if k not in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY")}
+    env = _oauth_env()
     env.update({
         "CONFIG__GIT_PROVIDER": "github",
         "CONFIG__MODEL": "openai/subscription",
@@ -168,7 +232,7 @@ def main() -> int:
     code = subprocess.run(command, env=env).returncode
     server.shutdown()
     spent = sum(c["seconds"] for c in calls)
-    print(f"\npr_agent_local: {len(calls)} model call(s) through Claude Code ({opts.model}), {spent:.0f}s, "
+    print(f"\npr_agent_local: {len(calls)} model call(s) through {backend} ({model}), {spent:.0f}s, "
           f"{sum(c['prompt_tokens'] for c in calls)} in / {sum(c['completion_tokens'] for c in calls)} out tokens",
           file=sys.stderr)
     if not calls and code == 0:
