@@ -1303,15 +1303,17 @@ class PRConversation:
                         f"Run the repo's checks on `{self.base}` by hand.")
             return "merged"
         self.it.say("trunk check", agent, merged, reply)
-        if json_block(reply, "vote") is None:
-            self.it.say("coordinator", "bot.py", merged, "The trunk check returned no vote. Run the repo's checks "
-                        f"on `{self.base}` by hand.")
+        data = json_block(reply, "vote") or {}
+        vote = str(data.get("vote") or "").upper()
+        if vote not in ("PASS", "FAIL"):  # unclear is not red: only an explicit FAIL reverts trunk
+            got = f" (vote `{str(data['vote'])[:40]}`)" if vote else ""
+            self.it.say("coordinator", "bot.py", merged, f"The trunk check at `{merged[:7]}` returned no verdict{got}. "
+                        f"Run the repo's checks on `{self.base}` by hand.")
             return "merged"
-        vote, evidence = parse_vote(reply)
         if vote == "PASS":
             return "merged"
         try:
-            url = self.open_revert(merged, evidence)
+            url = self.open_revert(merged, str(data.get("evidence") or "no parseable vote"))
         except Exception as err:
             self.it.say("coordinator", "bot.py", merged, f"Trunk is red after `{merged[:7]}`, and opening a revert "
                         f"PR failed ({err}). Revert it by hand.")
