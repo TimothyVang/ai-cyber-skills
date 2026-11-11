@@ -1,0 +1,48 @@
+## 6. Typography and layout
+[anthropic frontend-design skill; articles/emil-kowalski-*]
+- **Fonts:**
+  - Choose typefaces deliberately for this brief.
+  - Use one or two families; if two, make them clearly distinct.
+  - Use a real type scale with intentional weights.
+- **Text:**
+  - Body text about 65ch (never more than 80).
+  - Serif body gets slightly more line-height.
+  - `tabular-nums` for numeric columns.
+  - `…`, not `...`.
+  - Loosen tracking on any uppercase.
+  - Fallback fonts with a metric match to avoid layout shift.
+- **Emphasis:** underlines only on links; bold for UI emphasis; italic for citation or stress.
+- **Hierarchy by de-emphasis** [youtube/EjEYTRD-W-M; youtube/7Z9rrryIOC4]:
+  - Exactly three text tones (primary / secondary / tertiary). Reach for weight and color before size.
+  - Drop a label when the value's format already says what it is.
+  - Group headings are small, bold and soft.
+  - An app page title is about the size of its key values, not a marketing `h1`.
+  - For boop-agent: the answer is primary, the tool name secondary, trace metadata tertiary.
+- **Action hierarchy:**
+  - One solid primary per view; secondary is outline or soft fill; tertiary is a text link.
+  - Repeated row actions get the soft treatment.
+  - Red is primary only inside the destructive confirm step. In a tool approval, Approve is primary and Deny secondary.
+- **Icons:** one set, one style, one step lighter than the adjacent text.
+- **Structure:**
+  - Structure is information: borders, numbering, eyebrows and dividers must encode something real.
+  - Separate things with spacing → alignment → a background tint → a border, in that order. Start too airy and remove space.
+  - Spacing on a 4 px grid. Schoger's 6/30 px steps are rejected.
+- **Type scale:**
+  - App surfaces use a fixed scale (12/14/16/18/20/24/30/36/48), with body at 16/1.5 and tighter leading as size grows.
+  - Persuade surfaces may use a fluid `clamp()` scale.
+- **Font mechanics** [youtube/n0iAYEpU0Fk]:
+  - Re-tune size and weight when swapping families, because x-height differs.
+  - `font-optical-sizing: auto`. Real italics only.
+  - `text-box: trim-both cap alphabetic` for optically centered badges and buttons, as progressive enhancement.
+  - If you use Inter: self-hosted 4.x, extra tracking below 14 px.
+- **Layout by container, not viewport** [youtube/_njUxg5UfR0]:
+  - `@media` only for page chrome. Components use `container-type: inline-size` + `@container`; boop-agent's panes are user-resized.
+  - Content-aware variants use scoped `:has()` (never `:root:has()`).
+  - Logical properties for RTL.
+  - `cqw` + `clamp()` for in-between sizes.
+- **Depth and finish** [github/pbakaus-impeccable; github/vercel-labs-web-interface-guidelines]:
+  - A 4–5 step elevation scale mapped to element type (input → dropdown → panel → modal): a tight ambient shadow plus a larger downward-offset direct shadow, alpha around .08, tinted toward the background hue. Raised panels are lighter than the page (white on about 2% darker). [youtube/7Z9rrryIOC4]
+  - Semi-transparent borders.
+  - Concentric radii: a child's radius is no larger than its parent's.
+  - Theme the browser surfaces too: `::selection`, caret, scrollbars, focus ring, `color-scheme`, `theme-color`.
+- **More type hygiene:** `text-wrap: balance` on headings; about −0.02em tracking on large headings; no weight change on hover; `Intl.*` for numbers and dates; a non-breaking space in `10 MB` and `⌘ K`.
