@@ -36,15 +36,16 @@ SYSTEM = ("You are the language model behind PR-Agent, a code review tool. The u
 
 
 # Credential-shaped variables are removed from every child, so no call can fall back to API-key or cloud billing.
-# Login tokens stay (omp's auth broker); GitHub tokens reach only `gh auth token`.
+# That includes omp's auth-broker settings: the checks below read the local auth store, which a broker bypasses.
+# GitHub tokens reach only `gh auth token`.
 CREDENTIAL = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|CREDENTIALS|COOKIES|PAT)(_ID)?$"
-                        r"|^(AWS|AZURE|GOOGLE|GCLOUD|VERTEX|BEDROCK|ANTHROPIC|OPENAI|CLAUDE_CODE_USE)_")
-KEEP = {"OMP_AUTH_BROKER_TOKEN", "PI_AUTH_BROKER_TOKEN"}
+                        r"|^(AWS|AZURE|GOOGLE|GCLOUD|VERTEX|BEDROCK|ANTHROPIC|OPENAI|CLAUDE_CODE_USE"
+                        r"|OMP_AUTH_BROKER|PI_AUTH_BROKER)_")
 GITHUB = {"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"}
 
 
 def scrubbed_env(github: bool = False) -> dict:
-    keep = KEEP | GITHUB if github else KEEP
+    keep = GITHUB if github else set()
     return {k: v for k, v in os.environ.items() if k.upper() in keep or not CREDENTIAL.search(k.upper())}
 
 
@@ -107,6 +108,15 @@ def omp_oauth_credentials(model: str) -> set:
     if provider in DISCOVERY:
         sys.exit(f"pr_agent_local: `{provider}` is also an omp discovery source, and the overlay that keeps MCP "
                  "tools out would disable it; pick another --model")
+    broker = _omp("config", "get", "auth.broker.url", "--json").stdout
+    try:
+        broker_url = json.loads(broker).get("value")
+    except (json.JSONDecodeError, AttributeError):
+        broker_url = None
+    if broker_url or os.environ.get("OMP_AUTH_BROKER_URL") or os.environ.get("PI_AUTH_BROKER_URL"):
+        # Broker logins live in another database whose ids can collide with the local store's.
+        sys.exit("pr_agent_local: omp uses an auth broker, so its logins can't be checked locally; "
+                 "unset auth.broker.url to run")
     agent_dir = _omp("config", "path").stdout.strip()
     db = os.path.join(agent_dir, "agent.db") if agent_dir else ""
     if not os.path.isfile(db):
@@ -144,7 +154,8 @@ def omp_oauth_credentials(model: str) -> set:
         if os.path.isfile(path):
             with open(path, encoding="utf-8", errors="replace") as handle:
                 names = re.findall(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=", handle.read(), re.M)
-            risky = sorted({n for n in names if n.upper() not in KEEP and CREDENTIAL.search(n.upper())})
+            ignore = set() if provider.startswith("github") else GITHUB  # GitHub tokens only bill github-* models
+            risky = sorted({n for n in names if n.upper() not in ignore and CREDENTIAL.search(n.upper())})
             if risky:
                 sys.exit(f"pr_agent_local: {path} sets {', '.join(risky)}, which omp loads after the scrub and "
                          "could bill an API key or reroute the login; remove them to run")
