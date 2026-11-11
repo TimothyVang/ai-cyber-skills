@@ -1,5 +1,5 @@
 ---
-description: "Review a PR the deep-mode way: parallel reviewer subagents, findings verified against the code, one GitHub review after your yes"
+description: "Review a PR the deep-mode way: parallel reviewer subagents, findings verified against the code, one comment-only review (asks first on someone else's repo)"
 argument-hint: "<PR number>"
 ---
 

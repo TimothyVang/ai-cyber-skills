@@ -49,7 +49,7 @@ The skills name omp tools (`task`, `todo`, `ask`). Claude Code's equivalents are
 
 ### Manual
 
-Copy the three folders in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` (or `~/.claude/skills/`), and `plugins/deep-mode/commands/poteto.md` to your commands folder.
+Copy every folder in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` (or `~/.claude/skills/`), and the files in `plugins/deep-mode/commands/` to your commands folder.
 
 ## Use it
 
@@ -94,4 +94,4 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: branch, edit, run `python
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Portions are derived from pstack, Copyright (c) 2026 Lauren Tan. Vendored references under `plugins/deep-mode/skills/rasmic-stack/references/` keep their own licenses: `unslop` (MIT, Lauren Tan), `before-and-after` (PolyForm Shield 1.0.0, James Clements).
+MIT. See [LICENSE](LICENSE). Portions are derived from pstack, Copyright (c) 2026 Lauren Tan, and from Matt Pocock's skills (the `grill` technique and `wayfinder` playbook, MIT; notice in `plugins/deep-mode/skills/deep-mode/LICENSE`). Vendored references under `plugins/deep-mode/skills/rasmic-stack/references/` keep their own licenses: `unslop` (MIT, Lauren Tan), `before-and-after` (PolyForm Shield 1.0.0, James Clements).
