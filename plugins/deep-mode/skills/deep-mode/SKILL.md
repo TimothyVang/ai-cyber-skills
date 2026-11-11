@@ -6,7 +6,9 @@ disable-model-invocation: true
 
 # Deep mode
 
-Adapted for omp from pstack's `poteto-mode` (MIT, Lauren Tan / Cursor; see `LICENSE`), updated with her later posts and articles. Paths below are relative to this skill (`skill://deep-mode/...`).
+Adapted from pstack's `poteto-mode` (MIT, Lauren Tan / Cursor; see `LICENSE`), updated with her later posts and articles. Paths below are relative to this skill (`skill://deep-mode/...`).
+
+**Any harness.** The skill runs in omp (the user's preferred harness), Claude Code, Codex, Cursor, or any agent that loads skills. It names omp's tools; use your harness's equivalent. `task` subagents (`agent: "scout"`, `reviewer`) → Claude Code's `Agent` or your harness's subagents, or `acpx <agent> exec` when it has none. `todo` → `TodoWrite` or a plan list. `ask` → `AskUserQuestion` or one question in the reply. `skill://deep-mode/<path>` → this skill's folder. `.omp/skills/` → your harness's skills folder (`.claude/skills/` in Claude Code).
 
 The thesis: if you want to go fast, go deep first. Verification is the limiting step. Write less code, prove more of it.
 
@@ -21,7 +23,9 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 | The request or repo looks like | Route |
 |---|---|
 | A PR number, a PR URL, or "review" a PR | **pr-review** in PR mode (`references/techniques/pr-review.md`) |
-| "land / finish / merge this PR on your own", "bots talk it out in the PR", "no human approval" | **pr-conversation** technique (`references/techniques/pr-conversation.md`) |
+| "land / finish / merge this PR on your own", "bots talk it out in the PR", "no human approval", or your own PR once it is open | **pr-conversation** technique (`references/techniques/pr-conversation.md`) |
+| "have the bots plan / discuss / implement this issue", "@deep-mode implement" | **issue-conversation** technique (`references/techniques/issue-conversation.md`) |
+| "install deep-mode on my repos", "run the bots on their own", "like Greptile on my subscription", or start, stop, or opt a repo out of the bots | **github-app** technique (`references/techniques/github-app.md`) |
 | "check on / babysit / get green" a PR | Babysit playbook |
 | "help on / contribute to / what can I work on" a project, or a repo the user can't push to that has a brief | `skill://contribute` |
 | "set up / publish this project for contributors", "make issues for helpers" | `skill://project-brief` |
@@ -67,7 +71,7 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 - **Repeated correction** (yours or the user's) → **correct**. Fix it at the highest rung that works: architecture or data structures, then a lint rule or test, then a skill or rule, and human review last.
 - **Long, autonomous, or step-away work** → keep a decision trail with **show-me-your-work**.
 - **PR-status requests** ("check on PR X", "get it green") → Babysit playbook. **Land a green stack** → Shipping playbook. Green is not safe.
-- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it. A repo with the PR security gate (**security-audit**, `references/techniques/security-audit.md`) also needs that check green; its findings are review findings.
+- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it; your own PR then lands through **pr-conversation**. A repo with the PR security gate (**security-audit**, `references/techniques/security-audit.md`) also needs that check green; its findings are review findings.
 - **Fuzzy request?** → **in-your-own-words** before work. Prompt worth deepening before sending → **sharpen**.
 - **Learning a subsystem or a change** → **teach**. **Resuming a topic from past sessions** → **recall**. **"What could this break?"** → **blast-radius**. **User says "reflect"** → **reflect**.
 
@@ -86,17 +90,19 @@ One file per principle in `references/principles/<name>.md`. Read the file befor
 ## Autonomy
 
 - **Just do it.** Work proceeds without asking, including commits, pushes, PRs, issues, board cards, and merges.
+- **Your own PRs land on their own.** Once every review finding is fixed or dismissed, linked issues are answered, the panel passes, and required checks are green, the **pr-conversation** technique merges the user's own PR. No separate ask.
 - **Done means a panel pass.** No task is done and nothing merges until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. Then merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
 - **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself: pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal. Log each one as a show-me-your-work trail row (choice, why, evidence, how to reverse), and list them in the final reply under "Decisions I made" so the user can override any. Where a playbook or technique says to ask the user before deciding, committing, pushing, opening a PR, or merging, this rule wins.
-- **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has. A request that already asks for one of these is its yes. One standing yes: a repo whose base branch has `.deep-mode.json` `{"autonomousMerge": true}` lets the **pr-conversation** technique admin-merge your own PRs past a required review, never past a failing check.
-- **Your subscription, not an API.** Every model call runs on the session's model through omp `task` subagents, or `omp -p` from scripts, so it draws on the user's Claude or Codex subscription usage. Never set up an API key or wait on a hosted review bot.
+- **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has. A request that already asks for one of these is its yes.
+- **Standing yes for your own PRs.** `~/.config/deep-mode/bot.json` `"autonomousMerge": true` (the default), or a base-branch `.deep-mode.json` `{"autonomousMerge": true}`, lets **pr-conversation** admin-merge your own PRs past a required review, never past a failing check. A base-branch `"autonomousMerge": false` overrides both.
+- **Your subscription, not an API.** Every model call runs on a subscription the user is logged in with: the session's own model and its subagents (or `omp -p` from scripts), and the bots, which are any ACP (Agent Client Protocol) agents driven through `acpx`, omp by default, each harness on its own subscription login. Never set up an API key or wait on a hosted review bot.
 - **Session overrides.** "Don't stop", "going to bed", "run until done" mean keep going until the work is done or only hard stops remain, and report every decision at the end.
 - **No is an acceptable answer.** When asked whether to do something or shown an approach, give your real judgment. Push back or say "this doesn't earn its place" when true. Candor over agreement.
 
 ## Subagents
 
 - You run the playbook. Delegates do bounded steps. Never delegate the playbook itself.
-- Use omp `task`. Read-only research uses `agent: "scout"`. Anything that edits, runs the app, or reads transcripts uses the default agent. `reviewer` is read-only: use it only to review a diff. Give every parallel task exclusive file ownership; subagents share one workspace.
+- Use `task` (or your harness's subagent tool). Read-only research uses `agent: "scout"`. Anything that edits, runs the app, or reads transcripts uses the default agent. `reviewer` is read-only: use it only to review a diff. Give every parallel task exclusive file ownership; subagents share one workspace.
 - Every brief restates the user's goal, names the exact files and acceptance check, and tells code-writing delegates which `skill://deep-mode/references/principles/<name>.md` files apply. Subagents do not receive AGENTS.md, so put anything they must follow in the brief.
 - Delegates working at the same time are coworkers: give each the roster (agent ids, roles, files owned) and the **coworkers** technique (`references/techniques/coworkers.md`), so they ask, hand off, and push back on each other directly instead of through you. Panel verifiers are the exception: they vote before they talk.
 - Tier by difficulty. The hardest changes (cross-cutting design, concurrency, subtle algorithms) go to your strongest judgment model. Mechanical edits go to a fast model. For a second opinion or a judge, use a different model family when one is available. Agreement across families is high signal.
