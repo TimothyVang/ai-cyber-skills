@@ -5,12 +5,13 @@ Usage:
   python pr_agent_local.py <pr-url> [review|describe|improve|ask "<question>"] [--model M] [--dry-run]
 
 PR-Agent talks to an OpenAI-compatible endpoint. This script serves one on 127.0.0.1 and answers each
-request with `omp -p` on omp's current default model (or --model), so the calls draw on the usage limits of
-whatever subscription omp is logged into (Claude Max/Pro, ChatGPT/Codex), never an API key. The child has
-no tools, MCP servers, plugins, skills or context files, and `@` mentions in PR text are defanged so omp
-never attaches a local file. API-key variables (ANTHROPIC_API_KEY, ANTHROPIC_AUTH_TOKEN, OPENAI_API_KEY)
-are removed from its environment so a stray key can't turn this into API billing. GitHub access uses
-`gh auth token`. --dry-run prints PR-Agent's output instead of posting it on the PR.
+request with `omp -p` on omp's default model (`modelRoles.default`, the one /provider and /model set) or
+--model, so the calls draw on the usage limits of whatever subscription omp is logged into (Claude Max/Pro,
+ChatGPT/Codex), never an API key. Before any call it checks omp's auth store and refuses a model whose
+provider has an API-key login, or no login. The child has no tools, MCP servers, plugins, skills or context
+files, and `@` mentions in PR text are defanged so omp never attaches a local file. Credential-shaped
+variables (API keys, cloud credentials, provider-routing switches) are removed from every child's
+environment. GitHub access uses `gh auth token`. --dry-run prints PR-Agent's output instead of posting it.
 Needs: `omp` (logged in), `gh` (logged in), and `uvx` (or `pr-agent` on PATH).
 """
 
@@ -20,6 +21,7 @@ import os
 import re
 import secrets
 import shutil
+import sqlite3
 import subprocess
 import sys
 import tempfile
@@ -33,7 +35,18 @@ SYSTEM = ("You are the language model behind PR-Agent, a code review tool. The u
           "only the output they ask for, in the format they ask for.")
 
 
-API_KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "OPENAI_API_KEY")
+# Credential-shaped variables are removed from every child, so no call can fall back to API-key or cloud billing.
+# That includes omp's auth-broker settings: the checks below read the local auth store, which a broker bypasses.
+# GitHub tokens reach only `gh auth token`.
+CREDENTIAL = re.compile(r"(KEY|TOKEN|SECRET|PASSWORD|CREDENTIALS|COOKIES|PAT)(_ID)?$"
+                        r"|^(AWS|AZURE|GOOGLE|GCLOUD|VERTEX|BEDROCK|ANTHROPIC|OPENAI|CLAUDE_CODE_USE"
+                        r"|OMP_AUTH_BROKER|PI_AUTH_BROKER)_")
+GITHUB = {"GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"}
+
+
+def scrubbed_env(github: bool = False) -> dict:
+    keep = GITHUB if github else set()
+    return {k: v for k, v in os.environ.items() if k.upper() in keep or not CREDENTIAL.search(k.upper())}
 
 
 def flatten(messages: list[dict]) -> str:
@@ -50,14 +63,129 @@ def flatten(messages: list[dict]) -> str:
 
 # `--no-tools` drops only built-in tools: MCP servers from omp's config (and from Claude, Codex, Cursor and
 # other imported configs) still mount, and a model reading untrusted PR text could call them. This overlay
-# turns off every discovery source for the child run, so it has no tools, no MCP and no plugins. Auth and
-# the default model come from omp's own settings, which the overlay leaves alone.
-NO_DISCOVERY = ("disabledProviders: [native, claude, claude-plugins, codex, gemini, github, opencode, cursor, "
-                "windsurf, vscode, agents-md, agent-plugins, omp-plugins, mcp-json]\n")
+# turns off omp's whole discovery registry (omp docs, context-files.md) for the child run, and
+# `enabledProviders: []` keeps foreign user sources off even if the user opted in to them, so it has no
+# tools, no MCP and no plugins. Auth and the default model come from omp's own settings.
+DISCOVERY = ("native", "omp-plugins", "claude", "agent-plugins", "codex", "agents", "claude-plugins", "gemini",
+             "opencode", "cursor", "windsurf", "cline", "github", "vscode", "agents-md", "claude-md",
+             "custom-context", "mcp-json", "ssh-json", "builtin-defaults")
+# Model fallback is off too: a fallback chain could hand a failed OAuth call to an API-key provider.
+NO_DISCOVERY = (f"enabledProviders: []\ndisabledProviders: [{', '.join(DISCOVERY)}]\n"
+                "retry:\n  modelFallback: false\n  fallbackChains: {}\n")
 
 
-def omp_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
-    env = {k: v for k, v in os.environ.items() if k not in API_KEY_VARS}
+def _omp(*args: str) -> subprocess.CompletedProcess:
+    """Run an omp command from an empty directory, so a repo's .omp/config.yml can't change the answer."""
+    with tempfile.TemporaryDirectory(prefix="pr-agent-omp-") as work:
+        return subprocess.run([shutil.which("omp") or "omp", *args], cwd=work, capture_output=True, text=True,
+                              encoding="utf-8", errors="replace", env=scrubbed_env())
+
+
+def omp_default_model() -> str:
+    proc = _omp("config", "get", "modelRoles", "--json")
+    if proc.returncode != 0:
+        sys.exit(f"pr_agent_local: `omp config get modelRoles` failed: {(proc.stderr or proc.stdout).strip()[-400:]}")
+    try:
+        model = json.loads(proc.stdout)["value"]["default"]
+    except (json.JSONDecodeError, KeyError, TypeError):
+        model = None
+    if not isinstance(model, str) or not model:
+        sys.exit("pr_agent_local: omp has no modelRoles.default; pick one with /model in omp or pass --model")
+    return model
+
+
+def _configured_providers(path: str) -> set | None:
+    """Casefolded provider names under `providers` in an omp models file, or None if it can't be parsed."""
+    try:
+        with open(path, encoding="utf-8") as handle:
+            if path.endswith(".json"):
+                data = json.load(handle)
+            else:
+                import yaml  # PyYAML resolves escapes and aliases the way omp's YAML loader does
+                data = yaml.safe_load(handle)
+    except Exception:  # missing PyYAML, bad syntax, bad encoding: can't vouch for the file
+        return None
+    if data is None:
+        return set()
+    providers = data.get("providers") if isinstance(data, dict) else None
+    if providers is None:
+        return set() if isinstance(data, dict) else None
+    return {str(name).casefold() for name in providers} if isinstance(providers, dict) else None
+
+
+def omp_oauth_credentials(model: str) -> set:
+    """Return the ids of the model provider's OAuth logins; exit if the provider could bill an API key.
+
+    Reads only the id, provider and credential-type columns of omp's auth store, never the credentials.
+    omp_complete() also checks that each reply names one of these ids, whatever path omp took.
+    """
+    if "/" not in model:
+        # A bare id lets omp pick the provider, maybe one the auth store doesn't hold (a models.yml key).
+        sys.exit(f"pr_agent_local: name the provider in --model (e.g. anthropic/{model}), so the run can be "
+                 "checked against an OAuth login")
+    provider = model.split("/", 1)[0]
+    if provider in DISCOVERY:
+        sys.exit(f"pr_agent_local: `{provider}` is also an omp discovery source, and the overlay that keeps MCP "
+                 "tools out would disable it; pick another --model")
+    broker = _omp("config", "get", "auth.broker.url", "--json").stdout
+    try:
+        broker_url = json.loads(broker).get("value")
+    except (json.JSONDecodeError, AttributeError):
+        broker_url = None
+    if broker_url or os.environ.get("OMP_AUTH_BROKER_URL") or os.environ.get("PI_AUTH_BROKER_URL"):
+        # Broker logins live in another database whose ids can collide with the local store's.
+        sys.exit("pr_agent_local: omp uses an auth broker, so its logins can't be checked locally; "
+                 "unset auth.broker.url to run")
+    agent_dir = _omp("config", "path").stdout.strip()
+    db = os.path.join(agent_dir, "agent.db") if agent_dir else ""
+    if not os.path.isfile(db):
+        sys.exit(f"pr_agent_local: can't find omp's auth store ({db or 'omp config path printed nothing'}) to "
+                 "confirm an OAuth login")
+    try:
+        conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+        try:
+            rows = conn.execute(
+                "SELECT id, provider, credential_type FROM auth_credentials WHERE disabled_cause IS NULL").fetchall()
+        finally:
+            conn.close()
+    except sqlite3.Error as error:
+        sys.exit(f"pr_agent_local: can't read omp's auth store {db} ({error}) to confirm an OAuth login")
+    kinds = {kind for _, name, kind in rows if name == provider}
+    if kinds != {"oauth"}:
+        sys.exit(f"pr_agent_local: omp's `{provider}` logins are {sorted(kinds) or 'missing'}, not OAuth only; "
+                 "log in with /login in omp or pick another --model")
+    # models.yml `providers.<name>` (apiKey, or a custom baseUrl/headers) outranks or reroutes stored OAuth while
+    # omp still reports the OAuth credential id, so the tripwire can't see it. Parse the file as omp does
+    # (escapes and aliases resolved) and refuse if it names the provider; refuse if it can't be parsed.
+    for name in ("models.yml", "models.yaml", "models.json"):
+        path = os.path.join(agent_dir, name)
+        if os.path.isfile(path):
+            configured = _configured_providers(path)
+            if configured is None:
+                sys.exit(f"pr_agent_local: can't parse {path} to check it for `{provider}` overrides "
+                         "(YAML needs PyYAML); fix or move it to run")
+            if provider.casefold() in configured:
+                sys.exit(f"pr_agent_local: {path} configures `{provider}`, which can reroute or override its OAuth "
+                         "login; pick another --model or remove that entry")
+    # omp fills unset variables from its own .env files, after the scrub. Refuse if any of them holds a
+    # credential-shaped name (only names are read and reported, never values).
+    # Config roots: the active profile's (parent of its agent dir) and the default one.
+    home = os.path.expanduser("~")
+    roots = (agent_dir, os.path.dirname(agent_dir), os.path.join(home, os.environ.get("PI_CONFIG_DIR") or ".omp"), home)
+    for path in dict.fromkeys(os.path.join(d, ".env") for d in roots):
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8", errors="replace") as handle:
+                names = re.findall(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=", handle.read(), re.M)
+            ignore = set() if provider.startswith("github") else GITHUB  # GitHub tokens only bill github-* models
+            risky = sorted({n for n in names if n.upper() not in ignore and CREDENTIAL.search(n.upper())})
+            if risky:
+                sys.exit(f"pr_agent_local: {path} sets {', '.join(risky)}, which omp loads after the scrub and "
+                         "could bill an API key or reroute the login; remove them to run")
+    return {cid for cid, name, _ in rows if name == provider}
+
+
+def omp_complete(messages: list[dict], model: str, credentials: set) -> tuple[str, dict]:
+    env = scrubbed_env()
     with tempfile.TemporaryDirectory(prefix="pr-agent-omp-") as work:
         overlay = os.path.join(work, "no-discovery.yml")
         prompt_path = os.path.join(work, "prompt.txt")  # a file, since PR diffs overflow a Windows command line
@@ -67,9 +195,7 @@ def omp_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
             handle.write(flatten(messages))
         command = [shutil.which("omp") or "omp", "-p", "--mode", "json", "--config", overlay, "--no-tools",
                    "--no-skills", "--no-rules", "--no-context-files", "--no-extensions", "--no-session",
-                   "--no-title", "--no-lsp", "--system-prompt", SYSTEM]
-        if model:
-            command += ["--model", model]
+                   "--no-title", "--no-lsp", "--system-prompt", SYSTEM, "--model", model]
         # cwd is the empty work dir, so no project-level config can add tools back.
         proc = subprocess.run([*command, f"@{prompt_path}"], capture_output=True, text=True, encoding="utf-8",
                               errors="replace", env=env, cwd=work, timeout=900)
@@ -79,27 +205,38 @@ def omp_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
+        if not isinstance(event, dict):
+            continue
+        message = event.get("message") if isinstance(event.get("message"), dict) else {}
         if event.get("type") == "tool_execution_start":
             # Tripwire: the overlay should leave no tools. If one ran anyway, the run is unsafe; drop it.
             raise RuntimeError(f"omp ran a tool ({event.get('toolName')}) despite --no-tools; reply discarded")
-        if (event.get("message") or {}).get("role") == "fileMention":
+        if message.get("role") == "fileMention":
             # Tripwire: flatten() defangs `@path`; an attached file means a mention got through. Drop it.
             raise RuntimeError("omp attached a mentioned file to the prompt; reply discarded")
-        if event.get("type") == "message_end" and (event.get("message") or {}).get("role") == "assistant":
-            reply = event["message"]
+        if event.get("type") == "message_end" and message.get("role") == "assistant":
+            reply = message
     if reply is None or proc.returncode != 0:
         raise RuntimeError(f"omp exited {proc.returncode}: {(proc.stderr or proc.stdout)[-800:]}")
     if reply.get("stopReason") != "stop":  # length, aborted or error: never hand PR-Agent a partial reply
         raise RuntimeError(f"omp stopped with {reply.get('stopReason')}: {str(reply.get('errorMessage') or '')[:800]}")
+    if reply.get("provider") != model.split("/", 1)[0] or reply.get("credentialId") not in credentials:
+        # Tripwire: the answer must come from one of the provider's OAuth logins checked before the run. Any
+        # other credential (models.yml key, env key, fallback provider) means billing escaped; stop the run.
+        raise RuntimeError(f"omp answered via provider {reply.get('provider')} credential "
+                           f"{reply.get('credentialId')}, not an approved OAuth login; reply discarded")
     usage = reply.get("usage") or {}
-    text = "".join(part.get("text", "") for part in reply.get("content") or [] if part.get("type") == "text")
+    text = "".join(part.get("text", "") for part in reply.get("content") or []
+                   if isinstance(part, dict) and part.get("type") == "text")
     return text, {
         "prompt_tokens": (usage.get("input") or 0) + (usage.get("cacheRead") or 0) + (usage.get("cacheWrite") or 0),
         "completion_tokens": usage.get("output") or 0,
     }
 
 
-def make_handler(model: str | None, log: list, failures: list, secret: str):
+def make_handler(model: str, credentials: set, log: list, failures: list, secret: str):
+    call_lock = threading.Lock()
+
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -138,19 +275,23 @@ def make_handler(model: str | None, log: list, failures: list, secret: str):
             if not isinstance(messages, list) or not all(isinstance(m, dict) for m in messages):
                 self._json(400, {"error": {"message": "invalid request body"}})
                 return
-            if failures:
-                # PR-Agent retries a failed call several times; each retry would spend another omp run.
-                self._json(500, {"error": {"message": f"an earlier call failed: {failures[0]}", "type": "server_error"}})
-                return
-            started = time.monotonic()
-            try:
-                text, usage = omp_complete(request.get("messages", []), model)
-                # The model may echo flatten()'s word joiners; they must not reach suggested code.
-                text = text.replace("\u2060", "")
-            except Exception as exc:  # reported to PR-Agent as an API error
-                failures.append(str(exc)[:300])
-                self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
-                return
+            # One model call at a time: with concurrent calls, several could pass the failure check before the
+            # first records a failure, and each would spend usage (or a non-OAuth credential) before stopping.
+            with call_lock:
+                if failures:
+                    # PR-Agent retries a failed call several times; each retry would spend another omp run.
+                    self._json(500, {"error": {"message": f"an earlier call failed: {failures[0]}",
+                                               "type": "server_error"}})
+                    return
+                started = time.monotonic()
+                try:
+                    text, usage = omp_complete(request.get("messages", []), model, credentials)
+                    # The model may echo flatten()'s word joiners; they must not reach suggested code.
+                    text = text.replace("\u2060", "")
+                except Exception as exc:  # reported to PR-Agent as an API error
+                    failures.append(str(exc)[:300])
+                    self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
+                    return
             log.append({"seconds": round(time.monotonic() - started, 1), "text": text, **usage})
             usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
             created = int(time.time())
@@ -180,26 +321,31 @@ def main() -> int:
     parser.add_argument("pr_url")
     parser.add_argument("command", nargs="?", default="review")
     parser.add_argument("args", nargs="*", help="extra words for the command, e.g. the question for ask")
-    parser.add_argument("--model", default=None, help="omp model (default: omp's current model)")
+    parser.add_argument("--model", default=None, help="omp model id (default: omp's modelRoles.default)")
     parser.add_argument("--dry-run", action="store_true", help="print the result instead of posting it")
     opts = parser.parse_args()
 
     for tool in ("omp", "gh"):
         if not shutil.which(tool):
             sys.exit(f"pr_agent_local: `{tool}` is not on PATH")
-    token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True).stdout.strip()
+    if not (shutil.which("pr-agent") or shutil.which("uvx")):
+        sys.exit("pr_agent_local: neither `pr-agent` nor `uvx` is on PATH")
+    model = opts.model or omp_default_model()
+    credentials = omp_oauth_credentials(model)
+    token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True,
+                           env=scrubbed_env(github=True)).stdout.strip()
     if not token:
         sys.exit("pr_agent_local: `gh auth token` returned nothing; run `gh auth login`")
 
     calls: list = []
     failures: list = []
     secret = secrets.token_urlsafe(32)
-    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(opts.model, calls, failures, secret))
+    server = ThreadingHTTPServer(("127.0.0.1", 0), make_handler(model, credentials, calls, failures, secret))
     threading.Thread(target=server.serve_forever, daemon=True).start()
     base = f"http://127.0.0.1:{server.server_address[1]}/v1"
 
     runner = [shutil.which("pr-agent")] if shutil.which("pr-agent") else [shutil.which("uvx") or "uvx", "--from", PR_AGENT, "pr-agent"]
-    env = {k: v for k, v in os.environ.items() if k not in API_KEY_VARS}
+    env = scrubbed_env()
     env.update({
         "CONFIG__GIT_PROVIDER": "github",
         "CONFIG__MODEL": "openai/subscription",
@@ -222,7 +368,7 @@ def main() -> int:
     code = subprocess.run(command, env=env).returncode
     server.shutdown()
     spent = sum(c["seconds"] for c in calls)
-    print(f"\npr_agent_local: {len(calls)} model call(s) through omp ({opts.model or 'default model'}), "
+    print(f"\npr_agent_local: {len(calls)} model call(s) through omp ({model}), "
           f"{spent:.0f}s, "
           f"{sum(c['prompt_tokens'] for c in calls)} in / {sum(c['completion_tokens'] for c in calls)} out tokens",
           file=sys.stderr)

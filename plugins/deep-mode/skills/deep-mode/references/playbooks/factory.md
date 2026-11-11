@@ -13,7 +13,7 @@ The factory is the `factory` CLI (source: `github.com/TimothyVang/softwarefactor
 
    Then, for every `factory.json`, new or existing, set `"merge": {"auto": false}` before any run: the factory's single approver is not a panel, and the CLI defaults to merging on its own. Every job it approves then comes back as an escalated PR for step 5's panel. Start at `concurrency: 1` and raise it once a run merges cleanly. Commit and push `factory.json` and `.gitignore`.
 
-   Done when `factory init` has passed the checks on the base and `factory.json` says `"auto": false`.
+   Done when `factory init` passes the checks on the base (with an existing `factory.json` it keeps the file and reruns `setup` and `checks`) and `factory.json` says `"auto": false`.
 3. Preview: `factory run --dry-run`. Report the `new`, `resume` and `wait` lines. Done when every open labeled issue appears on one line.
 4. Run: `factory run` as a background `bash` job with `timeout: 0`; its result auto-delivers. While it runs, relay each one-line transition only when it changes what the user should do. Done when the run exits.
 5. Clear what waits on people. For each `needs-human` job, read its newest `escalation-*.md` and the PR:
