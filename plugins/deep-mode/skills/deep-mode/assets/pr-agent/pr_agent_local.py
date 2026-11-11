@@ -94,25 +94,6 @@ def omp_default_model() -> str:
     return model
 
 
-def _configured_providers(path: str) -> set | None:
-    """Casefolded provider names under `providers` in an omp models file, or None if it can't be parsed."""
-    try:
-        with open(path, encoding="utf-8") as handle:
-            if path.endswith(".json"):
-                data = json.load(handle)
-            else:
-                import yaml  # PyYAML resolves escapes and aliases the way omp's YAML loader does
-                data = yaml.safe_load(handle)
-    except Exception:  # missing PyYAML, bad syntax, bad encoding: can't vouch for the file
-        return None
-    if data is None:
-        return set()
-    providers = data.get("providers") if isinstance(data, dict) else None
-    if providers is None:
-        return set() if isinstance(data, dict) else None
-    return {str(name).casefold() for name in providers} if isinstance(providers, dict) else None
-
-
 def omp_oauth_credentials(model: str) -> set:
     """Return the ids of the model provider's OAuth logins; exit if the provider could bill an API key.
 
@@ -127,11 +108,14 @@ def omp_oauth_credentials(model: str) -> set:
     if provider in DISCOVERY:
         sys.exit(f"pr_agent_local: `{provider}` is also an omp discovery source, and the overlay that keeps MCP "
                  "tools out would disable it; pick another --model")
-    broker = _omp("config", "get", "auth.broker.url", "--json").stdout
+    broker = _omp("config", "get", "auth.broker.url", "--json")
     try:
-        broker_url = json.loads(broker).get("value")
-    except (json.JSONDecodeError, AttributeError):
-        broker_url = None
+        setting = json.loads(broker.stdout)
+    except json.JSONDecodeError:
+        setting = None
+    if broker.returncode != 0 or not isinstance(setting, dict):  # can't rule a broker out: refuse
+        sys.exit("pr_agent_local: can't read omp's auth.broker.url setting to rule out a broker; check `omp config`")
+    broker_url = setting.get("value")  # absent when unset
     if broker_url or os.environ.get("OMP_AUTH_BROKER_URL") or os.environ.get("PI_AUTH_BROKER_URL"):
         # Broker logins live in another database whose ids can collide with the local store's.
         sys.exit("pr_agent_local: omp uses an auth broker, so its logins can't be checked locally; "
@@ -154,19 +138,14 @@ def omp_oauth_credentials(model: str) -> set:
     if kinds != {"oauth"}:
         sys.exit(f"pr_agent_local: omp's `{provider}` logins are {sorted(kinds) or 'missing'}, not OAuth only; "
                  "log in with /login in omp or pick another --model")
-    # models.yml `providers.<name>` (apiKey, or a custom baseUrl/headers) outranks or reroutes stored OAuth while
-    # omp still reports the OAuth credential id, so the tripwire can't see it. Parse the file as omp does
-    # (escapes and aliases resolved) and refuse if it names the provider; refuse if it can't be parsed.
+    # A models file can reroute or re-key any provider (apiKey, baseUrl, headers) while omp still reports the
+    # OAuth credential id, so the tripwire can't see it, and no other YAML parser reads it exactly as omp does.
+    # Refuse while one exists.
     for name in ("models.yml", "models.yaml", "models.json"):
         path = os.path.join(agent_dir, name)
         if os.path.isfile(path):
-            configured = _configured_providers(path)
-            if configured is None:
-                sys.exit(f"pr_agent_local: can't parse {path} to check it for `{provider}` overrides "
-                         "(YAML needs PyYAML); fix or move it to run")
-            if provider.casefold() in configured:
-                sys.exit(f"pr_agent_local: {path} configures `{provider}`, which can reroute or override its OAuth "
-                         "login; pick another --model or remove that entry")
+            sys.exit(f"pr_agent_local: {path} can reroute or re-key `{provider}` without changing the login omp "
+                     "reports; move it aside to run")
     # omp fills unset variables from its own .env files, after the scrub. Refuse if any of them holds a
     # credential-shaped name (only names are read and reported, never values).
     # Config roots: the active profile's (parent of its agent dir) and the default one.
