@@ -96,7 +96,11 @@ def omp_require_oauth(model: str) -> None:
 
     Reads only the provider and credential-type columns of omp's auth store, never the credentials.
     """
-    provider = model.split("/", 1)[0] if "/" in model else None
+    if "/" not in model:
+        # A bare id lets omp pick the provider, maybe one the auth store doesn't hold (a models.yml key).
+        sys.exit(f"pr_agent_local: name the provider in --model (e.g. anthropic/{model}), so the run can be "
+                 "checked against an OAuth login")
+    provider = model.split("/", 1)[0]
     if provider in DISCOVERY:
         sys.exit(f"pr_agent_local: `{provider}` is also an omp discovery source, and the overlay that keeps MCP "
                  "tools out would disable it; pick another --model")
@@ -114,15 +118,32 @@ def omp_require_oauth(model: str) -> None:
             conn.close()
     except sqlite3.Error as error:
         sys.exit(f"pr_agent_local: can't read omp's auth store {db} ({error}) to confirm an OAuth login")
-    if provider is None:
-        if all(kind == "oauth" for _, kind in rows):
-            return
-        sys.exit(f"pr_agent_local: omp also holds API-key logins, so name the provider in --model "
-                 f"(e.g. anthropic/{model}) to prove it bills an OAuth subscription")
     kinds = {kind for name, kind in rows if name == provider}
     if kinds != {"oauth"}:
         sys.exit(f"pr_agent_local: omp's `{provider}` logins are {sorted(kinds) or 'missing'}, not OAuth only; "
                  "log in with /login in omp or pick another --model")
+    # models.yml `providers.<name>.apiKey` (or a custom baseUrl/headers) outranks stored OAuth, so a provider
+    # named there could still bill a key. Without a YAML parser, refuse any file that names it as a key.
+    for name in ("models.yml", "models.yaml", "models.json"):
+        path = os.path.join(agent_dir, name)
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8", errors="replace") as handle:
+                text = handle.read()
+            if re.search(rf"(^|[\s{{,])[\"']?{re.escape(provider)}[\"']?\s*:", text, re.M):
+                sys.exit(f"pr_agent_local: {path} configures `{provider}`, which can override its OAuth login with "
+                         "an API key; pick another --model or remove that entry")
+    # omp fills unset variables from its own .env files, after the scrub. Refuse if any of them holds a
+    # credential-shaped name (only names are read and reported, never values).
+    home = os.path.expanduser("~")
+    config_root = os.path.join(home, os.environ.get("PI_CONFIG_DIR") or ".omp")
+    for path in dict.fromkeys(os.path.join(d, ".env") for d in (agent_dir, config_root, home)):
+        if os.path.isfile(path):
+            with open(path, encoding="utf-8", errors="replace") as handle:
+                names = re.findall(r"^\s*(?:export\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*=", handle.read(), re.M)
+            risky = sorted({n for n in names if n.upper() not in KEEP and CREDENTIAL.search(n.upper())})
+            if risky:
+                sys.exit(f"pr_agent_local: {path} sets {', '.join(risky)}, which omp loads after the scrub and "
+                         "could bill an API key or reroute the login; remove them to run")
 
 
 def omp_complete(messages: list[dict], model: str) -> tuple[str, dict]:
