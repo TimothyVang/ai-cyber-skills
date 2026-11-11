@@ -47,24 +47,31 @@ def flatten(messages: list[dict]) -> str:
     return "\n\n".join(parts)
 
 
+# `--no-tools` drops only built-in tools: MCP servers from omp's config (and from Claude, Codex, Cursor and
+# other imported configs) still mount, and a model reading untrusted PR text could call them. This overlay
+# turns off every discovery source for the child run, so it has no tools, no MCP and no plugins. Auth and
+# the default model come from omp's own settings, which the overlay leaves alone.
+NO_DISCOVERY = ("disabledProviders: [native, claude, claude-plugins, codex, gemini, github, opencode, cursor, "
+                "windsurf, vscode, agents-md, agent-plugins, omp-plugins, mcp-json]\n")
+
+
 def omp_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
     env = {k: v for k, v in os.environ.items() if k not in API_KEY_VARS}
-    # The prompt goes through a file: PR diffs overflow a Windows command line.
-    with tempfile.NamedTemporaryFile("w", suffix=".txt", delete=False, encoding="utf-8") as handle:
-        handle.write(flatten(messages))
-        prompt_path = handle.name
-    try:
-        # `--no-tools` drops only built-in tools; mounted MCP servers still send their schemas (~100k tokens
-        # a call). An explicit `--tools read` list keeps MCP out, and any tool use voids the reply below.
-        command = [shutil.which("omp") or "omp", "-p", "--mode", "json", "--tools", "read", "--no-skills",
-                   "--no-rules", "--no-context-files", "--no-extensions", "--no-session", "--no-title", "--no-lsp",
-                   "--system-prompt", SYSTEM + " Never call a tool."]
+    with tempfile.TemporaryDirectory(prefix="pr-agent-omp-") as work:
+        overlay = os.path.join(work, "no-discovery.yml")
+        prompt_path = os.path.join(work, "prompt.txt")  # a file, since PR diffs overflow a Windows command line
+        with open(overlay, "w", encoding="utf-8") as handle:
+            handle.write(NO_DISCOVERY)
+        with open(prompt_path, "w", encoding="utf-8") as handle:
+            handle.write(flatten(messages))
+        command = [shutil.which("omp") or "omp", "-p", "--mode", "json", "--config", overlay, "--no-tools",
+                   "--no-skills", "--no-rules", "--no-context-files", "--no-extensions", "--no-session",
+                   "--no-title", "--no-lsp", "--system-prompt", SYSTEM]
         if model:
             command += ["--model", model]
+        # cwd is the empty work dir, so no project-level config can add tools back.
         proc = subprocess.run([*command, f"@{prompt_path}"], capture_output=True, text=True, encoding="utf-8",
-                              errors="replace", env=env, timeout=900)
-    finally:
-        os.unlink(prompt_path)
+                              errors="replace", env=env, cwd=work, timeout=900)
     reply = None
     for line in proc.stdout.splitlines():
         try:
@@ -72,14 +79,14 @@ def omp_complete(messages: list[dict], model: str | None) -> tuple[str, dict]:
         except json.JSONDecodeError:
             continue
         if event.get("type") == "tool_execution_start":
-            # PR text is untrusted: a reply that read local files must never reach the PR.
-            raise RuntimeError(f"omp tried to use a tool ({event.get('toolName')}); reply discarded")
+            # Tripwire: the overlay should leave no tools. If one ran anyway, the run is unsafe; drop it.
+            raise RuntimeError(f"omp ran a tool ({event.get('toolName')}) despite --no-tools; reply discarded")
         if event.get("type") == "message_end" and (event.get("message") or {}).get("role") == "assistant":
             reply = event["message"]
-    if reply is None:
-        raise RuntimeError(f"omp exited {proc.returncode} with no reply: {(proc.stderr or proc.stdout)[-800:]}")
-    if reply.get("stopReason") == "error":
-        raise RuntimeError(f"omp error: {str(reply.get('errorMessage') or reply)[:800]}")
+    if reply is None or proc.returncode != 0:
+        raise RuntimeError(f"omp exited {proc.returncode}: {(proc.stderr or proc.stdout)[-800:]}")
+    if reply.get("stopReason") != "stop":  # length, aborted or error: never hand PR-Agent a partial reply
+        raise RuntimeError(f"omp stopped with {reply.get('stopReason')}: {str(reply.get('errorMessage') or '')[:800]}")
     usage = reply.get("usage") or {}
     text = "".join(part.get("text", "") for part in reply.get("content") or [] if part.get("type") == "text")
     return text, {

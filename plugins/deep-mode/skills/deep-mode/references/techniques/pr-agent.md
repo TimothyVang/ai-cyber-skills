@@ -2,7 +2,7 @@
 
 **Use when:** after opening a PR and after each later push to it, or when the user asks for PR-Agent ("run pr-agent", "/describe", "/review", "/improve"). It runs PR-Agent (github.com/The-PR-Agent/pr-agent, MIT) from your machine, powered by the subscription omp is logged into (Claude or Codex). There is no GitHub Action and no API key.
 
-`assets/pr-agent/pr_agent_local.py` in this skill does the wiring. It serves an OpenAI-compatible endpoint on `127.0.0.1` that answers each PR-Agent call with a tool-less `omp -p` on omp's current model (API-key variables removed, so the subscription's usage pays), passes `gh auth token` to PR-Agent, and runs the pinned `pr-agent` through `uvx`. `--backend claude` uses `claude -p` through Claude Code instead.
+`assets/pr-agent/pr_agent_local.py` in this skill does the wiring. It serves an OpenAI-compatible endpoint on `127.0.0.1` that answers each PR-Agent call with `omp -p` on omp's current model, with no tools, MCP servers, plugins, skills or context files (a `--config` overlay turns off every discovery source, since `--no-tools` alone leaves MCP tools mounted) and API-key variables removed, so the subscription's usage pays. It passes `gh auth token` to PR-Agent and runs the pinned `pr-agent` through `uvx`. `--backend claude` uses `claude -p` through Claude Code instead.
 
 1. **Check the tools:** `omp` logged in to a subscription, `gh` logged in, `uvx` on PATH. A missing login is a hard stop for the user (`omp` → `/login`, `gh auth login`).
 2. **Run the three commands** on the PR, in order, from any directory:
