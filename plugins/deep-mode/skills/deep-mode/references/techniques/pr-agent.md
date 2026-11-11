@@ -6,7 +6,7 @@
 
 Only subscription logins should pay, and two checks enforce it. **Before the run** it reads the id, provider, and credential-type columns of omp's auth store (never the credentials). It refuses a model whose provider has an API-key login or none (such as `openrouter` on a key), a bare model id, a provider that `models.yml` configures (its `apiKey` outranks OAuth), and a provider that shares a discovery source's name (`cursor`, `gemini`). It also refuses while omp's own `.env` files (agent dir, profile and config roots, `~`) set a credential-shaped name, since omp loads those after the env scrub. The overlay also turns model fallback off.
 
-**After each call** the reply must name that provider and one of its OAuth credential ids. Any other credential discards the reply and stops the run, so a source the first check missed can cost at most one call.
+**After each call** the reply must name that provider and one of its OAuth credential ids. Any other credential discards the reply and stops the run. Model calls run one at a time, so a source the first check missed can cost at most one call.
 
 1. **Check the tools:** `omp` logged in to a subscription, `gh` logged in, `uvx` on PATH. A missing login is a hard stop for the user (`omp` → `/login`, `gh auth login`).
 2. **Run the three commands** on the PR, in order, from any directory:

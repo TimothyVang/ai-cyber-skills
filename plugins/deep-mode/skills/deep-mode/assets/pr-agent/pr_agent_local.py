@@ -202,6 +202,8 @@ def omp_complete(messages: list[dict], model: str, credentials: set) -> tuple[st
 
 
 def make_handler(model: str, credentials: set, log: list, failures: list, secret: str):
+    call_lock = threading.Lock()
+
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
             pass
@@ -240,19 +242,23 @@ def make_handler(model: str, credentials: set, log: list, failures: list, secret
             if not isinstance(messages, list) or not all(isinstance(m, dict) for m in messages):
                 self._json(400, {"error": {"message": "invalid request body"}})
                 return
-            if failures:
-                # PR-Agent retries a failed call several times; each retry would spend another omp run.
-                self._json(500, {"error": {"message": f"an earlier call failed: {failures[0]}", "type": "server_error"}})
-                return
-            started = time.monotonic()
-            try:
-                text, usage = omp_complete(request.get("messages", []), model, credentials)
-                # The model may echo flatten()'s word joiners; they must not reach suggested code.
-                text = text.replace("\u2060", "")
-            except Exception as exc:  # reported to PR-Agent as an API error
-                failures.append(str(exc)[:300])
-                self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
-                return
+            # One model call at a time: with concurrent calls, several could pass the failure check before the
+            # first records a failure, and each would spend usage (or a non-OAuth credential) before stopping.
+            with call_lock:
+                if failures:
+                    # PR-Agent retries a failed call several times; each retry would spend another omp run.
+                    self._json(500, {"error": {"message": f"an earlier call failed: {failures[0]}",
+                                               "type": "server_error"}})
+                    return
+                started = time.monotonic()
+                try:
+                    text, usage = omp_complete(request.get("messages", []), model, credentials)
+                    # The model may echo flatten()'s word joiners; they must not reach suggested code.
+                    text = text.replace("\u2060", "")
+                except Exception as exc:  # reported to PR-Agent as an API error
+                    failures.append(str(exc)[:300])
+                    self._json(500, {"error": {"message": str(exc), "type": "server_error"}})
+                    return
             log.append({"seconds": round(time.monotonic() - started, 1), "text": text, **usage})
             usage["total_tokens"] = usage["prompt_tokens"] + usage["completion_tokens"]
             created = int(time.time())
