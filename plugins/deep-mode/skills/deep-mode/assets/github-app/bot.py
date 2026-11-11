@@ -686,6 +686,8 @@ def pr_checks(repo: str, number: int, required=False) -> list:
 
 
 def merge_pr(repo: str, number: int, sha: str, admin: bool) -> str:
+    """Run `gh pr merge` (squash, else merge) and return the method. It doesn't read the result back:
+    PRConversation.finish_merge confirms MERGED, so a failed read-back can be resumed."""
     cmd = ["gh", "pr", "merge", str(number), "-R", repo, "--match-head-commit", sha] + (["--admin"] if admin else [])
     method = "squash"
     proc = run(cmd + ["--squash"], cwd=WORK, check=False)
@@ -694,11 +696,7 @@ def merge_pr(repo: str, number: int, sha: str, admin: bool) -> str:
         proc = run(cmd + ["--merge"], cwd=WORK, check=False)
     if proc.returncode:
         raise Blocked(f"`gh pr merge` failed: {(proc.stderr or proc.stdout).strip()[-400:]}")
-    for _ in range(10):
-        if gh_json("pr", "view", str(number), "-R", repo, "--json", "state")["state"] == "MERGED":
-            return method
-        time.sleep(3)
-    raise Blocked("`gh pr merge` succeeded but the PR does not read back as MERGED")
+    return method
 
 
 # ---------------------------------------------------------------- one item
@@ -919,14 +917,14 @@ class PRConversation:
         self.answered, self.author_reply = set(), None
 
     def run(self) -> str:
-        if self.item.get("afterMerge"):  # merged already: only the post-merge steps are left
-            if self.bot.dry:
-                print(f"  [dry-run] would finish after the merge: note {self.item['afterMerge'].get('noted', False)}, "
-                      "then the trunk check", flush=True)
-                return "dry-run"
-            return self.finish_merge()
-        log(f"{self.it.key}: {'own PR' if self.own else 'not own PR: reviewer only, never merged'}")
         try:
+            if self.item.get("afterMerge"):  # a merge was attempted: confirm it, then the post-merge steps
+                if self.bot.dry:
+                    print("  [dry-run] would confirm the merge, then post the note and run the trunk check",
+                          flush=True)
+                    return "dry-run"
+                return self.finish_merge()
+            log(f"{self.it.key}: {'own PR' if self.own else 'not own PR: reviewer only, never merged'}")
             if self.bot.dry:
                 return self.dry_run()
             if not self.own:
@@ -1207,24 +1205,48 @@ class PRConversation:
                 self.it.say("coordinator", "bot.py", facts["head"], "Not merging. Panel " + tally + " PASS at `"
                             + (sha or "")[:7] + "`, but:\n" + "\n".join(f"- {r}" for r in reasons))
             return status
-        method = merge_pr(self.repo, self.n, sha, admin)
         checks = ", ".join(f"`{c['name']}` {c.get('bucket')}" for c in facts["required"]) or "none required"
-        # Saved before anything else can fail: a closed PR is never listed again, so repo_cycle resumes from this.
-        self.item["afterMerge"] = {
-            "note": f"Merged `{sha[:7]}` ({method}). Panel {tally} PASS at this head; required checks: {checks}; "
-                    f"admin: {'yes, the required review was replaced by the panel' if admin else 'no'}.",
+        # Saved before `gh pr merge`: a closed PR is never listed again, so whatever fails after GitHub accepts
+        # the merge (the reply, the read-back, the note, the trunk check), repo_cycle resumes from this record.
+        step = self.item["afterMerge"] = {
+            "summary": f"Panel {tally} PASS at this head; required checks: {checks}; admin: "
+                       f"{'yes, the required review was replaced by the panel' if admin else 'no'}.",
             "pr": {"number": self.n, "baseRefName": self.base, "headRefName": self.branch, "headRefOid": sha,
                    "title": self.pr.get("title", ""), "body": self.pr.get("body") or "", "merged": True}}
         self.bot.save()
+        try:
+            step["method"] = merge_pr(self.repo, self.n, sha, admin)
+        except Blocked:
+            if self.merge_state() != "MERGED":  # refused: nothing to finish
+                self.item.pop("afterMerge")
+                raise
+        self.bot.save()
         return self.finish_merge()
 
+    def merge_state(self, tries: int = 1) -> str:
+        """The PR's state, polled up to `tries` times until MERGED (GitHub settles a merge asynchronously)."""
+        for attempt in range(tries):
+            state = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "state")["state"]
+            if state == "MERGED" or attempt == tries - 1:
+                return state
+            time.sleep(3)
+        return ""
+
     def finish_merge(self) -> str:
-        """After a merge: the merge note, then the trunk check. Each step is recorded, so a failed attempt
-        resumes where it stopped (repo_cycle schedules merged PRs that still have `afterMerge`)."""
+        """After `gh pr merge`: confirm MERGED, then the merge note, then the trunk check. Each step is recorded,
+        so a failed attempt resumes where it stopped (repo_cycle schedules PRs that still have `afterMerge`)."""
         step = self.item["afterMerge"]
         sha = step["pr"]["headRefOid"]
+        if not step.get("confirmed"):
+            state = self.merge_state(tries=10)
+            if state != "MERGED":
+                self.item.pop("afterMerge")
+                raise Blocked(f"`gh pr merge` ran but the PR reads back as {state}, not MERGED")
+            step["confirmed"] = True
+            self.bot.save()
         if not step.get("noted"):
-            self.it.say("coordinator", "bot.py", sha, step["note"])
+            self.it.say("coordinator", "bot.py", sha, f"Merged `{sha[:7]}` ({step.get('method') or 'merged'}). "
+                        + step["summary"])
             step["noted"] = True
             self.bot.save()
         if not step.get("commit"):
@@ -1440,12 +1462,13 @@ class Bot:
                 todo.append(("pr", pr, reasons, comments))
             if first_poll:
                 starts[repo] = since  # every open PR is listed and baselined: later heads are new
-            for key, item in list(self.state["items"].items()):  # merged PRs whose post-merge steps failed
+            scheduled = {data["number"] for kind, data, *_ in todo}
+            for key, item in list(self.state["items"].items()):  # merges whose post-merge steps didn't finish
                 step = item.get("afterMerge")
                 if not key.startswith(f"{repo}#pr:") or not step or item.get("errors", 0) >= MAX_ATTEMPTS:
                     continue
-                if want and want != f"pr:{step['pr']['number']}":
-                    continue
+                if step["pr"]["number"] in scheduled or (want and want != f"pr:{step['pr']['number']}"):
+                    continue  # an open PR already listed above runs finish_merge first anyway
                 found = True
                 todo.append(("pr", dict(step["pr"]), ["finishing after the merge (trunk check)"], []))
         if not want or want.startswith("issue:"):
