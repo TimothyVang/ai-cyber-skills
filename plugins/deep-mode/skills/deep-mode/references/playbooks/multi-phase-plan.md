@@ -41,7 +41,7 @@ Plan checklist (replaces pstack's `check-plan.mjs`); every item must pass, outsi
 - Program checklist has the five `###` in order and contains `skill://deep-mode/`, the recurring tick, and "status message".
 - Program checklist `PR mechanics, for every PR` contains `pr-review` and the technique path `references/techniques/pr-review.md`.
 - At least one PR section between Program checklist and Close the program; Close the program exists.
-- Each PR section: all nine sub-blocks in exact order; Depends on non-empty; Files, Build, You see, Verify unit, Merge each have ≥1 box; three Verify blocks open with the rule; live names the lane model and has exactly Lanes 1–10, every box a lane with a ``Save `…` `` screenshot and "Pass when"; perf boxes exactly Metric, Probe, Baseline, Rule; Review gate either "None." with no boxes, or boxes mentioning screenshot, video, operator.
+- Each PR section: all nine sub-blocks in exact order; Depends on non-empty; Files, Build, You see, Verify unit, Merge each have ≥1 box; three Verify blocks open with the rule; live names the lane model and has exactly Lanes 1–10, every box a lane with a ``Save `…` `` screenshot and "Pass when"; perf boxes exactly Metric, Probe, Baseline, Rule; Review gate either "None." with no boxes, or boxes mentioning screenshot, video, and attaching both to the PR and the panel.
 - Every `##` after Close the program is an Appendix; Appendix A Prototype evidence exists.
 - Execution starts once the Plan checklist passes, under the playbook the plan names.
 - A surface with no verification skill is a risk in Appendix C; its live block still names how each lane drives it.
