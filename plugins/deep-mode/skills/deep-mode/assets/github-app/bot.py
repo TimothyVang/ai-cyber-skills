@@ -555,17 +555,63 @@ def base_config(clone: Path, branch: str) -> dict:
     return data if isinstance(data, dict) else {"autonomousMerge": False}
 
 
+def norm_path(path) -> str:
+    return os.path.normcase(os.path.realpath(path))
+
+
+def worktree_holders(clone: Path, branch: str) -> list:
+    """Paths of the worktrees that have `branch` checked out. `--porcelain -z` needs git 2.36 or later."""
+    holders, path = [], None
+    for field in run(["git", "worktree", "list", "--porcelain", "-z"], cwd=clone).stdout.split("\0"):
+        if field.startswith("worktree "):
+            path = field[len("worktree "):]
+        elif field == f"branch refs/heads/{branch}" and path:
+            holders.append(path)
+    return holders
+
+
+def free_branch(clone: Path, branch: str, keep: Path) -> None:
+    """Release `branch` from every worktree but `keep`, so `-B branch` can reset it. A holder under the bot's
+    worktrees dir is detached, keeping its HEAD commit and uncommitted changes; any other holder (a user's
+    worktree, the main clone) is left alone and raises. Raises unless the branch reads back free."""
+    root, keep, errors = norm_path(WORK / "worktrees"), norm_path(keep), []
+    for holder in worktree_holders(clone, branch):
+        held = norm_path(holder)
+        if held == keep:
+            continue
+        try:
+            ours = held != root and os.path.commonpath([held, root]) == root
+        except ValueError:  # another drive
+            ours = False
+        if not ours:
+            raise RuntimeError(f"`{branch}` is checked out at {Path(holder)}, outside the bot's worktrees "
+                               f"({Path(root)}); release it there")
+        proc = run(["git", "checkout", "--detach", "--quiet"], cwd=holder, check=False)
+        if proc.returncode:
+            errors.append(f"{Path(holder)}: {(proc.stderr or proc.stdout).strip()[-300:]}")
+        else:
+            log(f"{clone.name}: detached {Path(holder)} to free `{branch}`")
+    still = [str(Path(h)) for h in worktree_holders(clone, branch) if norm_path(h) != keep]
+    if still:
+        raise RuntimeError(f"`{branch}` is still checked out at {', '.join(still)}: {'; '.join(errors)}")
+
+
 def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
-    """Check `ref` out at `path` (the bot's own scratch worktree): on `branch` reset to ref, or detached."""
+    """Check `ref` out at `path` (the bot's own scratch worktree): on `branch` reset to ref, or detached.
+    Another bot worktree holding `branch` is detached first (free_branch)."""
     if not (path / ".git").exists():
         shutil.rmtree(path, ignore_errors=True)
         git(clone, "worktree", "prune")
         path.parent.mkdir(parents=True, exist_ok=True)
+        if branch:
+            free_branch(clone, branch, path)
         git(clone, "worktree", "add", "--force", *(["-B", branch] if branch else ["--detach"]), path, ref)
         return path
     run(["git", "merge", "--abort"], cwd=path, check=False)
     git(path, "reset", "--hard", "--quiet")
     git(path, "clean", "-fdq")
+    if branch:
+        free_branch(clone, branch, path)
     git(path, "checkout", "--force", "--quiet", *(["-B", branch, ref] if branch else ["--detach", ref]))
     return path
 
@@ -720,6 +766,7 @@ class Item:
         self.key = f"{repo}#{kind}:{number}"
         self.tag = f"{slug(repo)}-{kind}{number}"
         self.transcript = WORK / "logs" / slug(repo) / f"{kind}-{number}.md"
+        self.sessions = {}  # session name -> the acpx command prefix (agent, model, cwd) that opened it
 
     def note(self, text: str) -> None:
         self.transcript.parent.mkdir(parents=True, exist_ok=True)
@@ -754,6 +801,7 @@ class Item:
         base = [acpx, "--cwd", cwd] + (["--model", role["model"]] if role.get("model") else [])
         if session:
             run(base + [agent, "sessions", "ensure", "--name", session], timeout=600)
+            self.sessions[session] = base + [agent, "sessions"]
         cmd = base + [perms, "--non-interactive-permissions", "deny", "--timeout", str(AGENT_TIMEOUT),
                       "--format", "quiet", agent]
         cmd += (["prompt", "-s", session] if session else ["exec"]) + ["--file", prompt_file]
@@ -773,6 +821,20 @@ class Item:
         if (proc.returncode and not denied) or not reply:
             raise RuntimeError(f"{role_label(role)} turn failed (exit {proc.returncode}): {proc.stderr.strip()[-400:]}")
         return reply
+
+    def close_sessions(self, names) -> None:
+        """Close named sessions this item opened (acpx closes per cwd; `sessions prune` would delete them).
+        Only for one-off sessions: discussion sessions keep their context across cycles. Failures are logged."""
+        for name in names:
+            prefix = self.sessions.pop(name, None)
+            if not prefix:
+                continue
+            try:
+                proc = run(prefix + ["close", name], check=False, timeout=120)
+                if proc.returncode:
+                    raise RuntimeError(f"exit {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}")
+            except Exception as err:
+                log(f"{self.key}: could not close session {name} ({err})")
 
 
 # ---------------------------------------------------------------- prompts
@@ -1367,7 +1429,8 @@ class IssueConversation:
                 self.it.say("author", self.author, sha,
                             self.it.ask(self.author, plan_prompt(self), self.tree, "--approve-reads"))
             return "dry-run"
-        author_session, reviewer_session, build_session = issue_sessions(self.it.tag, implement)
+        sessions = issue_sessions(self.it.tag, implement)
+        author_session, reviewer_session, _ = sessions
         plan = self.it.ask(self.author, plan_prompt(self), self.tree, "--approve-reads", author_session)
         self.it.say("author", self.author, sha, plan)
         critique = self.it.ask(self.reviewer, critique_prompt(self, plan), self.tree, "--approve-reads",
@@ -1377,9 +1440,11 @@ class IssueConversation:
         self.it.say("author", self.author, sha, answer)
         if not implement:
             return "discussed"
-        return self.implement(f"Plan:\n{plan}\n\nReview:\n{critique}\n\nAnswer:\n{answer}", build_session)
+        return self.implement(f"Plan:\n{plan}\n\nReview:\n{critique}\n\nAnswer:\n{answer}", sessions)
 
-    def implement(self, discussion: str, session: str) -> str:
+    def implement(self, discussion: str, sessions: tuple) -> str:
+        """Build on the issue branch in the impl tree and open its PR. `sessions` are the build's one-off
+        (author, reviewer, implement) session names from issue_sessions."""
         branch = f"{B['branchPrefix']}/issue-{self.n}"
         existing = gh_json("pr", "list", "-R", self.repo, "--head", branch, "--state", "open", "--json", "url") or []
         if existing:
@@ -1400,7 +1465,8 @@ class IssueConversation:
         tree = worktree_at(self.clone, self.tree.with_name(f"issue{self.n}-impl"),
                            f"origin/{branch}" if on_remote else f"origin/{self.default}", branch=branch)
         old = git(tree, "rev-parse", "HEAD")
-        reply = self.it.ask(self.author, implement_prompt(self, branch, discussion), tree, "--approve-all", session)
+        reply = self.it.ask(self.author, implement_prompt(self, branch, discussion), tree, "--approve-all",
+                            sessions[2])
         new = git(tree, "rev-parse", "HEAD")
         if int(git(tree, "rev-list", "--count", f"origin/{self.default}..HEAD")) == 0:
             self.it.say("coordinator", "bot.py", new, "The author made no commits, so no PR was opened.\n\n" + reply)
@@ -1417,10 +1483,26 @@ class IssueConversation:
                 f"author ({role_label(self.author)}) after a plan review with {role_label(self.reviewer)} in #{self.n}.")
         url = gh("pr", "create", "-R", self.repo, "--base", self.default, "--head", branch, "--title", title,
                  "--body-file", "-", stdin=body, cwd=self.clone).strip()
+        self.release(tree, sessions, branch)
         self.item["implemented"] = True
         self.it.say("coordinator", "bot.py", new,
                     f"Implemented on `{branch}` and opened {url}; the next cycle runs the PR conversation on it.")
         return "implemented"
+
+    def release(self, tree: Path, sessions: tuple, branch: str) -> None:
+        """Once the PR is open: close the build's one-off sessions, then detach the impl tree so the PR
+        conversation can check `branch` out. Detaching keeps the tree's files. Failures are only logged: the PR
+        is open either way, and the next worktree_at on `branch` detaches the tree again or fails loudly."""
+        try:
+            self.it.close_sessions(sessions)
+        except Exception as err:
+            log(f"{self.it.key}: could not close the build sessions ({err})")
+        try:
+            proc = run(["git", "checkout", "--detach", "--quiet"], cwd=tree, check=False)
+            if proc.returncode:
+                raise RuntimeError((proc.stderr or proc.stdout).strip()[-300:])
+        except Exception as err:
+            log(f"{self.it.key}: could not detach {tree} from `{branch}` ({err})")
 
 
 # ---------------------------------------------------------------- the cycle

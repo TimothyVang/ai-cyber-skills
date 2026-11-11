@@ -73,6 +73,7 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 - The author and the verifiers run (both with `--approve-all`) only after the current head re-passes the ownership gate, so a push from another account mid-conversation sends the PR to a human.
 - No one but the owner steers a write-enabled agent: on the owner's PRs other people's comments neither trigger a turn nor reach a prompt, and an issue build plans and implements in new agent sessions that see only the owner's comments, never an earlier discussion's context.
 - Implementing an issue reuses an existing `deep-mode/issue-<n>` branch only when every commit on it is one the bots made; otherwise the bots stop and say so.
+- The bot never blocks itself on its own worktrees. Once an issue's PR is open, the bot closes that build's one-off agent sessions and detaches the implementation worktree from `deep-mode/issue-<n>`. A later checkout of a branch that another worktree under `~/.cache/deep-mode/bot/worktrees/` holds detaches that holder first; its files and uncommitted changes stay. A holder anywhere else, such as a user's own worktree, is never touched: the item errors and names it.
 - Contributors' and forks' PRs get review comments only. No agent runs with `--approve-all` on their code.
 - Agents run inside the repo, so their CLIs load its AGENTS.md and CLAUDE.md, and its rules apply. No real-money trading actions, ever.
 - The private key and installation tokens stay in `~/.config/deep-mode/`. Tokens last one hour. None of them go into prompts, logs or repos.
