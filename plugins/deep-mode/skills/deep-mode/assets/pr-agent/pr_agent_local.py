@@ -53,6 +53,8 @@ def omp_default_model() -> str:
     """omp's default model role, the one /provider and /model set (honors omp profiles)."""
     proc = subprocess.run([shutil.which("omp") or "omp", "config", "get", "modelRoles", "--json"],
                           capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if proc.returncode != 0:
+        sys.exit(f"pr_agent_local: `omp config get modelRoles` failed: {(proc.stderr or proc.stdout).strip()[-400:]}")
     try:
         return json.loads(proc.stdout)["value"]["default"]
     except (json.JSONDecodeError, KeyError, TypeError):
@@ -77,12 +79,15 @@ def omp_complete(prompt: str, model: str) -> tuple[str, dict]:
             event = json.loads(line)
         except json.JSONDecodeError:
             continue
-        message = event.get("message") or {}
+        if not isinstance(event, dict):
+            continue
+        message = event.get("message") if isinstance(event.get("message"), dict) else {}
         if event.get("type") == "message_end" and message.get("role") == "assistant":
             usage = message.get("usage") or {}
             prompt_tokens += (usage.get("input") or 0) + (usage.get("cacheRead") or 0) + (usage.get("cacheWrite") or 0)
             completion_tokens += usage.get("output") or 0
-            chunks = [c.get("text", "") for c in message.get("content", []) if c.get("type") == "text"]
+            chunks = [c.get("text", "") for c in message.get("content") or []
+                      if isinstance(c, dict) and c.get("type") == "text"]
             if any(c.strip() for c in chunks):
                 text = "\n".join(chunks)
     if proc.returncode != 0 or not text.strip():
@@ -198,10 +203,10 @@ def main() -> int:
     opts = parser.parse_args()
 
     backend = opts.backend or ("omp" if shutil.which("omp") else "claude")
-    model = opts.model or (omp_default_model() if backend == "omp" else "sonnet")
     for tool in (backend, "gh"):
         if not shutil.which(tool):
             sys.exit(f"pr_agent_local: `{tool}` is not on PATH")
+    model = opts.model or (omp_default_model() if backend == "omp" else "sonnet")
     token = subprocess.run(["gh", "auth", "token"], capture_output=True, text=True).stdout.strip()
     if not token:
         sys.exit("pr_agent_local: `gh auth token` returned nothing; run `gh auth login`")
