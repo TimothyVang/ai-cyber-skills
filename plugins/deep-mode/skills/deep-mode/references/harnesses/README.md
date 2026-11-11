@@ -39,4 +39,5 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 - deep-mode's **Contain the work** section (SKILL.md) wins over any harness default: scratch in `<root>/.scratch/`, worktrees in `<root>/.worktrees/`, never system temp. Codex and Claude Code both make temp dirs writable by default.
 - Subagents in every harness start without your conversation. Put the goal, root, files, rules, and acceptance check in the brief.
 - Model calls use the user's subscription. An API key in the environment silently switches `claude -p` and `codex exec` to API billing.
+- Secrets and logins follow `references/credentials/README.md` in every harness: never read or print a value, inject at run time, one scoped identity per agent. It lists the per-harness settings (Claude Code sandbox and deny rules, Codex `shell_environment_policy`, omp `secrets.enabled`).
 - Translate, don't skip: when a step names an omp tool your harness lacks, use the mapped tool above; when nothing maps, do the step by hand and say so.

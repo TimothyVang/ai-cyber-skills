@@ -59,6 +59,27 @@ def allowed_roots(roots):
     return [real(r) for r in allowed]
 
 
+WRITE_TOOLS = {"Write", "Edit", "NotebookEdit"}
+SECRET_READ_TOOLS = {"Read", "Grep", "Edit"}
+SECRET_FILE = re.compile(
+    r"^(\.env(\..+)?|id_(rsa|dsa|ecdsa|ed25519)|\.netrc|\.pgpass|\.git-credentials)$"
+    r"|\.(pem|key|p12|pfx|kdbx|jks|keystore)$", re.I)
+SECRET_TEMPLATE = re.compile(r"^\.env\.(example|sample|template|defaults|schema)$", re.I)
+SECRET_DIR = re.compile(r"[\\/](\.aws[\\/]credentials|\.scratch[\\/]auth[\\/].*)$", re.I)
+
+
+def is_secret(path):
+    name = os.path.basename(path)
+    if SECRET_TEMPLATE.match(name):
+        return False
+    return bool(SECRET_FILE.search(name) or SECRET_DIR.search(path))
+
+
+def deny(reason):
+    print(json.dumps({"hookSpecificOutput": {
+        "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": reason}}))
+
+
 def session_mark(data_dir, event):
     session = re.sub(r"[^A-Za-z0-9_-]", "", str(event.get("session_id") or ""))
     return os.path.join(data_dir, "active-sessions", session) if data_dir and session else None
@@ -83,22 +104,28 @@ def main():
         return 0
     if mode == "if-active" and not (mark and os.path.exists(mark)):
         return 0
+    tool = str(event.get("tool_name") or "")
     tool_input = event.get("tool_input") or {}
-    target = tool_input.get("file_path") or tool_input.get("notebook_path")
+    target = tool_input.get("file_path") or tool_input.get("notebook_path") or (tool_input.get("path") if tool == "Grep" else None)
     if not isinstance(target, str) or not target:
         return 0
     cwd = event.get("cwd") or os.environ.get("CLAUDE_PROJECT_DIR") or os.getcwd()
+    path = real(target if os.path.isabs(os.path.expanduser(target)) else os.path.join(cwd, target))
+    if tool in SECRET_READ_TOOLS and is_secret(path):
+        deny(f"deep-mode never reads secret files, and {target} is one. Take variable names from .env.example, "
+             "run commands through an injector (`dotenvx run -- <cmd>`, `sops exec-env`, `infisical run --`), and ask "
+             "the user to set or change secret values. Rules: deep-mode references/credentials/README.md.")
+        return 0
+    if tool not in WRITE_TOOLS:
+        return 0
     roots = project_roots(cwd)
     root = os.path.normpath(roots[0])
-    path = real(target if os.path.isabs(os.path.expanduser(target)) else os.path.join(cwd, target))
     if any(inside(path, r) for r in allowed_roots(roots)):
         return 0
-    reason = (f"deep-mode keeps all writes inside the project root {root}. {target} is outside it. "
-              f"Put scratch and temp files in {os.path.join(root, '.scratch')} and worktrees in "
-              f"{os.path.join(root, '.worktrees')}. If the user explicitly named this path, add it to "
-              f"extraWriteRoots in {os.path.join(root, '.deep-mode.json')}.")
-    print(json.dumps({"hookSpecificOutput": {
-        "hookEventName": "PreToolUse", "permissionDecision": "deny", "permissionDecisionReason": reason}}))
+    deny(f"deep-mode keeps all writes inside the project root {root}. {target} is outside it. "
+         f"Put scratch and temp files in {os.path.join(root, '.scratch')} and worktrees in "
+         f"{os.path.join(root, '.worktrees')}. If the user explicitly named this path, add it to "
+         f"extraWriteRoots in {os.path.join(root, '.deep-mode.json')}.")
     return 0
 
 
