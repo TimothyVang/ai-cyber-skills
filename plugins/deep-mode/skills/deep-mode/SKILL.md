@@ -166,6 +166,15 @@ A large or cross-cutting effort with no clean fit, or work the user steps away f
 
 **Frontend UI/UX** (building, restyling, or reviewing UI; motion; color; accessibility; chat or agent UI) → before writing UI code, read `AGENTS.md` in a local checkout of `TimothyVang/frontend`, then the `PLAYBOOK.md` section it routes to. Its `reference/` holds the cited evidence (articles, talks, clips, live demos) and its `.claude/skills/` the vendored design skills. No checkout: `gh repo clone TimothyVang/frontend` (private; skip if you can't access it). It adds component, motion, color, and agent-UI rules on top of rasmic-stack's design workflow.
 
+**Cloud security and DevSecOps rules** come from `references/cloud-devsecops/` (cited reports in `TimothyVang/cloud-devsecops`; its `README.md` lists them). They cover securing and wiring up a cloud, where `cloudxberry/aws-networking.md` covers how AWS networking works. Read the file the task touches before designing, reviewing, or changing cloud access, policy, or pipelines:
+
+- AWS accounts, Organizations, SCP/RCP, IAM, GuardDuty or Security Hub, KMS, or CI access to AWS → `references/cloud-devsecops/aws.md`.
+- Azure subscriptions, management groups, Entra ID, RBAC, Azure Policy, Defender for Cloud, Key Vault, Private Endpoints, AKS, or CI access to Azure → `references/cloud-devsecops/azure.md`.
+- Google Cloud orgs or projects, IAM or service accounts, org policy, VPC Service Controls, Security Command Center, Binary Authorization, GKE, or CI access to GCP → `references/cloud-devsecops/gcp.md`.
+- A CI/CD pipeline's security stages, supply chain (SBOM, signing, SLSA provenance), scanners, policy as code, container or Kubernetes hardening, or GitHub Actions hardening → `references/cloud-devsecops/devsecops-pipeline.md`.
+- Testing cloud or IaC code without a real account (Floci, LocalStack, moto, Azurite, Google emulators) → `references/cloud-devsecops/local-emulators.md`. Run infra changes there first when the emulator covers the service.
+- Choosing terminal, container, Kubernetes, Terraform, or code-review tooling → `references/cloud-devsecops/devops-tools.md`.
+
 ## Habits worth keeping
 
 - Restate-in-your-own-words is her most-used prompt. Use it on any thread, report, or fuzzy ask before acting.
