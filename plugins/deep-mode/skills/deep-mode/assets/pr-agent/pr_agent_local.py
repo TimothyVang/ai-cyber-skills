@@ -208,9 +208,10 @@ def main() -> int:
         "CONFIG__CUSTOM_MODEL_MAX_TOKENS": "150000",
         "CONFIG__MAX_MODEL_TOKENS": "150000",
         "CONFIG__PUBLISH_OUTPUT": "false" if opts.dry_run else "true",
-        # PR-Agent gives up on a model call after 120 s by default; a large diff on a subscription model takes
-        # longer, and the abandoned omp child would keep spending usage. Match the child's own timeout.
-        "CONFIG__AI_TIMEOUT": "900",
+        # PR-Agent gives up on a model call after 120 s by default and retries at once, while the abandoned omp
+        # child keeps spending usage. Keep its timeout above the child's 900 s, so the child always fails first
+        # and the failure circuit stops the retry.
+        "CONFIG__AI_TIMEOUT": "960",
         "OPENAI__KEY": secret,
         "OPENAI__API_BASE": base,
         "OPENAI_API_BASE": base,
