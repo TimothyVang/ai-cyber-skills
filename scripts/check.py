@@ -118,6 +118,13 @@ window = skill_bytes.find(b"\n## Routes\n")
 if window < 0 or window > RULES_WINDOW_BYTES:
     problems.append(f"plugins/deep-mode/skills/deep-mode/SKILL.md: '## Routes' starts at byte {window}; the rules before it must fit in {RULES_WINDOW_BYTES} bytes")
 
+# Every skill's own references and skill:// links resolve (check_skill.py, the per-skill checker).
+skill_dirs = sorted(str(p.parent) for p in ROOT.glob("plugins/*/skills/*/SKILL.md"))
+run = subprocess.run([sys.executable, str(skill_root / "scripts/check_skill.py"), *skill_dirs],
+                     capture_output=True, text=True, encoding="utf-8", errors="replace")
+if run.returncode:
+    problems.append(f"check_skill.py found problems:\n{(run.stdout + run.stderr).strip()[-3000:]}")
+
 # Every shipped Python file parses, and every test folder passes.
 test_dirs = set()
 for py in ROOT.rglob("*.py"):

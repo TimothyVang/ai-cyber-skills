@@ -22,7 +22,7 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | Piece | What it does |
 |---|---|
 | `/deep <anything>` | The one command. It reads your request and the repo, routes it (fix, feature, review a PR, write a spec, cut tickets, drive a board, run a factory, chart a big effort, grill a plan, contribute to a project, start a new app and pick its stack), sizes it (fast path for small jobs, full playbook for big ones), proves the result on the real app, lands it on a 3-agent panel pass, and reports what it decided. |
-| `deep-mode` skill | 33 playbooks, 24 principles and 43 techniques, indexed in its `SKILL.md`. Every task is proven on the real artifact and merges only on a verifier panel pass. |
+| `deep-mode` skill | 29 playbooks, 24 principles and 43 techniques, indexed in its `SKILL.md`. Every task is proven on the real artifact and merges only on a verifier panel pass. |
 | PR and issue bots | Install your own private GitHub App on your repos and a poller on your machine runs the bots: it reviews and lands your own PRs, resolves their merge conflicts, and plans and builds the issues you open. See [GitHub App bots](#github-app-bots). |
 | PR review | `/deep-mode:review-pr <PR number>` reviews a PR with your own agent and parallel reviewer subagents through correctness, security, spec and standards lenses, keeps only findings a code read or run proves, posts one comment-only review, and re-reviews new commits until clean. No outside review service; code stays where the agent runs. |
 | Land a PR | `/deep-mode:land-pr <PR number>` finishes and merges your own PR with no human: a reviewer bot posts findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. It never merges over a failing check. You see each turn in the session as it lands, drawn as an 8-bit frame right in the chat (each bot a sprite, each turn a dialog box), or watch the whole conversation play live as an 8-bit battle screen in your terminal; `/deep-mode:pr-thread <PR or issue URL>` shows any bot conversation later. |
@@ -50,16 +50,15 @@ The main line takes an idea to merged code. Skip the phases a job doesn't need. 
 | 2. Settle a fork by running it | Prototype playbook | A decision backed by an observation |
 | 3. Write it down | Spec playbook | `docs/specs/<slug>.md` and a spec issue |
 | 4. Cut it up | Tickets playbook | Tickets with their blockers |
-| 5. Build it | Implement spec (one integration branch) or Board (one PR per ticket), with **tdd** | Merged code |
+| 5. Build it | Phased build (one integration branch) or Work a queue (one PR per ticket), with **tdd** | Merged code |
 | 6. Review and land | **pr-review** (spec and standards lenses), **panel**, **pr-conversation** | A merged PR with evidence |
 
 Around the main line:
 
 - **Triage:** Sorts incoming issues and outside PRs into a category and a state, and posts a brief or the questions that block them.
 - **Wayfinder:** Charts an effort too big for one session and hands its decisions to a spec.
-- **Board:** Runs a project on GitHub issues with status labels. Every task ends in a merge after a panel pass.
-- **Factory:** Runs a queue of labeled issues through the `factory` CLI: spec, hidden tests, code, reviews and merge for each job.
-- **Orchestrate:** Runs a multi-day program with many stacked PRs and subagents from one coordinator.
+- **Run a goal:** Drives one goal to a checkable end without you, in one session or as a multi-day program with many PRs and subagents.
+- **Work a queue:** Turns a backlog, a queue of PRs, or labeled issues (through the `factory` CLI) into merged PRs, each after a panel pass.
 - **domain-model:** Keeps `GLOSSARY.md` and ADRs current as names and decisions change.
 - **research:** Writes an answer that later sessions will cite into the repo.
 - **architecture-review:** Finds structural friction across the codebase and settles which refactors to make.

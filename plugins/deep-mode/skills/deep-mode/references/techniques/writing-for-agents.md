@@ -53,3 +53,5 @@ Each step ends with how the agent knows it is done. A vague end ("once you under
 - **Routing.** Route on the words of the request. A file existing in the repo is evidence, never a trigger, or unrelated work in that repo gets captured.
 
 **Output:** the edited document, with each change justified by one of the rules above, and the pointer lines that lead to it.
+
+**Done when** every step in the edited document ends on a check, every pointer leads with its trigger word, and every no-op and stale line is gone.

@@ -2,9 +2,12 @@
 """Trending-repo catalog for deep-mode's prior-art step. Stdlib only.
 
 update  Collect repos from GitHub Trending, GitHub search (new fast risers and watched agent topics) and the
-        githubawesome.com feed, enrich them through the GitHub API, merge them into references/trending/catalog.json,
-        and render references/trending/README.md.
-find    Rank catalog repos against search terms, first refreshing the catalog when it is older than a day.
+        githubawesome.com feed, enrich them through the GitHub API, merge them into <out>/catalog.json, and render
+        <out>/README.md. <out> defaults to the project's .scratch/trending/; the deep-mode repo publishes its copy
+        in trending/ at its root (`update --out trending`).
+find    Rank catalog repos against search terms. A missing or day-old catalog in .scratch/trending/ is first
+        replaced by the published one, or rebuilt with `update` when that is a day old too.
+The catalog is not shipped in the skill: it changes daily, and the plugin should change only when its rules do.
 """
 import argparse
 import datetime as dt
@@ -22,7 +25,11 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
-OUT_DIR = SKILL_DIR / "references" / "trending"
+sys.path.insert(0, str(SKILL_DIR / "assets" / "github-app"))
+import brand  # noqa: E402  (the repo that publishes the catalog)
+
+PUBLISHED = brand.BRAND["homepage"].replace("https://github.com/", "https://raw.githubusercontent.com/") \
+    + "/main/trending/catalog.json"
 STALE_AFTER_DAYS = 1
 USER_AGENT = "deep-mode-trending (+https://github.com/TimothyVang/deep-mode)"
 WATCH_TOPICS = [
@@ -279,17 +286,49 @@ def render(catalog):
     return "\n".join(out) + "\n"
 
 
+def project_cache() -> Path:
+    """<project root>/.scratch/trending, the root being the git worktree holding the current folder, so the catalog
+    stays inside the project (deep-mode: Contain the work) and out of every commit (.scratch holds a `*` ignore)."""
+    proc = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True)
+    root = Path(proc.stdout.strip()) if proc.returncode == 0 else Path.cwd()
+    scratch = root / ".scratch"
+    scratch.mkdir(exist_ok=True)
+    if not (scratch / ".gitignore").exists():
+        (scratch / ".gitignore").write_text("*\n", encoding="utf-8")
+    return scratch / "trending"
+
+
+def is_stale(catalog) -> bool:
+    return (catalog["updated"] or "") <= (today() - dt.timedelta(days=STALE_AFTER_DAYS)).isoformat()
+
+
+def fetch_published(out: Path) -> bool:
+    """Copy the published catalog into `out` when it is fresher than the local one. True when `out` is now fresh."""
+    try:
+        published = json.loads(fetch(PUBLISHED, None))
+    except (urllib.error.URLError, OSError, ValueError) as err:
+        print(f"warning: could not read the published catalog ({err})", file=sys.stderr)
+        return False
+    if is_stale(published):
+        return False
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "catalog.json").write_text(json.dumps(published, indent=1, ensure_ascii=False) + "\n", encoding="utf-8",
+                                      newline="\n")
+    (out / "README.md").write_text(render(published), encoding="utf-8", newline="\n")
+    return True
+
+
 def find(args):
-    catalog_path = OUT_DIR / "catalog.json"
+    out = args.out or project_cache()
+    catalog_path = out / "catalog.json"
     catalog = load_catalog(catalog_path)
-    stale_before = (today() - dt.timedelta(days=STALE_AFTER_DAYS)).isoformat()
-    if not args.no_refresh and (catalog["updated"] or "") <= stale_before:
-        print(f"catalog last updated {catalog['updated']}; refreshing (about a minute)", file=sys.stderr)
+    if not args.no_refresh and is_stale(catalog) and not fetch_published(out):
+        print(f"catalog last updated {catalog['updated']}; rebuilding it (about a minute)", file=sys.stderr)
         try:
-            update(argparse.Namespace(out=OUT_DIR))
+            update(argparse.Namespace(out=out))
         except SystemExit as err:
             print(f"warning: refresh failed ({err}); searching the stale catalog", file=sys.stderr)
-        catalog = load_catalog(catalog_path)
+    catalog = load_catalog(catalog_path)
     terms = [t.lower() for t in args.terms]
     ranked = []
     for entry in catalog["repos"].values():
@@ -299,7 +338,7 @@ def find(args):
         if hits:
             ranked.append((hits, entry["stars"], entry))
     ranked.sort(key=lambda r: (-r[0], -r[1]))
-    print(f"catalog updated {catalog['updated']}; {len(ranked)} matches for {' '.join(args.terms)}")
+    print(f"catalog updated {catalog['updated']} ({out / 'README.md'}); {len(ranked)} matches for {' '.join(args.terms)}")
     for hits, _, entry in ranked[: args.limit]:
         print(f"{line(entry)} · [{category(entry)}]")
 
@@ -308,12 +347,13 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     commands = parser.add_subparsers(dest="command", required=True)
     up = commands.add_parser("update", help="refresh catalog.json and README.md from all sources")
-    up.add_argument("--out", type=Path, default=OUT_DIR, help="output directory (default: references/trending)")
-    up.set_defaults(run=update)
+    up.add_argument("--out", type=Path, help="output directory (default: the project's .scratch/trending)")
+    up.set_defaults(run=lambda a: update(argparse.Namespace(out=a.out or project_cache())))
     fd = commands.add_parser("find", help="rank catalog repos by search terms")
     fd.add_argument("terms", nargs="+")
     fd.add_argument("--no-refresh", action="store_true", help="search the catalog as is, even when stale")
     fd.add_argument("--limit", type=int, default=20)
+    fd.add_argument("--out", type=Path, help="catalog directory (default: the project's .scratch/trending)")
     fd.set_defaults(run=find)
     sys.stdout.reconfigure(encoding="utf-8")
     args = parser.parse_args()

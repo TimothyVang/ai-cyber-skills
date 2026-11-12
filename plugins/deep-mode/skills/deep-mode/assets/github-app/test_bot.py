@@ -3,6 +3,7 @@
     python test_bot.py
 """
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -793,6 +794,176 @@ class ImplementReleaseTest(unittest.TestCase):
     def test_failed_close_still_implemented_and_detaches(self):
         status, _, detaches = self.implement(close=RuntimeError("boom"))
         self.assertEqual((status, detaches), ("implemented", [Path("w/issue5-impl")]))
+
+
+class DiffSizeTest(unittest.TestCase):
+    def test_size_s_is_measured_from_the_diff(self):
+        self.assertEqual(bot.diff_size("3\t2\tsrc/app.py\n10\t0\tREADME.md\n"), {"lines": 15, "files": 2, "small": True})
+        self.assertFalse(bot.diff_size("20\t11\tsrc/app.py\n")["small"])  # 31 lines
+        self.assertFalse(bot.diff_size("1\t0\ta.py\n1\t0\tb.py\n1\t0\tc.py\n")["small"])  # 3 files
+        self.assertFalse(bot.diff_size("-\t-\tlogo.png\n")["small"])  # binary
+        self.assertFalse(bot.diff_size("")["small"])  # nothing changed is not a reason to skip verifiers
+        for path in ("src/auth/session.py", "db/migrations/0003.sql", ".github/workflows/ci.yml", ".env.example",
+                     "AGENTS.md", ".claude/settings.json", "app/secrets.ts", ".deep-mode.json"):
+            with self.subTest(path=path):
+                self.assertFalse(bot.diff_size(f"1\t0\t{path}\n")["small"])
+
+
+def git_repo(root: Path, files: dict) -> str:
+    """A repo at `root` with one commit of `files`, its HEAD also recorded as origin/main. Returns the SHA."""
+    root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q", "-b", "main", str(root)], check=True)
+    for name, text in files.items():
+        (root / name).write_text(text, encoding="utf-8")
+    bot.git(root, "add", "-A")
+    bot.git(root, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "c")
+    bot.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    return bot.git(root, "rev-parse", "HEAD")
+
+
+class RepoCheckTest(unittest.TestCase):
+    def setUp(self):
+        log = mock.patch.object(bot, "log")
+        log.start()
+        self.addCleanup(log.stop)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(bot.remove_tree, self.tmp)
+
+    def conversation(self, flag: str, check='test "$(cat flag.txt)" = ok'):
+        config = json.dumps({"check": check}) if check else "{}"
+        sha = git_repo(self.tmp / "clone", {".deep-mode.json": config, "flag.txt": flag})
+        c = object.__new__(bot.PRConversation)
+        c.clone, c.check_tree, c.base, c.head, c.n, c.item = self.tmp / "clone", self.tmp / "check", "main", sha, 7, {}
+        c.it = FakeItem("")
+        c.it.key = "o/r#pr:7"
+        return c, sha
+
+    def test_a_passing_check_gives_no_finding_and_is_remembered_for_the_merge(self):
+        c, sha = self.conversation("ok")
+        self.assertEqual(c.check_findings(), [])
+        self.assertEqual(c.item["repoCheck"], {"sha": sha, "code": 0})
+
+    def test_a_failing_check_goes_to_the_author_as_a_p1_finding(self):
+        c, sha = self.conversation("broken")
+        findings = c.check_findings()
+        self.assertEqual([(f["id"], f["severity"]) for f in findings], [("C1", "P1")])
+        self.assertIn("exited 1", findings[0]["claim"])
+        self.assertIn("exited 1", c.it.posts[0][1])
+
+    def test_no_check_configured_runs_nothing(self):
+        c, _ = self.conversation("broken", check=None)
+        self.assertIsNone(c.repo_check(c.head))
+        self.assertEqual(c.check_findings(), [])
+
+    def test_the_merge_waits_for_a_passing_check_at_the_exact_head(self):
+        c, sha = self.conversation("broken")
+        c.item = {"panelSha": sha, "repoCheck": {"sha": "0" * 40, "code": 0}}  # passed at an older head
+        c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
+        with mock.patch.object(bot, "merge_pr") as merge:
+            self.assertEqual(c.land("3/3"), "blocked")
+        merge.assert_not_called()
+        self.assertIn("Not merging: the repo check", c.it.posts[-1][1])
+
+    def test_the_trunk_check_runs_the_command_and_reverts_on_red(self):
+        c, sha = self.conversation("broken")
+        c.verifier_trees, c.cfg = [self.tmp / "v1"], {"verifiers": [{"agent": "v"}]}
+        c.revert_red = mock.Mock(return_value="merged-reverting")
+        with mock.patch.object(bot, "git", side_effect=lambda *a, **kw: "" if "fetch" in a else bot.run(
+                ["git", *a[1:]], cwd=a[0]).stdout.strip()):
+            self.assertEqual(c.trunk_check(sha), "merged-reverting")
+        self.assertEqual(c.it.asked, [])  # no agent: the command decided
+        self.assertIn("exited 1", c.revert_red.call_args.args[1])
+
+
+class LightPanelTest(unittest.TestCase):
+    def setUp(self):
+        log = mock.patch.object(bot, "log")
+        log.start()
+        self.addCleanup(log.stop)
+
+    def panel(self, numstat, votes):
+        c = object.__new__(bot.PRConversation)
+        c.head, c.base, c.n, c.repo, c.clone, c.item = "s" * 40, "main", 7, "o/r", Path("clone"), {}
+        c.pr = {"title": "t", "body": ""}
+        c.author = {"agent": "omp"}
+        c.cfg = {"verifiers": [{"agent": "omp"}, {"agent": "omp", "model": "other/one"}, {"agent": "omp", "model": "x/y"}]}
+        c.verifier_trees = [Path(f"v{i}") for i in range(3)]
+        c.require_own = mock.Mock()
+        c.it = mock.Mock()
+        c.it.ask.side_effect = [f'ok\n```json\n{{"vote":"{v}","evidence":"ran it"}}\n```' for v in votes]
+        with mock.patch.object(bot, "git", side_effect=lambda clone, *a: numstat if "--numstat" in a else "stat"), \
+                mock.patch.object(bot, "worktree_at"):
+            return c.panel(), c
+
+    def test_a_size_s_diff_gets_one_verifier_from_another_model(self):
+        (passed, tally, _), c = self.panel("2\t1\tsrc/app.py\n", ["PASS"])
+        self.assertEqual((passed, tally), (True, "1/1"))
+        self.assertEqual(c.it.ask.call_count, 1)
+        self.assertEqual(c.it.ask.call_args.args[0], {"agent": "omp", "model": "other/one"})
+        self.assertEqual(c.it.ask.call_args.args[2], Path("v1"))
+        self.assertIn("Light panel (size S", c.it.say.call_args.args[3])
+
+    def test_the_one_light_verifier_must_pass(self):
+        (passed, _, failures), _ = self.panel("2\t1\tsrc/app.py\n", ["FAIL"])
+        self.assertFalse(passed)
+        self.assertEqual(len(failures), 1)
+
+    def test_a_larger_diff_gets_the_full_panel(self):
+        (passed, tally, _), c = self.panel("40\t0\tsrc/app.py\n", ["PASS", "PASS", "FAIL"])
+        self.assertEqual((passed, tally), (True, "2/3"))
+        self.assertEqual(c.it.ask.call_count, 3)
+
+
+def link_dir(link: Path, target: Path) -> bool:
+    """A directory link like the one omp makes in plugins/node_modules: a symlink, or a junction on Windows."""
+    try:
+        os.symlink(target, link, target_is_directory=True)
+        return True
+    except OSError:
+        return os.name == "nt" and subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                                                  capture_output=True).returncode == 0
+
+
+class AutostartPathTest(unittest.TestCase):
+    def test_an_omp_plugin_install_autostarts_through_the_stable_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            root = home / ".omp/plugins/cache/plugins/deep-mode___deep-mode___0.6.0"
+            script = root / "skills/deep-mode/assets/github-app/bot.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("", encoding="utf-8")
+            (home / ".omp/plugins/node_modules").mkdir(parents=True)
+            link = home / ".omp/plugins/node_modules/deep-mode"
+            if not link_dir(link, root):
+                self.skipTest("cannot make a directory link here")
+            with mock.patch.object(bot, "__file__", str(script)), mock.patch.object(Path, "home", return_value=home):
+                self.assertEqual(bot.stable_script(), link / "skills/deep-mode/assets/github-app/bot.py")
+                link.rmdir() if os.name == "nt" else link.unlink()  # not installed through omp: the real path
+                self.assertEqual(bot.stable_script(), script.resolve())
+
+
+class ParallelReposTest(unittest.TestCase):
+    def test_one_slow_repo_does_not_hold_up_the_others(self):
+        b = object.__new__(bot.Bot)
+        b.dry, b.state = True, {"since": "2026-01-01T00:00:00Z", "items": {}}
+        b.args = mock.Mock(repo=None, backlog=False)
+        b.cfg = {"parallelRepos": 4}
+        b.ident = mock.Mock(repos=mock.Mock(return_value=["o/slow", "o/fast"]))
+        b.ident.describe.return_value = "test"
+        finished = []
+
+        def repo_cycle(repo, since):
+            self.assertTrue(bot._holding.big)  # every worker runs its Python under the state lock
+            b.state["items"][repo] = "seen"
+            bot.pause(0.6 if repo == "o/slow" else 0)  # waiting lets go of the lock
+            finished.append(repo)
+
+        b.repo_cycle = repo_cycle
+        with mock.patch.object(bot, "log"):
+            b.cycle()
+        self.assertEqual(finished, ["o/fast", "o/slow"])
+        self.assertEqual(set(b.state["items"]), {"o/slow", "o/fast"})
+        self.assertFalse(bot.BIG.locked())
 
 
 class TextTest(unittest.TestCase):

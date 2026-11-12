@@ -4,11 +4,15 @@ Use when: the user explicitly asks to pause or stop for now. Explicit only: on "
 
 ## Steps
 
-1. Stop at a safe boundary: finish the current atomic step or back out of it. Start nothing new.
+1. Stop at a safe boundary: finish the current atomic step or back out of it. Start nothing new. Done when no edit is half-applied.
 2. Cancel nested subagents and background jobs you started (`write proc://<id>/kill`); note any whose results you still need.
+   Done when `read proc://` lists none of your jobs as running.
 3. Take no irreversible action to pause: no new PR, no push unless you already had one out.
 4. Make the work durable: save `git diff --binary` (plus untracked files via `git add -N` first, or list them) as a patch next to the resume note, and make one clear `wip:` commit on the current branch; if the tree is broken, say so in one line of its body.
-5. Write the resume note off-context at `$(git rev-parse --git-common-dir)/omp-resume/<slug>.md` (never committed, shared by worktrees, visible to a cold-start session; `local://` is not) and print its absolute path: intent, what you were doing, progress and what's verified, current state, next steps, key files, gotchas, patch path. If a show-me-your-work trail exists, point at it instead of duplicating it.
+   Done when the patch file exists and `git status --porcelain` prints nothing.
+5. Write the resume note off-context at `$(git rev-parse --git-common-dir)/omp-resume/<slug>.md` (never committed, shared by worktrees, visible to a cold-start session; `local://` is not) and print its absolute path.
+   It holds intent, what you were doing, progress and what's verified, current state, next steps, key files, gotchas, patch path. If a show-me-your-work trail exists, point at it instead of duplicating it.
+   Done when the note exists at that path, its absolute path is printed, and every listed item is filled.
 
 ## Gates
 

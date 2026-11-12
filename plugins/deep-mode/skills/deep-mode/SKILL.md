@@ -14,7 +14,8 @@ hooks:
 
 Paths below are relative to this skill (`skill://deep-mode/...`).
 
-**Any harness.** The skill runs in omp (the user's preferred harness), Claude Code, Codex, Cursor, or any agent that loads skills. It names omp's tools; use your harness's equivalent. `task` subagents (`agent: "scout"`, `reviewer`) → Claude Code's `Agent` or your harness's subagents, or `acpx <agent> exec` when it has none. `todo` → `TodoWrite` or a plan list. `ask` → `AskUserQuestion` or one question in the reply. `skill://deep-mode/<path>` → this skill's folder. `.omp/skills/` → your harness's skills folder (`.claude/skills/` in Claude Code). `references/harnesses/README.md` maps every tool and path to Claude Code and Codex with cited, dated facts.
+**Any harness.** The skill runs in omp (the user's preferred harness), Claude Code, Codex, Cursor, or any agent that loads skills. It names omp's tools; use your harness's equivalent.
+`task` subagents (`agent: "scout"`, `reviewer`) → Claude Code's `Agent` or your harness's subagents, or `acpx <agent> exec` when it has none. `todo` → `TodoWrite` or a plan list. `ask` → `AskUserQuestion` or one question in the reply. `skill://deep-mode/<path>` → this skill's folder. `.omp/skills/` → your harness's skills folder (`.claude/skills/` in Claude Code). `references/harnesses/README.md` maps every tool and path to Claude Code and Codex with cited, dated facts.
 
 The thesis: if you want to go fast, go deep first. Verification is the limiting step. Write less code, prove more of it.
 
@@ -30,7 +31,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 
 | Size | Looks like | How to run it |
 |---|---|---|
-| **S** | One file or an obvious spot, a clear fix or small change, under ~30 lines | Fast path: one-line restate, make the change, run the real thing once to prove it, short report. No subagents, todo list, architect, or decision log for the work itself; its PR still lands through **pr-conversation**, panel included. |
+| **S** | At most 30 changed lines (added plus deleted) in at most 2 files, touching nothing about auth, permissions, secrets or credentials, input parsing at a trust boundary, database migrations, CI workflows, or agent config. Anything else is M or L. | The S lane (`references/playbooks/opening-a-pr.md`, Size S lane). One-line restate, make the change, prove it once on the real artifact, review your own diff. No subagents, todo list, architect, or decision log. It lands through **pr-conversation** with a light panel. |
 | **M** | A few files, one feature or bug with a cause to find | The matched playbook. Delegates only when work splits cleanly. |
 | **L** | Cross-cutting, new module, many files, risky, or long-running | The full playbook with subagents, architect where shapes differ, and a show-me-your-work trail. |
 
@@ -43,7 +44,9 @@ Read-only work (a review, an investigation, a question) has no size: it follows 
 Every task has one project root, and every file you create or change lives inside it: code, scratch and temp files, logs, downloads, reference clones, prototypes, worktrees, evidence, and delegates' output.
 
 - **Find the root first.** In a repo, the root is the worktree you're in (`git rev-parse --show-toplevel`). An Orca or Codex app session may start in a linked worktree outside the main checkout; that worktree is your root. Name the root's absolute path in your restate.
-- **No repo? Make a named one.** Outside a repo, in a folder that isn't a project, or for a new project that isn't the current repo: pick a short kebab-case name from the goal (`sigma-rule-converter`), create `<parent>/<name>/`, and run `git init -b main` in it. `<parent>` is the current folder; the current repo's parent folder when you are inside another project (never nest a repo in a repo); or `~/code/` when the current folder is your home, a drive or filesystem root, a temp dir, or a system folder. Never reuse an existing folder; on a clash add a suffix. Creating that folder is the one write allowed outside a root. From then on, work only inside it and report its path.
+- **No repo? Make a named one.** Outside a repo, in a folder that isn't a project, or for a new project that isn't the current repo, pick a short kebab-case name from the goal (`sigma-rule-converter`), create `<parent>/<name>/`, and run `git init -b main` in it.
+  - `<parent>` is the current folder; the current repo's parent folder when you are inside another project (never nest a repo in a repo); or `~/code/` when the current folder is your home, a drive or filesystem root, a temp dir, or a system folder.
+  - Never reuse an existing folder; on a clash add a suffix. Creating that folder is the one write allowed outside a root. From then on, work only inside it and report its path.
 - **Scratch goes in `<root>/.scratch/`, worktrees in the main checkout's `.worktrees/<branch>/`.** The main checkout is the root unless your session started in a linked worktree; then its `.worktrees/` is the one folder outside your root you may write. Each folder holds a `.gitignore` of `*`, so neither shows in `git status` or a commit, and ignoring them needs no write under `.git/`. Set them up once:
 
   ```bash
@@ -64,7 +67,7 @@ Every task has one project root, and every file you create or change lives insid
 
 ## Non-negotiables
 
-For size **S**, only the one-line restate and proving it on the real artifact apply. The rest of this section applies when a rule would change the fix.
+For size **S**, only the one-line restate, proving it on the real artifact, and the S lane for its PR apply. The rest of this section applies when a rule would change the fix.
 
 - **Restate first.** Your first message on a task states, in your own words, the user's goal, the problem they are solving, and, if the task ships a change, the smallest change you expect to meet it. Don't wait for confirmation. If the evidence rules out the requested change, show it and stop. Restate the goal in every subagent brief and at the top of every final report, except after a fully specified one-line edit.
 - **Name your principles, in plain words.** For size M and L, add one short "Why I chose this" line naming each principle that changed a decision and the choice it changed, phrased so a non-expert follows ("I fixed the comparison where stock is checked, not the caller, because that's where it goes wrong"). Cite only principles whose file you read this session in `references/principles/`. Skip it for size S.
@@ -73,7 +76,10 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 - **Secrets, logins, tokens, or auth in play** (API keys, `.env`, passwords, usernames, MFA, OAuth or MCP auth, CI credentials, a suspected leak) → read `references/credentials/README.md` first, then the file it routes to. Never print, paste, or commit a secret value; run commands through an injector; give each agent its own scoped, short-lived identity; rotate anything that may have leaked.
 - **Name the data shape before any code**, and choose its organizing structure per `references/principles/model-the-domain.md`. Name it with the project's glossary terms; a new domain, data model, database, repo layout, or service boundary also reads `references/architecture/README.md`.
 - **Long, autonomous, or step-away work** → keep a decision trail with **show-me-your-work**.
-- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it, and the repo's own checks locally; your own PR then lands through **pr-conversation**.
+- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`).
+  - Before opening one, self-review your branch in local mode and fix, dismiss, or escalate each finding. Maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof.
+  - Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it, and the repo's own checks locally. Your own PR then lands through **pr-conversation**.
+  - Size S takes the S lane instead (`references/playbooks/opening-a-pr.md`, Size S lane). You review your own diff against pr-review's checklist, with no subagents and no PR-Agent run, and it lands on a light panel.
 - **Deep-mode is the gate layer**: no GitHub Actions and no hosted review service. When the repo opted into the security gate or the change touches auth, permissions, input parsing, or secrets, run **security-audit** (`references/techniques/security-audit.md`) on the head that will merge; its blocking findings are P0 review findings.
 - **More triggers** (which technique a situation calls for) are in Technique triggers, below.
 
@@ -82,7 +88,10 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 - **Just do it.** Work proceeds without asking, including commits, pushes, PRs, issues, board cards, and merges.
 - **Your own PRs land on their own.** Once every review finding is fixed or dismissed, linked issues are answered, the panel passes, and required checks are green, the **pr-conversation** technique merges the user's own PR. No separate ask.
 - **Done means a panel pass.** No change is done and nothing merges until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. Then merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
-- **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself: pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal. Log each one as a show-me-your-work trail row (choice, why, evidence, how to reverse), and list them in the final reply under "Decisions I made" so the user can override any. Where a playbook, technique, or sibling skill says to ask the user before deciding, committing, pushing, opening a PR, or merging in the user's own repo, this rule wins. Someone else's repo keeps its asks.
+  - For size S, the light panel is that pass (panel.md, Light panel). One verifier, from a different model family when one is available, passes with evidence at the exact head.
+- **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself. Pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal.
+  - Log each one as a show-me-your-work trail row (choice, why, evidence, how to reverse), and list them in the final reply under "Decisions I made" so the user can override any.
+  - Where a playbook, technique, or sibling skill says to ask the user before deciding, committing, pushing, opening a PR, or merging in the user's own repo, this rule wins. Someone else's repo keeps its asks.
 - **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has; writes outside the project root (Contain the work). A request that already asks for one of these is its yes.
 - **Standing yes for your own PRs.** `~/.config/deep-mode/bot.json` `"autonomousMerge": true` (the default), or a base-branch `.deep-mode.json` `{"autonomousMerge": true}`, lets **pr-conversation** admin-merge your own PRs past a required review, never past a failing check. A base-branch `"autonomousMerge": false` overrides both.
 - **Your subscription, not an API.** Every model call runs on a subscription the user is logged in with: the session's own model and its subagents (or a headless run from scripts: `omp -p`, `claude -p`, `codex exec`), and the bots, which are any ACP (Agent Client Protocol) agents driven through `acpx`, omp by default, each harness on its own subscription login. Never set up an API key or wait on a hosted review bot. Unset `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `CODEX_API_KEY` in a child's environment: a set key switches `claude -p` or `codex exec` to API billing.
@@ -130,13 +139,14 @@ Step 2 of Route. First match wins.
 | "check on / babysit / get green" a PR | Babysit playbook |
 | "help on / contribute to / what can I work on" a project, or a repo the user can't push to that has a brief | `skill://contribute` |
 | "set up / publish this project for contributors", "make issues for helpers" | `skill://project-brief` |
-| "run the factory / work the issue queue / turn issues into PRs / set up a software factory" | Factory playbook |
-| "drive the board / work the backlog / run this project autonomously / keep going on the roadmap" | Board playbook |
+| "run the factory / work the issue queue / turn issues into PRs / set up a software factory" | Work a queue playbook, factory source |
+| "drive the board / work the backlog / run this project autonomously / keep going on the roadmap" | Work a queue playbook, board source |
+| "autopilot this queue", "full autopilot", "autopilot, don't merge", "stack them, don't ship", "build the stack, I'll land it" | Work a queue playbook, PR source (`stack-only` when told not to merge) |
 | "set up deep-mode here", "configure the tracker / labels", "add a glossary and ADRs", or the first use of spec, tickets, or triage in a repo (Setup then resumes the requested playbook) | Setup playbook |
 | "triage the issues", "what needs my attention", "is #42 ready for an agent", "move #42 to agent-ready" | Triage playbook |
 | "write the spec", "turn this into a spec", "spec it up" | Spec playbook |
 | "break this into tickets", "split the spec into issues", "make tickets for this" | Tickets playbook |
-| "implement the spec", "build spec #N", "build all the tickets on one branch" | Implement spec playbook |
+| "implement the spec", "build spec #N", "build all the tickets on one branch" | Phased build playbook, build mode |
 | "grill with docs", "record the decisions", or "grill me" in a repo with `GLOSSARY.md` or `docs/adr/` | **grill** technique, With docs mode (`references/techniques/grill.md`) |
 | "grill me / grill this plan / stress-test this idea" | **grill** technique (`references/techniques/grill.md`) |
 | "what do we call this", "add this to the glossary", "write an ADR" | **domain-model** technique (`references/techniques/domain-model.md`) |
@@ -154,7 +164,8 @@ Step 2 of Route. First match wins.
 | Writing or editing `AGENTS.md`, `CLAUDE.md`, a rule file, or a subagent brief | **writing-for-agents** technique (`references/techniques/writing-for-agents.md`) |
 | "block dangerous git commands", "add git safety hooks", "stop the agent from force-pushing" | **git-guardrails** technique (`references/techniques/git-guardrails.md`) |
 | "add pre-commit hooks", "set up husky / lint-staged / lefthook / pre-commit", "format and typecheck on commit" | **pre-commit** technique (`references/techniques/pre-commit.md`) |
-| "be my chief of staff", "own this goal long-term", "keep pushing this goal forward across sessions" | Orchestrate playbook |
+| "be my chief of staff", "own this goal long-term", "keep pushing this goal forward across sessions" | Run a goal playbook, program scale |
+| "loop until X", "keep going until green", "going to bed, finish it" | Run a goal playbook, session scale |
 | "scrape / pull / archive" a page, video, channel, or playlist, or "get his diagram" | **scrape** technique (`references/techniques/scrape.md`) |
 | An effort too big for one session with a foggy route: "wayfinder", "chart the way to X", "plan this migration before anyone builds it" | Wayfinder playbook |
 | "security-audit PRs / audit every PR / add a security gate", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`), run by your own agent, no CI |
@@ -163,6 +174,21 @@ Step 2 of Route. First match wins.
 | A new app, an empty repo, "start / build me <app>", "what stack" | **prior-art** first (newest repos to copy or learn from), then `skill://deep-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
 | "write / improve your own prompt, skill, goal, or loop", "make yourself able to X", a workflow done the same way twice | Self-authoring playbook |
 | Anything else | The Playbooks table below |
+
+## Running without the human
+
+Pick the row that matches what the user has or wants.
+
+| The user has or wants | Use |
+|---|---|
+| One goal driven to a checkable end in this session | Run a goal, session scale (`references/playbooks/run-a-goal.md`) |
+| A goal run headless or overnight, no session open | `assets/loop/loop.py`, per the Self-authoring playbook (`references/playbooks/self-authoring.md`) |
+| A multi-day program | Run a goal, program scale |
+| A backlog, or a goal split into many PRs | Work a queue, board source (`references/playbooks/work-a-queue.md`) |
+| A queue of independent PRs | Work a queue, PR source, in `merge` or `stack-only` mode |
+| Labeled issues in a repo with `factory.json` | Work a queue, factory source |
+| PRs and issues handled with no session open | The GitHub App bot (`references/techniques/github-app.md`) |
+| A spec's tickets landed as one PR | Phased build, build mode (`references/playbooks/phased-build.md`) |
 
 ## Technique triggers
 
@@ -191,7 +217,8 @@ Each technique is one file, `references/techniques/<name>.md`. Read only the one
 
 One file per principle in `references/principles/<name>.md`. Read the file before you apply or cite it.
 
-- **Core.** laziness-protocol (bias to deletion, smallest change). foundational-thinking (types, data structures, and shared state before logic). redesign-from-first-principles (integrate a new requirement as if it were there from day one). attack-the-premise (two fixes sharing a premise failed the same gate, so test the premise). subtract-before-you-add. minimize-reader-load (count layers and hidden state; collapse one-caller wrappers). outcome-oriented-execution (converge on the target architecture, no throwaway compatibility). experience-first. exhaust-the-design-space (2-3 prototypes for novel decisions). build-the-lever (build the codemod, script, or checker instead of working by hand; the tool is what a reviewer reruns).
+- **Core.** laziness-protocol (bias to deletion, smallest change). foundational-thinking (types, data structures, and shared state before logic). redesign-from-first-principles (integrate a new requirement as if it were there from day one). attack-the-premise (two fixes sharing a premise failed the same gate, so test the premise). subtract-before-you-add.
+  minimize-reader-load (count layers and hidden state; collapse one-caller wrappers). outcome-oriented-execution (converge on the target architecture, no throwaway compatibility). experience-first. exhaust-the-design-space (2-3 prototypes for novel decisions). build-the-lever (build the codemod, script, or checker instead of working by hand; the tool is what a reviewer reruns).
 - **Architecture.** model-the-domain. boundary-discipline (guards at boundaries, trust internal types, pure core). type-system-discipline (illegal states unrepresentable, brand primitives, parse at boundaries). make-operations-idempotent. migrate-callers-then-delete-legacy-apis. separate-before-serializing-shared-state.
 - **Verification.** prove-it-works. fix-root-causes (a guard is a fix only when the state it handles is legitimate). sequence-verifiable-units. test-behavior-not-implementation. explain-the-number.
 - **Delegation.** guard-the-context-window. never-block-on-the-human (proceed on reversible work, present results, let the human correct).
@@ -217,19 +244,15 @@ If you have `todo`, open a list whose first items are the matched playbook's ste
 | Authoring a skill | `authoring-a-skill` | Writing or editing a SKILL.md. |
 | Self-authoring | `self-authoring` | Write and prove a reusable prompt, skill, goal, or loop; run goals headless with `assets/loop/loop.py`; promote project-local first. |
 | Eval | `eval` | Test how a skill, prompt, or structure change affects agent behavior, blinded, before promoting it. |
-| Multi-phase plan | `multi-phase-plan` | Work that spans phases or stacked PRs. Plan after the design is settled, every unit ending in proof. |
+| Phased build | `phased-build` | Work that spans phases or PRs. Plan mode writes a checklist of verifiable units. Build mode builds a spec's tickets onto one integration branch and lands it as one reviewed PR. |
 | Wayfinder | `wayfinder` | An effort too big for one session with a foggy route: chart a map of decision tickets and resolve them until the way is clear. |
 | Babysit | `babysit` | Drive a PR or stack to merge-ready: conflicts, review threads, CI. |
 | Shipping | `shipping` | Verify a green stack, then land the contiguous verified run bottom-up, each PR on a panel pass. |
-| Autonomous run | `autonomous-run` | One long task driven to a completion predicate without stopping. |
-| Orchestrate | `orchestrate` | A multi-day program or long-running goal: many PRs, many delegates, one coordinator with a wiki. |
-| Board | `board` | Run a project on its own: a kanban board of issues, one PR per task, a panel per PR, merge, repeat. |
-| Autopilot | `autopilot` | A queue of independent PRs built and verified with full autonomy; `merge` or `stack-only` mode. A queue of labeled issues in a repo with `factory.json` is Factory. |
-| Factory | `factory` | Labeled issues to merged PRs through the `factory` CLI: set it up, run it, clear escalations, turn recurring failures into checks. |
+| Run a goal | `run-a-goal` | Drive one goal to a checkable end without the human. Session scale runs to a completion predicate. Program scale is a multi-day program with one coordinator, many PRs, and many delegates. |
+| Work a queue | `work-a-queue` | Turn a queue of work items into merged PRs, each on a panel pass. Sources are a goal split into board tasks, a queue of independent PRs (`merge` or `stack-only`), or labeled issues run through the `factory` CLI. |
 | Setup | `setup` | One-time repo setup: tracker kind and labels (`docs/deep-mode/tracker.md`), `GLOSSARY.md`, `docs/adr/`, `CODING_STANDARDS.md`, a pointer in AGENTS.md. |
 | Spec | `spec` | Turn a settled conversation into `docs/specs/<slug>.md` plus a `spec` issue. No interview. |
 | Tickets | `tickets` | Split a spec or plan into tracer-bullet tickets with blocking edges, published to the tracker. |
-| Implement spec | `implement-spec` | Build every ticket of a spec onto one integration branch, then land it as one reviewed PR. |
 | Triage | `triage` | Move incoming issues and outside PRs through triage states: verify, shape, brief, label, or decline. |
 | Session pickup | `session-pickup` | Resume or take over a prior agent's in-flight work. |
 | Pause safely | `pause-safely` | Suspend in-flight work so it can be resumed later. |
@@ -237,7 +260,7 @@ If you have `todo`, open a list whose first items are the matched playbook's ste
 | Worktree cleanup | `worktree-cleanup` | Reclaim disk by pruning merged or abandoned worktrees, safety-gated. |
 | Opening a PR | `opening-a-pr` | Run at the end of any playbook that ships code. |
 
-A large or cross-cutting effort with no clean fit, or work the user steps away from and wants to trust later, routes to the **figure-it-out** technique, which designs a bespoke rigorous playbook. A standing multi-day program routes to Orchestrate instead.
+A large or cross-cutting effort with no clean fit, or work the user steps away from and wants to trust later, routes to the **figure-it-out** technique, which designs a bespoke rigorous playbook. A standing multi-day program routes to Run a goal at program scale instead.
 
 ## Reference library
 

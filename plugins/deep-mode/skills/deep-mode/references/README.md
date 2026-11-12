@@ -3,7 +3,11 @@
 Read when a task touches one of these areas and you need to know which reference file to open. Each entry names the files and when to read them. Read only the file the task touches, before designing or reviewing in that area. SKILL.md's gates and playbooks still govern.
 
 **Stack and UI design** come from `skill://deep-stack` (stack picks and the decision rules behind them); its "With deep-mode" section sets the split.
-Greenfield web, SaaS, or AI-app framework, backend, auth, payments, or deploy choice → its `references/stack.md`. Any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling), or "build the stack for me" → its `references/any-app-stack.md`, which writes a cited `STACK.md`. Designing a UI with an agent → its `references/design-workflow.md`; rebuilding to the standard of a named reference app → the Reference rebuild playbook. Recording UI proof with no `verify-<app>` skill → its `references/prove.md`. Your gates and playbooks still govern.
+- Greenfield web, SaaS, or AI-app framework, backend, auth, payments, or deploy choice → `skill://deep-stack/references/stack.md`.
+- Any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling), or "build the stack for me" → `skill://deep-stack/references/any-app-stack.md`, which writes a cited `STACK.md`.
+- Designing a UI with an agent → `skill://deep-stack/references/design-workflow.md`; rebuilding to the standard of a named reference app → the Reference rebuild playbook.
+- Recording UI proof with no `verify-<app>` skill → `skill://deep-stack/references/prove.md`.
+- Your gates and playbooks still govern.
 
 **Harnesses, protocols, and AI-native tooling** (using, configuring, or scripting omp, Claude Code, or Codex; MCP, ACP, A2A, WebMCP; skills, plugins, `AGENTS.md`, hooks, sandboxes, headless runs) → read `references/harnesses/README.md`, then only the file the task touches. Those files carry the cited, dated facts (paths, flags, tool names) and the traps for deep-mode in each harness.
 

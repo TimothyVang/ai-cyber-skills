@@ -6,20 +6,30 @@ Core discipline: one change, one measurement, keep or revert. Never stack untest
 
 ## Steps
 1. Ground workload and architecture with the **how** technique (`references/techniques/how.md`): name the workload dimensions that move the result (data size, history, state, concurrency) and pick a case that reproduces the user's complaint.
+   Done when the dimensions are listed and the chosen case is named.
 2. Fix one metric, the better direction, and a checkable stop predicate pairing a target with a minimum attempt count (e.g. "≥50% better than baseline and ≥10 iterations"). Use the user's numbers, else pick them yourself and log why.
+   Done when the metric, direction, and predicate are written in the decision log.
 3. Build the harness (`references/principles/build-the-lever.md`): run contrasting realistic workloads; confirm the target case shows the symptom and easier cases separate. Can't distinguish → revise workload or metric.
+   Done when harness output shows the target case's metric separated from the easier cases beyond noise.
 4. Vet the harness with the **benchmark-checklist** technique (`references/techniques/benchmark-checklist.md`); make it print its error count and a work-done count. Freeze it: one repeatable command, median of N samples to clear noise.
-5. Record the baseline metric and a green run of the regression gate before any change.
-6. Keep the decision log per the **show-me-your-work** technique (`references/techniques/show-me-your-work.md`): its gitignored `decisions.tsv` with header `ts\tphase\tdecision\twhy\tevidence\tresult`, plus metric columns after `result` (`before\tafter\tdelta\ttests`). One row per attempt: `decision` = hypothesis and change, `result` = kept/reverted. Read it before each attempt.
+   Done when the frozen command prints zero errors, a nonzero work-done count, and a median.
+5. Record the baseline metric and a green run of the regression gate before any change. Done when both are logged in `decisions.tsv`.
+6. Keep the decision log per the **show-me-your-work** technique (`references/techniques/show-me-your-work.md`): its gitignored `decisions.tsv` with header `ts\tphase\tdecision\twhy\tevidence\tresult`, plus metric columns after `result` (`before\tafter\tdelta\ttests`).
+   One row per attempt: `decision` = hypothesis and change, `result` = kept/reverted. Read it before each attempt.
+   Done when the file exists with that header and `git check-ignore` reports it ignored.
 7. Ground each hypothesis in a specific mechanism from step 1 ("defer X off boot path because it blocks first paint"), not "try memoizing something". Perf metric → order by the mantras in `references/playbooks/perf-issue.md` step 2 (order only, not its stop rule).
+   Done when each queued hypothesis names its mechanism.
 8. Loop, one hypothesis per iteration:
    - Delegate the change to a default `task` agent with tight scope; review the diff rather than typing it (`references/principles/guard-the-context-window.md`). Independent live hypotheses may fan out in parallel, each with exclusive file ownership (`references/principles/separate-before-serializing-shared-state.md`).
    - Measure before/after with the frozen harness; run the regression gate.
    - Keep only if the metric moves past noise and the gate stays green; else revert fully.
    - Kept → keep a patch per kept change (diff ready); commit each kept change, only changed files (`git add <files>`, never `-A`). Log the row either way.
-   - Unattended run → borrow only the wake mechanism from `references/playbooks/autonomous-run.md`, not its stop rule.
+   - Unattended run → borrow only the wake mechanism from **Run a goal** (`references/playbooks/run-a-goal.md`), not its stop rule.
+   - Done when the stop predicate is met (see Gates), with one `decisions.tsv` row per attempt.
 9. On a plateau (several rejects in a row): pivot category, combine near-misses, re-read the source, or try something more radical.
+   Done when the next logged attempt comes from a different category or approach than the rejected run.
 10. Stack the kept commits in landing order, run **Opening a PR** (`references/playbooks/opening-a-pr.md`), and land them through `references/playbooks/shipping.md` on a panel pass.
+    Done when every kept commit is merged.
 
 ## Gates
 - No reproducing case → fix the repro, don't hillclimb.
