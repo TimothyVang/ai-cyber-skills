@@ -1,6 +1,6 @@
 # Evals
 
-Two evals check whether the deep-mode skill does what it claims.
+Two evals check whether the deepmodebot skill does what it claims.
 They live at the repo root, not in the plugin, so installs never ship them.
 Every run writes its results to `evals/results/`, and those files are committed.
 A later change to the skill reruns the same eval, and the new file sits next to the old one for comparison.
@@ -33,8 +33,8 @@ Read the case's `note` before changing either.
 
 ## Outcome
 
-Measures whether installing deep-mode changes how well an agent does a real coding task.
-It follows the Eval playbook (`plugins/deep-mode/skills/deep-mode/references/playbooks/eval.md`) and its blinding gates.
+Measures whether installing deepmodebot changes how well an agent does a real coding task.
+It follows the Eval playbook (`plugins/deepmodebot/skills/deepmodebot/references/playbooks/eval.md`) and its blinding gates.
 Each task in `outcome/tasks/` is a small project, a request in a user's words, a rubric, and hidden checks the candidates never see.
 `billsplit` is a one-file bug fix. `kitty` is a medium feature with rounding and integration traps.
 The hidden checks passed are the primary score. Two blinded judges from different model families score the rubric as a second view.

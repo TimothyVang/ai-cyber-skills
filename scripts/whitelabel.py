@@ -56,7 +56,7 @@ def words(text: str) -> list:
 
 class Rebrand:
     """Maps the source brand's names to the target's. One regex pass, longest token first, so a replaced
-    name is never replaced again and `/deep-mode:deep` wins over `/deep-mode` and `/deep`."""
+    name is never replaced again and `/deepmodebot:deep` wins over `/deepmodebot` and `/deep`."""
 
     def __init__(self, src: dict, dst: dict):
         self.src, self.dst = src, dst
@@ -91,8 +91,9 @@ class Rebrand:
         add(f"/{s['commandName']}", f"/{d['commandName']}", r"(?<![\w.~/:-])", r"(?![\w-])")
         add(s["stackSkillName"], d["stackSkillName"], edge_b, r"(?![\w])")
         add(s["envPrefix"], d["envPrefix"], edge_b, r"(?![A-Za-z0-9])")
-        add(s["slug"].replace("-", "_"), d["slug"].replace("-", "_"))
-        add(s["slug"].replace("-", ""), d["slug"].replace("-", ""))
+        if "-" in s["slug"]:  # a one-word slug has no `_` or joined form, and would shadow the plain slug rule
+            add(s["slug"].replace("-", "_"), d["slug"].replace("-", "_"))
+            add(s["slug"].replace("-", ""), d["slug"].replace("-", ""))
         parts = s["slug"].split("-")
         for sep in ("-", " ", "_"):
             for form in (sep.join(parts), sep.join(p.capitalize() for p in parts), sep.join(parts).capitalize(),
@@ -101,8 +102,13 @@ class Rebrand:
                     add(form, d["displayName"].upper() if form.isupper() else d["displayName"])
         for display in {s["name"], s["displayName"]} - {s["slug"]}:
             add(display, d["displayName"] if display == s["displayName"] else d["name"])
-        # In prose, the slug standing alone as a word is the product's name: "deep-mode is ...", "**deep-mode**".
+        # In prose, the slug standing alone as a word is the product's name: "deepmodebot is ...", "**deepmodebot**".
         add(s["slug"], d["name"], r"(?<![^\s(*>|])", r"(?=[\s'’,;)*<?!|]|[.:](?:\s|$)|$)", prose=True)
+        if "-" not in s["slug"] and "-" in d["slug"]:
+            # Joined to a word by one `_` (`export_<slug>.py`, `test_<slug>_command`) the slug is part of an
+            # identifier, where `-` is not allowed. `___` (omp's cache separator) keeps the plain slug.
+            add(s["slug"], d["slug"].replace("-", "_"), r"(?<=[A-Za-z0-9]_)", edge_a)
+            add(s["slug"], d["slug"].replace("-", "_"), edge_b, r"(?=_[A-Za-z0-9])")
         add(s["slug"], d["slug"])
         rules.sort(key=lambda r: (-len(r[0]), not (r[2] or r[3]), not r[4]))
         self.rules = rules

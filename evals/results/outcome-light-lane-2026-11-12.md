@@ -1,12 +1,12 @@
 # Outcome eval, light lane, 2026-11-12
 
-The `billsplit` outcome eval (`evals/outcome/README.md`) found that deep-mode's size S lane cost 5 to 12 times a plain run on a one-file fix.
+The `billsplit` outcome eval (`evals/outcome/README.md`) found that deepmodebot's size S lane cost 5 to 12 times a plain run on a one-file fix.
 This run measures where that cost goes, trims the S lane, and measures again.
 
 ## Setup
 
-- Same task, prompt, project, and `run.py` as `outcome-2026-11-12.md`. Only the with-deep-mode variant ran.
-- `run.py setup --ref <commit> --per-variant 2` built four folders. The two plain candidates were deleted from `key.json` and from disk before `run.py run`, so only the two deep-mode candidates ran.
+- Same task, prompt, project, and `run.py` as `outcome-2026-11-12.md`. Only the with-deepmodebot variant ran.
+- `run.py setup --ref <commit> --per-variant 2` built four folders. The two plain candidates were deleted from `key.json` and from disk before `run.py run`, so only the two deepmodebot candidates ran.
 - Before: skill and `/deep` command at `8fc7436` (origin/main, 0.7.0).
 - After: skill and `/deep` command at `44eb824` (this branch, the trim below).
 - Every candidate ran on omp's default model `anthropic/claude-opus-5-5`, capped at `--max-cost 3`. The before runs' verifiers ran on `openai-codex/gpt-6.1-terra`.
@@ -100,4 +100,4 @@ The skill text was reworded after review, below. The runs above used the wording
 
 - Two runs per round on one task. The drop is large and the same in both runs, but the sample is small.
 - The task's repo has no remote, so this eval exercises only the local S fix. The pushed S lane and the light panel's input rule are unmeasured.
-- The deep-mode bot's own light panel brief lives in `bot.py`, which this change does not touch.
+- The deepmodebot bot's own light panel brief lives in `bot.py`, which this change does not touch.

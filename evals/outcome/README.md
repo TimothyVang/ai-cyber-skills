@@ -1,14 +1,14 @@
 # Outcome eval
 
-Does installing deep-mode make an agent do a real coding task better?
-This eval follows the Eval playbook (`plugins/deep-mode/skills/deep-mode/references/playbooks/eval.md`) step by step.
+Does installing deepmodebot make an agent do a real coding task better?
+This eval follows the Eval playbook (`plugins/deepmodebot/skills/deepmodebot/references/playbooks/eval.md`) step by step.
 
 ## Design
 
-- **Variant under test.** deep-mode installed versus not installed.
-- **With deep-mode.** Every skill under `plugins/deep-mode/skills/` at a chosen commit is copied into the candidate's `.omp/skills/`.
+- **Variant under test.** deepmodebot installed versus not installed.
+- **With deepmodebot.** Every skill under `plugins/deepmodebot/skills/` at a chosen commit is copied into the candidate's `.omp/skills/`.
   `SKILL.md` and `/deep` point at the sibling skills (`create-verification-skill`, `software-architecture` and others), so all of them ship.
-  The prompt starts with what `/deep` expands to (`plugins/deep-mode/commands/deep.md` at that commit), with the task's request as its argument.
+  The prompt starts with what `/deep` expands to (`plugins/deepmodebot/commands/deep.md` at that commit), with the task's request as its argument.
 - **Without.** The same project and the same request, nothing else.
 - **Tasks.** Each task is a folder under `tasks/`. See Tasks below.
 - **Candidates.** `--per-variant` per variant, assigned to folders `.scratch/<task>-1` and up in a seeded random order.
@@ -16,8 +16,8 @@ This eval follows the Eval playbook (`plugins/deep-mode/skills/deep-mode/referen
   `.omp/` sits in `.git/info/exclude` in every folder, so `git status` looks the same in both variants.
 - **Isolation.** Each candidate is one `omp -p --max-cost <cap>` process with its folder as the working directory.
   Both variants run with `--no-rules --no-context-files --no-extensions`, so the user's global `AGENTS.md`, rules, and contain hook stay out.
-  The deep-mode candidates run with `--skills` naming every copied skill, which loads the project copies.
-  The others run with `--no-skills`, because deep-mode is also installed globally on the machine that ran this.
+  The deepmodebot candidates run with `--skills` naming every copied skill, which loads the project copies.
+  The others run with `--no-skills`, because deepmodebot is also installed globally on the machine that ran this.
   The API keys are removed from the child's environment, so every run bills the subscription.
   omp checks the cost cap between turns, so one turn can overshoot it.
 - **Primary score.** The task's hidden checks, run at collect time against a copy of each candidate's final tree.
@@ -68,13 +68,13 @@ The Eval playbook's blinding gates hold here.
 - Candidate folders are named like a user's project (`kitty-1`).
   No file name or prompt a candidate sees holds a gate word.
   The projects' suites live in `spec/*.spec.js` for that reason. The `npm test` script and the `node:test` import are standard Node and stay.
-  Folder paths are another matter. On the machine that ran this, every candidate's absolute path runs through `deep-mode/.worktrees/eval-medium/`.
+  Folder paths are another matter. On the machine that ran this, every candidate's absolute path runs through `deepmodebot/.worktrees/eval-medium/`.
   Both variants share that path, so it tells a candidate nothing about which variant it is.
 - Run data (prompts, event logs, sessions, the variant key, hidden check results) sits in `.scratch/<task>-runs/`, outside every candidate folder.
 - Candidates are never told about each other.
 - The judge pack leaves `.git/`, `.omp/`, `.scratch/` and `.worktrees/` out of each copy and replaces folder paths with `<project>`.
   It drops every action line that reads a skill file.
-  In replies and actions it removes "light panel", which names deep-mode's verifier, and replaces "deep-mode" and "playbook" with neutral words.
+  In replies and actions it removes "light panel", which names deepmodebot's verifier, and replaces "deepmodebot" and "playbook" with neutral words.
 - Judges never see the hidden checks or their results.
 - Helper agents a candidate starts write their own session files. `collect` reads those too, for cost, actions, and the outside-path scan.
 - Candidates and judges can still read outside their folders.
@@ -88,7 +88,7 @@ The Eval playbook's blinding gates hold here.
   A path that lands outside the process's own folder, by an absolute path, a home or temp variable, or `..` that climbs out, is listed.
   Any hit marks the run `contaminated` in `measurements.json` or `judges.json` and in the printed table.
   Read the hits. A regex that looks like a path can be a false alarm. `evals/outcome/test_run.py` holds the cases the scan must get right.
-- The other residual risk is behavior. A deep-mode candidate's actions still show its worktree and verifier steps, which a judge may recognize.
+- The other residual risk is behavior. A deepmodebot candidate's actions still show its worktree and verifier steps, which a judge may recognize.
 
 ## Rerun
 

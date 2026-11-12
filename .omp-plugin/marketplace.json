@@ -1,18 +1,18 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
-  "name": "deep-mode",
+  "name": "deepmodebot",
   "owner": {
     "name": "Timothy Vang"
   },
   "metadata": {
-    "description": "deep-mode: rigorous agent engineering for omp, Claude Code, and Codex",
+    "description": "deepmodebot: rigorous agent engineering for omp, Claude Code, and Codex",
     "version": "0.8.1"
   },
   "plugins": [
     {
-      "name": "deep-mode",
-      "source": "./plugins/deep-mode",
-      "description": "Rigorous agent engineering mode for omp, Claude Code, and Codex: /deep routes any task to a playbook, applies named principles, keeps every write inside the project, proves behavior on the real app, and runs the deep-mode PR review loop.",
+      "name": "deepmodebot",
+      "source": "./plugins/deepmodebot",
+      "description": "Rigorous agent engineering mode for omp, Claude Code, and Codex: /deep routes any task to a playbook, applies named principles, keeps every write inside the project, proves behavior on the real app, and runs the deepmodebot PR review loop.",
       "version": "0.8.1",
       "license": "MIT",
       "category": "development",

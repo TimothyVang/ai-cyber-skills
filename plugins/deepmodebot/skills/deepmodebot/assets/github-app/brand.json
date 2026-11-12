@@ -1,0 +1,11 @@
+{
+  "name": "deepmodebot",
+  "description": "deepmodebot bots: review, fix, verify and merge in the PR and issue threads.",
+  "homepage": "https://github.com/TimothyVang/deepmodebot",
+  "mention": "@deepmodebot",
+  "branchPrefix": "deepmodebot",
+  "repoConfigFile": ".deepmodebot.json",
+  "configDirName": "deepmodebot",
+  "autostartId": "deepmodebot-bot",
+  "repo": "TimothyVang/deepmodebot"
+}
