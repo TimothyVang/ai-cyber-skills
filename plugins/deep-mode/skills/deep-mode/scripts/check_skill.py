@@ -13,6 +13,7 @@ from pathlib import Path
 
 REF = re.compile(r"(?<![\w/])((?:references|scripts)/[\w./-]+\.(?:md|py|sh|json|txt))")
 LINK = re.compile(r"skill://([\w-]+(?:/[\w-]+)?)(?![\w<-])")
+EXPORTED = ("references/frontend/",)  # exported from another repo; a scripts/ path there names that repo's file
 
 
 def installed_skills(skill_dir: Path) -> dict[str, Path]:
@@ -52,6 +53,8 @@ def check(skill_dir: Path, skills: dict[str, Path]) -> list[str]:
                     continue
                 # scripts/<name> may be where a skill copies a shipped asset into the user's repo.
                 if ref.startswith("scripts/") and any(skill_dir.parent.rglob(Path(ref).name)):
+                    continue
+                if ref.startswith("scripts/") and doc.relative_to(skill_dir).as_posix().startswith(EXPORTED):
                     continue
                 problems.append(f"{doc.relative_to(skill_dir)}:{n}: {ref} does not exist")
     return problems

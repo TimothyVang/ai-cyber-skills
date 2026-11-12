@@ -570,6 +570,47 @@ def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
     return path
 
 
+# What an agent CLI loads from the folder it starts in: instructions, settings, hooks, skills, MCP servers, env files.
+# Compared in lower case, since Windows and macOS resolve `.OMP` to `.omp`.
+AGENT_CONFIG_NAMES = frozenset({
+    ".omp", ".pi", ".claude", ".codex", ".agents", ".agent", ".cursor", ".gemini", ".opencode", ".windsurf", ".devin",
+    ".kiro", ".vscode", ".clinerules", ".cursorrules", ".windsurfrules", "agents.md", "agents.override.md",
+    "claude.md", "claude.local.md", "gemini.md", ".mcp.json", "mcp.json", "opencode.json", "opencode.jsonc",
+    ".deep-mode.json"})
+AGENT_CONFIG_GITHUB = ("copilot-instructions.md", "skills", "instructions", "plugin")
+
+
+def is_agent_config(path: str) -> bool:
+    """True for a file or folder, at any depth, that an agent CLI would load. `path` uses forward slashes."""
+    parts = path.lower().split("/")
+    if any(part in AGENT_CONFIG_NAMES for part in parts) or parts[-1].startswith(".env"):
+        return True
+    return any(part == ".github" and nxt in AGENT_CONFIG_GITHUB for part, nxt in zip(parts, parts[1:]))
+
+
+def strip_agent_config(tree: Path) -> None:
+    """Someone else's PR must not configure the agent that reviews it: a hook, MCP server, or env file in the
+    checkout would run on this machine. Delete every agent-config file and folder from `tree`, tracked or not.
+    Nothing is restored from the base branch, since base config can point at files the PR controls (a hook script,
+    a symlink target). The PR's versions still reach the reviewer as diff text."""
+    for folder, dirs, files in os.walk(tree):
+        rel = Path(folder).relative_to(tree).as_posix()
+        for name in [*dirs, *files]:
+            if name == ".git" or not is_agent_config(name if rel == "." else f"{rel}/{name}"):
+                continue
+            target = Path(folder) / name
+            if target.is_dir() and not target.is_symlink():  # includes a submodule's folder
+                shutil.rmtree(target, ignore_errors=True)
+            else:
+                target.unlink(missing_ok=True)
+            if target.exists() or target.is_symlink():
+                raise RuntimeError(f"could not remove agent config {target} from the review checkout")
+            if name in dirs:
+                dirs.remove(name)
+        if ".git" in dirs:
+            dirs.remove(".git")
+
+
 def branch_rules(repo: str, base: str, is_admin: bool):
     """From branch protection plus rulesets: the required status-check names, the ones tied to a GitHub App
     ({name: [app ids]}), the other rules an admin merge would bypass besides the required review (BENIGN_RULES
@@ -1007,6 +1048,8 @@ class PRConversation:
     def review(self, round_no: int) -> list:
         self.refresh()
         worktree_at(self.clone, self.review_tree, self.head)
+        if not self.own:
+            strip_agent_config(self.review_tree)
         stat = git(self.clone, "diff", "--stat", f"origin/{self.base}...{self.head}")
         diff = git(self.clone, "diff", f"origin/{self.base}...{self.head}")
         if len(diff) > MAX_DIFF:
@@ -1810,7 +1853,7 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     once = sub.add_parser("once", help="run one polling cycle")
     once.add_argument("--repo", help="owner/repo (default: every repo the app is installed on)")
-    once.add_argument("--item", help="pr:N or issue:N; run it even without a new trigger")
+    once.add_argument("--item", help="pr:N or issue:N in --repo; run it even without a new trigger")
     once.add_argument("--backlog", action="store_true", help="also handle events from before the first run")
     once.add_argument("--dry-run", action="store_true", help="post, push and merge nothing; save no state")
     once.set_defaults(func=cmd_once)
@@ -1824,6 +1867,9 @@ def main() -> None:
     args = parser.parse_args()
     if getattr(args, "item", None) and not re.fullmatch(r"(pr|issue):\d+", args.item):
         parser.error("--item must be pr:N or issue:N")
+    if getattr(args, "item", None) and not args.repo:
+        # A bare number names a different PR or issue in each repo; forcing it everywhere could land the wrong one.
+        parser.error("--item needs --repo owner/name")
     args.func(args)
 
 

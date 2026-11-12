@@ -1,12 +1,12 @@
 {
-  "description": "deep-mode containment guard: once a /deep-mode: command runs in a session, Write, Edit and NotebookEdit outside the project root are denied",
+  "description": "deep-mode containment guard: once a /deep-mode: command runs in a session, Write, Edit and NotebookEdit outside the project root are denied for the rest of that session, resumes included",
   "hooks": {
     "UserPromptSubmit": [
       {
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude_guard.py\"; [ -f \"$f\" ] || exit 0; if command -v python >/dev/null 2>&1; then exec python \"$f\" activate \"${CLAUDE_PLUGIN_DATA}\"; fi; exec python3 \"$f\" activate \"${CLAUDE_PLUGIN_DATA}\""
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude_guard.py\"; [ -f \"$f\" ] || exit 0; for py in python3 python; do if \"$py\" -c \"import sys; sys.exit(sys.version_info < (3, 8))\" >/dev/null 2>&1; then exec \"$py\" \"$f\" activate \"${CLAUDE_PLUGIN_DATA}\"; fi; done; echo \"deep-mode write guard: no Python 3.8+ on PATH, so writes are not fenced\" >&2; exit 1"
           }
         ]
       }
@@ -17,17 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude_guard.py\"; [ -f \"$f\" ] || exit 0; if command -v python >/dev/null 2>&1; then exec python \"$f\" if-active \"${CLAUDE_PLUGIN_DATA}\"; fi; exec python3 \"$f\" if-active \"${CLAUDE_PLUGIN_DATA}\""
-          }
-        ]
-      }
-    ],
-    "SessionEnd": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude_guard.py\"; [ -f \"$f\" ] || exit 0; if command -v python >/dev/null 2>&1; then exec python \"$f\" end \"${CLAUDE_PLUGIN_DATA}\"; fi; exec python3 \"$f\" end \"${CLAUDE_PLUGIN_DATA}\""
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude_guard.py\"; [ -f \"$f\" ] || exit 0; for py in python3 python; do if \"$py\" -c \"import sys; sys.exit(sys.version_info < (3, 8))\" >/dev/null 2>&1; then exec \"$py\" \"$f\" if-active \"${CLAUDE_PLUGIN_DATA}\"; fi; done; echo \"deep-mode write guard: no Python 3.8+ on PATH, so writes are not fenced\" >&2; exit 1"
           }
         ]
       }
