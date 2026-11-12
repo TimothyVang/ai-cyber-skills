@@ -255,6 +255,21 @@ class Battle(unittest.TestCase):
         meta = {"url": "u", "repo": "o/r", "number": 9, "kind": "pr", "title": "x", "state": "open"}
         self.assertEqual([t["after"]["open"] for t in arena.battle(meta, found)["turns"]], [2, 1, 0])
 
+    def test_prose_answer_sharing_no_words_closes_nothing(self):
+        sig = "**deep-mode {}** · head `{}`\n\n"
+        found = [
+            turn(sig.format("reviewer", "aaaaaaa") + fenced({"findings": [
+                {"id": "F1", "severity": "P1", "file": "a.py", "line": 1, "claim": "Windows encoding crash"}]}), 1),
+            turn(sig.format("author", "bbbbbbb") + "Answers:\n\n1. **Telemetry: fixed.** Removed.", 2),
+        ]
+        meta = {"url": "u", "repo": "o/r", "number": 9, "kind": "pr", "title": "x", "state": "open"}
+        self.assertEqual([t["after"]["open"] for t in arena.battle(meta, found)["turns"]], [1, 1])
+
+    def test_digest_of_drawn_turns_without_bodies(self):
+        meta = {"url": "u", "repo": "o/r", "number": 9, "kind": "pr", "title": "x", "state": "open"}
+        drawn = arena.battle(meta, [turn("**deep-mode author** · head `abc1234`\n\nPlan: fix it.")])["turns"]
+        self.assertIn("    Plan: fix it.", st.digest(drawn))
+
     def test_open_issue_outro(self):
         meta = {"url": "u", "repo": "o/r", "number": 4, "kind": "issue", "title": "Bug", "state": "open"}
         b = arena.battle(meta, [turn("**deep-mode author** · head `abc1234`\n\nPlan: fix it.")])

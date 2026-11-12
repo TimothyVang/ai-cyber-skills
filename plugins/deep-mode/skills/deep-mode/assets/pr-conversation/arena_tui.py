@@ -38,7 +38,6 @@ def fold(text: str) -> str:
 
 
 MIN_W, MIN_H = 60, 20
-MAXPAGES = 3          # dialog boxes one gist line may take; the transcript (--out) has the rest
 TYPE_CPS = 60         # typewriter speed, characters per second
 LIVE_SECONDS = 15
 PAL = [(0xE0, 0xEF, 0xC4), (0xA3, 0xC4, 0x7A), (0x4F, 0x7D, 0x4A), (0x1D, 0x33, 0x24)]  # lightest .. darkest
@@ -133,11 +132,8 @@ def wrap(text: str, n: int) -> list[str]:
 
 
 def pages(text: str, n: int) -> list[tuple[str, str]]:
-    """Dialog boxes of two lines each; past MAXPAGES the last line ends in '...'."""
+    """Dialog boxes of two lines each, the whole text: the terminal has no transcript beside it."""
     lines = wrap(text, n)
-    if len(lines) > MAXPAGES * 2:
-        lines = lines[:MAXPAGES * 2]
-        lines[-1] = lines[-1][:n - 3] + "..."
     return [(lines[i], lines[i + 1] if i + 1 < len(lines) else "") for i in range(0, len(lines), 2)]
 
 

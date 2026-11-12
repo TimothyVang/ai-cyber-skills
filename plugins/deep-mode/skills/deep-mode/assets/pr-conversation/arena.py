@@ -307,9 +307,10 @@ def battle(meta: dict, found: list[dict]) -> dict:
                     ident = m.group(2).strip()
                     if FINDING_ID.match(ident):  # one answer closes one finding, the oldest with that id
                         key = next((k for k in open_findings if k[1] == ident), None)
-                    else:  # a prose answer names the finding in words: the one sharing the most, else the oldest
+                    else:  # a prose answer names the finding in words: the one sharing the most, else none
                         said = words(ident or m.group(4))
-                        key = max(open_findings, key=lambda k: len(said & words(open_findings[k])))
+                        best = max(open_findings, key=lambda k: len(said & words(open_findings[k])))
+                        key = best if said & words(open_findings[best]) else None
                     if key:
                         del open_findings[key]
         elif v["kind"] == "verifier" and v.get("number") in (1, 2, 3) and (vote := vote_of(v)):

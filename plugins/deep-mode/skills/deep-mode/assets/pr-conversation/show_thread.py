@@ -251,8 +251,11 @@ def digest(found: list[dict], full: bool = False) -> list[str]:
     out = []
     for v in found:
         out.append(f"\n{v['time'][11:16]}  {v['voice']}" + (f"  @ {v['head']}" if v["head"] else "") + f"  (#{v['id']})")
+        if not full:
+            out.extend(f"    {line}" for line in v["gist"])
+            continue
         lines = v["body"].strip().splitlines()  # a signed body's first line is the signature printed above
-        out.extend(f"    {line}" for line in ((lines if v["kind"] == "pr-agent" else lines[1:]) if full else v["gist"]))
+        out.extend(f"    {line}" for line in (lines if v["kind"] == "pr-agent" else lines[1:]))
     return out
 
 
