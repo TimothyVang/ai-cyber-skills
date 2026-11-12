@@ -37,7 +37,7 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | Self-authoring | deep-mode writes, validates, and proves its own prompts, skills, goals, and loops: project-local first, a deep-mode PR next, user-level only with your yes. `assets/loop/loop.py` runs a goal file headless in omp, Claude Code, or Codex until its check command passes, with an iteration cap, cost cap, stall stop, and a stop if the agent edits its own goal or the files its check runs, or the harness fails. Interactive sessions use each harness's native `/goal`. |
 | Efficient delegation | When a subagent pays for itself, which model tier and reasoning effort fits each task (search, mechanical edits, features, hard design, review, long runs, summaries) in omp, Claude Code, and Codex, how subscription limits are metered, and how to cut token use. In `plugins/deep-mode/skills/agent-harnesses/references/delegation-efficiency.md`, checked 2026-11-11. |
 
-The agent works on its own: it makes product and design calls, commits, pushes, opens PRs, keeps a board, and merges. A task is done, and a PR merges, only when a panel of three skeptical verifier agents runs it and at least two agree, with evidence the agent has checked. A small change (at most 30 lines in 2 files, nothing security- or config-sensitive) gets one verifier, who must pass it. It still asks you before deploys, deleting things it didn't create, rewriting shared history, messaging people outside the repo, spending money, using secrets only you have, or writing anywhere outside the project.
+The agent works on its own: it makes product and design calls, commits, pushes, opens PRs, keeps a board, and merges. A task is done, and a PR merges, only when a panel of three skeptical verifier agents runs it and at least two agree, with evidence the agent has checked. A small change (at most 30 lines in 2 files, nothing security- or config-sensitive) gets one verifier, who must pass it. A small local fix that is never committed to the default branch, pushed, or merged needs no panel. It still asks you before deploys, deleting things it didn't create, rewriting shared history, messaging people outside the repo, spending money, using secrets only you have, or writing anywhere outside the project.
 
 ## The software factory
 
@@ -93,6 +93,13 @@ Plugin commands are prefixed with the plugin name. For a bare `/deep`, copy `plu
 
 Optional: append `agents-snippet.md` to `~/.omp/agent/AGENTS.md`. It routes large or risky work to deep-mode and sets the verification rule for every session.
 
+Updates are automatic while the GitHub App bot runs from the plugin (below). To update by hand, run both commands. `omp plugin upgrade` alone reinstalls omp's local copy of the repo and fetches nothing:
+
+```bash
+omp plugin marketplace update deep-mode
+omp plugin upgrade deep-mode
+```
+
 ### Claude Code
 
 ```text
@@ -103,6 +110,8 @@ Optional: append `agents-snippet.md` to `~/.omp/agent/AGENTS.md`. It routes larg
 Once any `/deep-mode:` command runs in a session, the plugin's hook denies `Write`, `Edit`, and `NotebookEdit` outside the project for the rest of that session. Your other sessions are untouched. It needs Python 3.8 or newer (`python3` or `python`) on `PATH`: without it the guard cannot check paths, so it denies those three tools in a deep-mode session until Python is installed.
 
 The skills name omp tools (`task`, `todo`, `ask`). `plugins/deep-mode/skills/agent-harnesses/SKILL.md` maps them: `Agent`, `TaskCreate` or `TodoWrite`, and `AskUserQuestion`.
+
+To update, run `claude plugin marketplace update deep-mode` and `claude plugin update deep-mode@deep-mode`, then restart Claude Code.
 
 ### Codex
 
@@ -169,7 +178,9 @@ cd deep-mode/plugins/deep-mode/skills/deep-mode
 py -3 assets/github-app/install.py      # python3 on macOS and Linux
 ```
 
-`install.py` checks git, `gh`, openssl and npm, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private app in the browser, waits while you install it on the repos you pick, writes `~/.config/deep-mode/bot.json`, and registers autostart (Task Scheduler, launchd, systemd or cron). It asks before each change. `--yes` accepts every default; `--check` changes nothing.
+With the omp plugin installed, run `install.py` from the plugin instead, so the bot keeps itself up to date: `py -3 ~/.omp/plugins/node_modules/deep-mode/skills/deep-mode/assets/github-app/install.py`.
+
+`install.py` checks git, `gh`, openssl and npm, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private app in the browser, waits while you install it on the repos you pick, and writes `~/.config/deep-mode/bot.json`. Autostart at logon (Task Scheduler, launchd, systemd or cron) is optional; it registers one on a yes. It asks before each change. `--yes` accepts every default; `--check` changes nothing.
 
 ![A real run of install.py --check](docs/images/install.gif)
 
@@ -185,6 +196,7 @@ py -3 assets/github-app/bot.py watch                                # poll in th
 - **Others' PRs:** review comments only. They never merge.
 - **Issues:** the bots plan and critique in the thread. On an issue you opened, or after you comment `@deep-mode implement`, they build it and open a PR that closes it.
 - **Agents and models:** each role in `bot.json` is `{"agent": "omp", "model": "<optional>"}`. Put the author on a Claude model and the reviewer on a GPT model in omp, and one harness gives you cross-family review.
+- **Updates:** a bot run from the omp plugin checks between cycles, at most hourly and right after it merges into this repo. When `main` moved it upgrades the plugin, and it restarts itself when its own code changed. `bot.py update` checks now. `"autoUpdate": false` in `bot.json` turns it off. A bot run from a git clone never updates; pull it yourself.
 - **Opt out:** a base-branch `.deep-mode.json` with `"bot": false` skips the repo, and `"autonomousMerge": false` stops it at merge-ready.
 
 ![The PR conversation: kickoff, conflict merge, review and answer rounds over ACP mirrored to the thread, a three-verifier panel, and the merge gate](docs/images/pr-conversation.svg)
