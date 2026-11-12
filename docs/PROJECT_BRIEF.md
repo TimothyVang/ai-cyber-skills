@@ -77,7 +77,7 @@ py -3 plugins/deepmodebot/skills/deepmodebot/assets/github-app/bot.py --help
 
 Use `python3` instead of `py -3` on macOS and Linux. `check.py` runs the repository's checks and test directories. The individual claim test is useful while changing the contributor tools. The roadmap command checks the committed snapshot against live issues and may legitimately report drift.
 
-There is no per-repo verification skill here. For a behavior change, use a disposable project inside `.scratch/`, run the changed skill on it, and capture the outcome. Follow the harness commands in [CONTRIBUTING.md](../CONTRIBUTING.md), then include the actual before/after behavior in the PR. Do not substitute a structural Markdown check for a live skill run.
+Use [.omp/skills/verify-deepmodebot/SKILL.md](../.omp/skills/verify-deepmodebot/SKILL.md) for the evaluation CLIs. Run its doctor, read the matching feature map, and capture the real agent path in a disposable project under `.scratch/`. Follow [CONTRIBUTING.md](../CONTRIBUTING.md) and include actual outcomes in the PR. Structural checks and collector tests do not replace live execution.
 
 For bot changes, preview a read-only cycle with `bot.py once --repo <owner/repo> --dry-run`. Do not use a live cycle to test an untrusted contributor's code.
 

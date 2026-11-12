@@ -13,7 +13,7 @@ Source: https://github.com/TimothyVang/deepmodebot/blob/main/README.md
 
 **deepmodebot** is an open-source MIT plugin for coding agents. It has two halves:
 
-- **PR and issue bots** on your own private GitHub App. Any ACP agent (omp by default, or Claude Code, Codex, Gemini CLI and others) runs on your machine with your own subscription login, not an API key. The bots review your PRs in the thread, fix their own findings, vote on a 3-agent verifier panel, and merge your own PRs behind a gate enforced in code. They plan and build the issues you open.
+- **PR and issue bots** on your own private GitHub App. Owner-controlled work uses ACP agents through acpx on your machine and subscription login. The bots review your PRs in the thread, fix findings, run a verifier panel, and merge your own PRs behind a gate enforced in code. They also plan and build your issues. Outside-contributor reviews use a separate, tool-free omp process.
 - **A software-factory skill set**: one `/deep` command that routes any task to a playbook, plus the flow from idea to merged code (setup, grill, spec, tickets, implement, review, land) and the techniques around it (TDD, triage, domain model, research, architecture review, prototype, board, factory, retro and more).
 
 The skill runs in omp, Claude Code, Codex, Cursor and other harnesses that load `SKILL.md` skills. Built for the Ai Cyber community; anyone can use and improve it.
@@ -30,10 +30,10 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 
 | Piece | What it does |
 |---|---|
-| `/deep <anything>` | The one command. It reads your request and the repo, routes it (fix, feature, review a PR, write a spec, cut tickets, drive a board, run a factory, chart a big effort, grill a plan, contribute to a project, start a new app and pick its stack), sizes it (fast path for small jobs, full playbook for big ones), proves the result on the real app, lands it on a 3-agent panel pass, and reports what it decided. |
+| `/deep <anything>` | One command routes and sizes the task, proves the result on the real app, and reports its decisions. Ordinary local work stays in your starting tree for review. Publishing follows the review and verifier-panel gates. |
 | `deepmodebot` skill | 29 playbooks, 24 principles and 43 techniques, indexed in its `SKILL.md`. Every task is proven on the real artifact and merges only on a verifier panel pass. |
 | PR and issue bots | Install your own private GitHub App on your repos and a poller on your machine runs the bots: it reviews and lands your own PRs, resolves their merge conflicts, and plans and builds the issues you open. See [GitHub App bots](#github-app-bots). |
-| PR review | `/deepmodebot:review-pr <PR number>` reviews a PR with your own agent and parallel reviewer subagents through correctness, security, spec and standards lenses, keeps only findings a code read or run proves, posts one comment-only review, and re-reviews new commits until clean. No outside review service; code stays where the agent runs. |
+| PR review | `/deepmodebot:review-pr <PR number>` reviews correctness, security, spec and standards, keeps findings backed by code or execution, and posts a comment-only review. No hosted review service is required. Prompts and source context still reach your configured model provider. |
 | Land a PR | `/deepmodebot:land-pr <PR number>` finishes and merges your own PR with no human: a reviewer bot posts findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. It never merges over a failing check. You see each turn in the session as it lands, drawn as an 8-bit frame right in the chat (each bot a sprite, each turn a dialog box), or watch the whole conversation play live as an 8-bit battle screen in your terminal; `/deepmodebot:pr-thread <PR or issue URL>` shows any bot conversation later. |
 | `deep-stack` skill | Stack picks and a ship loop: a default software stack and the decision rules behind it for any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), an agent-driven UI design workflow, and a per-task loop of worktree, build, recorded evidence and reviewed PR. |
 | Verification skills | `create-verification-skill` builds a per-repo `verify-<app>` skill (a control CLI plus a feature map) so agents can drive your app and capture proof. `maintain-verification-skill` keeps it accurate as the app changes. |
@@ -47,7 +47,21 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | Language ports | A behavior inventory, protected consumer tests and a representative pilot precede bulk translation. Preserve architecture unless the target runtime boundary requires a change; a port need not delete valid branches or reduce reader load. Parity and completeness are checked separately, including release builds, callbacks and lifecycle semantics. Copilot and Bun's Rust migration accounts inform the workflow without prescribing Rust or one cutover strategy. Parallel work has explicit integration and build owners. |
 | Efficient delegation | When a subagent pays for itself, which model tier and reasoning effort fits each task (search, mechanical edits, features, hard design, review, long runs, summaries) in omp, Claude Code, and Codex, how subscription limits are metered, and how to cut token use. In `plugins/deepmodebot/skills/agent-harnesses/references/delegation-efficiency.md`, checked 2026-11-11. |
 
-The agent works on its own: it makes product and design calls, commits, pushes, opens PRs, keeps a board, and merges. A task is done, and a PR merges, only when a panel of three skeptical verifier agents runs it and at least two agree, with evidence the agent has checked. A small change (at most 30 lines in 2 files, nothing security- or config-sensitive) gets one verifier, who must pass it. A small local fix that is never committed to the default branch, pushed, or merged needs no panel. It still asks you before deploys, deleting things it didn't create, rewriting shared history, messaging people outside the repo, spending money, using secrets only you have, or writing anywhere outside the project.
+The agent makes reversible product and design decisions and handles commits, PRs and merges when publication is in scope. Ordinary small or medium local work stays uncommitted in the starting tree, with runtime proof and diff review. Publication requires three skeptical verifiers and at least two evidence-backed passes, or one passing verifier for an eligible small change.
+It still asks before deploys, deleting things it did not create, rewriting shared history, outside messages, spending money, using secrets only you have, or writing outside the project.
+
+## Measured behavior
+
+[Local delivery experiments](evals/results/local-delivery-2026-11-12.md) exercised one feature fixture with five repetitions per arm.
+In the second experiment, the revised command finished 5/5 runs and every artifact passed all 19 CLI checks.
+Plain-agent runs also finished 5/5 and passed all 19 checks, with lower median reported usage ($0.9754 versus $1.6271).
+Reported usage is a harness estimate, not a subscription invoice. The small, development-known fixture and same-provider judges do not establish general superiority.
+
+[Review quality](evals/review/README.md) uses historical bugs, clean controls and explicit finding adjudication. [Workflow coverage](evals/workflows/README.md) separates mapped routes from executed journeys and unsupported capabilities. No matched hosted-review comparison or complete feature parity has been demonstrated.
+
+Read the [paired review results and label corrections](evals/results/review-quality-2026-11-12.md)
+and [captured workflow outcomes](evals/results/workflow-coverage-2026-11-12.md).
+The review holdout contains one bug/control pair. The four exercised journeys do not prove the whole mapped inventory.
 
 ## The software factory
 
@@ -173,12 +187,12 @@ The examples use the bare `/deep`. With a plugin install, type `/deepmodebot:dee
 - You never pick a skill or playbook. `/deep` routes, sizes, and runs it.
 - Small jobs take the fast path. Big ones get the full playbook, subagents, and a decision log.
 - It decides and acts without asking: commits, pushes, PRs, board cards, and merges after a panel pass. It asks once at the end only for hard stops (deploys, deletions, shared-history rewrites, outside messages, money, secrets), and lists every decision it made so you can reverse any.
-- On a new repo, medium and large jobs first build a `verify-<app>` skill so the agent can prove changes. Later runs reuse it.
+- It reuses the repo's verification tools or runs the real user path directly. A reusable `verify-<app>` skill is useful for repeated work, not a prerequisite for every local change.
 - The direct commands still work: `/deepmodebot:review-pr`, `/deepmodebot:land-pr`, `/deepmodebot:pr-thread`, `/deepmodebot:contribute`, `/deepmodebot:project-brief`.
 
 ## GitHub App bots
 
-A private GitHub App you create gives the bots their own name in threads (`<app>[bot]`). The bots are any ACP agent reached through [acpx](https://github.com/openclaw/acpx): omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each harness uses its own subscription login. No API keys, no webhooks, no server; the bot polls.
+A private GitHub App gives the bots their own name in threads (`<app>[bot]`). Owner-controlled work uses ACP agents through [acpx](https://github.com/openclaw/acpx), with omp as the default. Each harness needs its own subscription login. Outside-contributor reviews currently require omp's sealed, tool-free path. The poller runs on your machine; no public webhook server is required.
 
 Install in three commands:
 
@@ -203,7 +217,7 @@ py -3 assets/github-app/bot.py watch                                # poll in th
 ```
 
 - **Your PRs:** the bots merge in the base when it conflicts, review, fix or dismiss each finding, run a 3-verifier panel, and merge once required checks are green.
-- **Others' PRs:** review comments only. They never merge.
+- **Others' PRs:** review comments only, never merges or code execution. The reviewer receives the diff and a bounded packet of changed source files and direct local imports from Git objects. The packet names omissions; it is not whole-repository analysis.
 - **Issues:** the bots plan and critique in the thread. On an issue you opened, or after you comment `@deepmodebot implement`, they build it and open a PR that closes it.
 - **Agents and models:** each role in `bot.json` is `{"agent": "omp", "model": "<optional>"}`. Put the author on a Claude model and the reviewer on a GPT model in omp, and one harness gives you cross-family review.
 - **Updates:** a bot run from the omp plugin checks between cycles, at most hourly and right after it merges into this repo. When `main` moved it upgrades the plugin, and it restarts itself when its own code changed. `bot.py update` checks now. `"autoUpdate": false` in `bot.json` turns it off. A bot run from a git clone never updates; pull it yourself.
@@ -268,13 +282,13 @@ Full rules, including how to do it by hand: [CONTRIBUTING.md](CONTRIBUTING.md). 
 
 ## FAQ
 
-**What is deepmodebot?** An open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR, with every result proven and checked by a 3-agent panel.
+**What is deepmodebot?** An open-source MIT plugin for coding agents. It combines a self-hosted PR and issue bot with workflows for planning, implementation, review and delivery. Local work requires runtime proof; published changes also pass the verifier gate.
 
 **How do the PR bots work?** A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR. A coordinator passes each turn between them and posts it to the thread as your app, until no P0 or P1 finding is open. Three verifiers then vote (one, who must pass it, for a small change), and a gate in code merges your own PR at the voted head.
 
-**Does it need an API key?** No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage.
+**Does it need an API key?** No. Supported agent CLIs use existing subscription logins, and calls count against their usage. This is not offline inference: prompts and source context can reach the configured model provider.
 
-**Which agents and harnesses does it work with?** The bots use any agent acpx reaches over ACP: omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each role can pick its own model. The skill runs in omp, Claude Code, Codex, Cursor and other harnesses.
+**Which agents and harnesses does it work with?** Owner-controlled bot roles use ACP agents supported by acpx. Outside-contributor reviews currently require omp. The portable skill instructions target omp, Claude Code, Codex, Cursor and other skill-loading harnesses; that is not a claim that every combination has been tested.
 
 **Will it merge other people's PRs?** No. Only your own PRs merge: your account opened them from your repo, not a fork, and their commits pass the ownership checks in code. Everyone else's PRs get review comments only.
 
@@ -409,7 +423,9 @@ Config is `~/.config/deepmodebot/bot.json`, created with these defaults on the f
 {"author":{"agent":"omp"},"reviewer":{"agent":"omp"},"verifiers":[{"agent":"omp"},{"agent":"omp"},{"agent":"omp"}],"autonomousMerge":true,"maxRounds":3,"interval":120,"mention":"@deepmodebot","parallelRepos":4,"autoUpdate":true,"updateMinutes":60}
 ```
 
-The shipped trigger is `@deepmodebot`, the project's owned organization handle. A reseller keeps its own trigger and `mention` remains configurable. An old stored bare `@deepmodebot` default is ignored with a warning rather than continuing to notify an unrelated account.
+The shipped trigger is `@deepmodebot`. A reseller keeps its own trigger and `mention` remains configurable.
+The pre-rename bare default is ignored with a warning because it notified an unrelated account.
+Stored configuration is not rewritten; explicit custom triggers remain unchanged.
 
 A repo names its own gate in its base-branch `.deepmodebot.json`: `{"check": "npm test"}`.
 - On the owner's PRs the bot runs it in a clean worktree at the head, before the panel and again at the exact head it merges. A nonzero exit, 127 included, goes to the author as a P1 finding, and the merge waits for a pass. The limit is 30 minutes.
@@ -459,7 +475,13 @@ A repo names its own gate in its base-branch `.deepmodebot.json`: `{"check": "np
 - No one but the owner steers a write-enabled agent: on the owner's PRs other people's comments neither trigger a turn nor reach a prompt, and an issue build plans and implements in new agent sessions that see only the owner's comments, never an earlier discussion's context.
 - Implementing an issue reuses an existing `deepmodebot/issue-<n>` branch only when every commit on it is one the bots made; otherwise the bots stop and say so.
 - The bot never blocks itself on its own worktrees. Once an issue's PR is open, the bot closes that build's one-off agent sessions and detaches the implementation worktree from `deepmodebot/issue-<n>`. A later checkout of a branch that another worktree under `~/.cache/deepmodebot/bot/worktrees/` holds detaches that holder first; its files and uncommitted changes stay. A holder anywhere else, such as a user's own worktree, is never touched: the item errors and names it.
-- Contributors' and forks' PRs get review comments only, from a sealed reviewer: one model call with no tools, no files and no project config (`omp -p --no-tools` from an empty folder, the call the **pr-agent** technique uses), fed the diff with as many context lines as fit (40, else 10, else 3). It cannot read a local file or fetch a URL, so a hostile PR cannot make it leak one, and nothing in the PR can configure it. The sealed call needs an `omp` reviewer on a subscription login; with any other reviewer agent the bots skip other people's PRs and log it.
+- Contributors' and forks' PRs get review comments only, from a sealed reviewer: one model call with no tools, no files and no project config (`omp -p --no-tools` from an empty folder, the call the **pr-agent** technique uses).
+  It receives the diff with as many context lines as fit (40, else 10, else 3), plus a bounded packet of whole source blobs from the Git merge-base and head comparison, with head commit and blob IDs.
+  The packet includes eligible changed files and best-effort direct local Python and JavaScript/TypeScript imports; it records omissions and does not claim complete dependency coverage.
+  Oversized files are omitted rather than excerpted so partial code cannot masquerade as the whole file.
+  - The packet admits at most 12 files, 128 KiB per file and 256 KiB of source in total. Large modules can therefore participate without unbounded prompts; remaining files and imports are explicitly omitted.
+  - Context comes from Git objects, never worktree files, and excludes unsafe names, hidden or sensitive/config-like paths, symlinks, submodules, binary and non-UTF-8 data. File counts, bytes and Git subprocess time are bounded. Path filters cannot detect every secret embedded in otherwise ordinary source; the diff itself is also sent to the reviewer. Both diff and source are untrusted prompt data, not instructions.
+  - The reviewer cannot read a local file or fetch a URL, so a hostile PR cannot make it leak one, and nothing in the PR can configure it. The sealed call needs an `omp` reviewer on a subscription login; with any other reviewer agent the bots skip other people's PRs and log it.
 - Issue discussions follow the same rule. When the issue or a comment in the prompt comes from anyone but the owner, the plan, critique and answer turns are sealed calls, and they need `omp` for both the author and the reviewer; with another agent the bots leave such an issue alone and log it. The owner's own issues, and a build the owner asked for, keep their tools.
 - A push from another account in the middle of a cycle is caught before the review: when the head moved since the cycle listed the PR's commits, ownership is checked again, and a head that fails it is reviewed sealed.
 - On the owner's PRs and issues, agents run inside the repo, so their CLIs load its AGENTS.md and CLAUDE.md, and its rules apply. No real-money trading actions, ever.

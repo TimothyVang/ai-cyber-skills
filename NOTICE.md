@@ -19,4 +19,12 @@ Public-domain components:
 |---|---|---|
 | `plugins/deepmodebot/skills/deepmodebot/assets/pr-conversation/font8x8_basic.hex` (the 8x8 bitmap font `arena.py` draws its text with) | `font8x8_basic.h` by Daniel Hepper, https://github.com/dhepper/font8x8, based on Marcel Sondaar's and IBM's public-domain VGA fonts | Public domain |
 
+Review-evaluation source patches in `evals/review/cases.json` retain their upstream licenses. They are exact forward or reverse diffs of pinned repairs, not new implementations of those projects:
+
+| Upstream | License | Copyright / attribution | License file |
+|---|---|---|---|
+| [pytest](https://github.com/pytest-dev/pytest), repair `3a85b5ead0753e50b7689c489235237acfa7b94e` | MIT | Copyright (c) 2004 Holger Krekel and others | `evals/review/licenses/LICENSE-pytest.txt` |
+| [Requests](https://github.com/psf/requests), repairs `818d92764bd7035a0450d7b4e52ec9fc6d07abb6` and `0406663e1b802bb839aca40e9f6ea89d0c9255ef` | Apache-2.0 | Requests contributors; source paths and commits are recorded per case | `evals/review/licenses/LICENSE-requests.txt` |
+| [Django](https://github.com/django/django), repair `41b43c74bda19753c757036673ea9db74acf494a` | BSD-3-Clause | Copyright (c) Django Software Foundation and individual contributors | `evals/review/licenses/LICENSE-django.txt` |
+
 All other files in this repository are covered by the root `LICENSE`.

@@ -1,0 +1,2305 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "pstack:agents/comment-sicko.md",
+      "upstream": "pstack",
+      "path": "agents/comment-sicko.md",
+      "name": "comment-sicko",
+      "kind": "agent",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/agents/comment-sicko.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/no-comments.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Related review/delegation instructions, not the named upstream agent wrapper."
+    },
+    {
+      "id": "pstack:agents/poteto-agent.md",
+      "upstream": "pstack",
+      "path": "agents/poteto-agent.md",
+      "name": "poteto-agent",
+      "kind": "agent",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/agents/poteto-agent.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/SKILL.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Related review/delegation instructions, not the named upstream agent wrapper."
+    },
+    {
+      "id": "pstack:automations/benny/README.md",
+      "upstream": "pstack",
+      "path": "automations/benny/README.md",
+      "name": "README",
+      "kind": "automation",
+      "distribution": "dormant-automation",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/automations/benny/README.md",
+      "disposition": "missing",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/github-app.md"
+      ],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "Cursor-only Benny automation pack, Slack ingestion and hosted triggers are not replaced by local skills."
+    },
+    {
+      "id": "pstack:automations/benny/skills/reproduce-and-fix-issues/SKILL.md",
+      "upstream": "pstack",
+      "path": "automations/benny/skills/reproduce-and-fix-issues/SKILL.md",
+      "name": "reproduce-and-fix-issues",
+      "kind": "skill",
+      "distribution": "dormant-automation",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/automations/benny/skills/reproduce-and-fix-issues/SKILL.md",
+      "disposition": "missing",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/bug-fix.md"
+      ],
+      "scenarios": [
+        "bugfix"
+      ],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "Cursor-only Benny automation pack, Slack ingestion and hosted triggers are not replaced by local skills."
+    },
+    {
+      "id": "pstack:automations/benny/skills/setup-benny/SKILL.md",
+      "upstream": "pstack",
+      "path": "automations/benny/skills/setup-benny/SKILL.md",
+      "name": "setup-benny",
+      "kind": "skill",
+      "distribution": "dormant-automation",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/automations/benny/skills/setup-benny/SKILL.md",
+      "disposition": "missing",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/github-app.md"
+      ],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "Cursor-only Benny automation pack, Slack ingestion and hosted triggers are not replaced by local skills."
+    },
+    {
+      "id": "pstack:automations/benny/skills/triage-issue-reports/SKILL.md",
+      "upstream": "pstack",
+      "path": "automations/benny/skills/triage-issue-reports/SKILL.md",
+      "name": "triage-issue-reports",
+      "kind": "skill",
+      "distribution": "dormant-automation",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/automations/benny/skills/triage-issue-reports/SKILL.md",
+      "disposition": "missing",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/triage.md"
+      ],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "Cursor-only Benny automation pack, Slack ingestion and hosted triggers are not replaced by local skills."
+    },
+    {
+      "id": "pstack:skills/architect/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/architect/SKILL.md",
+      "name": "architect",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/architect/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/architect.md"
+      ],
+      "scenarios": [
+        "architecture"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/arena/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/arena/SKILL.md",
+      "name": "arena",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/arena/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/arena.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/automate-me/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/automate-me/SKILL.md",
+      "name": "automate-me",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/automate-me/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/self-authoring.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "History-derived authoring is analogous; no personal transcript mining or unattended run measured."
+    },
+    {
+      "id": "pstack:skills/benchmark-checklist/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/benchmark-checklist/SKILL.md",
+      "name": "benchmark-checklist",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/benchmark-checklist/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/benchmark-checklist.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/blast-radius/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/blast-radius/SKILL.md",
+      "name": "blast-radius",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/blast-radius/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/blast-radius.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/bro/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/bro/SKILL.md",
+      "name": "bro",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/bro/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/re-explain.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Plain-language explanation only; not identical invocation."
+    },
+    {
+      "id": "pstack:skills/correct/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/correct/SKILL.md",
+      "name": "correct",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/correct/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/correct.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/create-formal-verification-skill/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/create-formal-verification-skill/SKILL.md",
+      "name": "create-formal-verification-skill",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/create-formal-verification-skill/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No bundled formal-tool authoring workflow. Runtime tests are not formal verification."
+    },
+    {
+      "id": "pstack:skills/create-verification-skill/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/create-verification-skill/SKILL.md",
+      "name": "create-verification-skill",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/create-verification-skill/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/create-verification-skill/SKILL.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Behavioral verification authoring, not formal proof."
+    },
+    {
+      "id": "pstack:skills/figure-it-out/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/figure-it-out/SKILL.md",
+      "name": "figure-it-out",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/figure-it-out/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/figure-it-out.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/how/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/how/SKILL.md",
+      "name": "how",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/how/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/how.md"
+      ],
+      "scenarios": [
+        "architecture"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/in-your-own-words/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/in-your-own-words/SKILL.md",
+      "name": "in-your-own-words",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/in-your-own-words/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/in-your-own-words.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/interrogate/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/interrogate/SKILL.md",
+      "name": "interrogate",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/interrogate/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/interrogate.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/ketchup-video/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/ketchup-video/SKILL.md",
+      "name": "ketchup-video",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/ketchup-video/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No subtitled catch-up video generation."
+    },
+    {
+      "id": "pstack:skills/ketchup/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/ketchup/SKILL.md",
+      "name": "ketchup",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/ketchup/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/handoff.md"
+      ],
+      "scenarios": [
+        "handoff"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Portable handoff overlaps catch-up; no exact per-chat unread-message UX."
+    },
+    {
+      "id": "pstack:skills/maintain-formal-verification-skill/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/maintain-formal-verification-skill/SKILL.md",
+      "name": "maintain-formal-verification-skill",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/maintain-formal-verification-skill/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No bundled formal model maintenance workflow."
+    },
+    {
+      "id": "pstack:skills/maintain-verification-skill/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/maintain-verification-skill/SKILL.md",
+      "name": "maintain-verification-skill",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/maintain-verification-skill/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/maintain-verification-skill/SKILL.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Behavioral verification maintenance only."
+    },
+    {
+      "id": "pstack:skills/make-bot-ui/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/make-bot-ui/SKILL.md",
+      "name": "make-bot-ui",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/make-bot-ui/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No Grok Bot webhook UI and Tailscale sender-key integration."
+    },
+    {
+      "id": "pstack:skills/no-comments/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/no-comments/SKILL.md",
+      "name": "no-comments",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/no-comments/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/no-comments.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-help/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-help/SKILL.md",
+      "name": "poteto-help",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-help/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/flows.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Local route guidance, not pstack help or command compatibility."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/SKILL.md",
+      "name": "poteto-mode",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/SKILL.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Different orchestration and harness policy; not a drop-in pstack implementation."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "name": "authoring-a-skill",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/authoring-a-skill.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/authoring-a-skill.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/autonomous-run.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/autonomous-run.md",
+      "name": "autonomous-run",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/autonomous-run.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/run-a-goal.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/autopilot-full.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/autopilot-full.md",
+      "name": "autopilot-full",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/autopilot-full.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/work-a-queue.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Portable forge workflow mapping only; no Cursor/Origin IDE, Bugbot or remote-merge evidence in this suite."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/autopilot-stack.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/autopilot-stack.md",
+      "name": "autopilot-stack",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/autopilot-stack.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/work-a-queue.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Portable forge workflow mapping only; no Cursor/Origin IDE, Bugbot or remote-merge evidence in this suite."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/babysit.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/babysit.md",
+      "name": "babysit",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/babysit.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/babysit.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Portable forge workflow mapping only; no Cursor/Origin IDE, Bugbot or remote-merge evidence in this suite."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/bug-fix.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/bug-fix.md",
+      "name": "bug-fix",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/bug-fix.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/bug-fix.md"
+      ],
+      "scenarios": [
+        "bugfix"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/eval.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/eval.md",
+      "name": "eval",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/eval.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/eval.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/feature.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/feature.md",
+      "name": "feature",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/feature.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/feature.md"
+      ],
+      "scenarios": [
+        "feature"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/hillclimb.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/hillclimb.md",
+      "name": "hillclimb",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/hillclimb.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/hillclimb.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/investigation.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/investigation.md",
+      "name": "investigation",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/investigation.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/investigation.md"
+      ],
+      "scenarios": [
+        "architecture"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "name": "multi-phase-plan",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/multi-phase-plan.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/phased-build.md"
+      ],
+      "scenarios": [
+        "feature"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/opening-a-pr.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/opening-a-pr.md",
+      "name": "opening-a-pr",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/opening-a-pr.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/opening-a-pr.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Portable forge workflow mapping only; no Cursor/Origin IDE, Bugbot or remote-merge evidence in this suite."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/orchestrate.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/orchestrate.md",
+      "name": "orchestrate",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/orchestrate.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/run-a-goal.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/pause-safely.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/pause-safely.md",
+      "name": "pause-safely",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/pause-safely.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/pause-safely.md"
+      ],
+      "scenarios": [
+        "handoff"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/perf-issue.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/perf-issue.md",
+      "name": "perf-issue",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/perf-issue.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/perf-issue.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/prototype.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/prototype.md",
+      "name": "prototype",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/prototype.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/prototype.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/refactoring.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/refactoring.md",
+      "name": "refactoring",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/refactoring.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/refactoring.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/runtime-forensics.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/runtime-forensics.md",
+      "name": "runtime-forensics",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/runtime-forensics.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/runtime-forensics.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/session-pickup.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/session-pickup.md",
+      "name": "session-pickup",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/session-pickup.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/session-pickup.md"
+      ],
+      "scenarios": [
+        "handoff"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/shipping.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/shipping.md",
+      "name": "shipping",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/shipping.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/shipping.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Portable forge workflow mapping only; no Cursor/Origin IDE, Bugbot or remote-merge evidence in this suite."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/trace-forensics.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/trace-forensics.md",
+      "name": "trace-forensics",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/trace-forensics.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/trace-forensics.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/visual-parity.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/visual-parity.md",
+      "name": "visual-parity",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/visual-parity.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/visual-parity.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "upstream": "pstack",
+      "path": "skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "name": "worktree-cleanup",
+      "kind": "playbook",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/poteto-mode/playbooks/worktree-cleanup.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/worktree-cleanup.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Worktree cleanup only; iOS simulator cleanup parity is not claimed."
+    },
+    {
+      "id": "pstack:skills/principle-attack-the-premise/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-attack-the-premise/SKILL.md",
+      "name": "principle-attack-the-premise",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-attack-the-premise/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/attack-the-premise.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-boundary-discipline/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-boundary-discipline/SKILL.md",
+      "name": "principle-boundary-discipline",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-boundary-discipline/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/boundary-discipline.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-build-the-lever/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-build-the-lever/SKILL.md",
+      "name": "principle-build-the-lever",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-build-the-lever/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/build-the-lever.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-encode-lessons-in-structure/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-encode-lessons-in-structure/SKILL.md",
+      "name": "principle-encode-lessons-in-structure",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-encode-lessons-in-structure/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/encode-lessons-in-structure.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-exhaust-the-design-space/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-exhaust-the-design-space/SKILL.md",
+      "name": "principle-exhaust-the-design-space",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-exhaust-the-design-space/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/exhaust-the-design-space.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-experience-first/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-experience-first/SKILL.md",
+      "name": "principle-experience-first",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-experience-first/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/experience-first.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-explain-the-number/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-explain-the-number/SKILL.md",
+      "name": "principle-explain-the-number",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-explain-the-number/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/explain-the-number.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-fix-root-causes/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-fix-root-causes/SKILL.md",
+      "name": "principle-fix-root-causes",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-fix-root-causes/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/fix-root-causes.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-foundational-thinking/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-foundational-thinking/SKILL.md",
+      "name": "principle-foundational-thinking",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-foundational-thinking/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/foundational-thinking.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-guard-the-context-window/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-guard-the-context-window/SKILL.md",
+      "name": "principle-guard-the-context-window",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-guard-the-context-window/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/guard-the-context-window.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-laziness-protocol/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-laziness-protocol/SKILL.md",
+      "name": "principle-laziness-protocol",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-laziness-protocol/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/laziness-protocol.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-make-operations-idempotent/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-make-operations-idempotent/SKILL.md",
+      "name": "principle-make-operations-idempotent",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-make-operations-idempotent/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/make-operations-idempotent.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "name": "principle-migrate-callers-then-delete-legacy-apis",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-migrate-callers-then-delete-legacy-apis/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/migrate-callers-then-delete-legacy-apis.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-minimize-reader-load/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-minimize-reader-load/SKILL.md",
+      "name": "principle-minimize-reader-load",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-minimize-reader-load/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/minimize-reader-load.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-model-the-domain/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-model-the-domain/SKILL.md",
+      "name": "principle-model-the-domain",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-model-the-domain/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/model-the-domain.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-never-block-on-the-human/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-never-block-on-the-human/SKILL.md",
+      "name": "principle-never-block-on-the-human",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-never-block-on-the-human/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/never-block-on-the-human.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-outcome-oriented-execution/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-outcome-oriented-execution/SKILL.md",
+      "name": "principle-outcome-oriented-execution",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-outcome-oriented-execution/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/outcome-oriented-execution.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-prove-it-works/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-prove-it-works/SKILL.md",
+      "name": "principle-prove-it-works",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-prove-it-works/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/prove-it-works.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-redesign-from-first-principles/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-redesign-from-first-principles/SKILL.md",
+      "name": "principle-redesign-from-first-principles",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-redesign-from-first-principles/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/redesign-from-first-principles.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "name": "principle-separate-before-serializing-shared-state",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-separate-before-serializing-shared-state/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/separate-before-serializing-shared-state.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-sequence-verifiable-units/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-sequence-verifiable-units/SKILL.md",
+      "name": "principle-sequence-verifiable-units",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-sequence-verifiable-units/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/sequence-verifiable-units.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-subtract-before-you-add/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-subtract-before-you-add/SKILL.md",
+      "name": "principle-subtract-before-you-add",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-subtract-before-you-add/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/subtract-before-you-add.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-test-behavior-not-implementation/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-test-behavior-not-implementation/SKILL.md",
+      "name": "principle-test-behavior-not-implementation",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-test-behavior-not-implementation/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/test-behavior-not-implementation.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/principle-type-system-discipline/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/principle-type-system-discipline/SKILL.md",
+      "name": "principle-type-system-discipline",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/principle-type-system-discipline/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/principles/type-system-discipline.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Named engineering principle, not an independently executable workflow or measured behavior."
+    },
+    {
+      "id": "pstack:skills/recall/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/recall/SKILL.md",
+      "name": "recall",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/recall/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/recall.md"
+      ],
+      "scenarios": [
+        "handoff"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/reflect/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/reflect/SKILL.md",
+      "name": "reflect",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/reflect/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/reflect.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/setup-pstack/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/setup-pstack/SKILL.md",
+      "name": "setup-pstack",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/setup-pstack/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No pstack per-role configuration writer; harness advice does not reproduce its setup."
+    },
+    {
+      "id": "pstack:skills/sharpen/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/sharpen/SKILL.md",
+      "name": "sharpen",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/sharpen/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/sharpen.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/show-me-your-work/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/show-me-your-work/SKILL.md",
+      "name": "show-me-your-work",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/show-me-your-work/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/show-me-your-work.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/statechart/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/statechart/SKILL.md",
+      "name": "statechart",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/statechart/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No TLA+ checked statechart and shortest-counterexample renderer."
+    },
+    {
+      "id": "pstack:skills/swarm/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/swarm/SKILL.md",
+      "name": "swarm",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/swarm/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/swarm.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/tdd/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/tdd/SKILL.md",
+      "name": "tdd",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/tdd/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/tdd.md"
+      ],
+      "scenarios": [
+        "bugfix"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/teach/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/teach/SKILL.md",
+      "name": "teach",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/teach/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/teach.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/technical-writing/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/technical-writing/SKILL.md",
+      "name": "technical-writing",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/technical-writing/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/technical-writing.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/typescript-best-practices/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/typescript-best-practices/SKILL.md",
+      "name": "typescript-best-practices",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/typescript-best-practices/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/domain-rules/SKILL.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "General language rules; TypeScript-specific inventory parity is not established."
+    },
+    {
+      "id": "pstack:skills/unslop/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/unslop/SKILL.md",
+      "name": "unslop",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/unslop/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/unslop.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "pstack:skills/why/SKILL.md",
+      "upstream": "pstack",
+      "path": "skills/why/SKILL.md",
+      "name": "why",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "ec569379616a4826b98f0f0a205dd3411b573611",
+      "source_url": "https://github.com/cursor/plugins/blob/ec569379616a4826b98f0f0a205dd3411b573611/pstack/skills/why/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/why.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/ask-matt/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/ask-matt/SKILL.md",
+      "name": "ask-matt",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/ask-matt/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/flows.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/code-review/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/code-review/SKILL.md",
+      "name": "code-review",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/code-review/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/pr-review.md"
+      ],
+      "scenarios": [
+        "review"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/codebase-design/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/codebase-design/SKILL.md",
+      "name": "codebase-design",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/codebase-design/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/architecture-review.md"
+      ],
+      "scenarios": [
+        "architecture"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/diagnosing-bugs/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/diagnosing-bugs/SKILL.md",
+      "name": "diagnosing-bugs",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/diagnosing-bugs/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/bug-fix.md"
+      ],
+      "scenarios": [
+        "bugfix"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/domain-modeling/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/domain-modeling/SKILL.md",
+      "name": "domain-modeling",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/domain-modeling/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/domain-model.md"
+      ],
+      "scenarios": [
+        "planning"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/grill-with-docs/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/grill-with-docs/SKILL.md",
+      "name": "grill-with-docs",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/grill-with-docs/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/grill.md"
+      ],
+      "scenarios": [
+        "planning"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Deepmodebot normally decides reversible questions itself; Matt prioritizes interviewing the user. Not identical interaction policy."
+    },
+    {
+      "id": "mattpocock:skills/engineering/implement-spec/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/implement-spec/SKILL.md",
+      "name": "implement-spec",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/implement-spec/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/phased-build.md"
+      ],
+      "scenarios": [
+        "feature"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/implement/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/implement/SKILL.md",
+      "name": "implement",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/implement/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/feature.md"
+      ],
+      "scenarios": [
+        "feature"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/improve-codebase-architecture/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/improve-codebase-architecture/SKILL.md",
+      "name": "improve-codebase-architecture",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/improve-codebase-architecture/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/architecture-review.md"
+      ],
+      "scenarios": [
+        "architecture"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Architecture survey route; exact visual report and interview behavior are unmeasured."
+    },
+    {
+      "id": "mattpocock:skills/engineering/pr/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/pr/SKILL.md",
+      "name": "pr",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/pr/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/opening-a-pr.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/prototype/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/prototype/SKILL.md",
+      "name": "prototype",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/prototype/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/prototype.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/research/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/research/SKILL.md",
+      "name": "research",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/research/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/research.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/retro/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/retro/SKILL.md",
+      "name": "retro",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/retro/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/retro.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/setup-matt-pocock-skills/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/setup-matt-pocock-skills/SKILL.md",
+      "name": "setup-matt-pocock-skills",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/setup-matt-pocock-skills/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/setup.md"
+      ],
+      "scenarios": [
+        "planning"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Different tracker configuration paths; not Matt configuration compatibility."
+    },
+    {
+      "id": "mattpocock:skills/engineering/tdd/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/tdd/SKILL.md",
+      "name": "tdd",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/tdd/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/tdd.md"
+      ],
+      "scenarios": [
+        "bugfix"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/to-spec/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/to-spec/SKILL.md",
+      "name": "to-spec",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/to-spec/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/spec.md"
+      ],
+      "scenarios": [
+        "planning"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/to-tickets/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/to-tickets/SKILL.md",
+      "name": "to-tickets",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/to-tickets/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/tickets.md"
+      ],
+      "scenarios": [
+        "planning"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/triage/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/triage/SKILL.md",
+      "name": "triage",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/triage/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/triage.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/wayfinder/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/wayfinder/SKILL.md",
+      "name": "wayfinder",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/wayfinder/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/wayfinder.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/engineering/wizard/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/engineering/wizard/SKILL.md",
+      "name": "wizard",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/engineering/wizard/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/wizard.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/in-progress/chief-of-staff/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/in-progress/chief-of-staff/SKILL.md",
+      "name": "chief-of-staff",
+      "kind": "skill",
+      "distribution": "in-progress",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/in-progress/chief-of-staff/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/run-a-goal.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Upstream in-progress source, not plugin-shipped. Related local workflow only; shared-wiki/CI/harness behavior is not equivalent."
+    },
+    {
+      "id": "mattpocock:skills/in-progress/claude-handoff/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/in-progress/claude-handoff/SKILL.md",
+      "name": "claude-handoff",
+      "kind": "skill",
+      "distribution": "in-progress",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/in-progress/claude-handoff/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/handoff.md"
+      ],
+      "scenarios": [
+        "handoff"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Upstream in-progress source, not plugin-shipped. Related local workflow only; shared-wiki/CI/harness behavior is not equivalent."
+    },
+    {
+      "id": "mattpocock:skills/in-progress/loop-me/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/in-progress/loop-me/SKILL.md",
+      "name": "loop-me",
+      "kind": "skill",
+      "distribution": "in-progress",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/in-progress/loop-me/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/run-a-goal.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Upstream in-progress source, not plugin-shipped. Related local workflow only; shared-wiki/CI/harness behavior is not equivalent."
+    },
+    {
+      "id": "mattpocock:skills/in-progress/setup-ts-deep-modules/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/in-progress/setup-ts-deep-modules/SKILL.md",
+      "name": "setup-ts-deep-modules",
+      "kind": "skill",
+      "distribution": "in-progress",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/in-progress/setup-ts-deep-modules/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No dedicated TypeScript deep-module setup generator."
+    },
+    {
+      "id": "mattpocock:skills/in-progress/software-factory/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/in-progress/software-factory/SKILL.md",
+      "name": "software-factory",
+      "kind": "skill",
+      "distribution": "in-progress",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/in-progress/software-factory/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/work-a-queue.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Upstream in-progress source, not plugin-shipped. Related local workflow only; shared-wiki/CI/harness behavior is not equivalent."
+    },
+    {
+      "id": "mattpocock:skills/in-progress/writing-beats/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/in-progress/writing-beats/SKILL.md",
+      "name": "writing-beats",
+      "kind": "skill",
+      "distribution": "in-progress",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/in-progress/writing-beats/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No narrative beat-writing workflow."
+    },
+    {
+      "id": "mattpocock:skills/in-progress/writing-fragments/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/in-progress/writing-fragments/SKILL.md",
+      "name": "writing-fragments",
+      "kind": "skill",
+      "distribution": "in-progress",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/in-progress/writing-fragments/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No fragment-writing workflow."
+    },
+    {
+      "id": "mattpocock:skills/in-progress/writing-shape/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/in-progress/writing-shape/SKILL.md",
+      "name": "writing-shape",
+      "kind": "skill",
+      "distribution": "in-progress",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/in-progress/writing-shape/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No narrative shape-writing workflow."
+    },
+    {
+      "id": "mattpocock:skills/misc/git-guardrails-claude-code/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/misc/git-guardrails-claude-code/SKILL.md",
+      "name": "git-guardrails-claude-code",
+      "kind": "skill",
+      "distribution": "misc-unlisted",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/misc/git-guardrails-claude-code/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/git-guardrails.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/misc/migrate-to-shoehorn/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/misc/migrate-to-shoehorn/SKILL.md",
+      "name": "migrate-to-shoehorn",
+      "kind": "skill",
+      "distribution": "misc-unlisted",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/misc/migrate-to-shoehorn/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No Shoehorn migration workflow."
+    },
+    {
+      "id": "mattpocock:skills/misc/scaffold-exercises/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/misc/scaffold-exercises/SKILL.md",
+      "name": "scaffold-exercises",
+      "kind": "skill",
+      "distribution": "misc-unlisted",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/misc/scaffold-exercises/SKILL.md",
+      "disposition": "missing",
+      "routes": [],
+      "scenarios": [],
+      "state": "blocked",
+      "evidence": [],
+      "limits": "No exercise-scaffolding workflow."
+    },
+    {
+      "id": "mattpocock:skills/misc/setup-pre-commit/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/misc/setup-pre-commit/SKILL.md",
+      "name": "setup-pre-commit",
+      "kind": "skill",
+      "distribution": "misc-unlisted",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/misc/setup-pre-commit/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/pre-commit.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/productivity/grill-me/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/productivity/grill-me/SKILL.md",
+      "name": "grill-me",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/productivity/grill-me/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/grill.md"
+      ],
+      "scenarios": [
+        "planning"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Deepmodebot normally decides reversible questions itself; Matt prioritizes interviewing the user. Not identical interaction policy."
+    },
+    {
+      "id": "mattpocock:skills/productivity/grilling/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/productivity/grilling/SKILL.md",
+      "name": "grilling",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/productivity/grilling/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/grill.md"
+      ],
+      "scenarios": [
+        "planning"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Deepmodebot normally decides reversible questions itself; Matt prioritizes interviewing the user. Not identical interaction policy."
+    },
+    {
+      "id": "mattpocock:skills/productivity/handoff/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/productivity/handoff/SKILL.md",
+      "name": "handoff",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/productivity/handoff/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/playbooks/handoff.md"
+      ],
+      "scenarios": [
+        "handoff"
+      ],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/productivity/teach/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/productivity/teach/SKILL.md",
+      "name": "teach",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/productivity/teach/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/course.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/productivity/to-questionnaire/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/productivity/to-questionnaire/SKILL.md",
+      "name": "to-questionnaire",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/productivity/to-questionnaire/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/questionnaire.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/productivity/wait-what/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/productivity/wait-what/SKILL.md",
+      "name": "wait-what",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/productivity/wait-what/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/re-explain.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    },
+    {
+      "id": "mattpocock:skills/productivity/writing-for-agents/SKILL.md",
+      "upstream": "mattpocock",
+      "path": "skills/productivity/writing-for-agents/SKILL.md",
+      "name": "writing-for-agents",
+      "kind": "skill",
+      "distribution": "shipped",
+      "commit": "5863806dd4e15c63174bee4e7515a4256792ecfa",
+      "source_url": "https://github.com/mattpocock/skills/blob/5863806dd4e15c63174bee4e7515a4256792ecfa/skills/productivity/writing-for-agents/SKILL.md",
+      "disposition": "mapped",
+      "routes": [
+        "plugins/deepmodebot/skills/deepmodebot/references/techniques/writing-for-agents.md"
+      ],
+      "scenarios": [],
+      "state": "mapped",
+      "evidence": [],
+      "limits": "Documented local route only. No execution or equivalent quality claim."
+    }
+  ]
+}

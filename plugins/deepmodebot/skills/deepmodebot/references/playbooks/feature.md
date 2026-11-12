@@ -1,12 +1,26 @@
 # Feature
 
-Use when: adding new behavior. You own the design: plan, review, verify. Size L: delegate implementation and stay in the lead. Size M: implement yourself and get review separation from the **pr-review** self-review (`references/techniques/pr-review.md`, local mode).
+Use when: adding new behavior. You own the design, review and proof. Choose local delivery or publication before implementing, per SKILL.md. Size M uses one implementation owner unless independent slices justify delegation. Size L uses separated implementation and verification.
 
 ## Steps
 
+For a local M feature, use this short path instead of the shipping steps below:
+
+1. Read the affected code, callers and existing checks. Name the requested behavior and the data shape that fits the existing design.
+   Done when each requirement has an observable check, and no design or trust-boundary uncertainty requires size L.
+2. Implement in the starting working tree. Reuse the existing test and CLI/app paths; add regression coverage for uncertain behavior, not for wording or wiring.
+   Done when the requested behavior works without unrelated features or policy changes.
+3. Run the actual user path, including its relevant boundaries and failure cases. Review the diff against the request and existing conventions; fix findings a code read or run proves.
+   Done when the real output proves every requirement and the checked-out tree contains the result.
+4. Report the changed behavior, command and observed result. Leave the changes uncommitted for local review.
+   Done when the user can inspect and run the delivered files without finding another worktree or unfinished review.
+
+Escalate real design or safety uncertainty; do not turn hypothetical extreme inputs into unrequested limits. Remote publication follows the steps below and retains its full merge gates.
+
 1. Run the **how** technique (`references/techniques/how.md`) over the affected subsystem, then the **prior-art** technique (`references/techniques/prior-art.md`) for what the feature needs that the repo lacks.
    Done when both techniques have reached their own `Done when`.
-2. Run the **architect** technique (`references/techniques/architect.md`) for parallel design exploration. Done when a design is chosen with the alternatives it beat.
+2. If a new or changed public interface has several viable shapes, run **architect** (`references/techniques/architect.md`). Otherwise reuse the existing design.
+   Done when the selected shape and its relevant tradeoff are named.
 3. Write the throughput checkpoint as four `todo` items. A dimension that does not apply keeps its item as `n/a: <reason>`; never drop it:
    - Blocking first steps: gates that run before fan-out.
    - Independent workstreams: disjoint files, services, or layers parallelize; shared writes serialize.
@@ -28,8 +42,8 @@ Use when: adding new behavior. You own the design: plan, review, verify. Size L:
    Done when each unit has its own passing verification before the next unit starts.
 8. Design contested → run one adversarial review pass by a different model family than yours, when one is available; keep only findings a run proves. Prefer empirical and formal verification.
    Done when every finding from that pass is fixed with a proving run or dismissed with a reason, or the design was not contested.
-9. Run **Opening a PR** (`references/playbooks/opening-a-pr.md`), which lands a single PR through **pr-conversation** on a panel pass; a stack lands through `references/playbooks/shipping.md`.
-   Done when the PR is merged, or the stack is handed to Shipping.
+9. For publication, run **Opening a PR** (`references/playbooks/opening-a-pr.md`), which lands through **pr-conversation** on a panel pass; a stack lands through Shipping. For local work, deliver the verified changes in the starting tree without committing to a shared branch.
+   Done when the requested delivery target holds; an unmerged worktree is not a delivered local feature.
 
 ## Gates
 
