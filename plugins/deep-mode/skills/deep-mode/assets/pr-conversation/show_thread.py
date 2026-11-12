@@ -125,17 +125,26 @@ def clip(text: str, limit) -> str:
 
 
 def json_objects(body: str) -> list[dict]:
-    """The fenced JSON objects the ACP roles end with."""
-    out = []
-    # Fence to fence, then keep objects: matching "{...}" inside the fence rescans the body per opening.
-    blocks = (block.strip() for block in re.findall(r"```(?:json)?(.*?)```", body, flags=re.S))
-    for block in (block for block in blocks if block.startswith("{")):
-        try:
-            data = json.loads(block)
-        except ValueError:
-            continue
-        if isinstance(data, dict):
-            out.append(data)
+    """The objects in ```json (or bare ```) blocks, the way bot.py reads them: a fence is a line that starts
+    with ```, so backticks inside a JSON string never end the block."""
+    out, current, lang = [], None, ""
+    for line in body.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("```"):
+            if current is not None:
+                current.append(line)
+        elif current is None:
+            current, lang = [], stripped[3:].strip().lower()
+        else:
+            block, current = "\n".join(current).strip(), None
+            if lang not in ("", "json") or not block.startswith("{"):
+                continue
+            try:
+                data = json.loads(block)
+            except ValueError:
+                continue
+            if isinstance(data, dict):
+                out.append(data)
     return out
 
 
@@ -155,11 +164,14 @@ def json_gist(objects: list[dict], limit=140) -> list[str]:
     return list(dict.fromkeys(out))  # a reply that repeats its JSON block counts once
 
 
-def finding_ids(objects: list[dict]) -> list[str]:
-    """The P0-P2 findings' ids, numbered F1, F2... where one is missing, as bot.py numbers them."""
-    return list(dict.fromkeys(
-        str(f.get("id") or f"F{i}") for data in objects for i, f in enumerate(records(data, "findings"), 1)
-        if str(f.get("severity", "")).upper() in ("P0", "P1", "P2")))
+def finding_texts(objects: list[dict]) -> dict[str, str]:
+    """Each P0-P2 finding's id and claim; an id that is missing is numbered F1, F2... as bot.py numbers them."""
+    out = {}
+    for data in objects:
+        for i, f in enumerate(records(data, "findings"), 1):
+            if str(f.get("severity", "")).upper() in ("P0", "P1", "P2"):
+                out.setdefault(str(f.get("id") or f"F{i}"), f"{f.get('file', '')} {f.get('claim', '')}")
+    return out
 
 
 def prose_answers(lines: list[str], limit=140) -> list[str]:
@@ -179,7 +191,7 @@ def prose_answers(lines: list[str], limit=140) -> list[str]:
 
 
 def gist(body: str, kind: str = "", limit=140, objects=None) -> list[str]:
-    if "PR Reviewer Guide" in body:  # PR-Agent: its focus-area titles, or its all-clear line
+    if kind == "pr-agent" and "PR Reviewer Guide" in body:  # its focus-area titles, or its all-clear line
         if "Recommended focus areas" in body:
             section = body.split("Recommended focus areas", 1)[1].split("</table>", 1)[0]
             titles = re.findall(r"<strong>([^<]{3,80})</strong>", section)
@@ -221,7 +233,7 @@ def voice(comment: dict, limit=140):
                "agent": None, "model": None, "head": ""}
     objects = json_objects(body)
     return {"id": comment["id"], "html_url": comment.get("html_url", ""), "time": comment.get("created_at", ""),
-            **who, "gist": gist(body, who["kind"], limit, objects), "findings": finding_ids(objects),
+            **who, "gist": gist(body, who["kind"], limit, objects), "findings": finding_texts(objects),
             "body": body}
 
 

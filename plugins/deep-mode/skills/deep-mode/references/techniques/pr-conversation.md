@@ -38,15 +38,15 @@ Give the reviewer a different model family than the author, by agent or by model
 The user follows the bots from the session, not only on GitHub. In a session, after each post (kickoff, every review and answer, the panel, the merge note), show what the bots said since last time:
 
 ```
-python assets/pr-conversation/show_thread.py <pr-url> --since <last comment id shown>
+python <deep-mode skill dir>/assets/pr-conversation/show_thread.py <pr-url> --since <last comment id shown>
 ```
 
-It prints one block per bot or PR-Agent comment: time, role, head, and its gist (each P0/P1/P2 finding, each fixed/dismissed answer, a vote or tally, or the first sentence). Relay it as it lands: in omp write it to `out://` so the run keeps going; elsewhere put it in your next message. `--full` prints whole bodies for a user who asks what exactly a bot said. With no `--since` it shows the whole conversation, which is how the user (or `/deep-mode:pr-thread <pr-url>`) reads a thread later.
+`<deep-mode skill dir>` is this skill's folder on disk (in Claude Code, `${CLAUDE_PLUGIN_ROOT}/skills/deep-mode`), not the PR checkout you run in. It prints one block per bot or PR-Agent comment: time, role, head, and its gist (each P0/P1/P2 finding, each fixed/dismissed answer, a vote or tally, or the first sentence). Relay it as it lands: in omp write it to `out://` so the run keeps going; elsewhere put it in your next message. `--full` prints whole bodies for a user who asks what exactly a bot said. With no `--since` it shows the whole conversation, which is how the user (or `/deep-mode:pr-thread <pr-url>`) reads a thread later.
 
 The same thread also plays as an 8-bit battle screen: each bot is a sprite, each turn a dialog box ("REVIEWER appeared!", its findings, "AUTHOR used FIX!", the votes, the merge). Start it once when the conversation starts, so the user can watch it live; it polls the thread on its own:
 
 ```
-python assets/pr-conversation/arena.py <pr-or-issue-url> --serve --open
+python <deep-mode skill dir>/assets/pr-conversation/arena.py <pr-or-issue-url> --serve --open
 ```
 
 `--repo <owner/repo>` loads every recent PR and issue with bot turns behind a menu; `--out <file.html>` writes a static page instead. It works for every conversation the bots mirror to GitHub: this technique's PR threads and **issue-conversation**'s issue threads.

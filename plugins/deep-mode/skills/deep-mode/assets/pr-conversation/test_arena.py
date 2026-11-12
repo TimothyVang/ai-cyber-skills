@@ -121,6 +121,16 @@ class Voices(unittest.TestCase):
             self.assertLess(time.perf_counter() - started, 1.0)
         self.assertEqual(st.clean("Suggestion&nbsp;&amp; <b>x</b>"), "Suggestion\xa0&  x ")
 
+    def test_backticks_inside_json_strings_keep_the_block(self):
+        v = st.voice(comment("**deep-mode reviewer** · head `abc1234`\n\nSummary.\n\n" + fenced({"findings": [
+            {"id": "F5", "severity": "P1", "file": "a.py", "line": 3, "claim": "a ``` fence ends it", "evidence": "```json\n{"}]})))
+        self.assertEqual((v["gist"], v["findings"]), (["P1: a.py:3 — a ``` fence ends it"], {"F5": "a.py a ``` fence ends it"}))
+
+    def test_only_pr_agent_gets_the_pr_agent_gist(self):
+        v = st.voice(comment("**deep-mode reviewer** · head `abc1234`\n\n" + fenced({"findings": [
+            {"id": "F1", "severity": "P2", "file": "s.py", "line": 9, "claim": "a `PR Reviewer Guide` mention is misread"}]})))
+        self.assertEqual(v["gist"], ["P2: s.py:9 — a `PR Reviewer Guide` mention is misread"])
+
 
 class PrAgentGist(unittest.TestCase):
     GUIDE = ("## PR Reviewer Guide 🔍\n\n<table>\n"
@@ -131,14 +141,14 @@ class PrAgentGist(unittest.TestCase):
 
     def test_no_focus_section_is_its_all_clear_line(self):
         body = self.GUIDE.format("<tr><td>⚡&nbsp;<strong>No major issues detected</strong></td></tr>\n")
-        self.assertEqual(st.gist(body), ["No major issues detected"])
-        self.assertEqual(st.gist(self.GUIDE.format("")), ["No major issues detected"])
+        self.assertEqual(st.gist(body, "pr-agent"), ["No major issues detected"])
+        self.assertEqual(st.gist(self.GUIDE.format(""), "pr-agent"), ["No major issues detected"])
 
     def test_focus_titles_come_from_the_focus_section_only(self):
         body = self.GUIDE.format("<tr><td>⚡&nbsp;<strong>Recommended focus areas for review</strong><br>"
                                  "<a href='x'><strong>Shared Checkout</strong></a><br>text<br>"
                                  "<a href='y'><strong>Unreviewed Binary</strong></a></td></tr>\n")
-        self.assertEqual(st.gist(body), ["focus: Shared Checkout; Unreviewed Binary"])
+        self.assertEqual(st.gist(body, "pr-agent"), ["focus: Shared Checkout; Unreviewed Binary"])
 
 
 class Dialog(unittest.TestCase):
@@ -231,6 +241,18 @@ class Battle(unittest.TestCase):
         meta = {"url": "u", "repo": "o/r", "number": 9, "kind": "pr", "title": "x", "state": "open"}
         after = [t["after"] for t in arena.battle(meta, found)["turns"]]
         self.assertEqual([(a["open"], a["peak"]) for a in after], [(2, 2), (3, 3), (2, 3), (3, 3), (1, 3), (0, 3)])
+
+    def test_prose_answer_closes_the_finding_it_names(self):
+        sig = "**deep-mode {}** · head `{}`\n\n"
+        found = [
+            turn(sig.format("reviewer", "aaaaaaa") + fenced({"findings": [
+                {"id": "F1", "severity": "P1", "file": "a.py", "line": 1, "claim": "Windows encoding crash"},
+                {"id": "F2", "severity": "P2", "file": "b.py", "line": 2, "claim": "Empty pane after reload"}]}), 1),
+            turn(sig.format("author", "bbbbbbb") + "Answers:\n\n1. **Empty pane: fixed.** Reload keeps it.", 2),
+            turn(sig.format("author", "ccccccc") + fenced({"responses": [{"id": "F1", "action": "fixed", "reason": "utf-8"}]}), 3),
+        ]
+        meta = {"url": "u", "repo": "o/r", "number": 9, "kind": "pr", "title": "x", "state": "open"}
+        self.assertEqual([t["after"]["open"] for t in arena.battle(meta, found)["turns"]], [2, 1, 0])
 
     def test_open_issue_outro(self):
         meta = {"url": "u", "repo": "o/r", "number": 4, "kind": "issue", "title": "Bug", "state": "open"}

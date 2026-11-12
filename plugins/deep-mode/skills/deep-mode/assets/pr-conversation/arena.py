@@ -286,14 +286,18 @@ def is_merge_note(v: dict) -> bool:
     return v.get("head") == "merge note" or any(g.startswith("Merged") for g in v.get("gist") or [])
 
 
+def words(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z0-9_]+", text.lower()) if len(w) > 3}
+
+
 def battle(meta: dict, found: list[dict]) -> dict:
     """A thread ready to draw: intro, each turn's dialog lines and the score after it, and the outro."""
     label = thread_label(meta["kind"], meta["number"])
     merged = meta["state"] == "merged"
     score = {"open": 0, "peak": 0, "votes": [None, None, None], "merged": False}
     seen, head, panel_seen, merge_said, turns = set(), "", False, False, []
-    # Open findings in report order, keyed (reviewer, id). A re-review lists every finding still open
-    # under its old id, so each reviewer's latest list replaces its previous one.
+    # Open findings in report order, keyed (reviewer, id), each with its text. A re-review lists every finding
+    # still open under its old id, so each reviewer's latest list replaces its previous one.
     open_findings, reported = {}, {}
     for v in found:
         lines = turn_lines(v, full_name(v) not in seen, head)
@@ -306,16 +310,20 @@ def battle(meta: dict, found: list[dict]) -> dict:
             for key in reported.get(name, ()):
                 open_findings.pop(key, None)
             # Prose findings carry no id: their text is the key.
-            reported[name] = [(name, i) for i in v.get("findings") or [g for g in gist if re.match(r"^P[012]:", g)]]
-            open_findings.update(dict.fromkeys(reported[name]))
+            texts = v.get("findings") or {g: g for g in gist if re.match(r"^P[012]:", g)}
+            reported[name] = [(name, i) for i in texts]
+            open_findings.update(((name, i), text) for i, text in texts.items())
         elif v["kind"] == "author":
             for g in gist:
                 if (m := ANSWER.match(g)) and open_findings:
                     ident = m.group(2).strip()
-                    if not FINDING_ID.match(ident):  # a prose answer names no id: it closes the oldest finding
-                        del open_findings[next(iter(open_findings))]
-                    elif (key := next((k for k in open_findings if k[1] == ident), None)):
-                        del open_findings[key]  # one answer closes one finding, the oldest with that id
+                    if FINDING_ID.match(ident):  # one answer closes one finding, the oldest with that id
+                        key = next((k for k in open_findings if k[1] == ident), None)
+                    else:  # a prose answer names the finding in words: the one sharing the most, else the oldest
+                        said = words(ident or m.group(4))
+                        key = max(open_findings, key=lambda k: len(said & words(open_findings[k])))
+                    if key:
+                        del open_findings[key]
         elif v["kind"] == "verifier" and v.get("number") in (1, 2, 3) and (vote := vote_of(v)):
             if panel_seen:  # a new round of votes after an earlier panel
                 score["votes"], panel_seen = [None, None, None], False
