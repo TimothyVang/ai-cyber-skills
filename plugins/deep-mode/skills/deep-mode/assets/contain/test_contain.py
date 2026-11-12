@@ -6,6 +6,7 @@ The omp hook cases need `bun` on PATH and are skipped without it.
 import json
 import os
 import shutil
+import stat
 import subprocess
 import sys
 import tempfile
@@ -36,6 +37,14 @@ def git(cwd, *args):
                    check=True, capture_output=True)
 
 
+def remove_tree(path):
+    """git marks its object files read-only, which stops shutil.rmtree on Windows and leaves the folder behind."""
+    for folder, _, files in os.walk(path):
+        for name in files:
+            os.chmod(os.path.join(folder, name), stat.S_IREAD | stat.S_IWRITE)
+    shutil.rmtree(path, ignore_errors=True)
+
+
 class GuardCase(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -54,7 +63,7 @@ class GuardCase(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
-        shutil.rmtree(cls.tmp, ignore_errors=True)
+        remove_tree(cls.tmp)
 
 
 class ClaudeGuard(GuardCase):

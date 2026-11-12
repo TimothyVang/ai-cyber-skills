@@ -48,10 +48,18 @@ def git(cwd, *args):
                    check=True, capture_output=True)
 
 
+def remove_tree(path):
+    """git marks its object files read-only, which stops shutil.rmtree on Windows and leaves the folder behind."""
+    for folder, _, files in os.walk(path):
+        for name in files:
+            os.chmod(os.path.join(folder, name), stat.S_IREAD | stat.S_IWRITE)
+    shutil.rmtree(path, ignore_errors=True)
+
+
 class LoopCase(unittest.TestCase):
     def setUp(self):
         self.tmp = Path(tempfile.mkdtemp(prefix="loop-test-")).resolve()
-        self.addCleanup(shutil.rmtree, self.tmp, True)
+        self.addCleanup(remove_tree, self.tmp)
         self.repo = self.tmp / "proj"
         (self.repo / "goals").mkdir(parents=True)
         (self.repo / "check.sh").write_text("test -f ok.txt\n", encoding="utf-8", newline="\n")

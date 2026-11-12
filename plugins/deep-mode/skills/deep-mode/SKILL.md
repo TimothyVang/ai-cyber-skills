@@ -42,10 +42,11 @@ Every task has one project root, and every file you create or change lives insid
 
 - **Find the root first.** In a repo, the root is the worktree you're in (`git rev-parse --show-toplevel`). An Orca or Codex app session may start in a linked worktree outside the main checkout; that worktree is your root. Name the root's absolute path in your restate.
 - **No repo? Make a named one.** Outside a repo, in a folder that isn't a project, or for a new project that isn't the current repo: pick a short kebab-case name from the goal (`sigma-rule-converter`), create `<parent>/<name>/`, and run `git init -b main` in it. `<parent>` is the current folder; the current repo's parent folder when you are inside another project (never nest a repo in a repo); or `~/code/` when the current folder is your home, a drive or filesystem root, a temp dir, or a system folder. Never reuse an existing folder; on a clash add a suffix. Creating that folder is the one write allowed outside a root. From then on, work only inside it and report its path.
-- **Scratch goes in `<root>/.scratch/`, worktrees in the main checkout's `.worktrees/<branch>/`.** The main checkout is the root unless your session started in a linked worktree. Each folder holds a `.gitignore` of `*`, so neither shows in `git status` or a commit, and ignoring them needs no write under `.git/`. Set them up once:
+- **Scratch goes in `<root>/.scratch/`, worktrees in the main checkout's `.worktrees/<branch>/`.** The main checkout is the root unless your session started in a linked worktree; then its `.worktrees/` is the one folder outside your root you may write. Each folder holds a `.gitignore` of `*`, so neither shows in `git status` or a commit, and ignoring them needs no write under `.git/`. Set them up once:
 
   ```bash
-  ROOT=$(git rev-parse --show-toplevel) && MAIN=$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)") &&
+  ROOT=$(git rev-parse --show-toplevel) && COMMON=$(git rev-parse --path-format=absolute --git-common-dir) &&
+  case "$COMMON" in */.git) MAIN=${COMMON%/.git} ;; *) MAIN=$ROOT ;; esac &&  # bare repo or submodule: stay in the root
   mkdir -p "$ROOT/.scratch/tmp" "$MAIN/.worktrees" &&
   for d in "$ROOT/.scratch" "$MAIN/.worktrees"; do [ -f "$d/.gitignore" ] || printf '*\n' > "$d/.gitignore"; done
   ```

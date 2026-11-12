@@ -5,6 +5,7 @@ Needs git and bash (Git for Windows ships both).
 """
 import os
 import shutil
+import stat
 import subprocess
 import tempfile
 import unittest
@@ -61,12 +62,20 @@ def find_bash():
     return None
 
 
+def remove_tree(path):
+    """git marks its object files read-only, which stops shutil.rmtree on Windows and leaves the folder behind."""
+    for folder, _, files in os.walk(path):
+        for name in files:
+            os.chmod(os.path.join(folder, name), stat.S_IREAD | stat.S_IWRITE)
+    shutil.rmtree(path, ignore_errors=True)
+
+
 @unittest.skipUnless(find_bash() and shutil.which("git"), "needs bash and git")
 class GitGuardTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="git-guard-test-")
-        cls.addClassCleanup(shutil.rmtree, cls.tmp, True)
+        cls.addClassCleanup(remove_tree, cls.tmp)
         subprocess.run(["git", "init", "-q", "-b", "feat", cls.tmp], check=True, capture_output=True)
 
     def verdict(self, command, cwd=None):

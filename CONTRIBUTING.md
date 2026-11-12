@@ -19,7 +19,7 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 - No upstream project or author names outside `LICENSE*` and `NOTICE*` files. The list is `BANNED` in `scripts/check.py`; attribution lives in `NOTICE.md`.
 - The README's playbook, principle, and technique counts match the folders, and `docs/llms-full.txt` matches the files it embeds (`python scripts/check.py --fix` rewrites it).
 - In deep-mode's `SKILL.md`, the rules above `## Routes` fit in 20,000 bytes (about 5,000 tokens), which is what Claude Code keeps of a skill after it compacts a long session. Put lookup tables below that heading and long detail in `references/`.
-- Every Python file parses, and every `test_*.py` folder passes (`assets/contain`, `assets/loop`, `assets/github-app`, `assets/git-guardrails`). The tests need `git` and `bash`; the omp hook cases also need `bun` and are skipped without it. The check takes about half a minute.
+- Every Python file parses, and every `test_*.py` folder passes (`assets/contain`, `assets/loop`, `assets/github-app`, `assets/git-guardrails`, `assets/pr-conversation`). The tests need `git` and `bash`; the omp hook cases also need `bun` and are skipped without it. The check takes about two minutes.
 
 ## Testing a behavior change
 
