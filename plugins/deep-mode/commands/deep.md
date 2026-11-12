@@ -7,7 +7,7 @@ Read `skill://deep-mode` and follow its **Route** section first: look around, pi
 
 Keep every write inside the project root, per deep-mode's **Contain the work** section: scratch and temp files in `.scratch/`, worktrees in `.worktrees/`, never system temp or folders outside the repo. No repo yet → create a named one first.
 
-For a large or medium task, read the matched playbook's file and copy its steps into your todo list. For a small one, take the fast path. Read only the principle and technique files you apply.
+For a large or medium task, read the matched playbook's file and copy its steps into your todo list. For a small one, take the fast path. Read only the principle and technique files you apply. A small fix with no remote to push to, or one I said I'd review, stays an uncommitted local change: fix, a test that fails without the fix, one real run, then report. It needs no panel.
 
 If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it for proof. If it has none, the task is medium or large, it changes user-visible behavior, and the app runs locally, I pre-authorize running `skill://create-verification-skill` first; say you did.
 

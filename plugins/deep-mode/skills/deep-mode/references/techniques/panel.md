@@ -2,6 +2,7 @@
 
 **Use when:** deciding whether a task is done, and before every merge. The panel is the verdict: three skeptical verifiers judge the work independently, and the task is done when at least two of them agree, each with evidence you have checked.
 A size S change gets the light panel instead (Light panel, below). Every other change keeps the three-verifier panel.
+A local S fix that nobody pushes or merges needs no panel (`references/playbooks/opening-a-pr.md`, Size S lane).
 
 1. **Freeze the subject.** The task's acceptance criteria (from its issue or card), the exact head SHA, the diff, and the author's evidence. A new push after this point means a new panel.
    Done when the criteria, the head SHA, the diff, and the author's evidence are written into the verifier brief.
@@ -31,7 +32,7 @@ The light panel is one verifier instead of three. It is used only for a size S c
 
 Run the steps above with these changes:
 
-- Step 2 spawns one verifier, from a different model family than the author when one is available. Its brief is the same.
+- Step 2 spawns one verifier, from a different model family than the author when one is available. Its brief is the same, except its break attempt stays within inputs the code plausibly sees. A failure only past that (a bill in the trillions) is a follow-up in the report, not NOT DONE.
 - Step 4 passes only when that one verifier votes DONE (PASS in pr-conversation) with evidence you checked at the exact head.
 - Step 5 does not apply, since a pass has no dissent.
 

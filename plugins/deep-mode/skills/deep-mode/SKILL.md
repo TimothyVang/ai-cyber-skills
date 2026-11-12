@@ -31,7 +31,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 
 | Size | Looks like | How to run it |
 |---|---|---|
-| **S** | At most 30 changed lines in at most 2 files, nothing about auth, secrets, permissions, trust-boundary parsing, migrations, CI, or agent config | The S lane (`references/playbooks/opening-a-pr.md`): restate in one line, change, prove once, review your own diff, land on a light panel. No subagents, architect, or decision log. |
+| **S** | At most 30 changed lines in at most 2 files, nothing about auth, secrets, permissions, trust-boundary parsing, migrations, CI, or agent config | Restate in one line, fix, add a test that fails without the fix, prove it once on the real artifact. A **local S fix** (no remote, or the user reviews it first) stops there, uncommitted, reading no reference file. To push or merge, take the S lane (`references/playbooks/opening-a-pr.md`) and its light panel. No other subagents, architect, or decision log. |
 | **M** | A few files, one feature or bug with a cause to find | The matched playbook. Delegates only when work splits cleanly. |
 | **L** | Cross-cutting, new module, many files, risky, or long-running | The full playbook with subagents, architect where shapes differ, and a show-me-your-work trail. |
 
@@ -67,12 +67,12 @@ Every task has one project root, and every file you create or change lives insid
 
 ## Non-negotiables
 
-For size **S**, only the one-line restate, the Scope ledger, proving it on the real artifact, and the S lane for its PR apply. The rest of this section applies when a rule would change the fix.
+For size **S**, only the one-line restate, the Scope ledger, proving it on the real artifact (no new verify skill), and, if it ships, the S lane apply. The rest of this section applies when a rule would change the fix.
 
 - **Restate first.** Your first message on a task states, in your own words, the user's goal, the problem they are solving, and, if the task ships a change, the smallest change you expect to meet it. Don't wait for confirmation. If the evidence rules out the requested change, show it and stop. Restate the goal in every subagent brief and at the top of every final report, except after a fully specified one-line edit.
 - **Scope ledger.** The restatement numbers every item the request covers ("all the logs", a list, "the rest" mean every member), and the todo list, if any, mirrors it. A yes that names no single option you offered accepts all of them, in order, except a hard stop, which needs its own yes. Anything you say you will do joins the ledger when you say it. Dropping a ledger item is never your scope call; only the user removes one. The task is done when every item is done or blocked (see Run to the finish line).
 - **Name your principles, in plain words.** For size M and L, add one short "Why I chose this" line naming each principle that changed a decision and the choice it changed, phrased so a non-expert follows ("I fixed the comparison where stock is checked, not the caller, because that's where it goes wrong"). Cite only principles whose file you read this session in `references/principles/`. Skip it for size S.
-- **Prove it on the real artifact.** Before calling anything done, run the real app, CLI, or service path and capture evidence. If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it. If not and the task changes user-visible behavior: when the user pre-authorized it (the `/deep` command does), run `skill://create-verification-skill` first; otherwise offer `/skill:create-verification-skill` once and prove the change by hand. Tests passing and "it compiles" are not proof.
+- **Prove it on the real artifact.** Before calling anything done, run the real app, CLI, or service path and capture evidence. If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it. If not and an M or L task changes user-visible behavior: when the user pre-authorized it (the `/deep` command does), run `skill://create-verification-skill` first; otherwise offer `/skill:create-verification-skill` once and prove the change by hand. Tests passing and "it compiles" are not proof.
 - **Decide; don't ask.** About to `ask` "which approach" or "what should this do"? Settle it yourself, by kind. A fact → look it up. An observable fork (behavior, timing, layout, output, perf, whether an eval separates) → run the Prototype playbook and let the result decide. A product, design, or preference call → make it (Autonomy). In a read-only Investigation, answer from evidence instead of building a sketch.
 - **Secrets, logins, tokens, or auth in play** (API keys, `.env`, passwords, usernames, MFA, OAuth or MCP auth, CI credentials, a suspected leak) → read `skill://secrets-and-auth` first, then the file it routes to. Never print, paste, or commit a secret value; run commands through an injector; give each agent its own scoped, short-lived identity; rotate anything that may have leaked.
 - **Name the data shape before any code**, and choose its organizing structure per `references/principles/model-the-domain.md`. Name it with the project's glossary terms; a new domain, data model, database, repo layout, or service boundary also reads `skill://software-architecture`.
@@ -80,7 +80,6 @@ For size **S**, only the one-line restate, the Scope ledger, proving it on the r
 - **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`).
   - Before opening one, self-review your branch in local mode and fix, dismiss, or escalate each finding. Maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof.
   - Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it, and the repo's own checks locally. Your own PR then lands through **pr-conversation**.
-  - Size S takes the S lane instead: your own review against pr-review's checklist, no subagents, no PR-Agent.
 - **Deep-mode is the gate layer**: no GitHub Actions and no hosted review service. When the repo opted into the security gate or the change touches auth, permissions, input parsing, or secrets, run **security-audit** (`references/techniques/security-audit.md`) on the head that will merge; its blocking findings are P0 review findings.
 - **More triggers** (which technique a situation calls for) are in Technique triggers, below.
 
@@ -89,7 +88,7 @@ For size **S**, only the one-line restate, the Scope ledger, proving it on the r
 - **Just do it.** Work proceeds without asking, including commits, pushes, PRs, issues, board cards, and merges.
 - **Your own PRs land on their own.** Once every review finding is fixed or dismissed, linked issues are answered, the panel passes, and required checks are green, the **pr-conversation** technique merges the user's own PR. No separate ask.
 - **Done means a panel pass.** No change is done, and nothing lands on the default branch or a branch others build on, until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked.
-  - For size S, the light panel (one verifier, another model family when available) is that pass.
+  - For size S, the light panel (one verifier, another model family when available) is that pass. A local S fix needs none.
   - Push your own PR branch so the panel can check it. Your own green runs are evidence the panel reproduces, never a substitute.
   - Then push to the shared branch, or merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
 - **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself. Pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal.
