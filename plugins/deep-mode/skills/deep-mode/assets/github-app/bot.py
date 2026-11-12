@@ -663,14 +663,48 @@ class Identity:
                 names.append(name)
         return names
 
-    def read(self, repo: str, path: str):
+    def read_token(self, repo: str) -> str:
         cooldown = getattr(self, "cooldown", {})
         if cooldown.get("until", 0) > time.time():
             raise ghapp.RateLimited(cooldown["until"], cooldown["reason"])
         if repo not in self.installs:
             self.installs[repo] = ghapp.installation_for(self.app, repo)
-        token = ghapp.installation_token(self.app, self.installs[repo])
+        return ghapp.installation_token(self.app, self.installs[repo])
+
+    def read(self, repo: str, path: str):
+        token = self.read_token(repo)
         return unlocked(ghapp.request, "GET", path, token, bearer=False)
+
+    def gh_read(self, repo: str, *args):
+        """Data reads only. The installation token lives in this child environment, never the command line."""
+        env = None
+        if self.app:
+            token = self.read_token(repo)
+            env = {**os.environ, "GH_TOKEN": token, "GH_PROMPT_DISABLED": "1"}
+        proc = run(["gh", *args], check=False, env=env)
+        detail = (proc.stderr or proc.stdout).strip()
+        if self.app and proc.returncode and re.search(r"rate[ _]limit|retry-after|abuse detection", detail, re.I):
+            retry = re.search(r"retry-after:\s*(\d+)", detail, re.I)
+            if retry:
+                raise ghapp.rate_limit({"Retry-After": retry[1]}, detail)
+            limits = self.read(repo, "/rate_limit")["resources"]
+            exhausted = [v["reset"] for k, v in limits.items()
+                         if k in ("core", "graphql") and v.get("remaining") == 0]
+            raise ghapp.RateLimited(max(exhausted) if exhausted else time.time() + 60,
+                                   "GitHub installation read rate limit exhausted")
+        return proc
+
+    def pr_view(self, repo: str, number: int, fields: str) -> dict:
+        proc = self.gh_read(repo, "pr", "view", str(number), "-R", repo, "--json", fields)
+        if proc.returncode:
+            raise RuntimeError(f"gh pr view failed: {(proc.stderr or proc.stdout).strip()[-300:]}")
+        return json.loads(proc.stdout)
+
+    def prs_for_head(self, repo: str, branch: str) -> list:
+        if not self.app:
+            return gh_json("pr", "list", "-R", repo, "--head", branch, "--state", "open", "--json", "url") or []
+        rows = self.pages(repo, f"/repos/{repo}/pulls?state=open&head={quote(repo.split('/')[0] + ':' + branch)}")
+        return [{"url": row["html_url"]} for row in rows]
 
     def pages(self, repo: str, path: str) -> list:
         rows, page = [], 1
@@ -871,17 +905,25 @@ def branch_rules(repo: str, base: str, is_admin: bool):
     return sorted(set(contexts)), {k: sorted(v) for k, v in pinned.items()}, sorted(set(other)), error
 
 
-def app_checks(repo: str, sha: str, name: str, apps: list) -> dict:
+def app_checks(repo: str, sha: str, name: str, apps: list, ident=None) -> dict:
     """Results named `name` on `sha` per required app id, {"<app id>": ["pass", ...]}: that app's check runs,
     and the latest commit status its bot account set for that context. Any other source doesn't count."""
-    out = gh("api", "--paginate", f"repos/{repo}/commits/{sha}/check-runs?per_page=100&check_name={quote(name)}",
-             "--jq", ".check_runs[] | {app: .app.id, status, conclusion} | @json")
+    def read(*args):
+        if not ident:
+            return gh(*args)
+        proc = ident.gh_read(repo, *args)
+        if proc.returncode:
+            raise RuntimeError(f"GitHub check metadata read failed: {(proc.stderr or proc.stdout).strip()[-300:]}")
+        return proc.stdout
+
+    out = read("api", "--paginate", f"repos/{repo}/commits/{sha}/check-runs?per_page=100&check_name={quote(name)}",
+               "--jq", ".check_runs[] | {app: .app.id, status, conclusion} | @json")
     seen = {str(app): [] for app in apps}
     for line in out.splitlines():
         run_ = json.loads(line)
         if str(run_["app"]) in seen:
             seen[str(run_["app"])].append(run_bucket(run_["status"], run_["conclusion"]))
-    out = gh("api", "--paginate", f"repos/{repo}/commits/{sha}/statuses?per_page=100", "--jq",
+    out = read("api", "--paginate", f"repos/{repo}/commits/{sha}/statuses?per_page=100", "--jq",
              f'.[] | select(.context == {json.dumps(name)}) | {{login: .creator.login, type: .creator.type, '
              'state} | @json')
     latest = {}
@@ -889,7 +931,13 @@ def app_checks(repo: str, sha: str, name: str, apps: list) -> dict:
         status = json.loads(line)
         latest.setdefault(status["login"], status)
     for login, status in latest.items():
-        app = app_id_of(login[:-len("[bot]")]) if status["type"] == "Bot" and login.endswith("[bot]") else None
+        app = None
+        if status["type"] == "Bot" and login.endswith("[bot]"):
+            if ident:
+                value = read("api", f"apps/{login[:-len('[bot]')]}", "--jq", ".id").strip()
+                app = int(value) if value.isdigit() else None
+            else:
+                app = app_id_of(login[:-len("[bot]")])
         if str(app) in seen:
             seen[str(app)].append(status_bucket(status["state"]))
     return seen
@@ -1031,9 +1079,9 @@ def behind_by(clone: Path, base: str, sha: str) -> int:
     return int(count) if proc.returncode == 0 and count.isdigit() else -1
 
 
-def pr_checks(repo: str, number: int, required=False) -> list:
-    cmd = ["gh", "pr", "checks", str(number), "-R", repo, "--json", "name,bucket"]
-    proc = run(cmd + (["--required"] if required else []), check=False)
+def pr_checks(repo: str, number: int, required=False, ident=None) -> list:
+    args = ["pr", "checks", str(number), "-R", repo, "--json", "name,bucket"] + (["--required"] if required else [])
+    proc = ident.gh_read(repo, *args) if ident else run(["gh", *args], check=False)
     if proc.stdout.strip():
         return json.loads(proc.stdout)
     if "checks reported" in proc.stderr:
@@ -1041,9 +1089,22 @@ def pr_checks(repo: str, number: int, required=False) -> list:
     raise RuntimeError(f"gh pr checks failed: {proc.stderr.strip()[-300:]}")
 
 
-def merge_pr(repo: str, number: int, sha: str, admin: bool) -> str:
+def merge_pr(repo: str, number: int, sha: str, admin: bool, app=False) -> str:
     """Run `gh pr merge` (squash, else merge) and return the method. It doesn't read the result back:
     PRConversation.finish_merge confirms MERGED, so a failed read-back can be resumed."""
+    if app and not admin:
+        for method in ("squash", "merge"):
+            proc = run(["gh", "api", "--method", "PUT", f"repos/{repo}/pulls/{number}/merge", "--input", "-"],
+                       stdin=json.dumps({"sha": sha, "merge_method": method}), check=False)
+            try:
+                result = json.loads(proc.stdout or "{}")
+            except ValueError:
+                result = {}
+            if proc.returncode == 0 and result.get("merged") is True:
+                return method
+            detail = (proc.stderr or proc.stdout).strip()[-400:]
+            if method != "squash" or "squash" not in detail.lower():
+                raise Blocked(f"REST PR merge failed: {detail}")
     cmd = ["gh", "pr", "merge", str(number), "-R", repo, "--match-head-commit", sha] + (["--admin"] if admin else [])
     method = "squash"
     proc = run(cmd + ["--squash"], cwd=WORK, check=False)
@@ -1053,6 +1114,15 @@ def merge_pr(repo: str, number: int, sha: str, admin: bool) -> str:
     if proc.returncode:
         raise Blocked(f"`gh pr merge` failed: {(proc.stderr or proc.stdout).strip()[-400:]}")
     return method
+
+
+def create_pr(repo: str, base: str, head: str, title: str, body: str, cwd: Path, app=False) -> str:
+    if not app:
+        return gh("pr", "create", "-R", repo, "--base", base, "--head", head, "--title", title,
+                  "--body-file", "-", stdin=body, cwd=cwd).strip()
+    reply = gh("api", "--method", "POST", f"repos/{repo}/pulls", "--input", "-",
+               stdin=json.dumps({"base": base, "head": head, "title": title, "body": body}), cwd=cwd)
+    return json.loads(reply)["html_url"]
 
 
 # ---------------------------------------------------------------- one item
@@ -1372,8 +1442,8 @@ class PRConversation:
         git(self.clone, "fetch", "origin", "--quiet", f"+refs/pull/{self.n}/head:refs/{B['branchPrefix']}/pr/{self.n}",
             timeout=1800)
         for _ in range(6):  # GitHub computes mergeability lazily after a push
-            view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json",
-                           "headRefOid,mergeStateStatus,mergeable,reviewDecision,state")
+            view = self.bot.ident.pr_view(self.repo, self.n,
+                                          "headRefOid,mergeStateStatus,mergeable,reviewDecision,state")
             if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                 break
             pause(5)
@@ -1537,7 +1607,10 @@ class PRConversation:
 
     def ownership(self, head: str) -> bool:
         """is_own_pr freshly from GitHub, and only when GitHub's head is still `head`."""
-        view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "author,isCrossRepository,headRefOid")
+        row = gh_json("api", f"repos/{self.repo}/pulls/{self.n}")
+        view = {"author": as_comment(row)["author"], "headRefOid": row["head"]["sha"],
+                "isCrossRepository": (row["head"].get("repo") or {}).get("id") !=
+                                    (row["base"].get("repo") or {}).get("id")}
         if view["headRefOid"] != head:
             return False
         view["commits"], view["writers"] = pr_commits(self.repo, self.n), push_writers(self.repo)
@@ -1552,7 +1625,7 @@ class PRConversation:
     def open_issues(self) -> list:
         """Issues this PR closes that hold a human comment newer than the bots' last reply there. Each one is
         flagged so the issue conversation answers any human there (in a repo the app is installed on)."""
-        refs = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "closingIssuesReferences") or {}
+        refs = self.bot.ident.pr_view(self.repo, self.n, "closingIssuesReferences") or {}
         waiting = []
         for ref in refs.get("closingIssuesReferences") or []:
             where = re.search(r"github\.com/([^/]+/[^/]+)/issues/\d+", ref.get("url") or "")
@@ -1683,13 +1756,14 @@ class PRConversation:
             # Rules are read on every pass, so the gate decides on the ones in force after any check wait.
             contexts, pinned_rules, other, error = branch_rules(self.repo, self.base, is_admin)
             for _ in range(6):  # GitHub computes mergeability lazily
-                view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json",
-                               "headRefOid,mergeStateStatus,mergeable,reviewDecision,labels")
+                view = self.bot.ident.pr_view(self.repo, self.n,
+                                              "headRefOid,mergeStateStatus,mergeable,reviewDecision,labels")
                 if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                     break
                 pause(5)
-            checks, required = pr_checks(self.repo, self.n), pr_checks(self.repo, self.n, required=True)
-            pinned = {name: app_checks(self.repo, view["headRefOid"], name, apps)
+            checks, required = pr_checks(self.repo, self.n, ident=self.bot.ident), \
+                pr_checks(self.repo, self.n, required=True, ident=self.bot.ident)
+            pinned = {name: app_checks(self.repo, view["headRefOid"], name, apps, ident=self.bot.ident)
                       for name, apps in pinned_rules.items()}
             pending = checks_pending(contexts, checks, required, pinned)
             if not pending or time.time() > deadline:
@@ -1767,7 +1841,7 @@ class PRConversation:
         # On an error (even a refusal) the record stays: if GitHub accepted the merge after all, repo_cycle reads
         # MERGED on a later cycle, however late, and finishes it.
         try:
-            step["method"] = merge_pr(self.repo, self.n, sha, admin)
+            step["method"] = merge_pr(self.repo, self.n, sha, admin, app=bool(self.bot.ident.app))
         finally:
             self.bot.save()
         status = self.finish_merge(settle=True)
@@ -1782,7 +1856,7 @@ class PRConversation:
         until it reads MERGED (GitHub settles an accepted merge asynchronously)."""
         deadline = time.monotonic() + (MERGE_SETTLE if settle else 0)
         while True:
-            view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "state,headRefOid,mergeCommit")
+            view = self.bot.ident.pr_view(self.repo, self.n, "state,headRefOid,mergeCommit")
             if view["state"] == "MERGED" or time.monotonic() >= deadline:
                 return view
             pause(3)
@@ -1886,9 +1960,8 @@ class PRConversation:
         git(tree, "push", "--quiet", "origin", f"HEAD:refs/heads/{branch}", timeout=600)
         body = (f"Reverts #{self.n} (`{merged[:7]}`): the {NAME} trunk check failed on `{self.base}` after the "
                 f"merge.\n\n{untrusted('evidence', evidence)}")
-        return gh("pr", "create", "-R", self.repo, "--base", self.base, "--head", branch, "--title",
-                  f"Revert #{self.n}: trunk checks failed after merge", "--body-file", "-", stdin=body,
-                  cwd=self.clone).strip()
+        return create_pr(self.repo, self.base, branch, f"Revert #{self.n}: trunk checks failed after merge",
+                         body, self.clone, app=bool(self.bot.ident.app))
 
 
 # ---------------------------------------------------------------- issue conversation
@@ -1951,7 +2024,7 @@ class IssueConversation:
         """Build on the issue branch in the impl tree and open its PR. `sessions` are the build's one-off
         (author, reviewer, implement) session names from issue_sessions."""
         branch = f"{B['branchPrefix']}/issue-{self.n}"
-        existing = gh_json("pr", "list", "-R", self.repo, "--head", branch, "--state", "open", "--json", "url") or []
+        existing = self.bot.ident.prs_for_head(self.repo, branch)
         if existing:
             self.it.say("coordinator", "bot.py", "", f"{existing[0]['url']} is already open for this issue.")
             return "implemented"
@@ -1986,8 +2059,7 @@ class IssueConversation:
         title = str(meta.get("title") or f"{NAME}: resolve issue #{self.n}").strip()[:200]
         body = (f"{str(meta.get('summary') or '').strip()}\n\nCloses #{self.n}\n\nImplemented by the {NAME} "
                 f"author ({role_label(self.author)}) after a plan review with {role_label(self.reviewer)} in #{self.n}.")
-        url = gh("pr", "create", "-R", self.repo, "--base", self.default, "--head", branch, "--title", title,
-                 "--body-file", "-", stdin=body, cwd=self.clone).strip()
+        url = create_pr(self.repo, self.default, branch, title, body, self.clone, app=bool(self.bot.ident.app))
         self.release(tree, sessions, branch)
         self.item["implemented"] = True
         self.it.say("coordinator", "bot.py", new,

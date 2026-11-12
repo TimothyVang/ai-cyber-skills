@@ -647,6 +647,139 @@ class AppDiscoveryTest(unittest.TestCase):
         comments.assert_called_once_with("o/r", "pullRequests")
 
 
+class InstallationReadTest(unittest.TestCase):
+    def test_views_checks_and_linked_metadata_use_only_a_child_installation_token(self):
+        ident = AppDiscoveryTest().identity()
+        fields = "headRefOid,mergeStateStatus,mergeable,reviewDecision,state"
+        view = {"headRefOid": "a" * 40, "mergeStateStatus": "CLEAN", "mergeable": "MERGEABLE",
+                "reviewDecision": "", "state": "OPEN"}
+        calls = []
+
+        def run(cmd, **kw):
+            calls.append(cmd)
+            self.assertEqual(kw["env"]["GH_TOKEN"], "installation-token")
+            self.assertNotIn("installation-token", " ".join(cmd))
+            self.assertEqual(os.environ["GH_TOKEN"], "human-token")
+            data = [{"name": "check", "bucket": "pass"}] if cmd[1:3] == ["pr", "checks"] else \
+                {"closingIssuesReferences": [{"number": 1, "url": "https://github.com/o/r/issues/1"}]} \
+                if cmd[-1] == "closingIssuesReferences" else view
+            return subprocess.CompletedProcess(cmd, 0, json.dumps(data), "")
+
+        with mock.patch.dict(os.environ, {"GH_TOKEN": "human-token"}), \
+                mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot, "run", side_effect=run):
+            self.assertEqual(ident.pr_view("o/r", 7, fields), view)
+            self.assertEqual(bot.pr_checks("o/r", 7, ident=ident), [{"name": "check", "bucket": "pass"}])
+            self.assertEqual(bot.pr_checks("o/r", 7, required=True, ident=ident)[0]["bucket"], "pass")
+            self.assertEqual(ident.pr_view("o/r", 7, "closingIssuesReferences")["closingIssuesReferences"][0]["number"], 1)
+        self.assertIn("--required", calls[2])
+
+    def test_installation_graphql_exhaustion_becomes_the_cycle_cooldown_exception(self):
+        ident = AppDiscoveryTest().identity()
+        failed = subprocess.CompletedProcess(["gh"], 1, "", "GraphQL: API rate limit exceeded")
+        with mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot, "run", return_value=failed) as run, \
+                mock.patch.object(ident, "read", return_value={"resources": {
+                    "core": {"remaining": 100, "reset": 1900}, "graphql": {"remaining": 0, "reset": 2000}}}) as read, \
+                self.assertRaises(bot.ghapp.RateLimited) as raised:
+            ident.pr_view("o/r", 7, "headRefOid")
+        self.assertEqual(raised.exception.retry_at, 2000)
+        read.assert_called_once_with("o/r", "/rate_limit")
+        run.assert_called_once()
+
+    def test_ownership_still_reads_author_commits_and_collaborators_as_the_human(self):
+        c = object.__new__(bot.PRConversation)
+        c.repo, c.n = "o/r", 7
+        c.bot = mock.Mock(ident=AppDiscoveryTest().identity())
+        c.bot.trusted.return_value = set()
+        row = AppDiscoveryTest().row(7)
+        with mock.patch.object(bot, "gh_json", return_value=row) as read, \
+                mock.patch.object(bot, "pr_commits", return_value=[commit("a" * 40)]) as commits, \
+                mock.patch.object(bot, "push_writers", return_value=[OWNER]) as writers, \
+                mock.patch.object(c.bot.ident, "gh_read", side_effect=AssertionError("app used for authority")):
+            self.assertTrue(c.ownership("a" * 40))
+        read.assert_called_once_with("api", "repos/o/r/pulls/7")
+        commits.assert_called_once_with("o/r", 7)
+        writers.assert_called_once_with("o/r")
+
+    def test_pinned_check_runs_statuses_and_app_ids_use_installation_reads(self):
+        ident = AppDiscoveryTest().identity()
+        outputs = ['{"app":42,"status":"completed","conclusion":"success"}\n',
+                   '{"login":"ci[bot]","type":"Bot","state":"success"}\n', "42\n"]
+
+        def run(cmd, **kw):
+            self.assertEqual(kw["env"]["GH_TOKEN"], "installation-token")
+            return subprocess.CompletedProcess(cmd, 0, outputs.pop(0), "")
+
+        with mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot, "run", side_effect=run):
+            self.assertEqual(bot.app_checks("o/r", "a" * 40, "check", [42], ident=ident), {"42": ["pass", "pass"]})
+        self.assertEqual(outputs, [])
+
+    def test_secondary_read_throttle_uses_retry_after_without_another_request(self):
+        ident = AppDiscoveryTest().identity()
+        failed = subprocess.CompletedProcess(["gh"], 1, "", "secondary rate limit; Retry-After: 90")
+        with mock.patch.object(bot.time, "time", return_value=1000), \
+                mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot, "run", return_value=failed), mock.patch.object(ident, "read") as read, \
+                self.assertRaises(bot.ghapp.RateLimited) as raised:
+            ident.pr_view("o/r", 7, "state")
+        self.assertEqual(raised.exception.retry_at, 1090)
+        read.assert_not_called()
+
+    def test_no_app_views_keep_the_normal_gh_environment(self):
+        ident = AppDiscoveryTest().identity()
+        ident.app = None
+        with mock.patch.object(bot, "run", return_value=subprocess.CompletedProcess(["gh"], 0, "{}", "")) as run:
+            self.assertEqual(ident.pr_view("o/r", 7, "state"), {})
+        self.assertIsNone(run.call_args.kwargs["env"])
+
+
+class HumanRestMutationTest(unittest.TestCase):
+    def test_non_admin_merge_uses_human_rest_with_the_exact_voted_head(self):
+        reply = subprocess.CompletedProcess(["gh"], 0, '{"merged":true}', "")
+        with mock.patch.object(bot, "run", return_value=reply) as run:
+            self.assertEqual(bot.merge_pr("o/r", 7, "a" * 40, False, app=True), "squash")
+        args, kw = run.call_args
+        self.assertEqual(args[0], ["gh", "api", "--method", "PUT", "repos/o/r/pulls/7/merge", "--input", "-"])
+        self.assertEqual(json.loads(kw["stdin"]), {"sha": "a" * 40, "merge_method": "squash"})
+        self.assertNotIn("env", kw)
+
+    def test_merge_refusal_is_not_success_or_an_admin_fallback(self):
+        reply = subprocess.CompletedProcess(["gh"], 0, '{"merged":false,"message":"head moved"}', "")
+        with mock.patch.object(bot, "run", return_value=reply) as run, self.assertRaises(bot.Blocked):
+            bot.merge_pr("o/r", 7, "a" * 40, False, app=True)
+        run.assert_called_once()
+
+    def test_explicit_admin_merge_keeps_human_gh_and_fails_closed_when_unavailable(self):
+        reply = subprocess.CompletedProcess(["gh"], 1, "", "GraphQL: API rate limit exceeded")
+        with mock.patch.object(bot, "run", return_value=reply) as run, self.assertRaises(bot.Blocked):
+            bot.merge_pr("o/r", 7, "a" * 40, True, app=True)
+        args, kw = run.call_args
+        self.assertEqual(args[0][:3], ["gh", "pr", "merge"])
+        self.assertIn("--admin", args[0])
+        self.assertEqual(args[0][args[0].index("--match-head-commit") + 1], "a" * 40)
+        self.assertNotIn("env", kw)
+        run.assert_called_once()
+
+    def test_disabled_squash_falls_back_to_merge_with_the_same_head_guard(self):
+        denied = subprocess.CompletedProcess(["gh"], 1, "", "Squash merges are not allowed")
+        merged = subprocess.CompletedProcess(["gh"], 0, '{"merged":true}', "")
+        with mock.patch.object(bot, "run", side_effect=[denied, merged]) as run:
+            self.assertEqual(bot.merge_pr("o/r", 7, "a" * 40, False, app=True), "merge")
+        self.assertEqual([json.loads(call.kwargs["stdin"]) for call in run.call_args_list], [
+            {"sha": "a" * 40, "merge_method": "squash"}, {"sha": "a" * 40, "merge_method": "merge"}])
+
+    def test_pr_creation_uses_human_rest_and_preserves_metadata(self):
+        with mock.patch.object(bot, "gh", return_value='{"html_url":"https://github.com/o/r/pull/8"}') as gh:
+            self.assertEqual(bot.create_pr("o/r", "main", "feature", "Title", "Body", Path("clone"), app=True),
+                             "https://github.com/o/r/pull/8")
+        args, kw = gh.call_args
+        self.assertEqual(args, ("api", "--method", "POST", "repos/o/r/pulls", "--input", "-"))
+        self.assertEqual(json.loads(kw["stdin"]), {"base": "main", "head": "feature", "title": "Title", "body": "Body"})
+        self.assertNotIn("env", kw)
+
+
 class DiscoveryRateLimitTest(unittest.TestCase):
     def test_request_honors_primary_reset_and_secondary_retry_after_without_retrying(self):
         for headers, expected in [
@@ -1003,6 +1136,8 @@ class ImplementReleaseTest(unittest.TestCase):
         c.clone, c.tree, c.author, c.reviewer = Path("clone"), Path("w/issue5"), {"agent": "a"}, {"agent": "a"}
         c.issue = {"title": "t", "body": "b", "author": {"login": OWNER}}
         c.bot, c.it = mock.Mock(), mock.Mock()
+        c.bot.ident = AppDiscoveryTest().identity()
+        c.bot.ident.app = None
         c.it.ask.return_value = "done"
         if close:
             c.it.close_sessions.side_effect = close
