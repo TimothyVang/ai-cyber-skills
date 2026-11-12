@@ -11,7 +11,7 @@ Three files in `assets/git-guardrails/` do the work:
 
 **Blocked on the default branch:** while `main`, `master`, or `trunk` is checked out, a push that names no destination (`git push`, `git push origin`) or pushes `HEAD`. These are the `@branch` lines in the pattern file; the hooks check the branch in the command's working directory.
 
-**Allowed:** everything deep-mode does in normal work: branches, commits, pushes to feature branches, `--force-with-lease` to a feature branch, `gh pr merge`. **Strict mode** (only the human pushes): uncomment the last line of the pattern file.
+**Allowed:** everything deep-mode does in normal work: branches, commits, pushes to feature branches, `--force-with-lease` to a feature branch, `gh pr merge`. Two playbook commands match the patterns and are blocked too: `git worktree remove --force` (Worktree cleanup) and `git restore ... -- .` (Autopilot's revert). Drop `--force` for a clean worktree and use `git revert` for the revert; anything else is the user's to run. **Strict mode** (only the human pushes): uncomment the last line of the pattern file.
 
 1. **Scope.** Default to the project: the hook files are committed, so every agent working in the repo gets them. User scope (every repo on this machine) only when asked.
 2. **Install for the harnesses in use** (both when unsure):
@@ -24,7 +24,7 @@ Three files in `assets/git-guardrails/` do the work:
 3. **Tailor the list.** Ask nothing; read the repo. A default branch with another name (`develop`, `production`) gets added to the named-destination push line and to both `@branch` lines. Commands the repo's own scripts legitimately run get removed, with a comment saying why.
 4. **Prove it.**
    - Claude Code script: `echo '{"tool_input":{"command":"git reset --hard"}}' | bash .claude/hooks/git-guard.sh; echo $?` prints the block reason and `2`. `--check 'git push --force-with-lease origin feat'` exits `0`. On the default branch, `--check 'git push'` exits `2`; on a feature branch it exits `0`.
-   - Live, in a new session of each harness: have the agent run `cd "$(mktemp -d)" && git init -q && git reset --hard`. It must be blocked before running (an empty scratch repo, so nothing is lost if the hook fails).
+   - Live, in a new session of each harness: have the agent run `mkdir -p .scratch/tmp && d=$(mktemp -d -p .scratch/tmp) && cd "$d" && git init -q && git reset --hard` from the project root. It must be blocked before running (an empty scratch repo of its own inside the self-ignored `.scratch/`, so nothing is lost if the hook fails; the `&&` chain stops before `git reset` if the folder was not created).
 5. **Land it** through the Opening a PR playbook (`references/playbooks/opening-a-pr.md`), and add one line to `AGENTS.md` naming the guard and the pattern file, so an agent that gets blocked knows where the rule lives.
 
 **Limits.** The patterns match command text, so an alias, a script that runs git inside it, or another tool that shells out can get past them. The `@branch` lines read the branch in the tool call's working directory, so `cd other && git push` or `git -C other push` is judged by the wrong repo, and `push.default=matching` can push the default branch from a feature branch. Some harmless commands look destructive and are blocked too (`git restore --staged .`); use the safe form (`git reset` to unstage). The guard is a seatbelt; the hard stops in SKILL.md still apply.

@@ -23,7 +23,7 @@ An item with two state roles is a conflict: fix it to the one the evidence suppo
    - **Duplicate:** search the tracker by concept, not just by the reporter's words. A match → comment with the link and close the newer one as `triage:wontfix`.
    - **Already built:** search the code for the behavior by its glossary name and by what it does. Found → close as `triage:wontfix` with where it lives. Report where you looked either way.
    - **Declined before:** read `docs/deep-mode/declined/*.md`. A match by concept → link it; the earlier decision stands unless new evidence changes it.
-4. **Verify the claim.** Bug → reproduce it from the reporter's steps in a fresh `mktemp -d` folder or a detached worktree, never the user's checkout. PR → check its head out in a detached worktree and run the tests and commands its claim rests on. Record the result: confirmed (with the code path), not reproduced (with what you ran), or missing detail.
+4. **Verify the claim.** Bug → reproduce it from the reporter's steps in a fresh `mktemp -d -p "$ROOT/.scratch/tmp"` folder or a detached worktree under `.worktrees/` (SKILL.md Contain the work), never in tracked files. PR → check its head out in a detached worktree under `.worktrees/` and run the tests and commands its claim rests on. Record the result: confirmed (with the code path), not reproduced (with what you ran), or missing detail.
 5. **Shape it.** Underspecified but answerable from code, docs, or judgment → the **grill** technique (`references/techniques/grill.md`) in its With docs mode, so settled terms reach `GLOSSARY.md` and lasting decisions reach `docs/adr/`. Only a fact the reporter alone holds (their version, their data, their steps) makes it `triage:needs-info`.
 6. **Decide the state** (SKILL.md Autonomy) and post its artifact, then set the labels:
    - `triage:agent-ready` → the brief below.
@@ -85,7 +85,7 @@ A later decision to accept the concept deletes the file; the old items stay clos
 - One category role and one state role per triaged item.
 - Posting, labeling, and closing in the user's repo is routine. In someone else's repo, triage is read-only: the report is the output (SKILL.md Autonomy hard stops).
 - No item reaches `triage:agent-ready` without Done when items a verifier can run.
-- Reproductions run outside the user's checkout; `git status` there is unchanged at the end.
+- Reproductions run in the self-ignored `.scratch/` or `.worktrees/`, never in tracked files or outside the repo; `git status` in the user's checkout is unchanged at the end.
 
 ## Evidence
 

@@ -2,7 +2,7 @@
 
 Use when: the agent should run a project on its own ("drive the board", "work the backlog", "run this project autonomously", "keep going on the roadmap"), or a goal bigger than one PR that the user wants planned, built, and landed without them. You own the board, the tasks, the PRs, and the merges. Every task ends in a merge, and only after a panel pass.
 
-The board lives on the repo's GitHub issues: one issue per task, and one status label each: `board:todo`, `board:in-progress`, `board:review`, `board:blocked`, `board:done`. When the user keeps a GitHub Projects board, mirror each status change there too (`gh project item-edit`). No GitHub remote → `plan/board.md`, one checklist line per task with its status.
+The board lives on the repo's tracker, the kind the **tracker** technique (`references/techniques/tracker.md`) names: one issue per task, and one status label each: `board:todo`, `board:in-progress`, `board:review`, `board:blocked`, `board:done`. The commands below are the **github** kind's; when the user keeps a GitHub Projects board, mirror each status change there too (`gh project item-edit`). On the **local** kind, the same issues and labels live in that tracker's files, through its operations. Never mix kinds in one repo.
 
 ## Steps
 
@@ -21,7 +21,7 @@ The board lives on the repo's GitHub issues: one issue per task, and one status 
 ## Gates
 
 - Every merge has a panel pass at the exact head it merges.
-- The forge's protections stand: never bypass required reviews or checks, never admin-merge, never force-push the default branch.
+- The forge's protections stand: never merge past a failing or pending required check, and never force-push the default branch. A required review on the user's own PR is replaced only the way the **pr-conversation** technique's merge step allows (`references/techniques/pr-conversation.md`): a panel pass at that head, every check green, then `--admin`.
 - The hard stops in SKILL.md Autonomy still need the user.
 - One PR per task; a task that grows past one PR splits into new tasks.
 

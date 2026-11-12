@@ -21,7 +21,7 @@ Use when: adding new behavior. You own the design: plan, review, verify. Size L:
 6. Verify on the matching surface (project `verify-<app>` skill first; else omp `eval` `browser` or bash). "Inconclusive" or wrong-surface is not a pass; flag it.
 7. Sequence into small, ordered, verifiable units (`references/principles/sequence-verifiable-units.md`): build, verify, then the next. Stack follow-ups.
 8. Design contested → run one adversarial review pass by a different model family than yours, when one is available; keep only findings a run proves. Prefer empirical and formal verification.
-9. Run **Opening a PR** (`references/playbooks/opening-a-pr.md`), then land it through `references/playbooks/shipping.md` on a panel pass.
+9. Run **Opening a PR** (`references/playbooks/opening-a-pr.md`), which lands a single PR through **pr-conversation** on a panel pass; a stack lands through `references/playbooks/shipping.md`.
 
 ## Gates
 

@@ -28,6 +28,10 @@ Skip phases the work doesn't need. One PR of settled work starts at phase 5 with
 | Words or decisions need recording | **domain-model** (`references/techniques/domain-model.md`) |
 | A queue of labeled issues and the `factory` CLI | Factory (`references/playbooks/factory.md`) |
 | A multi-day program with many owners | Orchestrate (`references/playbooks/orchestrate.md`) |
+| A workflow done the same way twice, or a goal to run unattended until a check passes | Self-authoring (`references/playbooks/self-authoring.md`): write and prove a prompt, skill, goal, or loop |
+| Choosing a repo layout, data model, database, or backend shape | `references/architecture/README.md` |
+| Secrets, logins, or agent authentication | `references/credentials/README.md` |
+| Running in or scripting omp, Claude Code, or Codex; MCP or ACP | `references/harnesses/README.md` |
 
 ## Between phases
 

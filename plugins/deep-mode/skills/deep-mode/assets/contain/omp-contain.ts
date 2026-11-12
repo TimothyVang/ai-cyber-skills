@@ -2,16 +2,17 @@
 // Enforces deep-mode's "Contain the work" rule. Install: copy to ~/.omp/agent/hooks/pre/ (all sessions) or
 // <repo>/.omp/hooks/pre/ (one repo), or pass `--hook <this file>` for one run.
 // Roots = the worktree holding the session cwd plus its main checkout (they differ in a linked worktree, e.g. one
-// under <root>/.worktrees/ or an Orca workspace), or the cwd outside git. Also allowed: omp session stores (local://,
-// artifact://, agent://, proc://, xd://) and `extraWriteRoots` in a root's .deep-mode.json (only paths the user
-// named). bash and eval are not covered.
+// under <root>/.worktrees/ or an Orca workspace), or the cwd outside git. Also allowed: omp session resources
+// (local://, artifact://, agent://, proc://, xd://, out://, conflict://, cfg://) and `extraWriteRoots` in a root's
+// .deep-mode.json (only paths the user named). bash and eval are not covered.
 import { execFileSync } from "node:child_process";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 
 const WRITE_TOOLS: Record<string, true> = { write: true, edit: true, ast_edit: true };
-const SESSION_URL = /^(local|artifact|agent|proc|xd):\/\//i;
+const SESSION_URL = /^(local|artifact|agent|proc|xd|out|conflict|cfg):\/\//i;
+const HEADER = /^\[(.+)#[0-9A-Za-z]+\]$/; // a copied [path#TAG] header: omp strips the wrapper before writing
 const ANY_URL = /^[a-z][a-z0-9+.-]*:\/\//i;
 const caseless = process.platform === "win32" || process.platform === "darwin";
 
@@ -26,9 +27,14 @@ interface HookApi {
 	on(event: "tool_call", handler: (event: ToolCallEvent, ctx: { cwd?: string }) => Promise<ToolCallResult>): void;
 }
 
-function real(p: string): string {
+// Absolute form of a path as omp would open it: `~` is the home folder, anything relative hangs off cwd.
+function absolute(p: string, cwd: string): string {
 	const expanded = p === "~" || p.startsWith("~/") || p.startsWith("~\\") ? path.join(os.homedir(), p.slice(1)) : p;
-	let resolved = path.resolve(expanded);
+	return path.resolve(cwd, expanded);
+}
+
+function real(p: string): string {
+	let resolved = path.resolve(p);
 	try {
 		resolved = fs.realpathSync.native(resolved);
 	} catch {
@@ -69,7 +75,7 @@ function allowedRoots(roots: string[]): string[] {
 			const extra = config && typeof config === "object" && "extraWriteRoots" in config ? config.extraWriteRoots : undefined;
 			if (!Array.isArray(extra)) continue;
 			for (const p of extra) {
-				if (typeof p === "string") allowed.push(path.isAbsolute(p) || p.startsWith("~") ? p : path.join(root, p));
+				if (typeof p === "string") allowed.push(absolute(p, root));
 			}
 		} catch {}
 	}
@@ -80,7 +86,7 @@ function targets(input: Record<string, unknown>): string[] {
 	const out: string[] = [];
 	if (typeof input.path === "string") out.push(input.path);
 	if (Array.isArray(input.paths)) for (const p of input.paths) if (typeof p === "string") out.push(p);
-	return out.filter(p => p.length > 0 && !SESSION_URL.test(p));
+	return out.map(p => HEADER.exec(p.trim())?.[1] ?? p.trim()).filter(p => p.length > 0 && !SESSION_URL.test(p));
 }
 
 export default function (pi: HookApi): void {
@@ -91,9 +97,9 @@ export default function (pi: HookApi): void {
 		const root = roots[0];
 		const allowed = allowedRoots(roots);
 		for (const target of targets(event.input ?? {})) {
-			const file = target.replace(/^([^:]{2,}):[^\\/].*$/, "$1"); // archive.zip:member, db.sqlite:table
-			// skill://, omp://, ssh:// and other non-session URLs resolve outside the root.
-			if (!ANY_URL.test(target) && allowed.some(r => inside(real(path.resolve(cwd, file)), r))) continue;
+			// skill://, vault://, ssh:// and other non-session URLs resolve outside the root. A selector suffix
+			// (archive.zip:member, db.sqlite:table) stays on the path: `..` in it must count against the target.
+			if (!ANY_URL.test(target) && allowed.some(r => inside(real(absolute(target, cwd)), r))) continue;
 			return {
 				block: true,
 				reason:

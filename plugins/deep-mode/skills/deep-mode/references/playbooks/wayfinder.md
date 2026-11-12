@@ -4,7 +4,7 @@ Use when: an effort is too big for one session and the route is foggy ("wayfinde
 
 The **map** is one issue labeled `wayfinder:map`. Its **tickets** are child issues, each one question whose answer is a decision, sized to one agent session. The map is an index: a decision lives in its ticket, and the map links to it by the ticket's title, never a bare number. Asking for a map grants creating and editing its issues and labels.
 
-Where it lives: the repo's GitHub issues (`gh`). Children attach with the sub-issues API (`gh api repos/<owner>/<repo>/issues/<map>/sub_issues -F sub_issue_id=<child issue id>`); blocking is a `Blocked by: #<n>` line in the ticket body. No GitHub remote → local markdown under `plan/wayfinder/<slug>/` (`map.md` plus one file per ticket).
+Where it lives: the repo's tracker, the kind the **tracker** technique (`references/techniques/tracker.md`) names. **github**: children attach with the sub-issues API (`gh api repos/<owner>/<repo>/issues/<map>/sub_issues -F sub_issue_id=<child issue id>`); blocking is a `Blocked by: #<n>` line in the ticket body. **local**: the map and its tickets are that tracker's issue files, linked by their `Parent:` and `Blocked by:` fields. Never mix kinds in one repo.
 
 Map body sections: **Destination** (one or two lines: the spec, decision, or change the map is finding its way to), **Notes** (domain, skills every session should read, standing preferences), **Decisions so far** (one line per closed ticket: linked title and a one-line gist), **Not yet specified** (in-scope fog too vague to ticket), **Out of scope** (ruled out, with why).
 

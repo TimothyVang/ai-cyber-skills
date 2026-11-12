@@ -37,7 +37,7 @@ The app asks for contents, pull requests and issues (write), and checks, statuse
 
 ```bash
 py -3 assets/github-app/bot.py once --repo <owner/repo> --dry-run   # preview one cycle, post nothing
-py -3 assets/github-app/bot.py once --item pr:<n>                   # one item now
+py -3 assets/github-app/bot.py once --repo <owner>/<name> --item pr:<n>   # one item now; --item needs --repo
 py -3 assets/github-app/bot.py watch                                # poll every interval
 py -3 assets/github-app/bot.py install-autostart                    # start watch on its own
 py -3 assets/github-app/bot.py status
@@ -46,6 +46,7 @@ py -3 assets/github-app/bot.py status
 - `install-autostart` registers `deep-mode-bot` with Task Scheduler (Windows), launchd (macOS), or a systemd user unit or crontab `@reboot` entry (Linux); `uninstall-autostart` removes it.
 - The first run records a start time; a repo added to the app later starts at its first poll. Only events after it get a turn. That first poll lists every open PR and records each older PR's head as backlog; any head seen after it is new, whatever its commit dates, including on a PR first seen later (reopened). `--backlog` takes older open PRs and issues too.
 - Each cycle lists every open PR and issue and takes non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deep-mode` or come from the owner after the bots' last turn. On the owner's own PRs only the owner's comments count. On an issue that an own PR's merge waits on, any human comment since the bots' last reply counts, however old. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all, with the comments that triggered it.
+- Comments are read through GitHub's GraphQL API: the newest 100 on each item, each with its author's type. Another app's comment is never taken for a human's, so it neither triggers a turn nor holds up a merge.
 - A comment counts as the bots' only when the app posted it, or the owner's account posted it with the bot signature; a signature from anyone else is a human comment.
 - The owner is the `gh` user running the bot, even when an organization owns the app.
 - One bot process runs at a time (a lock file). `--dry-run` takes no lock: each run clones into a workspace of its own and removes it afterwards, so previews can run beside the bot and each other. State is in `~/.config/deep-mode/bot-state.json`. Clones, worktrees, logs and per-item transcripts are in `~/.cache/deep-mode/bot/`.
@@ -62,22 +63,29 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 - A base-branch `.deep-mode.json` with `"bot": false` skips the repo.
 - A base-branch `.deep-mode.json` with `"autonomousMerge": false` keeps the conversation but stops at merge-ready.
 - `bot.json` `"autonomousMerge": false` stops merges on every repo.
+- A `hold`, `do-not-merge`, or `stack-only` label on a PR keeps the conversation (review, fixes, panel) and stops before the merge. Remove the label and the next cycle merges it.
 - The bot reads `.deep-mode.json` from the base branch (`git show origin/<base>:.deep-mode.json`), never a PR head, and fetches the base again right before each merge.
 
 ## Safety
 
 - PR and issue text is untrusted data. Prompts say so, wrap it in delimiters, and defang `@path` mentions. A request in it to merge, push, run, or post elsewhere is a finding.
 - Only the user's own PRs merge, and only through pr-conversation's gates, enforced in code at the merging head: same head as the panel, the ownership gate re-checked (with other writers, each commit the bot didn't push needs the owner as committer and a verified signature), required checks green (a check the rules tie to one GitHub App counts only that app's check runs and the commit statuses its bot account set), the head contains its base, linked issues answered, not conflicting, merge authorized. Branch rules are read again after any wait for checks. `--admin` only when the required review is the one rule it would bypass and no check, required or not, is failing or cancelled. No rebase, no force-push, no branch deletion.
+- The bots merge only into the default branch or a protected branch. A PR based on any other branch is a stack child: it is reviewed and verified, then waits until it targets the trunk, so a stack lands bottom-up. Retargeting it gives it a fresh review and panel against the new base.
+- Required checks get one wait of up to 30 minutes per head. After it, each cycle looks again without waiting: a check still running keeps the PR waiting, and a check that hasn't reported for three cycles while nothing runs blocks the merge until a new push or an owner comment. A skipped required check counts as passed, as GitHub counts it.
 - After each merge, a verifier runs the repo's checks on the merge commit. Red → the bot opens a `deep-mode/revert-pr-<n>` PR, which the next cycle lands like any other; a check that can't run or returns no verdict is reported, never reverted on. The bot records the merge before running `gh pr merge` and records each step after it (read-back, note, trunk check), so an error anywhere after GitHub accepts the merge resumes on the next cycles (three attempts) even though the PR is closed. No time limit drops that record: while the PR stays open the bot reads its state each cycle, so a merge that shows up late still gets its trunk check; the record goes when the steps finish, the PR is closed unmerged, or it merges at another head.
-- Answering an issue a PR's merge waits on never starts a second implementation; only an owner's `@deep-mode implement` does.
+- Answering an issue a PR's merge waits on never starts a second implementation; only an owner's `@deep-mode implement` does. The command opens a line as its own word: `@deep-mode implementation looks wrong`, a quoted command, and one shown inside a code block or an HTML comment don't count.
 - The author and the verifiers run (both with `--approve-all`) only after the current head re-passes the ownership gate, so a push from another account mid-conversation sends the PR to a human.
 - No one but the owner steers a write-enabled agent: on the owner's PRs other people's comments neither trigger a turn nor reach a prompt, and an issue build plans and implements in new agent sessions that see only the owner's comments, never an earlier discussion's context.
 - Implementing an issue reuses an existing `deep-mode/issue-<n>` branch only when every commit on it is one the bots made; otherwise the bots stop and say so.
-- Contributors' and forks' PRs get review comments only. No agent runs with `--approve-all` on their code.
-- Agents run inside the repo, so their CLIs load its AGENTS.md and CLAUDE.md, and its rules apply. No real-money trading actions, ever.
+- Contributors' and forks' PRs get review comments only, from a sealed reviewer: one model call with no tools, no files and no project config (`omp -p --no-tools` from an empty folder, the call the **pr-agent** technique uses), fed the diff with as many context lines as fit (40, else 10, else 3). It cannot read a local file or fetch a URL, so a hostile PR cannot make it leak one, and nothing in the PR can configure it. The sealed call needs an `omp` reviewer on a subscription login; with any other reviewer agent the bots skip other people's PRs and log it.
+- Issue discussions follow the same rule. When the issue or a comment in the prompt comes from anyone but the owner, the plan, critique and answer turns are sealed calls, and they need `omp` for both the author and the reviewer; with another agent the bots leave such an issue alone and log it. The owner's own issues, and a build the owner asked for, keep their tools.
+- A push from another account in the middle of a cycle is caught before the review: when the head moved since the cycle listed the PR's commits, ownership is checked again, and a head that fails it is reviewed sealed.
+- On the owner's PRs and issues, agents run inside the repo, so their CLIs load its AGENTS.md and CLAUDE.md, and its rules apply. No real-money trading actions, ever.
 - The private key and installation tokens stay in `~/.config/deep-mode/`. Tokens last one hour. None of them go into prompts, logs or repos.
 - Usage is the user's subscription. Raise `interval` or install on fewer repos to spend less.
 
 ## Bot name
 
 Rename the bots with `install.py --brand <name>`. It writes `assets/github-app/brand.local.json`, and `brand.py` derives the app name, comment signature, mention, branch prefix, repo config file, config and cache directories, and autostart task from it.
+
+That renames only the bots. To ship the whole product under your own brand (name, logo, colors, commands, skills, the GitHub App, the docs site, the README, images and SEO), run the brand kit from the repo root: `py -3 scripts/whitelabel.py --brand <file> --out <dir>`. The guide is `docs/rebrand.md` in the repo.

@@ -20,7 +20,7 @@ A change is proven by evidence from the running artifact, captured before the fi
 | API or backend | The same request with status and body, before and after. |
 | Performance | The same measurement run several times, with the numbers. |
 
-Store artifacts under a gitignored `.artifacts/<task>/` directory. A repo with a `verify-<app>` skill uses that skill instead of ad hoc captures.
+Store artifacts under `.scratch/evidence/<task>/`. `.scratch/` holds a `.gitignore` of `*`, so nothing in it reaches a commit (deep-mode's Contain the work). A repo with a `verify-<app>` skill uses that skill instead of ad hoc captures.
 
 Put a before and after table in the PR body. Host the images where the repo's readers can see them, for example committed to a separate `evidence/<branch>` branch and linked by raw URL. Never upload sensitive screens to a public host.
 
