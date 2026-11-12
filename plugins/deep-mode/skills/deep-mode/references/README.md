@@ -23,7 +23,7 @@ Read when a task touches one of these areas and you need to know which reference
 
 **Frontend UI/UX** (building, restyling, or reviewing UI; components; motion and animation; motion graphics or rendered video; color; accessibility; chat or agent UI) → before writing UI code, read `references/frontend/README.md` (always-apply rules, routing, section index), then the `references/frontend/playbook/` section it routes to. `references/frontend/patterns/` holds what the reference images and clips taught, as text: shipped-app layouts, popular pins, 193 animation techniques, the motion-graphics stack. These files are bundled, so they work anywhere deep-mode is installed.
 
-Frontend evidence and media live in the private `TimothyVang/frontend`. When you need them, shallow-clone it to `.scratch/refs/frontend` and never commit from it. That path follows SKILL.md's Contain the work and overrides the clone path the exported frontend README names.
+Frontend evidence and media live in the private `TimothyVang/frontend`. When you need them, shallow-clone it to `.scratch/refs/frontend` (SKILL.md Contain the work) and never commit from it.
 
 **Cloud security and DevSecOps rules** come from `references/cloud-devsecops/` (cited reports in `TimothyVang/cloud-devsecops`; its `README.md` lists them). They cover securing and wiring up a cloud, where `domain-rules/aws-networking.md` covers how AWS networking works. Read the file the task touches before designing, reviewing, or changing cloud access, policy, or pipelines:
 
