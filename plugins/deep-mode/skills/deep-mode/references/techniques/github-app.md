@@ -39,12 +39,13 @@ The app asks for contents, pull requests and issues (write), and checks, statuse
 py -3 assets/github-app/bot.py once --repo <owner/repo> --dry-run   # preview one cycle, post nothing
 py -3 assets/github-app/bot.py once --repo <owner>/<name> --item pr:<n>   # one item now; --item needs --repo
 py -3 assets/github-app/bot.py watch                                # poll every interval
-py -3 assets/github-app/bot.py install-autostart                    # start watch on its own
+py -3 assets/github-app/bot.py install-autostart                    # optional: start watch at logon
+py -3 assets/github-app/bot.py update --dry-run                     # show what an update would run
 py -3 assets/github-app/bot.py status
 ```
 
-- `install-autostart` registers `deep-mode-bot` with Task Scheduler (Windows), launchd (macOS), or a systemd user unit or crontab `@reboot` entry (Linux); `uninstall-autostart` removes it.
-  - Installed as an omp plugin, the task or launcher points at `~/.omp/plugins/node_modules/deep-mode/...`, the link omp keeps on the current version, so `omp plugin upgrade` never leaves it on a deleted folder.
+- `install-autostart` is optional. It registers `deep-mode-bot` with Task Scheduler (Windows), launchd (macOS), or a systemd user unit or crontab `@reboot` entry (Linux); `uninstall-autostart` removes it.
+  - Installed as an omp plugin, the task or launcher points at `~/.omp/plugins/node_modules/deep-mode/...`, the link omp keeps on the current version, so an upgrade never leaves it on a deleted folder.
 - On Windows a logon task usually needs an elevated terminal. When Task Scheduler refuses it, `install-autostart` writes `deep-mode-bot.cmd` to your Startup folder instead, which needs no admin rights. It runs `watch` in a minimized window and appends its output to `logs/watch.log` in the cache directory. `status` reports which entry is there as `autostartKind`: `schtasks` or `startup-folder`.
 - Repos are polled side by side, `parallelRepos` at a time (default 4). Items within one repo run one at a time, so one long conversation never stalls the other repos.
 - The first run records a start time; a repo added to the app later starts at its first poll. Only events after it get a turn. That first poll lists every open PR and records each older PR's head as backlog; any head seen after it is new, whatever its commit dates, including on a PR first seen later (reopened). `--backlog` takes older open PRs and issues too.
@@ -58,12 +59,28 @@ py -3 assets/github-app/bot.py status
 Config is `~/.config/deep-mode/bot.json`, created with these defaults on the first run. Each role is `{"agent": "<acpx agent>", "model": "<optional model id>"}`:
 
 ```json
-{"author":{"agent":"omp"},"reviewer":{"agent":"omp"},"verifiers":[{"agent":"omp"},{"agent":"omp"},{"agent":"omp"}],"autonomousMerge":true,"maxRounds":3,"interval":120,"mention":"@deep-mode","parallelRepos":4}
+{"author":{"agent":"omp"},"reviewer":{"agent":"omp"},"verifiers":[{"agent":"omp"},{"agent":"omp"},{"agent":"omp"}],"autonomousMerge":true,"maxRounds":3,"interval":120,"mention":"@deep-mode","parallelRepos":4,"autoUpdate":true,"updateMinutes":60}
 ```
 
 A repo names its own gate in its base-branch `.deep-mode.json`: `{"check": "npm test"}`.
-- On the owner's PRs the bot runs it in a clean worktree at the head, before the panel and again at the exact head it merges. A nonzero exit goes to the author as a P1 finding, and the merge waits for a pass. The limit is 30 minutes.
-- After a merge it is the trunk check: red opens the revert PR, with no agent involved. Without a `check`, a verifier agent runs the repo's documented checks.
+- On the owner's PRs the bot runs it in a clean worktree at the head, before the panel and again at the exact head it merges. A nonzero exit, 127 included, goes to the author as a P1 finding, and the merge waits for a pass. The limit is 30 minutes.
+- Before running it, the bot looks up the command's first word on the check's `PATH` (bash's `command -v`). On Windows that `PATH` starts with the bot's own Python folder, so `python` works under `pythonw`. A builtin, a path, or a command that doesn't parse is left to the run.
+- A first word the bot can't find is the bot's setup, not the PR. The bot posts one coordinator note, sends no finding, blocks the merge, and retries on the next cycle.
+- After a merge it is the trunk check: red opens the revert PR, with no agent involved. Without a `check`, a verifier agent runs the repo's documented checks. A trunk check that can't start reverts nothing; the bot keeps the merge record and retries each cycle until the check runs.
+
+## Updates
+
+- A `watch` bot running from the omp plugin install keeps that install up to date. Run from a git checkout, or with a brand that names no repo, it never updates; it logs that once.
+- It checks between cycles only, never during an item. It checks at most every `updateMinutes` (default 60), and right after it merges a PR into its own repo.
+- The check compares `gh api repos/TimothyVang/deep-mode/commits/main` with the commit recorded at the last update in `~/.config/deep-mode/update.json`.
+- When they differ it runs `omp plugin marketplace update deep-mode`, then `omp plugin upgrade deep-mode`, with API-key variables removed. The first command matters. `omp plugin upgrade` alone reinstalls from omp's local copy of the repo and fetches nothing.
+- When the bot's own code changed, it hands over to a new watcher. It lets go of the lock, starts the same `watch` command from the updated files, and waits up to 60 seconds for the new process to record that it holds the lock. Then the old one exits.
+- If the new watcher doesn't confirm, the old one stops it, takes the lock back, and goes on with the old code. The new process's errors are in `~/.cache/deep-mode/bot/logs/restart-<pid>.log`, and the next check tries again.
+- Under systemd, when the bot's own unit runs it, the watcher exits 75 instead and the unit restarts it.
+- A failed upgrade is logged, and the next check tries again. It never stops the bot.
+- Turn it off with `"autoUpdate": false` in `bot.json`.
+- Update by hand with `bot.py update` (`--dry-run` prints the commits and the commands), or `omp plugin marketplace update deep-mode` then `omp plugin upgrade deep-mode`. A running bot restarts on the new code at its next check.
+- On Claude Code, update by hand with `claude plugin marketplace update deep-mode` and `claude plugin update deep-mode@deep-mode`, then restart Claude Code. A bot run from a Claude Code install does not update itself.
 
 ## Opt out
 
