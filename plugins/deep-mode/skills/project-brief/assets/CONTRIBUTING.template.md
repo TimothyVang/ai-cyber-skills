@@ -53,7 +53,7 @@ Expires: <YYYY-MM-DD, 7 days after posting>
 - **Files** lists every path you expect to change. Use `dir/` for a whole directory. Be specific: other contributors' agents avoid these paths.
 - A claim is active until its `Expires` date. Still working? Post a fresh claim comment with a new date.
 - An issue with an assignee counts as claimed too, unless that assignee posted a claim comment on it: then only the comment counts.
-- Giving up? Comment on the issue with `<!-- deep-mode:unclaim -->` on its own line plus a short note, so someone else can pick it up.
+- Giving up? Comment on the issue with `<!-- deep-mode:unclaim -->` on its own line plus a short note, so someone else can pick it up. It releases only your own claim.
 - Expired claims are released. The scripts stop counting a claim the day after `Expires`, even when the claimant is still assigned, and the maintainer comments that the issue is open again.
 - Don't claim more than you can finish in a week. Split big tasks first.
 

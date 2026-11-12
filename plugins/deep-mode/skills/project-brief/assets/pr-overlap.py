@@ -11,7 +11,8 @@ Subcommands (all take --repo owner/name):
   comment --pr N
           Post or update one overlap comment on PR N (marker <!-- deep-mode:overlap -->).
   claims  [--json]
-          List active claims (claim comments and issue assignees).
+          List active claims (claim comments and issue assignees). An issue with
+          several holders gets one entry per claim comment and one for its assignees.
 
 Claims are looked for on open issues labeled "help wanted" and on open issues
 with an assignee; other issues are not scanned.
@@ -25,12 +26,14 @@ Claim comment format (posted on an issue):
   Plan: <one line>
   Files: <comma-separated repo paths; trailing "/" = whole directory>
   Expires: <YYYY-MM-DD>
-A claim is active if it is the newest claim comment on an open issue, its
-Expires date is today (UTC) or later, and no newer comment from the same author
-contains <!-- deep-mode:unclaim -->. An issue assignee also counts as a claim
-with unknown files: it never overlaps by file, only by issue. An assignee who
-posted a claim comment on the issue counts only through that comment: once it
-expires or is released, the assignment stops counting too.
+Claim rule: each author's newest claim comment on an open issue is their claim.
+It is active while its Expires date is today (UTC) or later and that author has
+posted no comment containing <!-- deep-mode:unclaim --> after it. Every active
+claim counts, so one person's claim, expiry or withdrawal never changes another
+person's claim. An issue assignee also counts as a claim with unknown files: it
+never overlaps by file, only by issue. An assignee who posted a claim comment on
+the issue counts only through that comment: once it expires or is released, the
+assignment stops counting too.
 """
 
 from __future__ import annotations
@@ -260,37 +263,36 @@ def _login(obj: dict | None) -> str:
     return ((obj or {}).get("login") or "").strip()
 
 
-def active_claim_from_comments(comments: list[dict], today: dt.date) -> dict | None:
-    """Apply the claim rule to an issue's comments. Returns the active claim comment or None."""
+def active_claims_from_comments(comments: list[dict], today: dt.date) -> list[dict]:
+    """Apply the claim rule to an issue's comments. Returns the active claims, oldest first."""
     ordered = sorted(comments, key=lambda c: (c.get("created_at") or "", c.get("id") or 0))
-    claim_idx = None
+    newest: dict[str, int] = {}  # author -> index of their newest claim comment
     for i, c in enumerate(ordered):
         if CLAIM_MARKER in (c.get("body") or ""):
-            claim_idx = i
-    if claim_idx is None:
-        return None
-    claim = ordered[claim_idx]
-    author = _login(claim.get("user")).lower()
-    for later in ordered[claim_idx + 1 :]:
-        if _login(later.get("user")).lower() == author and UNCLAIM_MARKER in (later.get("body") or ""):
-            return None
-    fields = parse_claim_body(claim.get("body") or "")
-    expires = fields.get("expires", "").strip()
-    m = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", expires)
-    if not m:
-        return None
-    try:
-        exp_date = dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-    except ValueError:
-        return None
-    if exp_date < today:
-        return None
-    return {
-        "author": _login(claim.get("user")),
-        "plan": fields.get("plan", ""),
-        "files": parse_paths(fields.get("files", "")),
-        "expires": exp_date.isoformat(),
-    }
+            newest[_login(c.get("user")).lower()] = i
+    active: list[dict] = []
+    for author, idx in sorted(newest.items(), key=lambda item: item[1]):
+        claim = ordered[idx]
+        if any(_login(later.get("user")).lower() == author and UNCLAIM_MARKER in (later.get("body") or "")
+               for later in ordered[idx + 1:]):
+            continue
+        fields = parse_claim_body(claim.get("body") or "")
+        m = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", fields.get("expires", "").strip())
+        if not m:
+            continue
+        try:
+            exp_date = dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            continue
+        if exp_date < today:
+            continue
+        active.append({
+            "author": _login(claim.get("user")),
+            "plan": fields.get("plan", ""),
+            "files": parse_paths(fields.get("files", "")),
+            "expires": exp_date.isoformat(),
+        })
+    return active
 
 
 def _open_issues(repo: str, query: str) -> list[dict]:
@@ -314,17 +316,16 @@ def fetch_active_claims(repo: str) -> list[Claim]:
         title = issue.get("title") or ""
         url = issue.get("html_url") or ""
         comments = comments_by_issue.get(number, [])
-        found = active_claim_from_comments(comments, today)
-        if found:
+        for found in active_claims_from_comments(comments, today):
             claims.append(Claim(number, title, url, found["author"], "comment",
                                 found["plan"], found["files"], found["expires"]))
-            continue
-        # Claimants self-assign. A claim that expired or was released must not live on as an assignee claim.
-        lapsed = {_login(c.get("user")).lower() for c in comments if CLAIM_MARKER in (c.get("body") or "")}
+        # Claimants self-assign, so anyone who posted a claim comment counts only through it:
+        # an expired or released claim must not live on as an assignee claim.
+        claimed = {_login(c.get("user")).lower() for c in comments if CLAIM_MARKER in (c.get("body") or "")}
         assignees = [_login(a) for a in issue.get("assignees") or [] if _login(a)]
         if not assignees and _login(issue.get("assignee")):
             assignees = [_login(issue.get("assignee"))]
-        assignees = [a for a in assignees if a.lower() not in lapsed]
+        assignees = [a for a in assignees if a.lower() not in claimed]
         if assignees:
             claims.append(Claim(number, title, url, ", ".join(assignees), "assignee"))
     claims.sort(key=lambda c: c.issue)

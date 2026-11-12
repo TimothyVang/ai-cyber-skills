@@ -40,7 +40,8 @@ Everything below must match what `skill://contribute`, `scripts/pr-overlap.py`, 
   Expires: <YYYY-MM-DD, 7 days after posting>
   ```
 
-- **Active claim.** The newest claim comment on an open issue, with `Expires` today or later, and no newer comment from the same author containing `<!-- deep-mode:unclaim -->`. An assignee also counts as a claim on the issue (not on any files). An assignee who posted a claim comment on the issue counts only through that comment: once it expires or is released, the assignment stops counting.
+- **Active claim.** Each author's newest claim comment on an open issue is their claim. It is active while `Expires` is today or later and that author has posted no later comment containing `<!-- deep-mode:unclaim -->`. Every active claim counts: one person's claim, expiry or withdrawal never changes another person's.
+- **Assignees.** An assignee also counts as a claim on the issue (not on any files), unless they posted a claim comment on it. Then only that comment counts: once it expires or is released, the assignment stops counting.
 - **Overlap.** Two path sets overlap when a path is equal, or one is a directory prefix (`dir/`) of the other. Paths are repo-relative with forward slashes.
 - **One issue = one branch = one PR.** The PR body says `Closes #N`.
 
@@ -85,7 +86,8 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
 
 8. **Re-run mode.** When the brief already exists:
    - **Refresh the brief.** `git log --since=<brief's last commit date> --stat` plus a re-read of changed areas. Update only sections that drifted; re-run the Run & verify commands and update their recorded results.
-   - **Release expired claims.** Fetch comments: `gh issue list --repo OWNER/REPO --state open --label "help wanted" --limit 200 --json number,title,assignees,labels,comments`. Find issues whose newest claim comment has an `Expires` date before today and no later unclaim. Comment on each: `Claim by @<login> expired on <date>. This issue is open to claim again; comment here if you're still on it.` Remove the `claimed` label if set (`gh issue edit N --remove-label claimed`), and list the released claims in the report.
+   - **Release expired claims.** Fetch comments: `gh issue list --repo OWNER/REPO --state open --label "help wanted" --limit 200 --json number,title,assignees,labels,comments`. Find each author's newest claim comment that has an `Expires` date before today and no later unclaim from that author. Comment on each: `Claim by @<login> expired on <date>. This issue is open to claim again; comment here if you're still on it.` Remove the `claimed` label if set (`gh issue edit N --remove-label claimed`), and list the released claims in the report.
+     `python scripts/pr-overlap.py claims --repo OWNER/REPO` still lists the issue under someone else → name that holder in the comment instead of calling the issue open, and keep the label.
      Never unassign anyone without the user's yes. The issue is open again either way: both scripts skip an assignee whose own claim comment lapsed.
    - **Assets.** Diff each installed asset against this skill's copy; propose updates as in step 4.
    - **New tasks.** Repeat step 3 for gaps since the last run.
