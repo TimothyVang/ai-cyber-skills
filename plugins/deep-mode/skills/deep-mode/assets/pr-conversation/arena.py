@@ -113,23 +113,23 @@ SPRITES = {
         ".....322223.....",
         "......3333......",
     ],
-    "panel": [  # judge: cap, robe, gavel
-        "...3333333333...",
-        "..322222222223..",
-        "...3333333333...",
-        "...3111111113...",
-        "...3133113313...",
-        "...3111111113...",
-        "...3113333113...",
-        "....33333333....",
-        "3333.30000003...",
-        "3223.33000033...",
-        ".3..3333033333..",
-        ".33.3333033333..",
-        "..33333330333...",
-        "...3333303333...",
-        "...3333333333...",
-        "...333....333...",
+    "panel": [  # judge: cap, black robe with a white collar, gavel raised
+        "..3333333333....",
+        "..3222222223....",
+        "..3333333333.333",
+        "..3111111113.333",
+        "..3133113313..3.",
+        "..3111111113..3.",
+        "..3113333113..3.",
+        "...33333333...3.",
+        ".33300000033.33.",
+        ".33330000333333.",
+        ".333330033333...",
+        ".333333333333...",
+        ".333333333333...",
+        ".333333333333...",
+        ".333333333333...",
+        "..333....333....",
     ],
     "coordinator": [  # antenna, broadcasting
         "..3....33....3..",
@@ -479,6 +479,17 @@ def interactive() -> bool:
     return sys.stdin.isatty() and sys.stdout.isatty() and os.environ.get("TERM") != "dumb"
 
 
+def at_least_one(text: str) -> int:
+    """--last N: 0 would show nothing yet still move the next --since past the turns it hid."""
+    try:
+        n = int(text)
+    except ValueError:
+        raise argparse.ArgumentTypeError(f"not a whole number: {text!r}") from None
+    if n < 1:
+        raise argparse.ArgumentTypeError(f"must be at least 1, not {n}")
+    return n
+
+
 def main() -> int:
     if hasattr(sys.stdout, "reconfigure"):  # a real text stream, not a test capture
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # thread titles can leave the code page
@@ -495,7 +506,7 @@ def main() -> int:
                         help="print one static 8-bit frame per bot turn and exit: no TTY needed, for agent chats")
     parser.add_argument("--since", type=int, default=0, metavar="COMMENT-ID",
                         help="with --frames, only turns newer than this comment id")
-    parser.add_argument("--last", type=int, metavar="N", help=f"with --frames, only the newest N turns of each "
+    parser.add_argument("--last", type=at_least_one, metavar="N", help=f"with --frames, only the newest N turns of each "
                         f"thread (default {tui.FRAMES_LAST} when --since isn't given)")
     parser.add_argument("--width", type=int, default=80, help=f"with --frames, columns (at least {tui.MIN_W})")
     parser.add_argument("--color", action="store_true",

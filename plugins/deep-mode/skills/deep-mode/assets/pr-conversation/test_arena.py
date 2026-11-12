@@ -97,6 +97,20 @@ class ProseAnswers(unittest.TestCase):
         body = "**deep-mode reviewer** · head `abc1234`\n\nNo findings. All three are **fixed** now."
         self.assertEqual(st.gist(body, "reviewer"), ["No findings. All three are fixed now."])
 
+    def test_table_header_and_rule_are_not_gist_lines(self):
+        body = ("**deep-mode author** · head `ed506edb`\n\n"
+                "| Finding | Answer |\n|---|:---:|\n"
+                "| security P2: install source | **fixed**: the URL comes from the identity. |\n"
+                "| build P2: shared checkout | still open, needs a product call |\n")
+        self.assertEqual(st.gist(body, "author"), [
+            "fixed security P2: install source — the URL comes from the identity."])
+
+    def test_table_rows_read_as_text(self):
+        body = ("**deep-mode reviewer** · head `abc1234`\n\n"
+                "| Check | Result |\n| --- | --- |\n| tests | 41 pass \\| 0 fail |\n\n---\n")
+        self.assertEqual(st.gist(body, "reviewer"), ["tests · 41 pass | 0 fail"])
+        self.assertEqual(st.untable(["| a | b |", "---", "text"]), ["a · b", "---", "text"])
+
 
 class Voices(unittest.TestCase):
     def test_pr_agent_by_its_own_headings_only(self):
@@ -554,10 +568,10 @@ class InlineFrames(unittest.TestCase):
         self.assertEqual(tui.frames(self.threads(), width=80, sprites=arena.SPRITES)[-1],
                          "arena: newest comment 4 (next: --since 4)")
 
-    def run_frames(self, threads, errors):
+    def run_frames(self, threads, errors, *args):
         original_gather, original_argv = arena.gather, sys.argv
         arena.gather = lambda *_: (threads, errors)
-        sys.argv = ["arena.py", "https://github.com/o/r/pull/9", "--frames"]
+        sys.argv = ["arena.py", "https://github.com/o/r/pull/9", "--frames", *args]
         out = io.StringIO()
         try:
             with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
@@ -580,6 +594,14 @@ class InlineFrames(unittest.TestCase):
         self.assertIn("TURN", out)
         self.assertNotIn("--since 4)", out)
         self.assertIn("run again with the same --since", out.strip().splitlines()[-1])
+
+    def test_last_is_at_least_one(self):
+        for bad in ("0", "-2", "x"):
+            code, out = self.run_frames(self.threads(), [], "--last", bad)
+            self.assertEqual(code, 2, bad)
+            self.assertEqual(out, "", bad)  # no frames and no "next: --since" past the turns it would hide
+        code, out = self.run_frames(self.threads(), [], "--last", "1")
+        self.assertEqual((code, out.count("TURN ")), (0, 2))
 
 
 if __name__ == "__main__":
