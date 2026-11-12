@@ -163,7 +163,7 @@ cd deep-mode/plugins/deep-mode/skills/deep-mode
 py -3 assets/github-app/install.py      # python3 on macOS and Linux
 ```
 
-`install.py` checks git, `gh`, openssl and npm, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private app in the browser, waits while you install it on the repos you pick, writes `~/.config/deep-mode/bot.json`, and registers autostart (Task Scheduler, launchd, systemd or cron). It asks before each change. `--yes` accepts every default; `--check` changes nothing.
+`install.py` checks git, `gh`, openssl and npm, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private app in the browser, waits while you install it on the repos you pick, writes `~/.config/deep-mode/bot.json`, and registers autostart (Task Scheduler or the Startup folder, launchd, systemd or cron). It asks before each change. `--yes` accepts every default; `--check` changes nothing.
 
 ![A real run of install.py --check](docs/images/install.gif)
 

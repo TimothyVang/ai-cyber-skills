@@ -2,8 +2,13 @@
 
     python test_bot.py
 """
+import contextlib
+import io
 import json
+import os
+import subprocess
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -411,6 +416,156 @@ class TextTest(unittest.TestCase):
         for bad in ({}, {"agent": " "}, 3):
             with self.assertRaises(ValueError):
                 bot.as_role(bad)
+
+
+def finished(code=0, stdout="", stderr=""):
+    return subprocess.CompletedProcess([], code, stdout=stdout, stderr=stderr)
+
+
+class AskTest(unittest.TestCase):
+    DENIED = "[acpx] tokens: input=16 output=4716\n[acpx] error: PERMISSION_DENIED Permission request denied or cancelled"
+
+    def ask(self, proc, perms="--approve-reads"):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bot, "WORK", Path(tmp)), \
+                mock.patch.object(bot, "log"), mock.patch.object(bot.shutil, "which", return_value="acpx"), \
+                mock.patch.object(bot, "known_agents", return_value={"omp"}), \
+                mock.patch.object(bot, "run", return_value=proc):
+            return bot.Item(None, "o/r", "issue", 30).ask({"agent": "omp"}, "prompt", Path(tmp), perms)
+
+    def test_read_only_turn_that_was_denied_a_tool_still_replies(self):
+        self.assertEqual(self.ask(finished(5, "the plan\n", self.DENIED)), "the plan")
+        self.assertEqual(self.ask(finished(2, "the plan\n", self.DENIED)), "the plan")
+
+    def test_denied_turn_fails_for_a_writing_role(self):
+        with self.assertRaisesRegex(RuntimeError, "exit 5"):
+            self.ask(finished(5, "the plan\n", self.DENIED), perms="--approve-all")
+
+    def test_denied_turn_without_a_reply_fails(self):
+        with self.assertRaisesRegex(RuntimeError, "exit 5"):
+            self.ask(finished(5, "\n", self.DENIED))
+
+    def test_other_failures_fail(self):
+        with self.assertRaisesRegex(RuntimeError, "exit 1"):
+            self.ask(finished(1, "the plan\n", "[acpx] error: RUNTIME agent crashed"))
+
+    def test_cut_short_reply_that_mentions_the_marker_fails(self):
+        # acpx flushes the text so far when a turn times out; half a plan that quotes PERMISSION_DENIED is not a reply.
+        with self.assertRaisesRegex(RuntimeError, "exit 3"):
+            self.ask(finished(3, "half a plan about PERMISSION_DENIED\n",
+                              "[acpx] error: TIMEOUT QUEUE_RUNTIME_PROMPT_FAILED Timed out after 3600000ms"))
+
+
+class FakeScheduler:
+    """Stands in for bot.run: one Task Scheduler task that schtasks /Create, /Query and /Delete act on."""
+
+    def __init__(self, task=False, create_denied=False, delete_denied=False, missing=False):
+        self.task, self.create_denied, self.delete_denied, self.missing = task, create_denied, delete_denied, missing
+
+    def __call__(self, cmd, **kw):
+        if self.missing:
+            raise FileNotFoundError("schtasks not found")
+        verb = cmd[1]
+        if verb == "/Query":
+            return finished(0 if self.task else 1)
+        if (verb == "/Create" and self.create_denied) or (verb == "/Delete" and self.task and self.delete_denied):
+            return finished(1, stderr="ERROR: Access is denied.")
+        if verb == "/Delete" and not self.task:
+            return finished(1, stderr="ERROR: The system cannot find the file specified.")
+        self.task = verb == "/Create"
+        return finished(0)
+
+
+class WindowsAutostartTest(unittest.TestCase):
+    COMMAND = ["C:\\py\\pythonw.exe", "C:\\app\\bot.py", "watch"]
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.launcher = Path(tmp.name) / "Startup" / "bot.cmd"
+        self.logs = Path(tmp.name) / "logs"
+        for patch in (mock.patch.object(bot, "startup_launcher", return_value=self.launcher),
+                      mock.patch.object(bot, "LOGS", self.logs)):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def scheduler(self, **kw):
+        patch = mock.patch.object(bot, "run", FakeScheduler(**kw))
+        self.addCleanup(patch.stop)
+        return patch.start()
+
+    def install(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            kind, where = bot.install_windows_autostart(self.COMMAND)
+        return kind, out.getvalue()
+
+    def stale_launcher(self):
+        self.launcher.parent.mkdir()
+        self.launcher.write_text("old", encoding="utf-8")
+
+    def test_denied_task_falls_back_to_a_startup_folder_launcher(self):
+        self.scheduler(create_denied=True)
+        kind, said = self.install()
+        self.assertEqual(kind, "startup-folder")
+        self.assertIn("Access is denied", said)  # the reason for the fallback is shown
+        text = self.launcher.read_text(encoding="utf-8")
+        self.assertIn('"C:\\py\\pythonw.exe" "C:\\app\\bot.py" "watch"', text)
+        self.assertIn(f'"{self.logs / "watch.log"}"', text)
+        self.assertEqual(bot.windows_autostart(), ["startup-folder"])
+
+    def test_missing_schtasks_falls_back_too(self):
+        self.scheduler(missing=True)
+        self.assertEqual(self.install()[0], "startup-folder")
+        self.assertEqual(bot.windows_autostart(), ["startup-folder"])
+
+    def test_task_replaces_an_earlier_launcher(self):
+        self.scheduler()
+        self.stale_launcher()
+        self.assertEqual(self.install()[0], "schtasks")
+        self.assertEqual(bot.windows_autostart(), ["schtasks"])
+        self.assertFalse(self.launcher.exists())
+
+    def test_install_fails_when_neither_entry_can_be_made(self):
+        self.scheduler(create_denied=True)
+        self.launcher.parent.write_text("a file where the Startup folder should be", encoding="utf-8")
+        with self.assertRaises(SystemExit) as failed:
+            self.install()
+        self.assertIn("Access is denied", str(failed.exception))
+        self.assertIn(str(self.launcher), str(failed.exception))
+        self.assertEqual(bot.windows_autostart(), [])
+
+    def test_uninstall_removes_the_task_and_the_launcher(self):
+        self.scheduler(task=True)
+        self.stale_launcher()
+        self.assertEqual(bot.windows_autostart(), ["schtasks", "startup-folder"])
+        self.assertEqual(bot.uninstall_windows_autostart(), [])
+        self.assertEqual(bot.windows_autostart(), [])
+        self.assertEqual(bot.uninstall_windows_autostart(), [])  # nothing left: a second run is not an error
+
+    def test_uninstall_reports_a_task_it_could_not_delete(self):
+        self.scheduler(task=True, delete_denied=True)
+        self.stale_launcher()
+        left = bot.uninstall_windows_autostart()
+        self.assertEqual(len(left), 1)
+        self.assertIn("Access is denied", left[0])
+        self.assertEqual(bot.windows_autostart(), ["schtasks"])
+
+    @unittest.skipUnless(os.name == "nt", "runs a real .cmd launcher")
+    def test_launcher_starts_the_command_and_logs_its_output(self):
+        # cmd parses the launcher twice, so the paths carry what breaks batch files: a space, %, &, ( ) and non-ASCII.
+        with tempfile.TemporaryDirectory(prefix="auto 100% é & (x) ", ignore_cleanup_errors=True) as tmp:
+            stub, log_file, launcher = Path(tmp) / "stub.py", Path(tmp) / "watch.log", Path(tmp) / "launcher.cmd"
+            stub.write_text("import sys\nprint('stub ran', sys.argv[1:], flush=True)\nraise RuntimeError('stub boom')\n",
+                            encoding="utf-8")
+            bot.write_launcher(launcher, [bot.autostart_command()[0], str(stub), "watch"], log_file)
+            subprocess.run(f'cmd /d /s /c ""{launcher}""', check=True, timeout=60, creationflags=bot.NO_WINDOW,
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            text, deadline = "", time.monotonic() + 30
+            while "stub boom" not in text and time.monotonic() < deadline:  # `start` does not wait for the command
+                time.sleep(0.2)
+                text = log_file.read_text(encoding="utf-8", errors="replace") if log_file.is_file() else ""
+            self.assertIn("stub ran ['watch']", text)
+            self.assertIn("RuntimeError: stub boom", text)
 
 
 if __name__ == "__main__":

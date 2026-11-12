@@ -138,7 +138,7 @@ cd deep-mode/plugins/deep-mode/skills/deep-mode
 py -3 assets/github-app/install.py      # python3 on macOS and Linux
 ```
 
-`install.py` checks git, `gh`, openssl and npm, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private app in the browser, waits while you install it on the repos you pick, writes `~/.config/deep-mode/bot.json`, and registers autostart (Task Scheduler, launchd, systemd or cron). It asks before each change. `--yes` accepts every default; `--check` changes nothing.
+`install.py` checks git, `gh`, openssl and npm, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private app in the browser, waits while you install it on the repos you pick, writes `~/.config/deep-mode/bot.json`, and registers autostart (Task Scheduler or the Startup folder, launchd, systemd or cron). It asks before each change. `--yes` accepts every default; `--check` changes nothing.
 
 ![A real run of install.py --check](docs/images/install.gif)
 
@@ -305,6 +305,7 @@ py -3 assets/github-app/bot.py status
 ```
 
 - `install-autostart` registers `deep-mode-bot` with Task Scheduler (Windows), launchd (macOS), or a systemd user unit or crontab `@reboot` entry (Linux); `uninstall-autostart` removes it.
+- On Windows a logon task usually needs an elevated terminal. When Task Scheduler refuses it, `install-autostart` writes `deep-mode-bot.cmd` to your Startup folder instead, which needs no admin rights. It runs `watch` in a minimized window and appends its output to `logs/watch.log` in the cache directory. `status` reports which entry is there as `autostartKind`: `schtasks` or `startup-folder`.
 - The first run records a start time; a repo added to the app later starts at its first poll. Only events after it get a turn. That first poll lists every open PR and records each older PR's head as backlog; any head seen after it is new, whatever its commit dates, including on a PR first seen later (reopened). `--backlog` takes older open PRs and issues too.
 - Each cycle lists every open PR and issue and takes non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deep-mode` or come from the owner after the bots' last turn. On the owner's own PRs only the owner's comments count. On an issue that an own PR's merge waits on, any human comment since the bots' last reply counts, however old. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all, with the comments that triggered it.
 - A comment counts as the bots' only when the app posted it, or the owner's account posted it with the bot signature; a signature from anyone else is a human comment.

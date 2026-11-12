@@ -25,6 +25,7 @@ on its base branch.
 """
 import argparse
 import concurrent.futures
+import ctypes
 import datetime as dt
 import functools
 import json
@@ -767,9 +768,12 @@ class Item:
         reply = "\n".join(line for line in proc.stdout.strip().splitlines()
                           if not line.startswith("[acpx] error")).strip()
         self.note(f"REPLY <- {role_label(role)} (exit {proc.returncode})\n\n{reply}\n\n{proc.stderr.strip()[-2000:]}")
-        # A read-only role that tried a denied tool (e.g. running tests) still answered: acpx exits 2 with
-        # PERMISSION_DENIED, and the reply on stdout is complete.
-        denied = proc.returncode == 2 and "PERMISSION_DENIED" in proc.stdout + proc.stderr and perms == "--approve-reads"
+        # A read-only role that tried a denied tool (e.g. running tests) still answered. acpx reports that once
+        # the turn has ended and the whole reply is on stdout: a non-zero exit (5 in acpx 0.22) whose only error
+        # line is PERMISSION_DENIED. Any other error line means the turn was cut short and the reply is partial.
+        errors = [line for line in (proc.stdout + "\n" + proc.stderr).splitlines() if line.startswith("[acpx] error")]
+        denied = (perms == "--approve-reads" and bool(errors)
+                  and all(line.startswith("[acpx] error: PERMISSION_DENIED") for line in errors))
         if (proc.returncode and not denied) or not reply:
             raise RuntimeError(f"{role_label(role)} turn failed (exit {proc.returncode}): {proc.stderr.strip()[-400:]}")
         return reply
@@ -1686,19 +1690,95 @@ def crontab_lines():
     return proc.stdout.splitlines() if proc.returncode == 0 else []
 
 
+def startup_launcher() -> Path:
+    """The launcher in the user's Startup folder. Windows says where that folder is, since it can be redirected;
+    the default place under %APPDATA% is used only when the call fails."""
+    buf = ctypes.create_unicode_buffer(260)
+    try:
+        found = ctypes.windll.shell32.SHGetFolderPathW(None, 7, None, 0, buf) == 0  # 7: CSIDL_STARTUP
+    except OSError:
+        found = False
+    folder = Path(buf.value) if found and buf.value else Path(
+        os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming",
+        "Microsoft", "Windows", "Start Menu", "Programs", "Startup")
+    return folder / f"{TASK_NAME}.cmd"
+
+
+def write_launcher(launcher: Path, command: list, log_file: Path) -> None:
+    """Write the .cmd that runs `command` in a minimized window of its own and appends its output to `log_file`.
+    The window is the cmd that holds the redirect; `start` passes none to the program it launches.
+    The file is UTF-8, so it switches the code page first. The inner command line is one string whose outer
+    quotes and redirects are caret-escaped; that keeps every path inside quotes each time cmd parses it, so
+    only `%` needs doubling."""
+    quoted = " ".join(f'"{part}"' for part in command)
+    line = f'start "{TASK_NAME}" /min cmd /s /c ^"{quoted} ^>^> "{log_file}" 2^>^&1^"'.replace("%", "%%")
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    launcher.write_bytes("\r\n".join(["@echo off", "chcp 65001 >nul", line, ""]).encode("utf-8"))
+
+
+def schtasks(*args) -> tuple:
+    """One schtasks call as (ok, detail). A missing or hung schtasks is a failure, not an exception, so `status`
+    never raises here."""
+    try:
+        proc = run(["schtasks", *args], check=False, timeout=60)
+    except (OSError, subprocess.SubprocessError) as err:
+        return False, str(err)
+    return proc.returncode == 0, (proc.stderr or proc.stdout).strip()[-400:]
+
+
+def windows_autostart() -> list:
+    """The Windows autostart entries present now, the Task Scheduler task first."""
+    kinds = ["schtasks"] if schtasks("/Query", "/TN", TASK_NAME)[0] else []
+    return kinds + (["startup-folder"] if startup_launcher().is_file() else [])
+
+
+def install_windows_autostart(command: list) -> tuple:
+    """Start `command` at logon; returns (kind, where). Task Scheduler comes first. An ONLOGON task needs an
+    elevated terminal on most machines, so any failure there falls back to a launcher in the user's Startup
+    folder, which needs no admin rights. A reinstall tries the task again and then drops the launcher."""
+    launcher = startup_launcher()
+    ok, detail = schtasks("/Create", "/TN", TASK_NAME, "/TR", subprocess.list2cmdline(command),
+                          "/SC", "ONLOGON", "/IT", "/F")
+    if ok:
+        launcher.unlink(missing_ok=True)
+        return "schtasks", f"Task Scheduler task {TASK_NAME}"
+    try:
+        write_launcher(launcher, command, LOGS / "watch.log")
+    except OSError as err:
+        raise SystemExit(f"autostart failed. Task Scheduler: {detail}. Startup-folder launcher {launcher}: {err}") \
+            from None
+    print(f"Task Scheduler did not take the task ({detail}); using the Startup folder, which needs no admin rights")
+    return "startup-folder", str(launcher)
+
+
+def uninstall_windows_autostart() -> list:
+    """Remove the task and the launcher; returns one line for each entry that is still there, with the reason."""
+    launcher = startup_launcher()
+    _, task_error = schtasks("/Delete", "/TN", TASK_NAME, "/F")
+    try:
+        launcher.unlink(missing_ok=True)
+        launcher_error = ""
+    except OSError as err:
+        launcher_error = str(err)
+    left = {"schtasks": f"Task Scheduler task {TASK_NAME}: {task_error}",
+            "startup-folder": f"Startup-folder launcher {launcher}: {launcher_error}"}
+    return [left[kind] for kind in windows_autostart()]
+
+
 def autostart_kind() -> str:
+    """How autostart is, or would be, registered here. On Windows that is the entry present now: the task, else
+    the Startup-folder launcher, else `schtasks`, which an install tries first."""
     if os.name == "nt":
-        return "schtasks"
+        return (windows_autostart() or ["schtasks"])[0]
     if sys.platform == "darwin":
         return "launchd"
     return "systemd" if has_user_systemd() else "cron"
 
 
 def autostart_installed() -> bool:
-    kind = autostart_kind()
-    if kind == "schtasks":
-        return run(["schtasks", "/Query", "/TN", TASK_NAME], check=False).returncode == 0
-    if kind == "launchd":
+    if os.name == "nt":
+        return bool(windows_autostart())
+    if sys.platform == "darwin":
         return launchd_plist().is_file()
     return systemd_unit().is_file() or any(CRON_MARK in line for line in crontab_lines() or [])
 
@@ -1740,12 +1820,13 @@ def cmd_status(args) -> None:
 
 def cmd_install_autostart(args) -> None:
     LOGS.mkdir(parents=True, exist_ok=True)
-    command, kind = autostart_command(), autostart_kind()
-    if kind == "schtasks":
-        proc = run(["schtasks", "/Create", "/TN", TASK_NAME, "/TR", subprocess.list2cmdline(command),
-                    "/SC", "ONLOGON", "/IT", "/F"], check=False)
-        where = f"Task Scheduler task {TASK_NAME}"
-    elif kind == "launchd":
+    command = autostart_command()
+    if os.name == "nt":  # not by the installed kind: a reinstall must try Task Scheduler again
+        kind, where = install_windows_autostart(command)
+        print(f"autostart installed ({kind}: {where}); logs in {LOGS}")
+        return
+    kind = autostart_kind()
+    if kind == "launchd":
         plist = launchd_plist()
         plist.parent.mkdir(parents=True, exist_ok=True)
         with open(plist, "wb") as fh:
@@ -1779,16 +1860,17 @@ def cmd_install_autostart(args) -> None:
                    check=False)
         where = "crontab @reboot"
     if proc.returncode:
-        raise SystemExit(f"autostart via {kind} failed: {(proc.stderr or proc.stdout).strip()[-400:]}"
-                         + ("; ONLOGON tasks may need an elevated terminal once" if kind == "schtasks" else ""))
+        raise SystemExit(f"autostart via {kind} failed: {(proc.stderr or proc.stdout).strip()[-400:]}")
     print(f"autostart installed ({kind}: {where}); logs in {LOGS}")
 
 
 def cmd_uninstall_autostart(args) -> None:
+    if os.name == "nt":
+        left = uninstall_windows_autostart()
+        print(f"autostart still present ({'; '.join(left)})" if left else "autostart removed")
+        return
     kind = autostart_kind()
-    if kind == "schtasks":
-        run(["schtasks", "/Delete", "/TN", TASK_NAME, "/F"], check=False)
-    elif kind == "launchd":
+    if kind == "launchd":
         run(["launchctl", "unload", "-w", launchd_plist()], check=False)
         launchd_plist().unlink(missing_ok=True)
     else:
@@ -1818,9 +1900,9 @@ def main() -> None:
     watch.add_argument("--interval", type=int, help="seconds between cycles (default: bot.json interval)")
     watch.set_defaults(func=cmd_watch, repo=None, item=None, backlog=False, dry_run=False)
     sub.add_parser("status", help="config, state and whether a bot is running").set_defaults(func=cmd_status)
-    sub.add_parser("install-autostart", help="start `watch` at logon (Windows Task Scheduler)").set_defaults(
-        func=cmd_install_autostart)
-    sub.add_parser("uninstall-autostart", help="remove the logon task").set_defaults(func=cmd_uninstall_autostart)
+    sub.add_parser("install-autostart", help="start `watch` at logon (Windows: a Task Scheduler task, or a "
+                   "Startup-folder launcher when the task is refused)").set_defaults(func=cmd_install_autostart)
+    sub.add_parser("uninstall-autostart", help="remove the logon entry").set_defaults(func=cmd_uninstall_autostart)
     args = parser.parse_args()
     if getattr(args, "item", None) and not re.fullmatch(r"(pr|issue):\d+", args.item):
         parser.error("--item must be pr:N or issue:N")
