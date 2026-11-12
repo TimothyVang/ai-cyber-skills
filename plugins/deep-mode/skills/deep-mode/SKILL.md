@@ -158,6 +158,7 @@ Step 2 of Route. First match wins.
 | "be my chief of staff", "own this goal long-term", "keep pushing this goal forward across sessions" | Orchestrate playbook |
 | "scrape / pull / archive" a page, video, channel, or playlist, or "get his diagram" | **scrape** technique (`references/techniques/scrape.md`) |
 | An effort too big for one session with a foggy route: "wayfinder", "chart the way to X", "plan this migration before anyone builds it" | Wayfinder playbook |
+| "port / rewrite / migrate this code to another language", preserving behavior | Refactoring playbook, Language ports section (`references/playbooks/refactoring.md`) |
 | "security-audit PRs / audit every PR / add a security gate", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`), run by your own agent, no CI |
 | "run pr-agent / describe, review, improve this PR with PR-Agent" | **pr-agent** technique (`references/techniques/pr-agent.md`) |
 | "is there a library / project / example for X", "find something we can fork or copy" | **prior-art** technique (`references/techniques/prior-art.md`) |
@@ -179,6 +180,7 @@ These apply when a rule would change the work; skip them for size **S**.
 - **Prose** (reply, docs, PR body, commit message) → **unslop**; docs and PR/commit text also → **technical-writing**.
 - **Before review** → **no-comments** on your diff. For a diff under ~20 lines, apply its keep-list yourself instead of spawning.
 - **Repeated correction** (yours or the user's) → **correct**. Fix it at the highest rung that works: architecture or data structures, then a lint rule or test, then a skill or rule, and human review last. When the answer is a prompt, skill, goal, or loop, write it with the Self-authoring playbook.
+- **Self-prompting loops.** When repeated failures need a revised method or a task has a repeatable work queue, use Self-authoring (`references/playbooks/self-authoring.md`). Author the next bounded iteration from observed diagnostics; keep the objective, permissions, oracle and caps fixed. This is execution within the approved task, not permission to start unrelated or perpetual automation.
 - **Words or lasting decisions change** → **domain-model** (`references/techniques/domain-model.md`): terms into `GLOSSARY.md`, hard-to-reverse decisions into `docs/adr/`.
 - **Reading that should outlive the chat** → **research** (`references/techniques/research.md`): a cited file in `docs/research/`.
 - **Any flow that reads or writes issues** uses the **tracker** technique (`references/techniques/tracker.md`) for the commands and label roles.

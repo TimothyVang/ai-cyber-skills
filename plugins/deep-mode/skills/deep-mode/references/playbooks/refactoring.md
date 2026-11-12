@@ -1,6 +1,19 @@
 # Refactoring
 
-Use when: changing structure while behavior stays fixed. You own the contract. Not Feature (adds behavior) or Bug fix (corrects it). Large or cross-cutting structural work → the **figure-it-out** technique (`references/techniques/figure-it-out.md`); this playbook is focused-to-medium.
+Use when: changing structure while behavior stays fixed, including a language port. You own the contract. Not Feature (adds behavior) or Bug fix (corrects it). Language ports follow the section below before the general steps. Other large or cross-cutting structural work → the **figure-it-out** technique (`references/techniques/figure-it-out.md`).
+
+## Language ports
+
+Use the two accounts in `references/rust-migration-case-studies.md` as evidence, not a mandate to choose Rust or one cutover strategy.
+
+1. **Freeze the oracle.** Record the source revision and run existing consumer-facing tests against it. Keep fixtures, snapshots, schemas, test selection and compatibility thresholds outside implementers' write scope. An intended contract change is a separate decision, not a way to turn a port green. Done when baseline commands, results and protected paths are recorded.
+2. **Inventory behavior, not just files.** Map each public entrypoint, callback, I/O path, state owner, cancellation/disposal pair and packaging target to its destination and proof. Record numeric serialization, missing/empty values, ordering, ambient inputs, dependency semantics and release-only behavior. Done when every source surface has an owner, destination and acceptance case; unknowns stay open.
+3. **Pilot before scaling.** Choose incremental closed slices or an all-at-once cutover from coupling, live churn and rollback needs. Translate behavior before redesigning algorithms. Run a small representative slice through compile, link, startup and its consumer path. Done when the pilot proves the recipe; a compiler-only pass is not sufficient.
+4. **Turn failures into work.** Group compiler/runtime failures by owning slice; use Self-authoring (`references/playbooks/self-authoring.md`) for bounded repair loops. A repeated translation mistake changes the shared porting recipe and gets a regression case, not another one-off workaround. For parallel work, follow **coworkers** (`references/techniques/coworkers.md`). Done when each queue item has a reproduced failure, owner and closure evidence.
+5. **Check parity and completeness separately.** Exercise the unchanged oracle in supported release configurations and compare externally visible results. Independently reconcile the inventory against current source, including changes that arrived during the port. Compilation cannot detect an omitted callback. Done when every row is proven or explicitly blocked; stubs, skipped tests and lowered baselines never close rows.
+6. **Close the migration.** Migrate callers and remove superseded implementations in each closed slice. Remove temporary scaffolding before declaring the port complete. Record real consumer runs and workload-matched resource measurements; keep merge, rollout and release readiness distinct. Done when the requested native/runtime boundary holds end to end, not merely on the hot path.
+
+Then use the general steps for each slice. A port earns its place by the stated migration objective; the ordinary refactor's reader-load reduction gate does not replace that objective.
 
 ## Steps
 
