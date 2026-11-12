@@ -9,18 +9,21 @@ Two artifacts, both in the repo, both created only when there is something to pu
 ## Steps
 
 1. **Load.** Read `GLOSSARY.md` and the ADR titles in `docs/adr/`. A root glossary that lists contexts (a monorepo) points to one `GLOSSARY.md` per context; work in the context the topic belongs to.
+   Done when the context is named and its glossary terms and ADR titles are loaded, or noted absent.
 2. **Catch drift.** For each domain word in the request, the plan, or the code under discussion:
    - It conflicts with a glossary entry → name the conflict and pick one meaning.
    - It is vague or overloaded ("account", "job", "item") → split it into precise terms and pick the canonical one for each meaning.
    - The code disagrees with how the word is used (the code cancels whole orders, the plan says partial cancel) → read the code, then settle which one is right. A real mismatch is a finding for the plan, not a glossary edit.
-3. **Probe with cases.** Invent two or three concrete edge cases that force the boundary between neighboring terms ("an order with one shipped and one unshipped line: is it fulfilled?"). Each case gets an answer, from the code when the code decides it, otherwise by your call (SKILL.md Autonomy).
-4. **Write terms as they settle.** Update `GLOSSARY.md` the moment a term is decided, in the format below. Don't batch to the end.
+   - Done when every domain word in scope is marked consistent, settled, or logged as a finding.
+3. **Probe with cases.** Invent two or three concrete edge cases that force the boundary between neighboring terms ("an order with one shipped and one unshipped line: is it fulfilled?").
+   Each case gets an answer, from the code when the code decides it, otherwise by your call (SKILL.md Autonomy). Done when each case has a recorded answer and its source.
+4. **Write terms as they settle.** Update `GLOSSARY.md` the moment a term is decided, in the format below. Don't batch to the end. Done when every settled term has an entry in that format.
 5. **Test each decision for an ADR.** Write one only when all three hold:
    - Undoing it later costs real work (a data shape, a boundary, a vendor, a protocol).
    - A reader of the code would ask "why this way?" without the record.
    - A real alternative existed and lost for a stated reason.
 
-   Fails any test → no ADR; the show-me-your-work trail row is enough.
+   Fails any test → no ADR; the show-me-your-work trail row is enough. Done when each decision has either an ADR file or a trail row naming the test it failed.
 6. **Report.** List the terms added or changed and the ADRs written, with paths.
 
 ## GLOSSARY.md format

@@ -1,0 +1,16 @@
+{
+  "name": "kitty",
+  "version": "0.4.2",
+  "description": "Keep track of shared costs for a flat or a trip, and what everyone is owed.",
+  "type": "module",
+  "bin": {
+    "kitty": "bin/kitty.js"
+  },
+  "scripts": {
+    "test": "node --test spec/*.spec.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}

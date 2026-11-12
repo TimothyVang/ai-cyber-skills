@@ -1,6 +1,6 @@
 {
   "name": "deep-mode",
-  "version": "0.6.1",
+  "version": "0.8.1",
   "description": "Rigorous agent engineering mode for omp, Claude Code, and Codex: /deep routes any task to a playbook, applies named principles, keeps every write inside the project, proves behavior on the real app, and runs the deep-mode PR review loop.",
   "author": {
     "name": "Timothy Vang"

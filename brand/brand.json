@@ -6,7 +6,7 @@
   "mainSkillName": "deep-mode",
   "stackSkillName": "deep-stack",
   "envPrefix": "DEEP_MODE",
-  "botTrigger": "/deep-mode",
+  "botTrigger": "@deepmodebot",
   "tagline": "PR and issue bots plus a software-factory skill set for coding agents",
   "description": "deep-mode is an open-source MIT plugin for coding agents. Its bots review, fix, verify on a 3-agent panel and merge your own GitHub PRs, on your own GitHub App and subscription, with no API keys. Its skills take work from idea to spec, tickets, code and a merged PR.",
   "author": {"name": "Timothy Vang", "url": "https://github.com/TimothyVang"},

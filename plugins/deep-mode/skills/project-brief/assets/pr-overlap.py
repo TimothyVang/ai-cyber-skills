@@ -7,11 +7,15 @@ installed and authenticated (or have GH_TOKEN set).
 Subcommands (all take --repo owner/name):
   check   --files a,b,dir/ [--exclude-pr N] [--exclude-issue N] [--json]
           List open PRs and active claims whose paths overlap the given files.
+          --exclude-issue N hides your own claim on issue N (your login comes
+          from `gh api user`); another person's claim on N is still listed.
           Exit 0 = no overlap, 3 = overlap, 2 = usage or gh error.
   comment --pr N
           Post or update one overlap comment on PR N (marker <!-- deep-mode:overlap -->).
+          The PR author's own claims are left out; everyone else's count.
   claims  [--json]
-          List active claims (claim comments and issue assignees).
+          List active claims (claim comments and issue assignees). An issue with
+          several holders gets one entry per claim comment and one for its assignees.
 
 Claims are looked for on open issues labeled "help wanted" and on open issues
 with an assignee; other issues are not scanned.
@@ -25,10 +29,14 @@ Claim comment format (posted on an issue):
   Plan: <one line>
   Files: <comma-separated repo paths; trailing "/" = whole directory>
   Expires: <YYYY-MM-DD>
-A claim is active if it is the newest claim comment on an open issue, its
-Expires date is today (UTC) or later, and no newer comment from the same author
-contains <!-- deep-mode:unclaim -->. An issue assignee also counts as a claim
-with unknown files: it never overlaps by file, only by issue.
+Claim rule: each author's newest claim comment on an open issue is their claim.
+It is active while its Expires date is today (UTC) or later and that author has
+posted no comment containing <!-- deep-mode:unclaim --> after it. Every active
+claim counts, so one person's claim, expiry or withdrawal never changes another
+person's claim. An issue assignee also counts as a claim with unknown files: it
+never overlaps by file, only by issue. An assignee who posted a claim comment on
+the issue counts only through that comment: once it expires or is released, the
+assignment stops counting too.
 """
 
 from __future__ import annotations
@@ -53,9 +61,6 @@ EXIT_OK = 0
 EXIT_ERROR = 2
 EXIT_OVERLAP = 3
 
-LINK_RE = re.compile(
-    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+(?:[\w.-]+/[\w.-]+)?#(\d+)\b", re.IGNORECASE
-)
 FIELD_RE = re.compile(r"^\s*(plan|files|expires)\s*:\s*(.*?)\s*$", re.IGNORECASE)
 REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
@@ -258,37 +263,36 @@ def _login(obj: dict | None) -> str:
     return ((obj or {}).get("login") or "").strip()
 
 
-def active_claim_from_comments(comments: list[dict], today: dt.date) -> dict | None:
-    """Apply the claim rule to an issue's comments. Returns the active claim comment or None."""
+def active_claims_from_comments(comments: list[dict], today: dt.date) -> list[dict]:
+    """Apply the claim rule to an issue's comments. Returns the active claims, oldest first."""
     ordered = sorted(comments, key=lambda c: (c.get("created_at") or "", c.get("id") or 0))
-    claim_idx = None
+    newest: dict[str, int] = {}  # author -> index of their newest claim comment
     for i, c in enumerate(ordered):
         if CLAIM_MARKER in (c.get("body") or ""):
-            claim_idx = i
-    if claim_idx is None:
-        return None
-    claim = ordered[claim_idx]
-    author = _login(claim.get("user")).lower()
-    for later in ordered[claim_idx + 1 :]:
-        if _login(later.get("user")).lower() == author and UNCLAIM_MARKER in (later.get("body") or ""):
-            return None
-    fields = parse_claim_body(claim.get("body") or "")
-    expires = fields.get("expires", "").strip()
-    m = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", expires)
-    if not m:
-        return None
-    try:
-        exp_date = dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
-    except ValueError:
-        return None
-    if exp_date < today:
-        return None
-    return {
-        "author": _login(claim.get("user")),
-        "plan": fields.get("plan", ""),
-        "files": parse_paths(fields.get("files", "")),
-        "expires": exp_date.isoformat(),
-    }
+            newest[_login(c.get("user")).lower()] = i
+    active: list[dict] = []
+    for author, idx in sorted(newest.items(), key=lambda item: item[1]):
+        claim = ordered[idx]
+        if any(_login(later.get("user")).lower() == author and UNCLAIM_MARKER in (later.get("body") or "")
+               for later in ordered[idx + 1:]):
+            continue
+        fields = parse_claim_body(claim.get("body") or "")
+        m = re.match(r"(\d{4})-(\d{1,2})-(\d{1,2})", fields.get("expires", "").strip())
+        if not m:
+            continue
+        try:
+            exp_date = dt.date(int(m.group(1)), int(m.group(2)), int(m.group(3)))
+        except ValueError:
+            continue
+        if exp_date < today:
+            continue
+        active.append({
+            "author": _login(claim.get("user")),
+            "plan": fields.get("plan", ""),
+            "files": parse_paths(fields.get("files", "")),
+            "expires": exp_date.isoformat(),
+        })
+    return active
 
 
 def _open_issues(repo: str, query: str) -> list[dict]:
@@ -311,16 +315,17 @@ def fetch_active_claims(repo: str) -> list[Claim]:
     for number, issue in issues.items():
         title = issue.get("title") or ""
         url = issue.get("html_url") or ""
-        found = None
-        if number in comments_by_issue:
-            found = active_claim_from_comments(comments_by_issue[number], today)
-        if found:
+        comments = comments_by_issue.get(number, [])
+        for found in active_claims_from_comments(comments, today):
             claims.append(Claim(number, title, url, found["author"], "comment",
                                 found["plan"], found["files"], found["expires"]))
-            continue
+        # Claimants self-assign, so anyone who posted a claim comment counts only through it:
+        # an expired or released claim must not live on as an assignee claim.
+        claimed = {_login(c.get("user")).lower() for c in comments if CLAIM_MARKER in (c.get("body") or "")}
         assignees = [_login(a) for a in issue.get("assignees") or [] if _login(a)]
         if not assignees and _login(issue.get("assignee")):
             assignees = [_login(issue.get("assignee"))]
+        assignees = [a for a in assignees if a.lower() not in claimed]
         if assignees:
             claims.append(Claim(number, title, url, ", ".join(assignees), "assignee"))
     claims.sort(key=lambda c: c.issue)
@@ -395,19 +400,31 @@ def open_prs(repo: str, exclude_pr: int | None = None) -> list[dict]:
     return prs
 
 
-def linked_issues(text: str) -> set[int]:
-    return {int(n) for n in LINK_RE.findall(text or "")}
+def viewer_login() -> str:
+    """Login of the account gh is signed in as."""
+    try:
+        login = _login(json.loads(run_gh(["api", "user"])))
+    except json.JSONDecodeError:
+        login = ""
+    if not login:
+        raise GhError("could not read your GitHub login from `gh api user`; "
+                      "--exclude-issue needs it to tell your claim from other people's")
+    return login
 
 
 def find_overlaps(
     repo: str,
     files: list[str],
     exclude_pr: int | None = None,
-    exclude_issues: set[int] | None = None,
-    exclude_claim_authors: set[str] | None = None,
+    own_login: str = "",
+    own_issue: int | None = None,
 ) -> list[dict]:
-    exclude_issues = exclude_issues or set()
-    excl_authors = {a.lower() for a in (exclude_claim_authors or set())}
+    """Open PRs and active claims that touch `files`.
+
+    A claim by `own_login` is the caller's own work, not overlap: it is left out on
+    `own_issue`, or on every issue when `own_issue` is None. Nobody else's claim is.
+    """
+    own_login = own_login.lower()
     results: list[dict] = []
     for pr in open_prs(repo, exclude_pr=exclude_pr):
         hits = overlapping(files, pr["files"])
@@ -421,9 +438,9 @@ def find_overlaps(
                 "overlapping": hits,
             })
     for c in fetch_active_claims(repo):
-        if c.issue in exclude_issues or c.kind != "comment":
+        if c.kind != "comment":
             continue  # assignee-only claims have unknown files: never overlap by file
-        if c.author.lower() in excl_authors:
+        if own_login and c.author.lower() == own_login and own_issue in (None, c.issue):
             continue
         hits = overlapping(files, c.files)
         if hits:
@@ -494,8 +511,8 @@ def cmd_check(args: argparse.Namespace) -> int:
     if not files:
         print("error: --files is empty", file=sys.stderr)
         return EXIT_ERROR
-    excl = {args.exclude_issue} if args.exclude_issue is not None else set()
-    overlaps = find_overlaps(args.repo, files, exclude_pr=args.exclude_pr, exclude_issues=excl)
+    own = {"own_login": viewer_login(), "own_issue": args.exclude_issue} if args.exclude_issue is not None else {}
+    overlaps = find_overlaps(args.repo, files, exclude_pr=args.exclude_pr, **own)
     if args.json:
         print(json.dumps(overlaps, indent=2, ensure_ascii=False))
     elif not overlaps:
@@ -515,12 +532,9 @@ def cmd_comment(args: argparse.Namespace) -> int:
     pr = json.loads(run_gh(["api", f"repos/{repo}/pulls/{number}"]))
     files = pr_files(repo, number)
     author = _login(pr.get("user"))
-    # The PR's own linked issues and its author's claims are the same work, not overlap.
-    own_issues = linked_issues(pr.get("body") or "") | linked_issues(pr.get("title") or "")
-    overlaps = find_overlaps(
-        repo, files, exclude_pr=number, exclude_issues=own_issues,
-        exclude_claim_authors={author} if author else set(),
-    ) if files else []
+    # The author's own claims are the same work as the PR, not overlap. Anyone else's claim counts,
+    # also on the issue the PR closes.
+    overlaps = find_overlaps(repo, files, exclude_pr=number, own_login=author) if files else []
 
     existing = None
     for c in gh_api_list(f"repos/{repo}/issues/{number}/comments"):
@@ -598,7 +612,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help='comma-separated repo paths; a trailing "/" means a whole directory')
     p.add_argument("--exclude-pr", type=_positive_int, metavar="N", help="ignore this PR")
     p.add_argument("--exclude-issue", type=_positive_int, metavar="N",
-                   help="ignore the claim on this issue")
+                   help="ignore your own claim on this issue; other people's claims on it still count")
     p.add_argument("--json", action="store_true", help="print a JSON array instead of a table")
     p.set_defaults(func=cmd_check)
 

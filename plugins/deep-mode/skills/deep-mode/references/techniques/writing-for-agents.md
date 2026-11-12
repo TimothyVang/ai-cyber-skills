@@ -1,6 +1,6 @@
 # writing-for-agents
 
-**Use when:** writing or editing anything an agent reads as instructions: a skill (`SKILL.md` and its references), `AGENTS.md`, `CLAUDE.md`, a rule file, a subagent brief, or a doc an instruction file points to. Read it before step 3 of the Authoring a skill playbook (`references/playbooks/authoring-a-skill.md`). The audit laws for agent systems are in `references/domain-rules/agent-engineering.md`.
+**Use when:** writing or editing anything an agent reads as instructions: a skill (`SKILL.md` and its references), `AGENTS.md`, `CLAUDE.md`, a rule file, a subagent brief, or a doc an instruction file points to. Read it before step 3 of the Authoring a skill playbook (`references/playbooks/authoring-a-skill.md`). The audit laws for agent systems are in `skill://domain-rules/references/agent-engineering.md`.
 
 The goal is not identical output every run. It is the same process every run: the agent reaches the right material at the right moment and knows when each step is finished.
 
@@ -53,3 +53,5 @@ Each step ends with how the agent knows it is done. A vague end ("once you under
 - **Routing.** Route on the words of the request. A file existing in the repo is evidence, never a trigger, or unrelated work in that repo gets captured.
 
 **Output:** the edited document, with each change justified by one of the rules above, and the pointer lines that lead to it.
+
+**Done when** every step in the edited document ends on a check, every pointer leads with its trigger word, and every no-op and stale line is gone.

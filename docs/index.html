@@ -54,7 +54,7 @@
     {"@type": "Question", "name": "What is deep-mode?",
      "acceptedAnswer": {"@type": "Answer", "text": "deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel."}},
     {"@type": "Question", "name": "How do the deep-mode PR bots work?",
-     "acceptedAnswer": {"@type": "Answer", "text": "A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote, and a gate in code merges your own PR at the voted head."}},
+     "acceptedAnswer": {"@type": "Answer", "text": "A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote (one, who must pass it, for a small change), and a gate in code merges your own PR at the voted head."}},
     {"@type": "Question", "name": "Does deep-mode need an API key?",
      "acceptedAnswer": {"@type": "Answer", "text": "No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage."}},
     {"@type": "Question", "name": "Which agents and harnesses does deep-mode work with?",
@@ -155,13 +155,13 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <img src="images/how-it-works.svg" width="1200" height="650" alt="Diagram: on GitHub, your private app deep-mode-login, PR and issue threads, and branches and checks. On your machine, the config directory, bot.py watch, your gh and git, and acpx connecting an author agent and a reviewer agent, omp by default.">
 </figure>
 <h3>The PR conversation</h3>
-<p>The coordinator posts a kickoff. When the branch conflicts with its base, the author agent merges the base into the head and pushes; it never rebases or force-pushes. The reviewer agent returns findings as JSON with evidence. The author fixes each one or dismisses it with proof. They repeat until no P0 or P1 is open, for at most three rounds, and an owner's <code>@deep-mode continue</code> starts more. Then three verifier agents, each in its own worktree at the final head, vote PASS or FAIL. Two PASS votes are needed.</p>
+<p>The coordinator posts a kickoff. When the branch conflicts with its base, the author agent merges the base into the head and pushes; it never rebases or force-pushes. The reviewer agent returns findings as JSON with evidence. The author fixes each one or dismisses it with proof. They repeat until no P0 or P1 is open, for at most three rounds, and an owner's <code>@deepmodebot continue</code> starts more. Then the repo's own check runs (its <code>.deep-mode.json</code> <code>check</code> command), and three verifier agents, each in its own worktree at the final head, vote PASS or FAIL. Two PASS votes are needed; a small change (at most 30 lines in 2 files, nothing security-sensitive) gets one verifier, who must pass it.</p>
 <figure>
 <img src="images/pr-conversation.svg" width="1200" height="940" alt="Sequence diagram of the PR conversation: kickoff, conflict merge, review and answer rounds over ACP mirrored to the thread, a three-verifier panel, and the merge gate checks before a squash merge.">
 </figure>
 <p>The merge gate is code, not a prompt. It merges only your own PR, at the same head the panel voted on, with every required check reported and green, with no conflict, and with merges allowed by <code>autonomousMerge</code>. Anyone else's PR gets review comments only.</p>
 <h3>The issue conversation</h3>
-<p>On a new issue, the author agent plans, the reviewer critiques, and the author answers, all read-only and all in the issue thread. When you opened the issue, or you comment <code>@deep-mode implement</code>, the author builds it on <code>deep-mode/issue-&lt;n&gt;</code> and opens a PR that closes the issue. The PR conversation then lands it.</p>
+<p>On a new issue, the author agent plans, the reviewer critiques, and the author answers, all read-only and all in the issue thread. When you opened the issue, or you comment <code>@deepmodebot implement</code>, the author builds it on <code>deep-mode/issue-&lt;n&gt;</code> and opens a PR that closes the issue. The PR conversation then lands it.</p>
 <figure>
 <img src="images/issue-flow.svg" width="1200" height="630" alt="Flow diagram: trigger, read as untrusted data, plan, critique, answer, then if the owner opened the issue or said implement, build on a branch, open a PR with Closes, land it with the PR conversation, and the merge closes the issue.">
 </figure>
@@ -179,7 +179,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <tr><td>2. Settle a fork by running it</td><td>Prototype</td><td>A decision backed by an observation</td></tr>
 <tr><td>3. Write it down</td><td>Spec</td><td><code>docs/specs/&lt;slug&gt;.md</code> and a spec issue</td></tr>
 <tr><td>4. Cut it up</td><td>Tickets</td><td>Tickets with their blockers</td></tr>
-<tr><td>5. Build it</td><td>Implement spec (one integration branch) or Board (one PR per ticket), with TDD</td><td>Merged code</td></tr>
+<tr><td>5. Build it</td><td>Phased build (one integration branch) or Work a queue (one PR per ticket), with TDD</td><td>Merged code</td></tr>
 <tr><td>6. Review and land</td><td>PR review (correctness, security, spec and standards lenses), verifier panel, PR conversation</td><td>A merged PR with evidence</td></tr>
 </tbody>
 </table>
@@ -188,9 +188,8 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <dl class="skills">
 <div><dt>Triage</dt><dd>Sorts incoming issues and outside PRs into a category and a state, and posts a brief or the questions that block them.</dd></div>
 <div><dt>Wayfinder</dt><dd>Charts an effort too big for one session and hands its decisions to a spec.</dd></div>
-<div><dt>Board</dt><dd>Runs a project on GitHub issues with status labels. Every task ends in a merge after a panel pass.</dd></div>
-<div><dt>Factory</dt><dd>Runs a queue of labeled issues through the <code>factory</code> CLI: spec, hidden tests, code, reviews and merge for each job.</dd></div>
-<div><dt>Orchestrate</dt><dd>Runs a multi-day program with many stacked PRs and subagents from one coordinator.</dd></div>
+<div><dt>Run a goal</dt><dd>Drives one goal to a checkable end without you, in one session or as a multi-day program with many PRs and subagents.</dd></div>
+<div><dt>Work a queue</dt><dd>Turns a backlog, a queue of PRs, or labeled issues (through the <code>factory</code> CLI) into merged PRs, each after a panel pass.</dd></div>
 <div><dt>domain-model</dt><dd>Keeps <code>GLOSSARY.md</code> and ADRs current as names and decisions change.</dd></div>
 <div><dt>research</dt><dd>Writes an answer that later sessions will cite into the repo.</dd></div>
 <div><dt>architecture-review</dt><dd>Finds structural friction across the codebase and settles which refactors to make.</dd></div>
@@ -219,7 +218,7 @@ omp plugin install deep-mode@deep-mode</code></pre>
 <pre><code>git clone https://github.com/TimothyVang/deep-mode
 cd deep-mode/plugins/deep-mode/skills/deep-mode
 py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre>
-<p>The installer checks your tools, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private GitHub App in the browser, waits while you install it on the repos you pick, writes <code>bot.json</code>, and registers the poller to start on its own (Task Scheduler, launchd, systemd or cron). It asks before each change. <code>--yes</code> accepts every default, and <code>--check</code> reports what is missing and changes nothing.</p>
+<p>The installer checks your tools, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private GitHub App in the browser, waits while you install it on the repos you pick, writes <code>bot.json</code>, and registers the poller to start on its own (Task Scheduler or the Startup folder, launchd, systemd or cron). It asks before each change. <code>--yes</code> accepts every default, and <code>--check</code> reports what is missing and changes nothing.</p>
 <figure>
 <img src="images/install.gif" width="827" height="515" alt="Terminal recording of a real run of install.py --check: tools, the agent harnesses found (omp, Claude Code, Codex, OpenCode), an ACP round trip to omp, and the GitHub App installation all report ok.">
 <figcaption>A real run of <code>install.py --check</code>, recorded to <a href="images/install.cast">an asciicast</a>.</figcaption>
@@ -244,7 +243,7 @@ py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre
 <h3>What is deep-mode?</h3>
 <p>deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel.</p>
 <h3>How do the deep-mode PR bots work?</h3>
-<p>A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote, and a gate in code merges your own PR at the voted head.</p>
+<p>A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. The repo's check command runs, verifiers vote (three, or one for a small change), and a gate in code merges your own PR at the voted head.</p>
 <h3>Does deep-mode need an API key?</h3>
 <p>No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage.</p>
 <h3>Which agents and harnesses does deep-mode work with?</h3>
