@@ -312,6 +312,20 @@ class TerminalStatus(unittest.TestCase):
         tui.took(ui, {"errors": ["gh not found"]}, g)
         self.assertEqual((ui.status, ui.error), (kept, "error: gh not found"))
 
+    def test_a_failed_gh_fetch_serves_the_old_threads_at_their_old_time(self):
+        source = arena.Source([], "o/r", 5)
+        source.data = {**arena.payload(two_threads(), [], live=True), "generated": "2026-11-11T21:56:00+00:00"}
+        original = arena.gather
+        def offline(*_):
+            raise st.GhError("error connecting to api.github.com")
+        arena.gather = offline
+        try:
+            got = source.get(force=True)
+        finally:
+            arena.gather = original
+        self.assertEqual((len(got["threads"]), got["generated"]), (2, "2026-11-11T21:56:00+00:00"))
+        self.assertIn("error connecting", got["errors"][0])
+
 
 def two_threads():
     sig = "**deep-mode {}** · head `{}`\n\n"

@@ -407,8 +407,9 @@ class Source:
                 try:
                     threads, errors = gather(self.urls, self.repo, self.limit)
                     self.data = payload(threads, errors, live=True)
-                except st.GhError as err:  # keep serving the last good threads
-                    self.data = payload(self.data["threads"] if self.data else [], [str(err)], live=True)
+                except st.GhError as err:  # keep serving the last good threads, and the time they were fetched
+                    stale = payload(self.data["threads"] if self.data else [], [str(err)], live=True)
+                    self.data = {**stale, "generated": self.data["generated"]} if self.data else stale
                 self.at = time.monotonic()
             return self.data
 
