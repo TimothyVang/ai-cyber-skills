@@ -2,6 +2,7 @@
 
 import json
 import sys
+import time
 import unittest
 from pathlib import Path
 
@@ -90,6 +91,44 @@ class ProseAnswers(unittest.TestCase):
     def test_only_for_the_author(self):
         body = "**deep-mode reviewer** · head `abc1234`\n\nNo findings. All three are **fixed** now."
         self.assertEqual(st.gist(body, "reviewer"), ["No findings. All three are fixed now."])
+
+
+class Voices(unittest.TestCase):
+    def test_pr_agent_by_its_own_headings_only(self):
+        comment = lambda body: {"id": 1, "html_url": "", "created_at": "2026-11-11T00:00:00Z", "body": body}
+        self.assertEqual(st.voice(comment("## PR Reviewer Guide 🔍\n\nNo major issues detected"))["kind"], "pr-agent")
+        self.assertIsNone(st.voice(comment("Please address what pr-agent flagged.\nP1: a.py:3 — wrong")))
+
+    def test_odd_content_never_raises(self):
+        comment = lambda body: {"id": 1, "html_url": "", "created_at": "2026-11-11T00:00:00Z",
+                                "body": "**deep-mode author · omp** · head `abc1234`\n\n" + body}
+        for payload in ('{"findings": null}', '{"findings": "none"}', '{"responses": {"a": 1}}'):
+            st.voice(comment(fenced(json.loads(payload))))
+        mixed = st.voice(comment(fenced({"findings": ["x", {"severity": "P1", "file": "a.py", "line": 3, "claim": "c"}]})))
+        self.assertEqual(mixed["gist"], ["P1: a.py:3 — c"])
+        started = time.perf_counter()
+        st.voice(comment("1. **" + " " * 65000))  # GitHub's comment limit, one line
+        self.assertLess(time.perf_counter() - started, 1.0)
+        self.assertEqual(st.clean("Suggestion&nbsp;&amp; <b>x</b>"), "Suggestion\xa0&  x ")
+
+
+class PrAgentGist(unittest.TestCase):
+    GUIDE = ("## PR Reviewer Guide 🔍\n\n<table>\n"
+             "<tr><td>⏱️&nbsp;<strong>Estimated effort to review</strong>: 4</td></tr>\n"
+             "<tr><td>🧪&nbsp;<strong>PR contains tests</strong></td></tr>\n"
+             "<tr><td>🔒&nbsp;<strong>No security concerns identified</strong></td></tr>\n{}</table>\n"
+             "<details><summary>Resolved</summary><strong>Old finding</strong></details>")
+
+    def test_no_focus_section_is_its_all_clear_line(self):
+        body = self.GUIDE.format("<tr><td>⚡&nbsp;<strong>No major issues detected</strong></td></tr>\n")
+        self.assertEqual(st.gist(body), ["No major issues detected"])
+        self.assertEqual(st.gist(self.GUIDE.format("")), ["No major issues detected"])
+
+    def test_focus_titles_come_from_the_focus_section_only(self):
+        body = self.GUIDE.format("<tr><td>⚡&nbsp;<strong>Recommended focus areas for review</strong><br>"
+                                 "<a href='x'><strong>Shared Checkout</strong></a><br>text<br>"
+                                 "<a href='y'><strong>Unreviewed Binary</strong></a></td></tr>\n")
+        self.assertEqual(st.gist(body), ["focus: Shared Checkout; Unreviewed Binary"])
 
 
 class Dialog(unittest.TestCase):

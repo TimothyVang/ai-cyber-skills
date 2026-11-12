@@ -15,12 +15,14 @@ As a module, `voices(url)` returns the same comments as dicts (arena.py draws th
 """
 
 import argparse
+import html
 import itertools
 import json
 import re
 import subprocess
 import sys
 
+MAX_LINE = 2000
 ROLES = r"(?:author|reviewer|verifier \d|panel|coordinator|trunk check)"
 SIGNATURE = re.compile(rf"^\*\*\S+ ({ROLES}\b[^*]*)\*\*\s*·\s*(.*)$")
 THREAD_URL = re.compile(r"^https://github\.com/([\w.-]+/[\w.-]+)/(pull|issues)/(\d+)(?:[/?#].*)?$")
@@ -88,14 +90,25 @@ def parse_signature(line: str):
             "agent": agent, "model": model, "head": head}
 
 
+# Its "Persistent review updated" notices only point at the edited review, so they are not turns.
+PR_AGENT_MARKERS = ("PR Reviewer Guide", "PR Code Suggestions")
+
+
 def is_pr_agent(body: str) -> bool:
-    return "PR Reviewer Guide" in body or "pr-agent" in body
+    """PR-Agent's own headings; a person merely mentioning pr-agent is not its turn."""
+    return any(marker in body for marker in PR_AGENT_MARKERS)
 
 
 def clean(text: str) -> str:
     text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
     text = re.sub(r"```.*?```", "", text, flags=re.S)
-    return re.sub(r"<[^>]+>", " ", text)
+    return html.unescape(re.sub(r"<[^>]+>", " ", text))
+
+
+def records(data: dict, key: str) -> list[dict]:
+    """The objects under `key`; a bot can write null, a string or a mixed list there."""
+    items = data.get(key)
+    return [item for item in items if isinstance(item, dict)] if isinstance(items, list) else []
 
 
 def clip(text: str, limit) -> str:
@@ -112,9 +125,9 @@ def json_gist(body: str, limit=140) -> list[str]:
             continue
         if not isinstance(data, dict):
             continue
-        for f in data.get("findings", []):
+        for f in records(data, "findings"):
             out.append(f"{f.get('severity', '?')}: {f.get('file', '')}:{f.get('line', '')} — {clip(str(f.get('claim', '')), limit)}")
-        for r in data.get("responses", []):
+        for r in records(data, "responses"):
             where = f" in {str(r['sha'])[:8]}" if r.get("sha") else ""
             out.append(f"{r.get('action', '?')} {r.get('id', '')}{where} — {clip(str(r.get('reason', '')), limit)}")
         if "vote" in data:
@@ -142,12 +155,18 @@ def prose_answers(lines: list[str], limit=140) -> list[str]:
 
 def gist(body: str, kind: str = "", limit=140) -> list[str]:
     if "PR Reviewer Guide" in body:  # PR-Agent: its focus-area titles, or its all-clear line
-        titles = re.findall(r"<strong>([^<]{3,80})</strong>", body.split("Recommended focus areas", 1)[-1])
-        return ["focus: " + "; ".join(dict.fromkeys(titles))] if titles else ["No major issues detected"]
+        if "Recommended focus areas" in body:
+            section = body.split("Recommended focus areas", 1)[1].split("</table>", 1)[0]
+            titles = re.findall(r"<strong>([^<]{3,80})</strong>", section)
+            if titles:
+                return ["focus: " + "; ".join(dict.fromkeys(t.strip() for t in titles))]
+        clear = re.search(r"No major issues detected[^<\n]*", body)
+        return [clear.group(0).strip() if clear else "No major issues detected"]
     structured = json_gist(body, limit)
     if structured:
         return structured
-    lines = [line.strip() for line in clean(body).splitlines() if line.strip()]
+    # Lines are cut to MAX_LINE: the answer patterns backtrack quadratically on a long run of spaces.
+    lines = [line.strip()[:MAX_LINE] for line in clean(body).splitlines() if line.strip()]
     found = [f"{m.group(1)}: {clip(m.group(2).replace('**', ''), limit)}" for line in lines if (m := FINDING.match(line))]
     verdict = next((m.group(1) for line in lines if (m := VERDICT.search(line))), None)
     if found:
@@ -187,6 +206,8 @@ def voices(url: str, limit=140) -> list[dict]:
 
 
 def main() -> int:
+    # A pipe on Windows defaults to the locale code page; thread text carries emoji and arrows.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("url", metavar="pr-or-issue-url")
     parser.add_argument("--full", action="store_true", help="print each comment's whole body")

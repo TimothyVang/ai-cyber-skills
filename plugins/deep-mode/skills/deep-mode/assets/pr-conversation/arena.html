@@ -15,6 +15,8 @@
   #log { flex: 1 1 380px; max-width: 560px; min-width: 300px; overflow-y: auto; border-left: 1px solid var(--line); padding: 0 4px 0 14px; position: relative; }
   #log h2 { font-size: 13px; font-weight: normal; color: var(--hi); margin: 0 0 2px; }
   #log .title { margin: 0 0 10px; color: var(--dim); }
+  #log .back { font: inherit; font-size: 12px; color: var(--dim); background: none; border: 1px solid var(--line); padding: 0 6px; margin: 0 8px 0 0; cursor: pointer; }
+  #log .back:hover, #log .back:focus-visible { color: var(--hi); border-color: var(--dim); }
   #log a { color: var(--dim); }
   .turn { padding: 5px 8px; margin: 0 0 2px; border-left: 2px solid transparent; cursor: pointer; }
   .turn.active { background: var(--sel); border-left-color: var(--dim); }
@@ -226,8 +228,9 @@
     platform(204, 60, 34, 5);
     sprite(th.kind === 'pr' ? 'pr' : 'issue', 180, 10 + (Math.floor(now / 700) % 2));
     text(th.label.toUpperCase(), 12, 8);
+    // a PR's state fits beside its label; an issue's longer label puts it on the vote row, which issues don't use
     if (score.merged || (shown >= th.turns.length && th.state !== 'open'))
-      textRight(score.merged ? 'MERGED' : th.state.toUpperCase(), 140, 8, 2);
+      textRight(score.merged ? 'MERGED' : th.state.toUpperCase(), 140, th.kind === 'pr' ? 8 : 34, 2);
     text('OPEN', 12, 22);
     const open = currentOpen(now), frac = score.peak ? Math.max(0, Math.min(1, open / score.peak)) : 0;
     rect(46, 22, 94, 7, 3); rect(47, 23, 92, 5, 0);
@@ -298,7 +301,15 @@
       });
       return;
     }
-    logEl.append(el('h2', null, `${th.label} · ${th.state} · ${th.repo}`));
+    const head = el('h2');
+    if (threads.length > 1) {
+      const back = el('button', 'back', '< threads');
+      back.type = 'button'; back.title = 'Back to the thread list (Esc)';
+      back.onclick = () => { toMenu(); cv.focus(); };
+      head.append(back);
+    }
+    head.append(`${th.label} · ${th.state} · ${th.repo}`);
+    logEl.append(head);
     const title = el('p', 'title'); title.append(link(th.url, th.title || th.url)); logEl.append(title);
     th.turns.forEach((v, i) => {
       const d = el('div', 'turn'); d.dataset.turn = i;
@@ -370,6 +381,7 @@
   window.addEventListener('keydown', e => {
     const now = performance.now(), k = e.key;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target instanceof Element && e.target.closest('a, button')) return;  // let links and buttons take their keys
     let used = true;
     if (k === 'Enter' || k === ' ' || k === 'z' || k === 'Z' || k === 'ArrowRight') advance(now);
     else if (k === 'Backspace' || k === 'b' || k === 'B' || k === 'x' || k === 'X' || k === 'ArrowLeft') back(now);

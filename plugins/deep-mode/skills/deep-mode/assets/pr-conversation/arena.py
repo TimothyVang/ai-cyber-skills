@@ -358,7 +358,7 @@ def gather(urls: list[str], repo: str, limit: int) -> tuple[list[dict], list[str
         for (r, issue), fut in [(job, pool.submit(load_thread, *job)) for job in jobs]:
             try:
                 t = fut.result()
-            except st.GhError as err:
+            except Exception as err:  # one thread's gh failure or odd content never sinks the others
                 errors.append(f"{issue.get('html_url')}: {err}")
                 continue
             if t:
@@ -447,6 +447,7 @@ def serve(source: Source, port: int, open_browser: bool) -> None:
 
 
 def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # thread titles can leave the code page
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("urls", nargs="*", metavar="thread-url", help="GitHub PR or issue URLs")
     parser.add_argument("--repo", help="owner/repo: load its recently updated PRs and issues with bot turns")
