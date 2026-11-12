@@ -26,6 +26,11 @@ Open-source agents, read at default-branch HEAD on 2026-11-12:
 Reddit and X, measured on Windows 11 on 2026-11-12:
 - Claude Code's WebSearch, filtered to reddit.com, returned `400 The following domains are not accessible to our user agent: ['reddit.com']`. `site:reddit.com` queries returned no Reddit pages.
 - `codex exec` with `web_search="live"` on a ChatGPT login returned Reddit `/comments/` threads, and so did `omp -p --tools=web_search`.
+- Child isolation, from three review panels on PR #68:
+  - `codex exec -s read-only -c features.shell_tool=false -c mcp_servers={}` still loaded MCP tools from `~/.codex/config.toml` plugins and ran the user's hooks.
+  - Adding `--ignore-user-config` removed the MCP tools and the hooks. With that flag, an injected `whoami` and an injected file read both failed.
+  - `omp -p --tools=web_search --no-context-files --no-rules --no-skills --no-extensions` still read a local canary file and loaded about 200 imported MCP tools, so `social.py` refuses omp.
+  - `claude -p --tools WebSearch` exposed only WebSearch.
 - Reddit's own endpoints were unreachable anonymously:
   - Its `.json` endpoints returned 403.
   - Its shreddit comment partial returned 403.

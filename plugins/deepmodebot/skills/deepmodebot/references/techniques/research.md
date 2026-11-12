@@ -28,10 +28,10 @@ The deliverable is one cited Markdown file in the repo. The reading runs in back
 
 ## Reddit and X on your subscriptions
 
-`python <this skill>/assets/research/social.py backends` lists the installed CLIs and whether codex and grok are logged in. Searches run on the user's CLI logins (omp, codex, claude, grok) with API keys and endpoint overrides removed from the child's environment. Each child gets search only, from an empty folder outside the repo. Logging in (`codex login`, `grok login`) is the user's step.
+`python <this skill>/assets/research/social.py backends` lists the installed CLIs and whether codex and grok are logged in. Searches run on the user's CLI logins (codex, claude, grok), never on an API key. Each child gets search only, an allowlisted environment, and an empty folder outside the repo. Logging in (`codex login`, `grok login`) is the user's step. omp is not used: a probe showed it could not be held to search only.
 
-- **Reddit:** `social.py reddit-find "<topic>" --cli codex --days 30 --comments 5`, or `--cli omp`. Claude's web search answered reddit.com with HTTP 400 when measured on 2026-11-12, so the tool refuses `--cli claude` here. `reddit-thread <url>` checks threads you already have. `reddit-sub <sub> "<query>"` searches one subreddit when the archive's search is up.
-- **X:** `social.py x-find "<topic>" --days 30` uses `grok` when it is logged in (native X search on the user's Grok plan), else codex web search, which finds few posts. `--cli omp` and `--cli claude` also work. `x-post <url>` checks one post.
+- **Reddit:** `social.py reddit-find "<topic>" --cli codex --days 30 --comments 5`. Claude's web search answered reddit.com with HTTP 400 when measured on 2026-11-12, so the tool refuses `--cli claude` here. `reddit-thread <url>` checks threads you already have. `reddit-sub <sub> "<query>"` searches one subreddit when the archive's search is up.
+- **X:** `social.py x-find "<topic>" --days 30` searches through claude, or `--cli codex`; both find a handful of posts. `--cli grok` searches X natively on the user's Grok plan once they run `grok login`; its lockdown is not yet audited here. `x-post <url>` checks one post.
 - Cite only items marked `verified`: a Reddit thread found in the arctic-shift archive inside the window, or an X post whose id dates inside the window and that fxtwitter loads. Quote the fetched text, never the search model's summary of it.
 
 ## Notes format (researchers)
