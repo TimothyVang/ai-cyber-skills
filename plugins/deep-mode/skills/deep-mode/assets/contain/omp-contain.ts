@@ -27,9 +27,14 @@ interface HookApi {
 	on(event: "tool_call", handler: (event: ToolCallEvent, ctx: { cwd?: string }) => Promise<ToolCallResult>): void;
 }
 
-function real(p: string): string {
+// Absolute form of a path as omp would open it: `~` is the home folder, anything relative hangs off cwd.
+function absolute(p: string, cwd: string): string {
 	const expanded = p === "~" || p.startsWith("~/") || p.startsWith("~\\") ? path.join(os.homedir(), p.slice(1)) : p;
-	let resolved = path.resolve(expanded);
+	return path.resolve(cwd, expanded);
+}
+
+function real(p: string): string {
+	let resolved = path.resolve(p);
 	try {
 		resolved = fs.realpathSync.native(resolved);
 	} catch {
@@ -70,7 +75,7 @@ function allowedRoots(roots: string[]): string[] {
 			const extra = config && typeof config === "object" && "extraWriteRoots" in config ? config.extraWriteRoots : undefined;
 			if (!Array.isArray(extra)) continue;
 			for (const p of extra) {
-				if (typeof p === "string") allowed.push(path.isAbsolute(p) || p.startsWith("~") ? p : path.join(root, p));
+				if (typeof p === "string") allowed.push(absolute(p, root));
 			}
 		} catch {}
 	}
@@ -94,7 +99,7 @@ export default function (pi: HookApi): void {
 		for (const target of targets(event.input ?? {})) {
 			// skill://, vault://, ssh:// and other non-session URLs resolve outside the root. A selector suffix
 			// (archive.zip:member, db.sqlite:table) stays on the path: `..` in it must count against the target.
-			if (!ANY_URL.test(target) && allowed.some(r => inside(real(path.resolve(cwd, target)), r))) continue;
+			if (!ANY_URL.test(target) && allowed.some(r => inside(real(absolute(target, cwd)), r))) continue;
 			return {
 				block: true,
 				reason:

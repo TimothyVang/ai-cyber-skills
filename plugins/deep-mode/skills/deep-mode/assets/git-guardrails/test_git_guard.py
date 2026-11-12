@@ -1,8 +1,9 @@
-"""Tests for the git guard's patterns, run through git-guard.sh --check.
+"""Tests for the git guard's patterns, run through git-guard.sh --check and through git-guard.ts (needs bun).
 
 Run: python -m unittest discover -s <this folder> -p "test_*.py"
 Needs git and bash (Git for Windows ships both).
 """
+import json
 import os
 import shutil
 import stat
@@ -12,6 +13,20 @@ import unittest
 from pathlib import Path
 
 GUARD = Path(__file__).resolve().parent / "git-guard.sh"
+HOOK = Path(__file__).resolve().parent / "git-guard.ts"
+
+DRIVER = """
+const [hookUrl, casesPath, cwd] = process.argv.slice(2);
+const mod = await import(hookUrl);
+let handler;
+mod.default({ on: (_event, fn) => { handler = fn; } });
+const out = [];
+for (const command of JSON.parse(await Bun.file(casesPath).text())) {
+  const result = await handler({ toolName: "bash", input: { command, cwd } });
+  out.push(result && result.block ? "block" : "allow");
+}
+console.log(JSON.stringify(out));
+"""
 
 BLOCKED = [
     "git reset --hard",
@@ -19,6 +34,9 @@ BLOCKED = [
     'git -C "C:/My Repo" reset --hard',
     "git -c a=b -C dir reset --hard HEAD~1",
     "git --git-dir x/.git reset --hard",
+    'git -c user.name="A B" reset --hard',
+    'git --git-dir="C:/My Repo/.git" --work-tree="C:/My Repo" reset --hard',
+    "git reset \\\n  --hard",
     "git clean -fd",
     "git checkout .",
     "git stash drop",
@@ -42,6 +60,8 @@ ALLOWED = [
     "git push -u origin feat",
     "git push --force-with-lease origin feat",
     "git push -u origin feat && gh pr create --base main",
+    "git push -u origin feat\ngh pr create --base main",
+    "git push -u origin feat\ngit log main",
     "git push origin feat; gh pr merge 5 --merge",
     "git commit -m wip && git log main",
     "git fetch origin main",
@@ -101,6 +121,19 @@ class GitGuardTest(unittest.TestCase):
             self.assertEqual(self.verdict("git push origin HEAD"), "block")
         finally:
             subprocess.run(["git", "-C", self.tmp, "checkout", "-q", "-b", "feat2"], check=True, capture_output=True)
+
+    @unittest.skipUnless(shutil.which("bun"), "bun is not on PATH")
+    def test_the_omp_hook_agrees_with_the_shell_guard(self):
+        driver, cases = Path(self.tmp) / "driver.mjs", Path(self.tmp) / "cases.json"
+        driver.write_text(DRIVER, encoding="utf-8")
+        cases.write_text(json.dumps(BLOCKED + ALLOWED), encoding="utf-8")
+        proc = subprocess.run([shutil.which("bun"), str(driver), HOOK.as_uri(), str(cases), self.tmp],
+                              capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        got = json.loads(proc.stdout.strip().splitlines()[-1])
+        for command, verdict in zip(BLOCKED + ALLOWED, got):
+            with self.subTest(command=command):
+                self.assertEqual(verdict, "block" if command in BLOCKED else "allow")
 
 
 if __name__ == "__main__":

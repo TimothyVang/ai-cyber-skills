@@ -61,7 +61,7 @@ for skill_md in ROOT.glob("plugins/*/skills/*/SKILL.md"):
         problems.append(f"{rel}: name {fields['name']!r} does not match folder {skill_md.parent.name!r}")
 
 for md in ROOT.rglob("*.md"):
-    if LOCAL_ONLY & set(md.parts):
+    if LOCAL_ONLY & set(md.relative_to(ROOT).parts):
         continue
     rel = md.relative_to(ROOT)
     text = md.read_text(encoding="utf-8")

@@ -28,6 +28,7 @@ the check ran past its time limit, 1 error.
 """
 import argparse
 import hashlib
+import math
 import os
 import re
 import shlex
@@ -73,7 +74,7 @@ def parse(goal_path):
         raise SystemExit(f"{goal_path}: stall_after must be a positive integer")
     for key, default in TIME_LIMITS.items():
         try:
-            if float(fields.get(key, default)) <= 0:
+            if not 0 < float(fields.get(key, default)) < math.inf:  # also false for nan
                 raise ValueError
         except ValueError:
             raise SystemExit(f"{goal_path}: {key} must be a positive number of minutes")
@@ -180,36 +181,64 @@ def run_limited(argv, minutes, stdin_text=None, **popen):
     code is None when the time limit was hit."""
     proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL if stdin_text is None else subprocess.PIPE, text=True,
                             encoding="utf-8", errors="replace", start_new_session=os.name != "nt", **popen)
+    def kill_tree():
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+        else:
+            try:
+                os.killpg(proc.pid, signal.SIGKILL)
+            except ProcessLookupError:
+                pass
+
     try:
         out = proc.communicate(stdin_text, timeout=float(minutes) * 60)[0]
         return proc.returncode, out or ""
     except subprocess.TimeoutExpired:
-        if os.name == "nt":
-            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
-        else:
-            os.killpg(proc.pid, signal.SIGKILL)
+        kill_tree()
         return None, proc.communicate()[0] or ""
+    except BaseException:  # Ctrl-C: the child has its own session on POSIX, so it would keep running
+        kill_tree()
+        raise
+
+
+def remove_cache(path):
+    """Delete one cache folder, or only the link when it is a symlink or a Windows junction."""
+    if os.path.islink(path) or getattr(os.path, "isjunction", lambda _: False)(path):
+        try:
+            os.unlink(path)
+        except OSError:
+            os.rmdir(path)
+    else:
+        shutil.rmtree(path, ignore_errors=True)
+    if os.path.lexists(path):
+        raise SystemExit(f"could not remove the cache folder {path}; the check could run code from it")
 
 
 def clear_caches(root, protect):
-    """Delete tool caches under the protected paths before the check runs. They are left out of the protect hash
-    because checks write them, so a forged tests/__pycache__/*.pyc could otherwise stand in for a test."""
+    """Delete tool caches under the protected paths, and beside a protected file, before the check runs. They are
+    left out of the protect hash because checks write them, so a forged tests/__pycache__/*.pyc could otherwise stand
+    in for a test."""
     for path in protect:
-        for folder, dirs, _ in os.walk(os.path.join(root, path)):
+        full = os.path.join(root, path)
+        if not os.path.isdir(full):
+            for name in CACHE_PARTS:
+                if os.path.lexists(os.path.join(os.path.dirname(full), name)):
+                    remove_cache(os.path.join(os.path.dirname(full), name))
+            continue
+        for folder, dirs, _ in os.walk(full):
             for name in [d for d in dirs if d in CACHE_PARTS]:
-                shutil.rmtree(os.path.join(folder, name), ignore_errors=True)
+                remove_cache(os.path.join(folder, name))
                 dirs.remove(name)
 
 
 def run_check(command, root, protect, minutes):
-    """Returns (exit code, last 4000 characters of output). Exit code 124 means the check ran past its time limit."""
+    """Returns (exit code, last 4000 characters of output). The exit code is None when the check ran past its time
+    limit."""
     clear_caches(root, protect)
     bash = find_bash()
     code, output = run_limited([bash, "-c", command] if bash else command, minutes, shell=not bash, cwd=root,
                                env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
                                stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-    if code is None:
-        return 124, f"check ran past {minutes} minutes and was stopped\n{output[-3000:]}"
     return code, output[-4000:]
 
 
@@ -280,10 +309,15 @@ def main():
 
     limits = {key: fields.get(key, default) for key, default in TIME_LIMITS.items()}
     code, output = run_check(fields["check"], root, protect, limits["check_minutes"])
+    timed_out = f"the check ran past {limits['check_minutes']} minutes and was stopped"
     if opts.action == "check":
         print(f"goal ok: {fields['goal']}\nprotected: {protect_text}\n"
-              f"check exit {code}{' (already done)' if code == 0 else ''}\n{output.strip()}")
+              f"{timed_out if code is None else f'check exit {code}'}{' (already done)' if code == 0 else ''}\n"
+              f"{output.strip()}")
         return 0
+    if code is None:
+        print(f"{timed_out}; nothing was run")
+        return 5
     if code == 0:
         print("check already passes; nothing to do")
         return 0
@@ -327,13 +361,14 @@ def main():
             return 4
         code, output = run_check(fields["check"], root, protect, limits["check_minutes"])
         with open(trail, "a", encoding="utf-8") as handle:
-            handle.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')}\t{run_id}\t{i}\t{harness}\t{harness_exit}\t{code}\t{time.time() - started:.0f}\n")
-        print(f"iteration {i}: harness exit {harness_exit}, check exit {code}")
+            handle.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')}\t{run_id}\t{i}\t{harness}\t{harness_exit}\t"
+                         f"{'timeout' if code is None else code}\t{time.time() - started:.0f}\n")
+        print(f"iteration {i}: harness exit {harness_exit}, check exit {'timeout' if code is None else code}")
         if code == 0:
             print("goal met")
             return 0
-        if code == 124:
-            print(f"the check ran past {limits['check_minutes']} minutes; stopping")
+        if code is None:
+            print(f"{timed_out}; stopping")
             return 5
         if harness_exit != 0:
             print(f"harness exited {harness_exit} (a cost cap, auth, or terminal failure); stopping. Log: "

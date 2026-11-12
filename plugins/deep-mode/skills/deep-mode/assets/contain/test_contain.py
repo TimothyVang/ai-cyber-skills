@@ -60,6 +60,9 @@ class GuardCase(unittest.TestCase):
         cls.outside = cls.tmp / "outside"
         cls.outside.mkdir()
         cls.claude_dir = cls.tmp / "claude"
+        # The temp folder may sit inside a git repo (TMP pointed at <repo>/.scratch/tmp): stop git's upward search
+        # there, so `outside` really is outside git.
+        cls.env = {**os.environ, "GIT_CEILING_DIRECTORIES": str(cls.tmp)}
 
     @classmethod
     def tearDownClass(cls):
@@ -69,7 +72,7 @@ class GuardCase(unittest.TestCase):
 class ClaudeGuard(GuardCase):
     def run_guard(self, tool, path, cwd=None, key="file_path", args=(), session="s1"):
         event = {"tool_name": tool, "tool_input": {key: str(path)}, "cwd": str(cwd or self.proj), "session_id": session}
-        env = {**os.environ, "CLAUDE_CONFIG_DIR": str(self.claude_dir)}
+        env = {**self.env, "CLAUDE_CONFIG_DIR": str(self.claude_dir)}
         proc = subprocess.run([sys.executable, str(GUARD), *args], input=json.dumps(event), capture_output=True, text=True, env=env)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         return "deny" if '"permissionDecision": "deny"' in proc.stdout else "allow"
@@ -157,7 +160,8 @@ class OmpHook(GuardCase):
         driver.write_text(DRIVER, encoding="utf-8")
         cases_path = self.tmp / "cases.json"
         cases_path.write_text(json.dumps([{"tool": t, "input": i, "cwd": str(c)} for t, i, c in cases]), encoding="utf-8")
-        proc = subprocess.run([shutil.which("bun"), str(driver), HOOK.as_uri(), str(cases_path)], capture_output=True, text=True)
+        proc = subprocess.run([shutil.which("bun"), str(driver), HOOK.as_uri(), str(cases_path)], capture_output=True, text=True,
+                              env=self.env)
         self.assertEqual(proc.returncode, 0, proc.stderr)
         return json.loads(proc.stdout.strip().splitlines()[-1])
 
@@ -180,6 +184,8 @@ class OmpHook(GuardCase):
             (("write", {"path": f"{out / 'out.zip'}:inner/a.txt"}, proj), "deny"),
             (("write", {"path": "[src/a.txt#1A2B]"}, proj), "allow"),
             (("write", {"path": f"[{out / 'x.txt'}#1A2B]"}, proj), "deny"),
+            (("write", {"path": "~/evil.txt"}, proj), "deny"),
+            (("write", {"path": "[~/evil.txt#1A2B]"}, proj), "deny"),
             (("write", {"path": "conflict://1"}, proj), "allow"),
             (("write", {"path": "out://reply"}, proj), "allow"),
             (("write", {"path": "vault://notes/a.md"}, proj), "deny"),

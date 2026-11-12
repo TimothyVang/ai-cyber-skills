@@ -184,16 +184,39 @@ class LoopCase(unittest.TestCase):
         self.assertEqual(run.returncode, 5, run.stdout + run.stderr)
         self.assertIn("ran past 0.03 minutes", run.stdout)
 
-    def test_a_hung_check_is_stopped_and_exits_5(self):
+    def test_a_hung_check_stops_the_run_before_any_harness_call(self):
         self.goal(check="sleep 120", check_minutes=0.02, protect="none")
-        run = self.loop("run", "goals/g.md")
+        record = self.tmp / "seen.json"
+        run = self.loop("run", "goals/g.md", FAKE_RECORD=str(record))
         self.assertEqual(run.returncode, 5, run.stdout + run.stderr)
         self.assertIn("check ran past 0.02 minutes", run.stdout)
+        self.assertFalse(record.exists())
+
+    def test_a_check_that_exits_124_is_a_failing_check_not_a_timeout(self):
+        self.goal(check="exit 124", protect="none", max_iterations=1)
+        run = self.loop("run", "goals/g.md")
+        self.assertEqual(run.returncode, 2, run.stdout + run.stderr)
+
+    def test_time_limits_must_be_finite(self):
+        for value in ("inf", "nan", "0", "-1", "soon"):
+            with self.subTest(value=value):
+                self.goal(check_minutes=value)
+                run = self.loop("check", "goals/g.md")
+                self.assertNotEqual(run.returncode, 0)
+                self.assertIn("check_minutes must be a positive number", run.stdout + run.stderr)
 
     def test_caches_under_protected_paths_are_cleared_before_the_check(self):
         (self.repo / "tests").mkdir()
         (self.repo / "tests" / "test_x.py").write_text("", encoding="utf-8")
         self.goal(protect="check.sh tests", max_iterations=1)
+        run = self.loop("run", "goals/g.md", action="forge-cache")
+        self.assertEqual(run.returncode, 2, run.stdout + run.stderr)
+        self.assertFalse((self.repo / "tests" / "__pycache__").exists())
+
+    def test_caches_beside_a_protected_file_are_cleared_too(self):
+        (self.repo / "tests").mkdir()
+        (self.repo / "tests" / "test_x.py").write_text("", encoding="utf-8")
+        self.goal(protect="check.sh tests/test_x.py", max_iterations=1)
         run = self.loop("run", "goals/g.md", action="forge-cache")
         self.assertEqual(run.returncode, 2, run.stdout + run.stderr)
         self.assertFalse((self.repo / "tests" / "__pycache__").exists())

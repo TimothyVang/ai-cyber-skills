@@ -572,35 +572,43 @@ def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
 
 # What an agent CLI loads from the folder it starts in: instructions, settings, hooks, skills, MCP servers, env files.
 # Compared in lower case, since Windows and macOS resolve `.OMP` to `.omp`.
-AGENT_CONFIG_DIRS = frozenset({".omp", ".pi", ".claude", ".codex", ".agents", ".agent", ".cursor", ".gemini",
-                               ".opencode", ".windsurf", ".devin", ".kiro", ".vscode"})
-AGENT_CONFIG_FILES = frozenset({"agents.md", "agents.override.md", "claude.md", "claude.local.md", "gemini.md",
-                                ".mcp.json", "mcp.json", ".cursorrules", ".clinerules", ".windsurfrules",
-                                "opencode.json", "opencode.jsonc", ".deep-mode.json"})
+AGENT_CONFIG_NAMES = frozenset({
+    ".omp", ".pi", ".claude", ".codex", ".agents", ".agent", ".cursor", ".gemini", ".opencode", ".windsurf", ".devin",
+    ".kiro", ".vscode", ".clinerules", ".cursorrules", ".windsurfrules", "agents.md", "agents.override.md",
+    "claude.md", "claude.local.md", "gemini.md", ".mcp.json", "mcp.json", "opencode.json", "opencode.jsonc",
+    ".deep-mode.json"})
 AGENT_CONFIG_GITHUB = ("copilot-instructions.md", "skills", "instructions", "plugin")
 
 
 def is_agent_config(path: str) -> bool:
+    """True for a file or folder, at any depth, that an agent CLI would load. `path` uses forward slashes."""
     parts = path.lower().split("/")
-    if any(part in AGENT_CONFIG_DIRS for part in parts):
-        return True
-    if parts[-1] in AGENT_CONFIG_FILES or parts[-1].startswith(".env"):
+    if any(part in AGENT_CONFIG_NAMES for part in parts) or parts[-1].startswith(".env"):
         return True
     return any(part == ".github" and nxt in AGENT_CONFIG_GITHUB for part, nxt in zip(parts, parts[1:]))
 
 
-def pin_agent_config(tree: Path, base_ref: str) -> None:
+def strip_agent_config(tree: Path) -> None:
     """Someone else's PR must not configure the agent that reviews it: a hook, MCP server, or env file in the
-    checkout would run on this machine. Replace every agent-config path in `tree` with the base branch's copy, or
-    with nothing when the base has none. The PR's versions still reach the reviewer as diff text."""
-    for path in git(tree, "ls-files", "-z").split("\0"):
-        if path and is_agent_config(path):
-            (tree / path).unlink(missing_ok=True)
-    trusted = [path for path in git(tree, "ls-tree", "-r", "-z", "--name-only", base_ref).split("\0")
-               if path and is_agent_config(path)]
-    if trusted:
-        git(tree, "--literal-pathspecs", "checkout", "--quiet", base_ref, "--pathspec-from-file=-",
-            "--pathspec-file-nul", stdin="\0".join(trusted))
+    checkout would run on this machine. Delete every agent-config file and folder from `tree`, tracked or not.
+    Nothing is restored from the base branch, since base config can point at files the PR controls (a hook script,
+    a symlink target). The PR's versions still reach the reviewer as diff text."""
+    for folder, dirs, files in os.walk(tree):
+        rel = Path(folder).relative_to(tree).as_posix()
+        for name in [*dirs, *files]:
+            if name == ".git" or not is_agent_config(name if rel == "." else f"{rel}/{name}"):
+                continue
+            target = Path(folder) / name
+            if target.is_dir() and not target.is_symlink():  # includes a submodule's folder
+                shutil.rmtree(target, ignore_errors=True)
+            else:
+                target.unlink(missing_ok=True)
+            if target.exists() or target.is_symlink():
+                raise RuntimeError(f"could not remove agent config {target} from the review checkout")
+            if name in dirs:
+                dirs.remove(name)
+        if ".git" in dirs:
+            dirs.remove(".git")
 
 
 def branch_rules(repo: str, base: str, is_admin: bool):
@@ -1041,7 +1049,7 @@ class PRConversation:
         self.refresh()
         worktree_at(self.clone, self.review_tree, self.head)
         if not self.own:
-            pin_agent_config(self.review_tree, f"origin/{self.base}")
+            strip_agent_config(self.review_tree)
         stat = git(self.clone, "diff", "--stat", f"origin/{self.base}...{self.head}")
         diff = git(self.clone, "diff", f"origin/{self.base}...{self.head}")
         if len(diff) > MAX_DIFF:
