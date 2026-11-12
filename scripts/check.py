@@ -39,7 +39,7 @@ for manifest in [ROOT / ".omp-plugin/marketplace.json", ROOT / ".claude-plugin/m
         if isinstance(source, str) and not (ROOT / source).is_dir():
             problems.append(f"{manifest.relative_to(ROOT)}: plugin {plugin.get('name')} source {source} is missing")
 
-for plugin_json in ROOT.glob("plugins/*/.claude-plugin/plugin.json"):
+for plugin_json in [*ROOT.glob("plugins/*/.claude-plugin/plugin.json"), *ROOT.glob("plugins/*/hooks/hooks.json")]:
     try:
         json.loads(plugin_json.read_text(encoding="utf-8"))
     except ValueError as err:
@@ -56,7 +56,7 @@ for skill_md in ROOT.glob("plugins/*/skills/*/SKILL.md"):
         problems.append(f"{rel}: name {fields['name']!r} does not match folder {skill_md.parent.name!r}")
 
 for md in ROOT.rglob("*.md"):
-    if ".git" in md.parts:
+    if {".git", ".scratch", ".worktrees"} & set(md.parts):
         continue
     rel = md.relative_to(ROOT)
     text = md.read_text(encoding="utf-8")

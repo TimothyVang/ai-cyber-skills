@@ -43,6 +43,7 @@ TEMPLATE = HERE / "arena.html"
 FONT = HERE / "font8x8_basic.hex"  # font8x8_basic by Daniel Hepper, public domain (NOTICE.md); 128 glyphs x 8 rows
 CACHE_SECONDS = 15
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
+FINDING_ID = re.compile(r"^[A-Za-z]+\d+$")  # F1, V2: bot.py's finding and panel-failure ids
 EFFECT = {"P0": "A critical hit!", "P1": "It's super effective!"}
 ANSWER = re.compile(r"^(fixed|dismissed)\b\s*(.*?)(?:\s+in ([0-9a-f]{7,40}))?\s*—\s*(.*)$", re.I)
 VOTE = re.compile(r"^vote:\s*(\S+)(?:\s*—\s*(.*))?$", re.I)
@@ -273,12 +274,19 @@ def is_merge_note(v: dict) -> bool:
     return v.get("head") == "merge note" or any(g.startswith("Merged") for g in v.get("gist") or [])
 
 
+def words(text: str) -> set[str]:
+    return {w for w in re.findall(r"[a-z0-9_]+", text.lower()) if len(w) > 3}
+
+
 def battle(meta: dict, found: list[dict]) -> dict:
     """A thread ready to draw: intro, each turn's dialog lines and the score after it, and the outro."""
     label = thread_label(meta["kind"], meta["number"])
     merged = meta["state"] == "merged"
     score = {"open": 0, "peak": 0, "votes": [None, None, None], "merged": False}
     seen, head, panel_seen, merge_said, turns = set(), "", False, False, []
+    # Open findings in report order, keyed (reviewer, id), each with its text. A re-review lists every finding
+    # still open under its old id, so each reviewer's latest list replaces its previous one.
+    open_findings, reported = {}, {}
     for v in found:
         lines = turn_lines(v, full_name(v) not in seen, head)
         seen.add(full_name(v))
@@ -286,15 +294,31 @@ def battle(meta: dict, found: list[dict]) -> dict:
             head = v["head"]
         gist = v.get("gist") or []
         if v["kind"] in ("reviewer", "pr-agent"):
-            score["open"] += sum(1 for g in gist if re.match(r"^P[012]:", g))
+            name = full_name(v)
+            for key in reported.get(name, ()):
+                open_findings.pop(key, None)
+            # Prose findings carry no id: their text is the key.
+            texts = v.get("findings") or {g: g for g in gist if re.match(r"^P[012]:", g)}
+            reported[name] = [(name, i) for i in texts]
+            open_findings.update(((name, i), text) for i, text in texts.items())
         elif v["kind"] == "author":
-            score["open"] = max(0, score["open"] - sum(1 for g in gist if ANSWER.match(g)))
+            for g in gist:
+                if (m := ANSWER.match(g)) and open_findings:
+                    ident = m.group(2).strip()
+                    if FINDING_ID.match(ident):  # one answer closes one finding, the oldest with that id
+                        key = next((k for k in open_findings if k[1] == ident), None)
+                    else:  # a prose answer names the finding in words: the one sharing the most, else the oldest
+                        said = words(ident or m.group(4))
+                        key = max(open_findings, key=lambda k: len(said & words(open_findings[k])))
+                    if key:
+                        del open_findings[key]
         elif v["kind"] == "verifier" and v.get("number") in (1, 2, 3) and (vote := vote_of(v)):
             if panel_seen:  # a new round of votes after an earlier panel
                 score["votes"], panel_seen = [None, None, None], False
             score["votes"][v["number"] - 1] = vote
         elif v["kind"] == "panel":
             panel_seen = True
+        score["open"] = len(open_findings)
         score["peak"] = max(score["peak"], score["open"])
         if merged and not merge_said and is_merge_note(v):
             lines.append(f"{label} was merged!")
