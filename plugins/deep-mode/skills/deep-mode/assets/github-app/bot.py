@@ -29,6 +29,7 @@ on its base branch.
 """
 import argparse
 import concurrent.futures
+import csv
 import ctypes
 import datetime as dt
 import functools
@@ -2517,9 +2518,22 @@ def install_windows_autostart(command: list) -> tuple:
     return "startup-folder", str(launcher)
 
 
+def task_listed() -> tuple:
+    """Whether the task is in schtasks' full list, as (True/False, "") or (None, why) when the list cannot be read.
+    `/Query /TN` cannot tell a missing task from one this user may not read: both exit 1."""
+    try:
+        proc = run(["schtasks", "/Query", "/FO", "CSV", "/NH"], check=False, timeout=60)
+    except (OSError, subprocess.SubprocessError) as err:
+        return None, str(err)
+    if proc.returncode:
+        return None, (proc.stderr or proc.stdout).strip()[-400:]
+    names = {row[0].lower() for row in csv.reader(proc.stdout.splitlines()) if row}
+    return f"\\{TASK_NAME}".lower() in names, ""
+
+
 def uninstall_windows_autostart() -> list:
     """Remove the task and the launcher; returns one line for each entry that is still there, with the reason.
-    A task that neither /Delete removed nor /Query could check (schtasks missing or hung) counts as still there."""
+    When /Delete fails, the task counts as gone only if schtasks' full list can be read and lacks it."""
     launcher = startup_launcher()
     deleted, task_error = schtasks("/Delete", "/TN", TASK_NAME, "/F")
     try:
@@ -2527,12 +2541,13 @@ def uninstall_windows_autostart() -> list:
         launcher_error = ""
     except OSError as err:
         launcher_error = str(err)
-    queried, query_error = schtasks("/Query", "/TN", TASK_NAME)
     left = []
-    if queried == 0:
-        left.append(f"Task Scheduler task {TASK_NAME}: {task_error}")
-    elif queried is None and deleted != 0:
-        left.append(f"Task Scheduler task {TASK_NAME}, not checked: {task_error}; {query_error}")
+    if deleted != 0:
+        listed, list_error = task_listed()
+        if listed:
+            left.append(f"Task Scheduler task {TASK_NAME}: {task_error}")
+        elif listed is None:
+            left.append(f"Task Scheduler task {TASK_NAME}, not checked: {task_error}; {list_error}")
     if launcher.is_file():
         left.append(f"Startup-folder launcher {launcher}: {launcher_error}")
     return left

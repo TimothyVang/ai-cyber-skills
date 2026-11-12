@@ -1456,13 +1456,19 @@ class AskTest(unittest.TestCase):
 class FakeScheduler:
     """Stands in for bot.run: one Task Scheduler task that schtasks /Create, /Query and /Delete act on."""
 
-    def __init__(self, task=False, create_denied=False, delete_denied=False, missing=False):
+    def __init__(self, task=False, create_denied=False, delete_denied=False, query_denied=False, missing=False):
         self.task, self.create_denied, self.delete_denied, self.missing = task, create_denied, delete_denied, missing
+        self.query_denied = query_denied
 
     def __call__(self, cmd, **kw):
         if self.missing:
             raise FileNotFoundError("schtasks not found")
         verb = cmd[1]
+        if verb == "/Query" and self.query_denied:
+            return finished(1, stderr="ERROR: Access is denied.")
+        if verb == "/Query" and "/FO" in cmd:  # the full list, as `/FO CSV /NH` prints it
+            names = ["\\Other task"] + ([f"\\{bot.TASK_NAME}"] if self.task else [])
+            return finished(0, stdout="".join(f'"{name}","N/A","Ready"\n' for name in names))
         if verb == "/Query":
             return finished(0 if self.task else 1)
         if (verb == "/Create" and self.create_denied) or (verb == "/Delete" and self.task and self.delete_denied):
@@ -1554,6 +1560,12 @@ class WindowsAutostartTest(unittest.TestCase):
         self.assertEqual(len(left), 1)
         self.assertIn("not checked", left[0])
         self.assertIn("schtasks not found", left[0])
+        # schtasks runs but refuses both: /Delete's exit 1 is not proof that the task is gone
+        self.scheduler(task=True, delete_denied=True, query_denied=True)
+        left = bot.uninstall_windows_autostart()
+        self.assertEqual(len(left), 1)
+        self.assertIn("not checked", left[0])
+        self.assertIn("Access is denied", left[0])
 
     @unittest.skipUnless(os.name == "nt", "runs a real .cmd launcher")
     def test_launcher_starts_the_command_and_logs_its_output(self):
