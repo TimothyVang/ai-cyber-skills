@@ -381,7 +381,8 @@
   window.addEventListener('keydown', e => {
     const now = performance.now(), k = e.key;
     if (e.ctrlKey || e.metaKey || e.altKey) return;
-    if (e.target instanceof Element && e.target.closest('a, button')) return;  // let links and buttons take their keys
+    // A focused link or button keeps its own activation keys; every other key still drives the arena.
+    if ((k === 'Enter' || k === ' ') && e.target instanceof Element && e.target.closest('a, button')) return;
     let used = true;
     if (k === 'Enter' || k === ' ' || k === 'z' || k === 'Z' || k === 'ArrowRight') advance(now);
     else if (k === 'Backspace' || k === 'b' || k === 'B' || k === 'x' || k === 'X' || k === 'ArrowLeft') back(now);

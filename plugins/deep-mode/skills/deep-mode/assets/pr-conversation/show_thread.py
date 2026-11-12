@@ -100,7 +100,8 @@ def is_pr_agent(body: str) -> bool:
 
 
 def clean(text: str) -> str:
-    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    # An unclosed comment runs to the end: one pass, where a lone "<!--" would rescan the rest each time.
+    text = re.sub(r"<!--.*?(?:-->|\Z)", "", text, flags=re.S)
     text = re.sub(r"```.*?```", "", text, flags=re.S)
     return html.unescape(re.sub(r"<[^>]+>", " ", text))
 
@@ -118,7 +119,9 @@ def clip(text: str, limit) -> str:
 def json_gist(body: str, limit=140) -> list[str]:
     """The fenced JSON the ACP roles end with: findings, answers or a vote. Each text cut at `limit` (None: whole)."""
     out = []
-    for block in re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", body, flags=re.S):
+    # Fence to fence, then keep objects: matching "{...}" inside the fence rescans the body per opening.
+    blocks = (block.strip() for block in re.findall(r"```(?:json)?(.*?)```", body, flags=re.S))
+    for block in (block for block in blocks if block.startswith("{")):
         try:
             data = json.loads(block)
         except ValueError:

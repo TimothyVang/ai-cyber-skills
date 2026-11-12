@@ -106,9 +106,11 @@ class Voices(unittest.TestCase):
             st.voice(comment(fenced(json.loads(payload))))
         mixed = st.voice(comment(fenced({"findings": ["x", {"severity": "P1", "file": "a.py", "line": 3, "claim": "c"}]})))
         self.assertEqual(mixed["gist"], ["P1: a.py:3 — c"])
-        started = time.perf_counter()
-        st.voice(comment("1. **" + " " * 65000))  # GitHub's comment limit, one line
-        self.assertLess(time.perf_counter() - started, 1.0)
+        # Comments near GitHub's 65,536-character limit that defeat a backtracking pattern.
+        for hostile in ("1. **" + " " * 65000, "<!--" * 16000, "```{x" * 13000):
+            started = time.perf_counter()
+            st.voice(comment(hostile))
+            self.assertLess(time.perf_counter() - started, 1.0)
         self.assertEqual(st.clean("Suggestion&nbsp;&amp; <b>x</b>"), "Suggestion\xa0&  x ")
 
 
