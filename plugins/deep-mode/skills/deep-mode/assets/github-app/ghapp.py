@@ -16,6 +16,7 @@ Model calls never go through the app. It is only the bots' GitHub identity. JWTs
 import argparse
 import base64
 import html
+import email.utils
 import http.server
 import json
 import os
@@ -68,6 +69,47 @@ def app_jwt(config: dict) -> str:
     return f"{header}.{payload}.{b64url(proc.stdout)}"
 
 
+class RequestError(RuntimeError):
+    def __init__(self, method: str, path: str, status: int, detail: str):
+        self.status = status
+        super().__init__(f"{method} {path} -> {status}: {detail}")
+
+
+class RateLimited(RuntimeError):
+    """A GitHub read budget is unavailable until retry_at (Unix seconds)."""
+
+    def __init__(self, retry_at: float, reason: str):
+        self.retry_at, self.reason = retry_at, reason
+        super().__init__(f"{reason}; discovery paused until "
+                         f"{time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime(retry_at))}")
+
+
+def rate_limit(headers, detail: str):
+    now, deadlines, reasons = time.time(), [], []
+    if headers.get("X-RateLimit-Remaining") == "0":
+        try:
+            deadlines.append(float(headers.get("X-RateLimit-Reset", "")))
+            reasons.append("GitHub primary rate limit exhausted")
+        except ValueError:
+            deadlines.append(now + 60)
+            reasons.append("GitHub primary rate limit exhausted (no reset supplied)")
+    retry = headers.get("Retry-After")
+    if retry:
+        try:
+            deadline = now + float(retry)
+        except ValueError:
+            try:
+                deadline = email.utils.parsedate_to_datetime(retry).timestamp()
+            except (TypeError, ValueError, OverflowError):
+                deadline = now + 60
+        deadlines.append(deadline)
+        reasons.append("GitHub secondary rate limit (Retry-After)")
+    if not deadlines and ("rate limit" in detail.lower() or "abuse detection" in detail.lower()):
+        deadlines.append(now + 60)
+        reasons.append("GitHub rate limit (no reset supplied; waiting 60 seconds)")
+    return RateLimited(max(now + 1, *deadlines), "; ".join(reasons)) if deadlines else None
+
+
 def request(method: str, path: str, token: str | None = None, body: dict | None = None, bearer=True):
     url = path if path.startswith("http") else API + path
     data = json.dumps(body).encode() if body is not None else None
@@ -84,11 +126,21 @@ def request(method: str, path: str, token: str | None = None, body: dict | None 
             raw = resp.read()
             return json.loads(raw) if raw else None
     except urllib.error.HTTPError as err:
-        raise RuntimeError(f"{method} {path} -> {err.code}: {err.read().decode(errors='replace')[:400]}") from None
+        detail = err.read().decode(errors="replace")[:400]
+        limited = rate_limit(err.headers, detail) if err.code in (403, 429) else None
+        if limited:
+            raise limited from None
+        raise RequestError(method, path, err.code, detail) from None
 
 
 def installations(config: dict) -> list[dict]:
-    return request("GET", "/app/installations?per_page=100", app_jwt(config)) or []
+    token, rows, page = app_jwt(config), [], 1
+    while True:
+        batch = request("GET", f"/app/installations?per_page=100&page={page}", token) or []
+        rows.extend(batch)
+        if len(batch) < 100:
+            return rows
+        page += 1
 
 
 def installation_for(config: dict, repo: str) -> int:
