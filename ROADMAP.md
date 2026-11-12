@@ -18,7 +18,7 @@ This file is a snapshot from the maintainer's last sync, so a task may have been
 | [#42](https://github.com/TimothyVang/deep-mode/issues/42) | [Task]: Live-test the git guard hook inside Claude Code | `discussion-only`, `good first issue`, `help wanted` | - | - |
 | [#43](https://github.com/TimothyVang/deep-mode/issues/43) | [Task]: Exact GitLab commands for the tracker technique | `discussion-only`, `help wanted` | - | - |
 | [#44](https://github.com/TimothyVang/deep-mode/issues/44) | [Task]: check_skill.py flags another repo's script path as missing | `discussion-only`, `good first issue`, `help wanted` | - | - |
-| [#45](https://github.com/TimothyVang/deep-mode/issues/45) | [Task]: Unit tests for pr-overlap.py's claim rule and path overlap | `discussion-only`, `good first issue`, `help wanted` | - | - |
+| [#45](https://github.com/TimothyVang/deep-mode/issues/45) | [Task]: Extend overlap tests with path normalization and boundary cases | `discussion-only`, `good first issue`, `help wanted` | - | - |
 
 ## Claimed
 
