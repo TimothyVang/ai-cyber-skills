@@ -122,9 +122,9 @@ def clean(text: str) -> str:
     # An unclosed comment runs to the end: one pass, where a lone "<!--" would rescan the rest each time.
     text = re.sub(r"<!--.*?(?:-->|\Z)", "", text, flags=re.S)
     text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\x00(\d+)\x00", lambda m: spans[int(m.group(1))], text)
     # A numeric entity is cut to 7 digits: Python refuses to parse an integer string over 4,300.
-    text = re.sub(r"&#(x?)(\d{8,})", lambda m: f"&#{m.group(1)}{m.group(2)[:7]}", text)
-    return html.unescape(re.sub(r"\x00(\d+)\x00", lambda m: spans[int(m.group(1))], text))
+    return html.unescape(re.sub(r"&#(x?)(\d{8,})", lambda m: f"&#{m.group(1)}{m.group(2)[:7]}", text))
 
 
 def records(data: dict, key: str) -> list[dict]:

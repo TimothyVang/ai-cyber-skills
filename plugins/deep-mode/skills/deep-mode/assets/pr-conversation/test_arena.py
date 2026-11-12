@@ -341,6 +341,7 @@ class TerminalStatus(unittest.TestCase):
         self.assertIn("ok", printed)
         st.voice(comment(sig + "```json\n" + "[" * 5000 + "\n```"))  # deeper than json parses
         st.voice(comment(sig + "&#" + "9" * 5000 + ";"))  # longer than int() takes
+        st.voice(comment(sig + "`&#" + "9" * 5000 + ";`"))  # the same inside a code span
         started = time.perf_counter()
         arena.turn_lines(st.voice(comment("**deep-mode panel** · head `abc1234`\n\n" + "7" * 65000)), False)
         self.assertLess(time.perf_counter() - started, 1.0)
