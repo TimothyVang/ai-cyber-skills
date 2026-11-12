@@ -235,6 +235,50 @@ class EvidenceProtocolTests(unittest.TestCase):
         self.assertEqual(result['outcomes'], {'passed': 1})
         self.assertEqual(result['passed_per_attempt'], 1)
 
+    def test_second_phase_rejects_intervening_project_edits(self):
+        folder = self.fixture_run('handoff')
+        request = folder / 'request-2.txt'
+        request.write_text('Synthetic continuation.', encoding='utf-8')
+        meta = runner.load(folder / 'run.json')
+        meta['prompts'].append(runner.file_record(request))
+        self.rewrite(folder / 'run.json', meta)
+        self.assertEqual(self.capture_fixture("print('synthetic phase one')"), 0)
+        (folder / 'project/reservations.py').write_text('external edit', encoding='utf-8')
+        self.assertEqual(self.cli('capture', '--id', 'synthetic', '--phase', '2',
+                                 '--model', 'synthetic-not-agent', '--', sys.executable,
+                                 '-c', "print('must not execute')", 'synthetic-not-agent'), 2)
+        self.assertFalse((folder / 'phase-2').exists())
+
+    def test_capture_scrubs_credentials_and_contains_temp(self):
+        folder = self.fixture_run()
+        code = ("import os,json; print(json.dumps({'token': 'GH_TOKEN' in os.environ,"
+                "'api': 'OPENAI_API_KEY' in os.environ, 'temp': os.environ['TMP']}))")
+        with patch.dict(runner.os.environ, {'GH_TOKEN': 'synthetic-token', 'OPENAI_API_KEY': 'synthetic-key'}):
+            self.assertEqual(self.capture_fixture(code), 0)
+        observed = json.loads((folder / 'phase-1/stdout.txt').read_text())
+        self.assertFalse(observed['token'])
+        self.assertFalse(observed['api'])
+        self.assertEqual(Path(observed['temp']), folder / 'project/.scratch/tmp')
+
+    def test_artifact_probe_scrubs_candidate_test_environment(self):
+        folder = self.fixture_run('handoff')
+        source = folder / 'phase-2/artifacts'
+        shutil.copytree(folder / 'project', source)
+        (source / 'test_reservations.py').write_text(
+            "import os,unittest\nfrom pathlib import Path\n"
+            "class EnvironmentTest(unittest.TestCase):\n"
+            " def test_boundary(self):\n"
+            "  self.assertNotIn('GH_TOKEN', os.environ)\n"
+            "  self.assertNotIn('OPENAI_API_KEY', os.environ)\n"
+            "  self.assertEqual(Path(os.environ['TMP']), Path.cwd()/'.scratch/tmp')\n",
+            encoding='utf-8')
+        runner.save(folder / 'phase-2/capture.json', {'snapshot': runner.project_files(source)})
+        with patch.dict(runner.os.environ, {'GH_TOKEN': 'synthetic-token', 'OPENAI_API_KEY': 'synthetic-key'}), \
+                contextlib.redirect_stdout(io.StringIO()):
+            artifact_checks.main(['--id', 'synthetic'], runtime=runner)
+        regression = runner.load(folder / 'artifact-checks/regression.json')
+        self.assertEqual(regression['exit_code'], 0, regression['stderr'])
+
     def test_escape_path_is_rejected(self):
         with self.assertRaises(ValueError):
             runner.inside(self.root, '../outside.json')

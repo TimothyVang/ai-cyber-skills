@@ -19,7 +19,8 @@ import uuid
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 RUNS = ROOT / '.scratch' / 'workflows'
-API_KEYS = ('ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'CODEX_API_KEY')
+sys.path.insert(0, str(ROOT / 'plugins/deepmodebot/skills/deepmodebot/assets/pr-agent'))
+import pr_agent_local
 
 
 def load(path):
@@ -30,6 +31,14 @@ def save(path, value):
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open('x', encoding='utf-8') as stream:
         stream.write(json.dumps(value, indent=2) + '\n')
+
+
+def process_env(project):
+    env = pr_agent_local.scrubbed_env()
+    temp = project / '.scratch' / 'tmp'
+    temp.mkdir(parents=True, exist_ok=True)
+    env.update({key: str(temp) for key in ('TEMP', 'TMP', 'TMPDIR')})
+    return env
 
 
 def digest(data):
@@ -224,22 +233,27 @@ def capture(args):
     skill_root = folder / 'project' / '.omp' / 'skills'
     if canonical(project_files(skill_root)) != meta['skill_digest']:
         raise ValueError('installed skills changed since prepare')
-    if args.phase == 1 and project_files(folder / 'project') != meta['initial_files']:
-        raise ValueError('candidate input changed since prepare')
     if not 1 <= args.phase <= len(scenario['prompts']):
         raise ValueError('invalid phase')
     phase = folder / f'phase-{args.phase}'
     if phase.exists() or (args.phase > 1 and not (folder / f'phase-{args.phase-1}' / 'capture.json').is_file()):
         raise ValueError('phase already attempted or prior phase missing; never overwrite failed attempts')
+    input_snapshot = project_files(folder / 'project')
+    if args.phase == 1:
+        expected_input = meta['initial_files']
+    else:
+        previous = load(folder / f'phase-{args.phase-1}' / 'capture.json')
+        if previous['status'] != 'completed' or previous['exit_code'] != 0:
+            raise ValueError('prior phase did not complete successfully')
+        expected_input = previous['snapshot']
+    if input_snapshot != expected_input:
+        raise ValueError('candidate input changed since prepare or preceding phase capture')
     command = args.command[1:] if args.command[:1] == ['--'] else args.command
     if not command or args.model not in command:
         raise ValueError('supply an explicit approved model as a command argument and matching --model label')
     request = evidence_file(meta['prompts'][args.phase - 1]).read_bytes()
     phase.mkdir()
-    env = {k: v for k, v in os.environ.items() if k not in API_KEYS}
-    temp = folder / 'project' / '.scratch' / 'tmp'
-    temp.mkdir(parents=True, exist_ok=True)
-    env.update({key: str(temp) for key in ('TEMP', 'TMP', 'TMPDIR')})
+    env = process_env(folder / 'project')
     started = datetime.now(timezone.utc).isoformat()
     start = time.monotonic()
     status, code, error = 'completed', None, None
@@ -267,7 +281,7 @@ def capture(args):
               'model': args.model, 'command': command, 'started_at': started,
               'wall_seconds': round(time.monotonic() - start, 3), 'exit_code': code, 'status': status, 'error': error,
               'prompt': meta['prompts'][args.phase - 1], 'stdout': file_record(phase / 'stdout.txt'),
-              'stderr': file_record(phase / 'stderr.txt'), 'snapshot': snapshot}
+              'stderr': file_record(phase / 'stderr.txt'), 'input_snapshot': input_snapshot, 'snapshot': snapshot}
     save(phase / 'capture.json', record)
     print(json.dumps(record, indent=2))
     return 0 if status == 'completed' else 1
@@ -285,6 +299,9 @@ def verify_result(result):
     if result['status'] == 'passed' and (not result.get('checks') or not all(c['passed'] is True for c in result['checks']) or result.get('errors')):
         raise ValueError('passing result has failed/missing checks')
     if result['status'] == 'passed':
+        if result.get('schema_version') != 2:
+            raise ValueError('historical result lacks input-bound capture protocol')
+        meta = load(evidence_file(result['run_metadata']))
         scenario = scenarios()[result['scenario']]
         expected = {c['id'] for c in scenario['checks']}
         ids = [c['id'] for c in result['checks']]
@@ -295,7 +312,11 @@ def verify_result(result):
         captures = [load(path) for path in capture_paths]
         if sorted(c['phase'] for c in captures) != list(range(1, len(scenario['prompts']) + 1)):
             raise ValueError('passing result lacks every phase capture')
-        for record in captures:
+        expected_input = meta['initial_files']
+        for record in sorted(captures, key=lambda c: c['phase']):
+            if record.get('input_snapshot') != expected_input:
+                raise ValueError('phase input does not match preceding captured state')
+            expected_input = record['snapshot']
             if record['status'] != 'completed' or record['exit_code'] != 0 or record['scenario_digest'] != result['scenario_digest']:
                 raise ValueError('passing result contains failed or mismatched execution')
             evidence_file(record['stdout'])
@@ -313,12 +334,16 @@ def collect(args):
     if canonical(load(HERE / 'seeds' / (scenario['seed'] + '.json'))) != meta['seed_digest']:
         errors.append('seed changed since prepare')
     captures = []
+    expected_input = meta['initial_files']
     for index in range(1, len(scenario['prompts']) + 1):
         path = folder / f'phase-{index}' / 'capture.json'
         if not path.is_file():
             errors.append(f'missing phase {index}')
             continue
         record = load(path)
+        if record.get('input_snapshot') != expected_input:
+            errors.append(f'phase {index}: starting tree does not match preceding captured state')
+        expected_input = record['snapshot']
         captures.append(record)
         evidence.append(file_record(path))
         if record['scenario_digest'] != meta['scenario_digest'] or record['phase'] != index or record['prompt'] != meta['prompts'][index - 1]:
@@ -396,7 +421,8 @@ def collect(args):
     else:
         errors.append('independent assessment not supplied')
     status = 'passed' if not errors and all(c['passed'] is True for c in checks) else 'failed'
-    result = {'schema_version': 1, 'scenario': scenario['id'], 'scenario_digest': meta['scenario_digest'],
+    result = {'schema_version': 2, 'run_metadata': file_record(folder / 'run.json'),
+              'scenario': scenario['id'], 'scenario_digest': meta['scenario_digest'],
               'skill_commit': meta['skill_commit'], 'skill_digest': meta['skill_digest'], 'status': status,
               'checks': checks, 'errors': errors, 'evidence': evidence}
     save(folder / 'result.json', result)

@@ -525,5 +525,46 @@
       }
     ],
     "limits": "Executes only reviewed exact source functions extracted by AST, with explicit stdlib globals. No requests package import, network, full request preparation or wire transport. Unknown-length and Latin-1 discrepancies are source-level findings, not end-to-end HTTP proof."
+  },
+  "execution_integrity": {
+    "runner_sha256": "138791ff145a6b4e39b8d60d19103aad33b0abaca27d3778fe9fe8e870ea8992",
+    "interruption": {
+      "states": [
+        "valid",
+        "interrupted",
+        "pending"
+      ],
+      "model_observed": "openai-codex/gpt-6-astra",
+      "first_raw_output_retained": true,
+      "report": ".scratch\\review-runs\\interruption-smoke.json",
+      "scope": "Actual CLI main and one real subscription-model call; in-process KeyboardInterrupt injected before the second call. No synthetic model response."
+    },
+    "completed_smoke": {
+      "run_sha256": "252e7dcf7b94f205221eacfe05b21c3b06b6a4f1d86487cded7c155c2c2417f4",
+      "cases": [
+        {
+          "case_id": "django-mysql-alias-hash-sql-injection",
+          "status": "valid",
+          "model_observed": "openai-codex/gpt-6-astra",
+          "findings": [
+            {
+              "id": "F1",
+              "severity": "P0",
+              "file": "django/db/models/sql/query.py",
+              "line": 59,
+              "claim": "Restore rejection of '#': MySQL treats it as a line-comment delimiter, making attacker-controlled FilteredRelation aliases unsafe when emitted unquoted. A join alias such as 'a#' can comment out the generated ON clause and subsequent filters.",
+              "evidence": "The diff removes '|#|' from FORBIDDEN_ALIAS_PATTERN, so check_alias('a#') now succeeds. add_filtered_relation() assigns the validated string to filtered_relation.alias, and table_alias() uses that string as the join alias. This removes the existing protection against MySQL comments. Exploitation depends on unquoted alias emission in Join/SQLCompiler, whose implementations are not included here; the supplied injection tests exercise quotes and whitespace, not hash-only aliases."
+            }
+          ]
+        },
+        {
+          "case_id": "django-mysql-alias-hash-sql-injection-clean",
+          "status": "valid",
+          "model_observed": "openai-codex/gpt-6-astra",
+          "findings": []
+        }
+      ]
+    },
+    "limits": "Separate integrity probes, not pooled into accuracy metrics."
   }
 }

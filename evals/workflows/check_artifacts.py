@@ -93,11 +93,13 @@ def main(argv=None, runtime=None):
             tests = sorted(project.glob("**/test_reservations.py"))
             checks["regression:one_test_file"] = len(tests) == 1
             test_directory = tests[0].parent if len(tests) == 1 else project
+            env = workflow.process_env(project)
             for name, command in [('behavior', [sys.executable, '-c', HANDOFF_PROBE]),
                                   ('regression', [sys.executable, '-B', '-m', 'unittest', 'discover',
                                                   '-s', str(test_directory), '-p', 'test_reservations.py'])]:
                 try:
-                    result = subprocess.run(command, cwd=project, capture_output=True, text=True, encoding='utf-8', timeout=60)
+                    result = subprocess.run(command, cwd=project, env=env, capture_output=True,
+                                            text=True, encoding='utf-8', timeout=60)
                     code, stdout, stderr = result.returncode, result.stdout, result.stderr
                 except (OSError, subprocess.TimeoutExpired) as exc:
                     code, stdout, stderr = None, '', str(exc)

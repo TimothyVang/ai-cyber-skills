@@ -46,3 +46,14 @@ Those controls do not prove arbitrary source is free of secrets or make model ou
 Use [the evaluator CLI](../review/README.md) with the pinned repositories and default corrected corpus. Local receipts remain in `.scratch/review-runs/quality-v4-*`, with wrapper output under `.scratch/evidence/quality-v4-*`. Source probes are `.scratch/evidence/review-label-probes.json` and `review-legacy-transport-observation.json`; context admission is `context-admission.json`. Raw local receipts are not a publicly archived independent benchmark.
 
 The corpus uses historically public repairs, including repair comments that can reveal intent. Training overlap is possible. The holdout is one Django bug/control pair. One model family, one run per case, two clean controls and development-driven label corrections cannot establish broad accuracy, statistical superiority, complete feature parity or a replacement for any named product. No matched hosted-reviewer results were obtained.
+
+## Post-review execution integrity
+
+Publication review found that interrupted batches could lose their denominator because the report was written only at the end.
+The runner now creates the manifest first, checkpoints before and after each case, and streams raw output to files.
+A controlled in-process interruption after one real subscription-model response retained `valid`, `interrupted` and `pending`
+cases plus the completed raw response. Receipt: `.scratch/evidence/review-interruption-smoke.json`.
+
+Two additional held-out calls completed through the checkpointed transport in `quality-v5-holdout-enriched.json`.
+Both had valid responses, with the expected alias finding on the reverse patch and none on the forward patch.
+These integrity smoke runs are not pooled into the paired accuracy table. Thirteen evaluator regression tests passed.

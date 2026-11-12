@@ -11,6 +11,7 @@ import shutil
 import subprocess
 import sys
 import time
+import tempfile
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -230,11 +231,12 @@ def run_case(case, mode, packet, model, max_cost, timeout, omp, run_dir, overlay
               "context_files": context_files, "context_omissions": context_omissions,
               "settings": [*SETTINGS, "--config <no-discovery-overlay>"], "status": "failed", "findings": [], "usage": None}
     try:
-        proc = subprocess.run(cmd, cwd=case_dir, env=env, capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", timeout=timeout,
-                              creationflags=seal.NO_WINDOW)
-        (case_dir / "stdout.txt").write_text(proc.stdout, encoding="utf-8")
-        (case_dir / "stderr.txt").write_text(proc.stderr, encoding="utf-8")
+        with (case_dir / "stdout.txt").open("w", encoding="utf-8") as stdout, \
+                (case_dir / "stderr.txt").open("w", encoding="utf-8") as stderr:
+            proc = subprocess.run(cmd, cwd=case_dir, env=env, stdout=stdout, stderr=stderr,
+                                  timeout=timeout, creationflags=seal.NO_WINDOW)
+        proc.stdout = (case_dir / "stdout.txt").read_text(encoding="utf-8", errors="replace")
+        proc.stderr = (case_dir / "stderr.txt").read_text(encoding="utf-8", errors="replace")
         record["exit_code"] = proc.returncode
         record["raw_stdout"] = proc.stdout
         record["raw_stderr"] = proc.stderr
@@ -257,13 +259,35 @@ def run_case(case, mode, packet, model, max_cost, timeout, omp, run_dir, overlay
                 record["status"] = "valid"
             except (ValueError, json.JSONDecodeError) as e:
                 record["error"] = f"malformed JSON: {e}"
-    except subprocess.TimeoutExpired as e:
+    except subprocess.TimeoutExpired:
         record["error"] = f"timeout after {timeout}s"
-        for key, value in (("stdout.txt", e.stdout), ("stderr.txt", e.stderr)):
-            if value:
-                (case_dir / key).write_bytes(value if isinstance(value, bytes) else value.encode())
+    except OSError as exc:
+        record["error"] = f"launch or output failure: {exc}"
     record["elapsed_seconds"] = round(time.monotonic() - started, 3)
     return record
+
+
+def checkpoint(path, report, *, create=False):
+    records = report["results"]
+    report["model_observed"] = sorted({r.get("model_observed") for r in records if r.get("model_observed")})
+    report["context_sources"] = {r["case_id"]: r.get("context_sha256") for r in records}
+    report["context_coverage"] = {
+        r["case_id"]: {"files": r.get("context_files", []), "omissions": r.get("context_omissions", [])}
+        for r in records
+    }
+    text = json.dumps(report, indent=2) + "\n"
+    if create:
+        with path.open("x", encoding="utf-8") as stream:
+            stream.write(text)
+        return
+    with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                     prefix=path.name + ".", suffix=".tmp", delete=False) as stream:
+        temporary = Path(stream.name)
+        stream.write(text)
+    try:
+        os.replace(temporary, path)
+    finally:
+        temporary.unlink(missing_ok=True)
 
 
 def run(args):
@@ -302,8 +326,19 @@ def run(args):
     cli["system_prompt_sha256"] = hashlib.sha256(seal.SYSTEM.encode()).hexdigest()
     overlay = run_dir / "no-discovery.yml"
     overlay.write_text(seal.NO_DISCOVERY, encoding="utf-8")
-    records = []
-    for case in selected:
+    records = [{"case_id": c["id"], "status": "pending", "findings": [],
+                "model_requested": args.model, "error": "case not started"} for c in selected]
+    report = {"schema": 1, "created_at": dt.datetime.now(dt.timezone.utc).isoformat(),
+              "corpus_sha256": json_digest(corpus), "corpus_path": str(corpus_path),
+              "artifact_directory": str(run_dir), "model_requested": args.model, "mode": args.mode,
+              "cli": cli, "context_bindings": {c["id"]: c.get("context") for c in selected},
+              "settings": [*SETTINGS, "--config <no-discovery-overlay>"],
+              "timeout_seconds": args.timeout, "max_cost_per_case": args.max_cost,
+              "split": args.split, "results": records}
+    checkpoint(out, report, create=True)
+    for index, case in enumerate(selected):
+        records[index].update(status="interrupted", error="case started without a completed checkpoint")
+        checkpoint(out, report)
         packet, context_files, context_omissions = "", [], []
         if args.mode == "enriched":
             context_info = case.get("context")
@@ -323,27 +358,16 @@ def run(args):
             except (OSError, RuntimeError, ValueError, KeyError) as exc:
                 context_error = f"pinned context unavailable: {exc}"
             if context_error:
-                records.append({"case_id": case["id"], "status": "failed", "findings": [],
-                                "model_requested": args.model, "model_observed": None, "error": context_error,
-                                "context_sha256": hashlib.sha256(packet.encode()).hexdigest() if packet else None,
-                                "context_files": context_files, "context_omissions": context_omissions,
-                                "settings": [*SETTINGS, "--config <no-discovery-overlay>" ]})
+                records[index] = {"case_id": case["id"], "status": "failed", "findings": [],
+                                  "model_requested": args.model, "model_observed": None, "error": context_error,
+                                  "context_sha256": hashlib.sha256(packet.encode()).hexdigest() if packet else None,
+                                  "context_files": context_files, "context_omissions": context_omissions,
+                                  "settings": [*SETTINGS, "--config <no-discovery-overlay>"]}
+                checkpoint(out, report)
                 continue
-        records.append(run_case(case, args.mode, packet, args.model, args.max_cost, args.timeout,
-                                omp, run_dir, overlay, seal, credentials, reviewer))
-    report = {"schema": 1, "created_at": dt.datetime.now(dt.timezone.utc).isoformat(), "corpus_sha256": json_digest(corpus),
-              "corpus_path": str(corpus_path), "artifact_directory": str(run_dir),
-              "model_requested": args.model, "mode": args.mode,
-              "model_observed": sorted({r.get("model_observed") for r in records if r.get("model_observed")}),
-              "cli": cli, "context_sources": {r["case_id"]: r.get("context_sha256") for r in records},
-              "context_bindings": {c["id"]: c.get("context") for c in selected},
-              "context_coverage": {r["case_id"]: {"files": r.get("context_files", []),
-                                                  "omissions": r.get("context_omissions", [])} for r in records},
-              "settings": [*SETTINGS, "--config <no-discovery-overlay>"],
-              "timeout_seconds": args.timeout, "max_cost_per_case": args.max_cost,
-              "split": args.split, "results": records}
-    with out.open("x", encoding="utf-8") as stream:
-        stream.write(json.dumps(report, indent=2) + "\n")
+        records[index] = run_case(case, args.mode, packet, args.model, args.max_cost, args.timeout,
+                                 omp, run_dir, overlay, seal, credentials, reviewer)
+        checkpoint(out, report)
     print(out)
     return 1 if any(r["status"] != "valid" for r in records) else 0
 

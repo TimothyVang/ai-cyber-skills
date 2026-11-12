@@ -2,6 +2,8 @@ import copy
 import importlib.util
 import json
 import unittest
+import os
+import tempfile
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -144,6 +146,38 @@ class ScoringBehaviorTests(unittest.TestCase):
             review_eval.parse_findings("not json")
         with self.assertRaises(ValueError):
             review_eval.parse_findings('{"findings":[{"file":"a.py"}]}')
+
+class InterruptedRunTests(unittest.TestCase):
+    def test_interruption_retains_completed_started_and_pending_cases(self):
+        root = review_eval.ROOT / ".scratch/tmp"
+        root.mkdir(parents=True, exist_ok=True)
+        corpus = review_eval.load_corpus()
+        selected = [c for c in corpus["cases"] if c["split"] == "calibration"][:3]
+        seal = SimpleNamespace(NO_DISCOVERY="", SYSTEM="synthetic", omp_oauth_credentials=lambda model: {"synthetic"})
+
+        def attempt(case, *args):
+            if case["id"] == selected[1]["id"]:
+                raise KeyboardInterrupt
+            return {"case_id": case["id"], "status": "valid", "findings": [], "model_observed": "synthetic"}
+
+        with tempfile.TemporaryDirectory(dir=root) as tmp, patch.dict(os.environ):
+            out = Path(tmp) / "run.json"
+            args = SimpleNamespace(corpus=str(review_eval.CORPUS), split="calibration",
+                                   only=[c["id"] for c in selected], timeout=1, max_cost=1,
+                                   context_repos_dir=None, mode="diff-only", out=str(out), model="synthetic")
+            with patch.object(review_eval, "SCRATCH", Path(tmp)), \
+                    patch.object(review_eval.shutil, "which", return_value="synthetic"), \
+                    patch.object(review_eval, "version_info", return_value={}), \
+                    patch.object(review_eval, "load_seal", return_value=seal), \
+                    patch.object(review_eval, "load_reviewer", return_value=None), \
+                    patch.object(review_eval, "run_case", side_effect=attempt):
+                with self.assertRaises(KeyboardInterrupt):
+                    review_eval.run(args)
+            saved = json.loads(out.read_text())
+            self.assertEqual([r["status"] for r in saved["results"]], ["valid", "interrupted", "pending"])
+            self.assertEqual([r["case_id"] for r in saved["results"]], [c["id"] for c in selected])
+            self.assertEqual(saved["model_observed"], ["synthetic"])
+
 
 
 class BudgetBoundaryTests(unittest.TestCase):

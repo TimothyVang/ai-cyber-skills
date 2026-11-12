@@ -10,6 +10,7 @@ A contributor receives a code review informed by bounded committed source, witho
 - Model calls use production `pr_agent_local.SYSTEM` and the `flatten` user-message envelope; run metadata records `system_prompt_sha256`.
 - Known-bug and clean-control reviews record invalid runs, duplicate findings and false positives.
 - Loading an old default trigger retires the unrelated-account mention without rewriting stored configuration or changing explicit custom triggers.
+- Review manifests checkpoint completed, interrupted and pending cases instead of dropping an interrupted batch.
 
 ## How to get to it (user POV)
 
@@ -25,6 +26,8 @@ Run the GitHub App's `test_review_context.py` boundary cases as regression evide
 For mention migration, run the actual `load_bot_config` path against a disposable root-local config.
 Verify the effective trigger changes, one warning is emitted, and stored bytes remain identical.
 The observed integration receipt is `.scratch/evidence/mention-migration-smoke.json`; never use production config for this probe.
+For interrupted-review proof, retain a completed real response, interrupt before the next case, and inspect
+the manifest's completed/interrupted/pending states. Keep this fault-injection run separate from accuracy results.
 
 ## Gotchas
 

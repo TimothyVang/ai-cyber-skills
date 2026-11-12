@@ -62,7 +62,11 @@ python evals/workflows/run.py prepare architecture --id architecture-01 --ref <s
 python evals/workflows/run.py prepare handoff --id handoff-01 --ref <skill-commit>
 ```
 
-`capture` starts the supplied command in the prepared project and sends the appropriate request on stdin. It strips the three standard model API-key environment variables and places process temp directories inside the project. Supply an **explicit approved subscription model ID** both to the collector and as an argv element of the command. There is no default model or automatic fallback. On Windows, supply the real executable or the operator's working launcher if `omp` resolves only to a shell shim.
+`capture` starts the supplied command in the prepared project and sends the request on stdin.
+It reuses the sealed reviewer's credential-environment scrubber and puts process temp directories inside the project.
+Candidate artifact probes use the same environment policy. This does not prevent access to credentials through other host capabilities.
+Supply an **explicit approved subscription model ID** both to the collector and as an argv element.
+There is no default model or automatic fallback. On Windows, use a real executable or a working launcher.
 
 An omp invocation using the existing outcome runner's isolation conventions is:
 
@@ -86,6 +90,9 @@ The generic capture wrapper does not itself disable imported MCP servers, profil
 ### Collect without inventing proof
 
 Each phase retains `capture.json`, raw stdout/stderr, timestamps, command/model, status/exit code and a digest-bound file snapshot under `.scratch/workflows/<id>/phase-N/`. The operator inspects actual outputs and transcripts and independently executes the manifest's outcome checks. Record those checks' raw outputs in the run folder. Do not trust the candidate's final summary alone.
+Each capture binds its starting tree as `input_snapshot`. Phase one must match the prepared input;
+later phases must match the preceding successful capture exactly. Intervening edits are rejected before launch.
+Collection and reporting verify the complete chain, not just the final tree.
 
 Run the supplied deterministic artifact checks before writing the assessment:
 
@@ -109,6 +116,9 @@ python evals/workflows/run.py report
 ```
 
 Inspect `phase-1/artifacts/` for handoff's pre-resume state. Run independent behavior probes against a copy of the final project, not the captured project itself. Keep the copy and resulting logs under the same run folder; the collector refuses a project changed after capture. `collect` writes an immutable `result.json` and returns nonzero on failure. Repeated capture/collection never overwrites an attempt. A corrected run gets a new ID; retain the earlier failure. Pending, failed and blocked attempts stay in `report`'s denominator. Zero attempts reports a null pass rate, not success. Linked billsplit/kitty runs retain their own denominator and are not silently pooled with these four journeys.
+Before accepting a result, `collect` reruns trusted artifact checks on a fresh copy under `collected-checks-*`.
+It does not trust a supplied passing `checks.json`. Passing results use schema version 2 and bind their run metadata.
+Historical version-1 passes lack the input-chain protocol and are reported as invalid, not upgraded in place.
 
 After a scenario changes, an older pass no longer proves the current contract. `report` retains that attempt as `invalid`, with the evidence error, rather than deleting it or counting it as a current pass. A failed handoff fixture originally left the booking container unspecified while its checker assumed a list. The corrected seed specifies a dictionary and the checker accepts conventional test directories. Keep the original attempt when rerunning.
 
