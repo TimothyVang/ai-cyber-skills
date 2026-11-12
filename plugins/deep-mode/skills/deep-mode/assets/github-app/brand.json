@@ -6,5 +6,6 @@
   "branchPrefix": "deep-mode",
   "repoConfigFile": ".deep-mode.json",
   "configDirName": "deep-mode",
-  "autostartId": "deep-mode-bot"
+  "autostartId": "deep-mode-bot",
+  "repo": "TimothyVang/deep-mode"
 }

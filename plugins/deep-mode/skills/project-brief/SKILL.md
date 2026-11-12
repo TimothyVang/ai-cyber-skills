@@ -10,7 +10,7 @@ Run this once per project as the maintainer, then again whenever the project dri
 
 Paths below are relative to this skill (`skill://project-brief/...`). In omp bash, `skill://project-brief` resolves to this skill's directory. In Claude Code, use the "Base directory for this skill" path shown when the skill loads. Claude Code tool names: `ask` → `AskUserQuestion`, `task` → `Agent`, `todo` → `TodoWrite`.
 
-Deep-mode rules apply throughout (`skill://deep-mode`): restate first, answer observable questions by running them, prove claims with evidence, and pause for every shared-state action.
+Deep-mode rules apply throughout (`skill://deep-mode`): restate first, answer observable questions by running them, prove claims with evidence, and follow its Autonomy section for shared-state actions. In the user's own repo, labels, issues, comments, and the PR need no ask: publish, then report what you did and how to undo it. Ask first, once, only when the user asked to be consulted or the repo is someone else's.
 
 ## Assets
 
@@ -60,15 +60,15 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
    - Make **Area / files** concrete repo paths; overlap checks depend on them. Split tasks so open tasks touch disjoint paths where you can. Size L means split it first.
    - Label every task `help wanted`; add `good first issue` to S tasks that need no deep context.
    - Prefer adding a task shape to an existing issue over a duplicate; list those as "edit #N" rather than "new".
-   - Draft the full list (title, size, labels, area/files, new vs. edit) and the issue bodies, but create nothing yet; step 7 asks about it together with shipping. Write each body to a `mktemp -p .scratch` file (the repo's git-excluded scratch folder; never system temp) using `### <field label>` headings in form order (the shape GitHub renders for form issues).
+   - Draft the full list (title, size, labels, area/files, new vs. edit) and the issue bodies; step 7 publishes them together with the files. Write each body to a `mktemp -p .scratch` file (the repo's git-excluded scratch folder; never system temp) using `### <field label>` headings in form order (the shape GitHub renders for form issues).
 
 4. **Install the assets** per the table above, into the working tree only.
    - Missing file → copy it. Existing identical file → leave it. Existing different file → show the diff and merge by hand: keep the maintainer's content, add only missing sections. Never overwrite.
    - `CONTRIBUTING.md`: fill `{{...}}` placeholders from the brief (repo, run and verify commands, constraints). If one exists, merge the deep-mode sections (install, claim rules, overlap check, PR requirements, review flow) into it.
-   - A repo that already carries the old `.github/workflows/pr-overlap.yml` or `roadmap.yml` from an earlier run: propose deleting them in step 7. Deep-mode replaces GitHub Actions; the agent runs both scripts instead.
-   - Optional: suggest `.github/CODEOWNERS` lines from the brief's architecture map. Write the file only if the human says yes.
+   - A repo that already carries the old `.github/workflows/pr-overlap.yml` or `roadmap.yml` from an earlier run: delete them in the step 7 PR and say so. Deep-mode replaces GitHub Actions; the agent runs both scripts instead.
+   - Optional: add `.github/CODEOWNERS` lines from the brief's architecture map when the repo has more than one maintainer. It goes in the step 7 PR and under "Decisions I made".
 
-5. **Ensure labels.** After the yes in step 7, create or update the labels before creating issues. `--force` updates an existing label instead of failing:
+5. **Ensure labels.** As part of step 7, create or update the labels before creating issues. `--force` updates an existing label instead of failing:
 
    ```bash
    gh label create "help wanted" --repo OWNER/REPO --color 008672 --description "Claimable task: run /deep-mode:contribute" --force
@@ -76,20 +76,21 @@ Detect the mode first: if `docs/PROJECT_BRIEF.md` exists, this is a re-run; jump
    gh label create "claimed" --repo OWNER/REPO --color fbca04 --description "Someone is working on this" --force
    ```
 
-   Labels are shared state: create them only after the step 7 yes, and say so.
+   Labels are shared state: name each one you created or changed in the report.
 
 6. **Write the roadmap** after the issues exist (step 7). `python scripts/sync-roadmap.py --repo OWNER/REPO --out ROADMAP.md` (on Windows, `py -3` if `python` isn't Python 3). Read the result back and check every created issue appears under `## Open to claim`. Then run `python scripts/pr-overlap.py claims --repo OWNER/REPO` to prove the overlap script works against this repo; paste its output in your report.
 
-7. **Ask once, then publish.** Show everything in one question: the task list from step 3, the labels, every file you wrote or merged with a one-line reason, and how to ship (commit to a branch and open a PR, recommended, via `skill://deep-mode/references/playbooks/opening-a-pr.md`; commit and push to the default branch; or leave uncommitted). The human can trim the task list in the same answer. If the request already asked to publish ("set it up and push"), that is the yes. Then: labels (step 5), create or edit only the approved issues with `gh issue create --repo OWNER/REPO --title ... --body-file "$f" --label "help wanted"`, write the roadmap (step 6), and ship exactly as chosen.
+7. **Publish, then report.** In the user's own repo this needs no ask (deep-mode Autonomy). Ensure the labels (step 5), create or edit the issues with `gh issue create --repo OWNER/REPO --title ... --body-file "$f" --label "help wanted"`, write the roadmap (step 6), and ship the files through `skill://deep-mode/references/playbooks/opening-a-pr.md`: a branch and a PR, never a push to the default branch.
+   In the report, list the task list, the labels, and every file you wrote or merged with a one-line reason, under "Decisions I made", each with how to undo it (close the issue, delete the label, revert the PR). When the user asked to be consulted, or the repo isn't theirs, show the same list in one question first and publish only what they approve.
 
 8. **Re-run mode.** When the brief already exists:
    - **Refresh the brief.** `git log --since=<brief's last commit date> --stat` plus a re-read of changed areas. Update only sections that drifted; re-run the Run & verify commands and update their recorded results.
-   - **Release expired claims.** Fetch comments: `gh issue list --repo OWNER/REPO --state open --label "help wanted" --limit 200 --json number,title,assignees,labels,comments`. Find issues whose newest claim comment has an `Expires` date before today and no later unclaim. Show the list, then on a yes comment on each: `Claim by @<login> expired on <date>. This issue is open to claim again; comment here if you're still on it.` On the same yes, remove the `claimed` label if set (`gh issue edit N --remove-label claimed`). Never unassign anyone without a separate yes.
+   - **Release expired claims.** Fetch comments: `gh issue list --repo OWNER/REPO --state open --label "help wanted" --limit 200 --json number,title,assignees,labels,comments`. Find issues whose newest claim comment has an `Expires` date before today and no later unclaim. Comment on each: `Claim by @<login> expired on <date>. This issue is open to claim again; comment here if you're still on it.` Remove the `claimed` label if set (`gh issue edit N --remove-label claimed`), and list the released claims in the report. Never unassign anyone without the user's yes.
    - **Assets.** Diff each installed asset against this skill's copy; propose updates as in step 4.
    - **New tasks.** Repeat step 3 for gaps since the last run.
-   - **Overlap comments.** For each open PR: `python scripts/pr-overlap.py comment --repo OWNER/REPO --pr N`. It posts or updates one comment per PR (marker `<!-- deep-mode:overlap -->`). Comments are shared state: run them after the step 7 yes.
+   - **Overlap comments.** For each open PR: `python scripts/pr-overlap.py comment --repo OWNER/REPO --pr N`. It posts or updates one comment per PR (marker `<!-- deep-mode:overlap -->`).
    - **Roadmap.** Re-run step 6 and include a changed `ROADMAP.md` in what step 7 ships.
-   - Then step 7, which asks once and runs steps 5 and 6.
+   - Then step 7, which publishes and runs steps 5 and 6.
 
 ## Report
 

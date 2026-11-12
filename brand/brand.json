@@ -1,0 +1,26 @@
+{
+  "name": "deep-mode",
+  "displayName": "Deep mode",
+  "slug": "deep-mode",
+  "commandName": "deep",
+  "mainSkillName": "deep-mode",
+  "stackSkillName": "deep-stack",
+  "envPrefix": "DEEP_MODE",
+  "botTrigger": "/deep-mode",
+  "tagline": "PR and issue bots plus a software-factory skill set for coding agents",
+  "description": "deep-mode is an open-source MIT plugin for coding agents. Its bots review, fix, verify on a 3-agent panel and merge your own GitHub PRs, on your own GitHub App and subscription, with no API keys. Its skills take work from idea to spec, tickets, code and a merged PR.",
+  "author": {"name": "Timothy Vang", "url": "https://github.com/TimothyVang"},
+  "homepage": "https://timothyvang.github.io/deep-mode/",
+  "repo": "TimothyVang/deep-mode",
+  "supportUrl": "https://github.com/TimothyVang/deep-mode/issues",
+  "colors": {
+    "primary": "#6d28d9",
+    "accent": "#a78bfa",
+    "background": "#0b1220",
+    "surface": "#111b2f",
+    "text": "#e6edf3",
+    "muted": "#9fb0c8"
+  },
+  "logo": "logo.svg",
+  "favicon": "favicon.svg"
+}

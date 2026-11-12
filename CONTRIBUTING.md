@@ -13,18 +13,34 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 ## What the check enforces
 
 - Every `SKILL.md` has `name` and `description` frontmatter, and `name` matches its folder.
-- Every `references/...md` link resolves to a real file. No `#anchor` links (omp can't read them).
-- No line longer than 760 bytes (omp's `read` cuts long lines).
+- Every `references/...md` link resolves to a real file, and so does every `skill://<skill>/<file>` path (`check_skill.py`, which the check runs for every skill). No `#anchor` links (omp can't read them).
+- No line longer than 760 bytes (omp's `read` cuts long lines). In deep-mode's `SKILL.md`, playbooks and techniques the limit is 600: one instruction per line.
+- Every playbook and technique has a `Done when` completion criterion.
+- The reference skills (`agent-harnesses`, `secrets-and-auth`, `software-architecture`, `cloud-devsecops`, `domain-rules`, `frontend-ui`) carry `metadata.as-of` in their frontmatter: the date their facts were checked. The check notes any over 120 days old; recheck the facts and restamp.
 - Marketplace and plugin manifests, and `plugins/*/hooks/hooks.json`, are valid JSON and point at real folders.
+- No upstream project or author names outside `LICENSE*` and `NOTICE*` files. The list is `BANNED` in `scripts/check.py`; attribution lives in `NOTICE.md`.
+- The README's playbook, principle, and technique counts match the folders, and `docs/llms-full.txt` matches the files it embeds (`python scripts/check.py --fix` rewrites it).
+- In deep-mode's `SKILL.md`, the rules above `## Routes` fit in 20,000 bytes (about 5,000 tokens), which is what Claude Code keeps of a skill after it compacts a long session. Put lookup tables below that heading and long detail in `references/`.
+- Every Python file parses, and every `test_*.py` folder passes (`assets/contain`, `assets/loop`, `assets/github-app`, `assets/git-guardrails`, `assets/pr-conversation`, `scripts`). The tests need `git` and `bash`; the omp hook cases also need `bun` and are skipped without it. The check takes about two minutes.
+
+This repo's `.deep-mode.json` names `python scripts/check.py` as its `check`, so the GitHub App bot runs it on every own PR before the panel, at the head it merges, and on trunk after the merge.
+
+`evals/` holds the routing test and the outcome eval, with their committed results (`evals/README.md`). Rerun them after a change to routing or to how a playbook works, and commit the new results beside the old.
+
+## Keep it rebrandable
+
+Resellers ship this repo under their own brand with `scripts/whitelabel.py` (see `docs/rebrand.md`). When you add a name, a page section, an image or a manifest field, run `python scripts/test_whitelabel.py` and build the example brand into a folder outside the repo: `python scripts/whitelabel.py --brand brand/examples/acme.json --out ../acme-review`. It must print `OK` with 0 leftovers.
+
+A line that names the product grows when a reseller's names are longer. `test_whitelabel.py` builds this repo with the longest names a brand file may carry (`MAX_BYTES` in `scripts/media/brandlib.py`) and fails on any Markdown line that would pass 760 bytes. Split a line it reports.
 
 ## Testing a behavior change
 
 A wording change can change what agents do. Before a PR that changes a playbook or technique, run the change on a throwaway repo with a small planted bug:
 
 ```bash
-omp -p "/deep <task that exercises your change>"
+omp -p --plugin-dir plugins/deep-mode "/deep-mode:deep <task that exercises your change>"
 claude -p "/deep-mode:deep <task>" --plugin-dir plugins/deep-mode
-codex exec "\$deep-mode:deep-mode <task>"   # after `codex plugin marketplace add <this checkout>`
+codex exec "\$deep-mode:deep-mode <task>"   # after `codex plugin marketplace add <this checkout>` and `codex plugin add deep-mode@deep-mode`
 ```
 
 Report what the agent did before and after in the PR. For bigger changes, follow the Eval playbook (`plugins/deep-mode/skills/deep-mode/references/playbooks/eval.md`).

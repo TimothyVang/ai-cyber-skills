@@ -9,9 +9,12 @@ The pieces live in this skill's `assets/security-audit/`:
 
 ## Run it
 
-1. From a checkout of the target repo (bash with `git`, `gh`, `node`, and the `claude` CLI logged in): `bash <this skill>/assets/security-audit/audit-pr.sh <PR number>`. A local branch without a PR: `audit-pr.sh --range <base> <head>` prints the verdict and posts nothing. Add `--dry-run` to check the setup without a model call. On Windows use Git for Windows bash (`C:/Program Files/Git/bin/bash.exe`), not `C:\Windows\System32\bash.exe`; the model call itself is only proven on Linux and macOS `[unverified on native Windows]`.
+1. From a checkout of the target repo (bash with `git`, `gh`, `node`, and the `claude` CLI logged in): `bash <this skill>/assets/security-audit/audit-pr.sh <PR number>`. A local branch without a PR: `audit-pr.sh --range <base> <head>` prints the verdict and posts nothing. Add `--dry-run` to check the setup without a model call. It runs on Linux, macOS, and WSL. Native Windows (Git for Windows bash) can't run it: the pinned skill's validators need POSIX file flags Windows lacks, so the script stops before any model call.
+   Done when the script has exited and you have its exit code.
 2. Tune with environment variables when the defaults don't fit: `FAIL_AT` (default `high`), `BLOCK_ON_UNVALIDATED` (default `true`), `AUDIT_MODEL` (default `sonnet`), `AUDIT_AGENTS` (default `12`), `AUDIT_BUDGET_USD` (default `8`).
-3. Exit code `0` passes; `1` blocks. A block is a P0 finding in the **pr-review** technique and blocks the **panel** like any failed check. The comment carries the marker `<!-- deep-mode-security-audit -->`; each run updates the same comment.
+3. Exit code `0` passes; `1` blocks; `2` means the audit could not run here (native Windows, or no `claude` CLI). A block is a P0 finding in the **pr-review** technique and blocks the **panel** like any failed check. The comment carries the marker `<!-- deep-mode-security-audit -->`; each run updates the same comment.
+4. Exit `2`, or a harness with no `claude` CLI → the gate has not run. Say so in the report, never count it as a pass, and brief one **panel** verifier to read the diff for the security boundary (auth, permissions, input parsing, secrets) instead.
+   Done when the report says the gate did not run and the verifier's result is in.
 
 Done when the PR has the audit comment for its current head and the gate passed, or every blocking finding is fixed or accepted.
 

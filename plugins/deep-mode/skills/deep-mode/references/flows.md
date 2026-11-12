@@ -10,7 +10,7 @@ Use when: the user asks which flow fits ("what's the process for X", "how should
 | 2. Settle a fork by running it | Prototype playbook (`references/playbooks/prototype.md`) | A decision backed by an observation |
 | 3. Write it down | Spec playbook (`references/playbooks/spec.md`) | `docs/specs/<slug>.md` and a `spec` issue |
 | 4. Cut it up | Tickets playbook (`references/playbooks/tickets.md`) | Tracer-bullet tickets with blockers |
-| 5. Build it | Implement spec (`references/playbooks/implement-spec.md`) for one integration branch, or Board (`references/playbooks/board.md`) for one PR per ticket | Merged code |
+| 5. Build it | Phased build in build mode (`references/playbooks/phased-build.md`) for one integration branch, or Work a queue with the board source (`references/playbooks/work-a-queue.md`) for one PR per ticket | Merged code |
 | 6. Review and land | **pr-review** (`references/techniques/pr-review.md`), Opening a PR, **panel**, **pr-conversation** | A merged PR with evidence |
 
 Skip phases the work doesn't need. One PR of settled work starts at phase 5 with the Feature or Bug fix playbook. A spec that fits one PR skips phase 4.
@@ -26,8 +26,12 @@ Skip phases the work doesn't need. One PR of settled work starts at phase 5 with
 | A question to answer once | Investigation (`references/playbooks/investigation.md`) |
 | A question whose answer should stay in the repo | **research** (`references/techniques/research.md`) |
 | Words or decisions need recording | **domain-model** (`references/techniques/domain-model.md`) |
-| A queue of labeled issues and the `factory` CLI | Factory (`references/playbooks/factory.md`) |
-| A multi-day program with many owners | Orchestrate (`references/playbooks/orchestrate.md`) |
+| A queue of labeled issues and the `factory` CLI | Work a queue with the factory source (`references/playbooks/work-a-queue.md`) |
+| A multi-day program with many owners | Run a goal at program scale (`references/playbooks/run-a-goal.md`) |
+| A workflow done the same way twice, or a goal to run unattended until a check passes | Self-authoring (`references/playbooks/self-authoring.md`), to write and prove a prompt, skill, goal, or loop |
+| Choosing a repo layout, data model, database, or backend shape | `skill://software-architecture` |
+| Secrets, logins, or agent authentication | `skill://secrets-and-auth` |
+| Running in or scripting omp, Claude Code, or Codex; MCP or ACP | `skill://agent-harnesses` |
 
 ## Between phases
 

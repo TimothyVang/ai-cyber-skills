@@ -5,4 +5,4 @@ argument-hint: "[what you'd like to work on, or a repo URL]"
 
 Read skill://contribute and follow it. My interest: $ARGUMENTS
 
-In Claude Code, `skill://<name>/<path>` means `${CLAUDE_PLUGIN_ROOT}/skills/<name>/<path>`.
+In Claude Code, `skill://<name>/<path>` means `<path>` in that skill's folder: `${CLAUDE_PLUGIN_ROOT}/skills/<name>/` for a plugin install, `~/.claude/skills/<name>/` for a manual one.

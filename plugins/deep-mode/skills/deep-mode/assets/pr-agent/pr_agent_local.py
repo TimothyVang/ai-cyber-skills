@@ -33,6 +33,7 @@ PR_AGENT = "pr-agent[github]==0.50.0"
 SYSTEM = ("You are the language model behind PR-Agent, a code review tool. The user message holds the "
           "tool's instructions and the pull request data. Follow those instructions exactly and reply with "
           "only the output they ask for, in the format they ask for.")
+NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)  # the bot runs under pythonw: no console per omp call
 
 
 # Credential-shaped variables are removed from every child, so no call can fall back to API-key or cloud billing.
@@ -78,7 +79,7 @@ def _omp(*args: str) -> subprocess.CompletedProcess:
     """Run an omp command from an empty directory, so a repo's .omp/config.yml can't change the answer."""
     with tempfile.TemporaryDirectory(prefix="pr-agent-omp-") as work:
         return subprocess.run([shutil.which("omp") or "omp", *args], cwd=work, capture_output=True, text=True,
-                              encoding="utf-8", errors="replace", env=scrubbed_env())
+                              encoding="utf-8", errors="replace", env=scrubbed_env(), creationflags=NO_WINDOW)
 
 
 def omp_default_model() -> str:
@@ -177,7 +178,7 @@ def omp_complete(messages: list[dict], model: str, credentials: set) -> tuple[st
                    "--no-title", "--no-lsp", "--system-prompt", SYSTEM, "--model", model]
         # cwd is the empty work dir, so no project-level config can add tools back.
         proc = subprocess.run([*command, f"@{prompt_path}"], capture_output=True, text=True, encoding="utf-8",
-                              errors="replace", env=env, cwd=work, timeout=900)
+                              errors="replace", env=env, cwd=work, timeout=900, creationflags=NO_WINDOW)
     reply = None
     for line in proc.stdout.splitlines():
         try:

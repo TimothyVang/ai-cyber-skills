@@ -30,6 +30,7 @@ if [[ ! -r "$patterns" ]]; then
   exit 2
 fi
 [[ -n "$command_text" ]] || exit 0
+command_text="${command_text//$'\\\n'/ }"  # a backslash-newline continues the command on the next line
 
 block() {
   {
