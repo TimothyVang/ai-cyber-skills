@@ -26,6 +26,10 @@ The plan, its critique and the build happen as a conversation of bots on the iss
 - The implementing agent runs in the repo, so its harness loads the repo's instruction files (AGENTS.md, CLAUDE.md, or its own equivalent), and their rules apply.
 - An issue the plan shows is not a bug, can't be reproduced, or is too risky gets that answer with its evidence, not a build.
 
+## Show the user
+
+As in **pr-conversation**'s Show the user: relay each new turn with `python <deep-mode skill dir>/assets/pr-conversation/show_thread.py <issue-url> --since <id>`, and offer the 8-bit terminal display, `python <deep-mode skill dir>/assets/pr-conversation/arena.py <issue-url>`. Both read issue threads the same way as PR threads; `<deep-mode skill dir>` is this skill's folder on disk, not the checkout.
+
 ## Output
 
 The issue thread is the record. In the report: `issue: <discussed|implemented> #<n>, <rounds> rounds`, then the PR URL when one was opened.
