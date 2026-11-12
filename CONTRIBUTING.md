@@ -15,7 +15,7 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 - Every `SKILL.md` has `name` and `description` frontmatter, and `name` matches its folder.
 - Every `references/...md` link resolves to a real file. No `#anchor` links (omp can't read them).
 - No line longer than 760 bytes (omp's `read` cuts long lines).
-- Marketplace and plugin manifests are valid JSON and point at real folders.
+- Marketplace and plugin manifests, and `plugins/*/hooks/hooks.json`, are valid JSON and point at real folders.
 
 ## Testing a behavior change
 
@@ -23,6 +23,8 @@ A wording change can change what agents do. Before a PR that changes a playbook 
 
 ```bash
 omp -p "/deep <task that exercises your change>"
+claude -p "/deep-mode:deep <task>" --plugin-dir plugins/deep-mode
+codex exec "\$deep-mode:deep-mode <task>"   # after `codex plugin marketplace add <this checkout>`
 ```
 
 Report what the agent did before and after in the PR. For bigger changes, follow the Eval playbook (`plugins/deep-mode/skills/deep-mode/references/playbooks/eval.md`).

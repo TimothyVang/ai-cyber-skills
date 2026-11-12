@@ -3,7 +3,7 @@
 **Use when:** one attempt at a non-trivial artifact would lock in the wrong shape.
 
 1. **Phases.** If you have `todo`, open one item per phase; otherwise list the phases in your report: Frame, Fan out, Cross-judge, Pick, Graft, Verify.
-2. **Frame.** State the artifact. Derive a 3–6 criterion gradeable rubric (picker-only; candidates see only the task). Pick N runners, ≥2, mixing model families when available. Give each its own output location (git worktree or a dedicated temp dir) — never shared files.
+2. **Frame.** State the artifact. Derive a 3–6 criterion gradeable rubric (picker-only; candidates see only the task). Pick N runners, ≥2, mixing model families when available. Give each its own output location inside the project root (a git worktree under `.worktrees/` or its own folder under `.scratch/`, per SKILL.md "Contain the work") — never shared files, never a temp dir outside the repo.
 3. **Fan out** in one `task` batch: task, grounding path, own output path; produce the artifact plus a short rationale naming alternatives considered and rejected. A dropout → proceed with N-1, note it.
 4. **Cross-judge.** One read-only judge from a different model family than yours, when one is available; skip and say so otherwise. Never your own family.
 5. **Pick a base.** Read every candidate end to end. Score per rubric criterion, not holistic feel; compare with the judge. Disagreement → bias or ambiguous rubric; read both rationales. Pick what a future maintainer extends most easily without breaking invariants; ties → cleaner boundary or smaller API.
