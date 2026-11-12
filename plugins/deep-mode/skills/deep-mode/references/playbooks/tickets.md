@@ -7,20 +7,25 @@ A ticket is a **tracer bullet**: a thin path through every layer the feature tou
 ## Steps
 
 1. **Read the source** in full: the spec body and its comments, or the plan. Read `GLOSSARY.md` and the ADRs in the area so ticket titles use the project's words.
+   Done when you have read the whole body and every comment, and noted the glossary terms the tickets will use.
 2. **Scout the code** where the spec lands (`scout` tasks): entry points, the modules involved, and tests near them. Look for a **prefactor**: a behavior-preserving change that makes the feature small. Each prefactor is its own ticket and blocks the slices it helps.
+   Done when every entry point and nearby test is listed, and each prefactor found is a drafted ticket.
 3. **Draft the slices.**
    - The first slice is the thinnest path that shows the feature working at all. Later slices widen it: more cases, more roles, error paths, polish.
    - Each slice fits one agent session and has Done when items a verifier can run on its own.
    - **Blocked by** lists only tickets that truly gate this one. A slice that only touches the same files is a merge order, not a dependency.
    - A **wide mechanical change** (rename a column, retype a shared symbol) that breaks every caller at once can't be a tracer bullet. Split it in three phases. *Expand*: add the new form beside the old. *Migrate*: move callers in batches sized so each stays green (per package or folder), each batch blocked by Expand. *Contract*: delete the old form, blocked by every batch.
+   Done when every slice has a title, at least one Done when item, and a Blocked by list.
 4. **Check the cut.** For each ticket: does it change behavior someone can observe, or is it a prefactor or migrate batch that keeps everything green? Is any ticket two features (split it) or half of one (merge it)? Any cycle in Blocked by? Fix, then show the user the list as a table (number, title, blocked by, what it delivers) and carry on; the user overrides by saying so (SKILL.md Autonomy).
 5. **Publish** per the **tracker** technique (`references/techniques/tracker.md`), blockers first so every Blocked by line can name a real issue. Each ticket: labels `ticket`, its category role, and `triage:agent-ready`; a Parent link to the spec issue when there is one; Blocked by links. Use the body below. Never edit or close the spec issue.
    - Local tracker → write every ticket in a checkout of the integration branch, so the next free number is counted there. After the last one, commit all ticket files in one commit, staging only them (`git add -- <ticket files>`), and push when there is a remote. A ticket worktree cut later sees only committed files.
    - Integration branch for a spec committed on `spec/<slug>` (the branch its issue body names) → that branch. Its tip must hold `docs/specs/<slug>.md` and the spec issue file (`git ls-tree -r --name-only spec/<slug> -- <paths>`); else stop and report.
    - Integration branch for a spec sent to trunk through a docs PR, a plan, or a conversation → `spec/<slug>` off the default branch tip. An unmerged docs PR → stop: the user asked for the spec on trunk first.
    - A `spec/<slug>` you didn't just create and that isn't the spec's own branch is reused only when the default branch already contains it (`git merge-base --is-ancestor spec/<slug> <default>`); fast-forward it to the default tip. Otherwise stop and report; never build on its history.
-6. **Next.** One integration branch, one final PR → Implement spec (`references/playbooks/implement-spec.md`). One merged PR per ticket on trunk → Board (`references/playbooks/board.md`). Labeled issues for an installed factory → Factory (`references/playbooks/factory.md`).
-   - Local tracker → Implement spec only. Board and Factory don't read local issue files, so they keep their own sources.
+   Done when every ticket is an issue with its labels and Blocked by links, and the spec issue is unchanged. Local tracker: one commit on the integration branch holds every ticket file.
+6. **Next.** One integration branch, one final PR → Phased build (`references/playbooks/phased-build.md`). One merged PR per ticket on trunk → Work a queue (`references/playbooks/work-a-queue.md`) from board tasks. Labeled issues for an installed factory → Work a queue with the `factory` CLI.
+   - Local tracker → Phased build only. Its Build mode reads these ticket files from the integration branch tip and checks the commit above; Work a queue's sources don't.
+   Done when the chosen playbook has started, named in your report.
 
 ## Ticket body
 

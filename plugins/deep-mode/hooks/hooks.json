@@ -1,0 +1,26 @@
+{
+  "description": "deep-mode containment guard: once a /deep-mode: command runs in a session, Write, Edit and NotebookEdit outside the project root are denied for the rest of that session, resumes included. Without Python 3.8+ the guard cannot check paths, so it denies those writes in such a session",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude-guard.sh\"; [ -f \"$f\" ] || exit 0; exec \"${BASH:-bash}\" \"$f\" activate \"${CLAUDE_PLUGIN_DATA}\""
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude-guard.sh\"; [ -f \"$f\" ] || exit 0; exec \"${BASH:-bash}\" \"$f\" if-active \"${CLAUDE_PLUGIN_DATA}\""
+          }
+        ]
+      }
+    ]
+  }
+}

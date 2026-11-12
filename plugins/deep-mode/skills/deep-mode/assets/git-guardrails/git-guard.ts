@@ -55,10 +55,14 @@ export default function gitGuard(pi: {
 		if (!field) return;
 		const rules = loadRules();
 		if (!rules) return { block: true, reason: `git guard: cannot read ${patternFile}; blocking until it is restored.` };
-		const text = String(event.input?.[field] ?? "");
+		// One line at a time, as grep does in git-guard.sh: arguments must not run on into the next command.
+		// A backslash-newline continues the command on the next line.
+		const lines = String(event.input?.[field] ?? "")
+			.replace(/\\\r?\n/g, " ")
+			.split(/\r?\n/);
 		let branch: string | null | undefined = null;
 		for (const rule of rules) {
-			const hit = rule.command.exec(text);
+			const hit = lines.map(line => rule.command.exec(line)).find(match => match !== null);
 			if (!hit) continue;
 			if (rule.branch) {
 				if (branch === null) branch = checkedOutBranch(resolve(String(event.input?.cwd ?? "")));

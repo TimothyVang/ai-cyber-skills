@@ -157,8 +157,8 @@ def ensure_app(args) -> bool:
     if ghapp.CONFIG_PATH.is_file():
         config = ghapp.load_config()
         say("ok", f"app {config['slug']} already configured")
-    elif args.check or not confirm("Create your private deep-mode GitHub App in the browser now?", args):
-        say("missing", "no app: rerun without --check")
+    elif args.check or not confirm(f"Create your private {brand.BRAND['name']} GitHub App in the browser now?", args):
+        say("missing", f"no {brand.BRAND['name']} app yet (it posts as {brand.BRAND['name']}-<login>[bot]): rerun without --check")
         return False
     else:
         result = subprocess.run([sys.executable, str(HERE / "ghapp.py"), "setup"])
@@ -218,6 +218,7 @@ def main() -> None:
     if sys.version_info < (3, 10):
         sys.exit("Python 3.10 or newer is required")
 
+    print(f"{brand.BRAND['name']} bots: {'checking the setup, changing nothing' if args.check else 'setup'}")
     tools_ok = check_tools(args)
     if not tools_ok:
         sys.exit("Install the missing tools above, then rerun.")
