@@ -30,7 +30,7 @@ from brandlib import BrandError  # noqa: E402
 
 PROSE = {".md", ".html", ".txt"}
 SKIP_DIRS = {".git", "__pycache__", ".scratch", ".worktrees", "node_modules"}
-OWN_RUN_CLAIM = re.compile(r"pull/19\b|pr-19-thread|PR #19\b|PR 19\b")
+OWN_RUN_CLAIM = re.compile(r"pull/19\b|pr-19-thread|PR #19\b|PR 19\b|real run of|real terminal recording")
 OWN_RUN_FILES = {".md", ".html", ".txt", ".json", ".xml", ".svg"}
 # The upstream's own artifacts: the capture of its real PR thread, the script that composes it, and the
 # screenshots of its site in the rebrand guide. A branded copy drops them.
@@ -42,6 +42,7 @@ DEMO_CAPTION = "How a PR moves through the bots. Every turn is a comment in the 
 # project the build did not write. It names no brand, so it survives a rebrand of a rebrand unchanged.
 BUILD_MARK = "brand/.whitelabel-build"
 BUILD_MARK_TEXT = "Built by scripts/whitelabel.py. A rebuild into this folder replaces everything in it except .git.\n"
+INSTALL_CAST = "docs/images/install.cast"
 
 
 def is_legal(rel: str) -> bool:
@@ -159,7 +160,7 @@ def find_leftovers(root: Path, pattern: re.Pattern) -> list:
         if Path(rel).suffix.lower() in OWN_RUN_FILES:
             for number, line in enumerate(text.splitlines(), 1):
                 if OWN_RUN_CLAIM.search(line):
-                    found.append(f"{rel}:{number}: claims the upstream's own PR #19 run")
+                    found.append(f"{rel}:{number}: claims a real run this copy has not made")
     return found
 
 
@@ -208,14 +209,30 @@ def sub(text: str, pattern: str, repl, where: str, count: int = 0, flags=re.M) -
     return new
 
 
-def own_run_rewrites(out: Path) -> None:
-    """Drop the upstream's claims about its own merged PR, and show the illustrated demo GIF instead. A claim
-    these patterns miss is still caught: the verification pass fails on any mention of that PR."""
+def example_cast(text: str, slug: str) -> str:
+    """The upstream's install.cast records a real installer check on its owner's account. A copy has run nothing,
+    so it shows that output as an example: `<login>` where an account was named, and a title that says so.
+    Each pattern must match (and matches its own result), so a re-recorded cast with new lines stops the build."""
+    for pattern, repl in [
+        (r'("title": "install\.py --check )\([^)"]*\)', lambda m: m.group(1) + "(example output)"),
+        (r'(gh logged in as )[^\\"]+', lambda m: m.group(1) + "<login>"),
+        (r'(\[ok\] app )[^\\" ]+( already configured)', lambda m: f"{m.group(1)}{slug}-<login>{m.group(2)}"),
+        (r'(installed on )[^\\"]+', lambda m: m.group(1) + "<login>"),
+    ]:
+        text = sub(text, pattern, repl, INSTALL_CAST)
+    return text
+
+
+def own_run_rewrites(out: Path, d: dict) -> None:
+    """Drop the upstream's claims about its own runs: show the illustrated demo GIF instead of its merged PR,
+    and call the installer recording example output. A claim these patterns miss is still caught: the
+    verification pass fails on any mention of that PR or of a real run of the installer."""
     edits = {
         "README.md": [
             (r"^!\[[^\]\n]*\]\(docs/images/pr-19-thread\.gif\)$", f"![{DEMO_ALT}](docs/images/how-it-works.gif)"),
             (r"^A real run, not a mock-up:[^\n]*$", DEMO_CAPTION),
             (r"^\*\*Has it merged a real PR on its own\?\*\*[^\n]*\n\n", ""),
+            (r"^!\[A real run of (install\.py --check)\]", lambda m: f"![Example output of {m.group(1)}]"),
         ],
         "docs/index.html": [
             (r'("screenshot": "[^"]*/)pr-19-thread\.gif"', lambda m: m.group(1) + 'how-it-works.gif"'),
@@ -225,7 +242,11 @@ def own_run_rewrites(out: Path) -> None:
              f'<img src="images/how-it-works.gif" width="960" height="540" alt="{html.escape(DEMO_ALT)}">\n'
              f"<figcaption>{html.escape(DEMO_CAPTION)}</figcaption>"),
             (r"^<h3>Has [^<]*real PR[^<]*</h3>\n<p>[^\n]*</p>\n", ""),
-            (r"from real screenshots and a real terminal recording", "from rendered frames and a real terminal recording"),
+            (r'alt="Terminal recording of a real run of (install\.py --check:)', lambda m: f'alt="Example output of {m.group(1)}'),
+            (r'<figcaption>A real run of (<code>install\.py --check</code>), recorded to (<a href="images/install\.cast">an asciicast</a>)\.',
+             lambda m: f"<figcaption>Example output of {m.group(1)}, as {m.group(2)}. <code>&lt;login&gt;</code> stands for "
+                       "your GitHub account."),
+            (r"from real screenshots and a real terminal recording", "from rendered frames and an example terminal session"),
         ],
         "docs/llms.txt": [
             (r"^- Real run: [^\n]*\n", ""),
@@ -242,6 +263,9 @@ def own_run_rewrites(out: Path) -> None:
             text = re.sub(pattern, repl if callable(repl) else (lambda m, r=repl: r), text,
                           flags=re.M | re.S if "<!--" in pattern else re.M)
         path.write_text(text, encoding="utf-8", newline="\n")
+    cast = out / INSTALL_CAST
+    if cast.is_file():
+        cast.write_text(example_cast(cast.read_text(encoding="utf-8"), d["slug"]), encoding="utf-8", newline="\n")
 
 
 def theme_site(out: Path, d: dict) -> None:
@@ -378,7 +402,7 @@ def build(brand_file, out, src_root: Path = ROOT, media: bool = True, check: boo
     write_brand(out, dst, assets)
     update_manifests(out, dst)
     theme_site(out, dst)
-    own_run_rewrites(out)
+    own_run_rewrites(out, dst)
     if (out / "README.md").is_file() and (out / "docs").is_dir():
         import llms_full
         llms_full.build(out, dst)

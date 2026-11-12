@@ -158,6 +158,36 @@ class Build(unittest.TestCase):
         self.assertEqual((self.out / "brand/logo.svg").read_bytes(), logo)
         self.assertEqual((self.out / "brand/favicon.svg").read_bytes(), logo)
 
+    def test_the_install_recording_becomes_example_output_with_no_account_names(self):
+        lines = [{"version": 2, "width": 92, "height": 22, "title": "install.py --check (real run)"},
+                 [0.0, "o", "~/deep-mode $ "],
+                 [3.4, "o", "  [ok] gh logged in as TimothyVang\r\n"],
+                 [12.7, "o", "  [ok] app deep-mode-timothyvang already configured\r\n"],
+                 [13.0, "o", "  [ok] installed on TimothyVang, some-org\r\n"]]
+        (self.src / "docs/images").mkdir(parents=True)
+        (self.src / "docs/images/install.cast").write_text("".join(json.dumps(line) + "\n" for line in lines), encoding="utf-8")
+        (self.src / "README.md").unlink()  # no README: the build skips llms-full.txt, which needs the full docs
+        self.assertEqual(self.build(), [])
+        text = (self.out / "docs/images/install.cast").read_text(encoding="utf-8")
+        built = [json.loads(line) for line in text.splitlines()]
+        self.assertEqual(built[0]["title"], "install.py --check (example output)")
+        self.assertEqual([event[2] for event in built[1:]],
+                         ["~/zeta-review $ ", "  [ok] gh logged in as <login>\r\n",
+                          "  [ok] app zeta-review-<login> already configured\r\n", "  [ok] installed on <login>\r\n"])
+        self.assertEqual(whitelabel.example_cast(text, "zeta-review"), text)  # a copy of a copy: already an example
+
+    def test_the_install_caption_stops_claiming_a_real_run(self):
+        (self.src / "README.md").write_bytes(b"# deep-mode\n\n![A real run of install.py --check](docs/images/install.gif)\n")
+        self.assertEqual(self.build(), [])
+        self.assertEqual((self.out / "README.md").read_text(encoding="utf-8"),
+                         "# Zeta Review\n\n![Example output of install.py --check](docs/images/install.gif)\n")
+
+    def test_a_real_run_claim_left_in_the_copy_fails_verification(self):
+        self.build()
+        (self.out / "README.md").write_text("# Zeta Review\n\nA real run of install.py --check.\n", encoding="utf-8")
+        self.assertEqual(whitelabel.find_leftovers(self.out, whitelabel.leftover_regex(normalized(SRC))),
+                         ["README.md:3: claims a real run this copy has not made"])
+
 
 if __name__ == "__main__":
     unittest.main()
