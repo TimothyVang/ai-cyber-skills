@@ -87,3 +87,5 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 ## Bot name
 
 Rename the bots with `install.py --brand <name>`. It writes `assets/github-app/brand.local.json`, and `brand.py` derives the app name, comment signature, mention, branch prefix, repo config file, config and cache directories, and autostart task from it.
+
+That renames only the bots. To ship the whole product under your own brand (name, logo, colors, commands, skills, the GitHub App, the docs site, the README, images and SEO), run the brand kit from the repo root: `py -3 scripts/whitelabel.py --brand <file> --out <dir>`. The guide is `docs/rebrand.md` in the repo.

@@ -8,6 +8,7 @@
 <meta name="author" content="TimothyVang">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://timothyvang.github.io/deep-mode/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="alternate" type="text/markdown" href="llms.txt" title="llms.txt">
 <meta name="theme-color" content="#0b1220">
 <meta property="og:type" content="website">
@@ -63,20 +64,24 @@
     {"@type": "Question", "name": "What is the deep-mode software factory?",
      "acceptedAnswer": {"@type": "Answer", "text": "A set of playbooks and techniques that take an idea to merged code: set up the repo, grill the idea, prototype a fork, write a spec, cut it into tickets, build them with TDD on one integration branch or one PR per ticket, then review and land through a verifier panel. Triage, research, a domain model, architecture review and retros sit around that line."}},
     {"@type": "Question", "name": "Has deep-mode merged a real PR on its own?",
-     "acceptedAnswer": {"@type": "Answer", "text": "Yes. PR 19 in TimothyVang/deep-mode went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot. The whole conversation is public in the PR thread."}}
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. PR 19 in TimothyVang/deep-mode went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot. The whole conversation is public in the PR thread."}},
+    {"@type": "Question", "name": "Can I white-label an AI code review GitHub App?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. deep-mode is MIT licensed and ships a brand kit, so you can sell it as your own product. Write one brand.json with your name, slug, command and skill names, bot trigger, colors, logo and URLs, then run py -3 scripts/whitelabel.py --brand <file> --out <dir>. It builds a full copy under your brand: the product name and logo, the site colors, the commands and skills, the bot and its GitHub App, the docs site, the README, the images, and the SEO and llms files. A last check fails the build if any old name is left. LICENSE and NOTICE stay as they are, with your copyright line added. install.py --brand <name> is a shortcut that renames only the bots."}}
   ]
 }
 </script>
 <style>
-:root{--bg:#f7f8fb;--fg:#0f172a;--muted:#475569;--card:#ffffff;--edge:#dbe2ee;--accent:#6d28d9;--code:#eef2f8}
-@media (prefers-color-scheme:dark){:root{--bg:#070c16;--fg:#e6edf3;--muted:#9fb0c8;--card:#0f1828;--edge:#22304d;--accent:#a78bfa;--code:#111b2f}}
+:root{--brand-primary:#6d28d9;--brand-accent:#a78bfa;--brand-bg:#0b1220;--brand-surface:#111b2f;--brand-text:#e6edf3;--brand-muted:#9fb0c8}
+:root{--bg:color-mix(in srgb,var(--brand-primary) 3%,#f7f8fb);--fg:#0f172a;--muted:#475569;--card:#ffffff;--edge:color-mix(in srgb,var(--brand-primary) 10%,#dbe2ee);--accent:var(--brand-primary);--on-accent:#fff;--code:color-mix(in srgb,var(--brand-primary) 5%,#eef2f8)}
+@media (prefers-color-scheme:dark){:root{--bg:var(--brand-bg);--fg:var(--brand-text);--muted:var(--brand-muted);--card:var(--brand-surface);--edge:color-mix(in srgb,var(--brand-muted) 15%,var(--brand-surface));--accent:var(--brand-accent);--on-accent:var(--brand-bg);--code:color-mix(in srgb,var(--brand-muted) 6%,var(--brand-surface))}}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 a{color:var(--accent)}
 header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
 nav{max-width:1100px;margin:0 auto;padding:10px 24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-nav .brand{font-weight:800;color:var(--fg);text-decoration:none;margin-right:auto}
+nav .brand{color:var(--fg);text-decoration:none;margin-right:auto}
+nav .brand img{display:block;height:32px;width:auto}
 nav a{text-decoration:none;color:var(--muted);font-size:15px}
 nav a:hover{color:var(--fg)}
 main{max-width:1100px;margin:0 auto;padding:0 24px 64px}
@@ -90,7 +95,7 @@ p.lead{font-size:20px;color:var(--muted);max-width:860px;margin:0 0 24px}
 .pills li{border:1px solid var(--edge);background:var(--card);border-radius:999px;padding:4px 12px;font-size:14px;color:var(--muted)}
 .cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
 .btn{display:inline-block;padding:10px 18px;border-radius:10px;font-weight:600;text-decoration:none;border:1px solid var(--edge);background:var(--card);color:var(--fg)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 figure{margin:24px 0}
 figure img{display:block;width:100%;height:auto;border-radius:18px}
 figcaption{color:var(--muted);font-size:15px;margin-top:10px}
@@ -115,7 +120,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <body>
 <header class="top">
 <nav aria-label="Main">
-<a class="brand" href="#top">deep-mode</a>
+<a class="brand" href="#top"><img src="images/logo.svg" alt="deep-mode" height="32"></a>
 <a href="#how">How it works</a>
 <a href="#factory">Software factory</a>
 <a href="#install">Install</a>
@@ -250,12 +255,14 @@ py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre
 <p>A set of playbooks and techniques that take an idea to merged code: set up the repo, grill the idea, prototype a fork, write a spec, cut it into tickets, build them with TDD on one integration branch or one PR per ticket, then review and land through a verifier panel. Triage, research, a domain model, architecture review and retros sit around that line.</p>
 <h3>Has deep-mode merged a real PR on its own?</h3>
 <p>Yes. <a href="https://github.com/TimothyVang/deep-mode/pull/19">PR 19</a> in TimothyVang/deep-mode went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot. The whole conversation is public in the PR thread.</p>
+<h3>Can I white-label an AI code review GitHub App?</h3>
+<p>Yes. deep-mode is MIT licensed and ships a brand kit, so you can sell it as your own product. Write one <code>brand.json</code> with your name, slug, command and skill names, bot trigger, colors, logo and URLs, then run <code>py -3 scripts/whitelabel.py --brand &lt;file&gt; --out &lt;dir&gt;</code>. It builds a full copy under your brand: the product name and logo, the site colors, the commands and skills, the bot and its GitHub App, the docs site, the README, the images, and the SEO and llms files. A last check fails the build if any old name is left. LICENSE and NOTICE stay as they are, with your copyright line added. <code>install.py --brand &lt;name&gt;</code> is a shortcut that renames only the bots. The <a href="https://github.com/TimothyVang/deep-mode/blob/main/docs/rebrand.md">rebrand guide</a> walks through it.</p>
 </section>
 </main>
 <footer>
 <div>
 <p>deep-mode is MIT licensed, by <a href="https://github.com/TimothyVang">TimothyVang</a>. See <a href="https://github.com/TimothyVang/deep-mode/blob/main/LICENSE">LICENSE</a> and <a href="https://github.com/TimothyVang/deep-mode/blob/main/NOTICE.md">NOTICE.md</a>. Agents are reached through <a href="https://github.com/openclaw/acpx">acpx</a>. The diagrams are hand-written SVG; the GIFs are encoded with <a href="https://github.com/ImageOptim/gifski">gifski</a> and <a href="https://github.com/asciinema/agg">agg</a> from real screenshots and a real terminal recording.</p>
-<p><a href="https://github.com/TimothyVang/deep-mode">Source</a> · <a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a></p>
+<p><a href="https://github.com/TimothyVang/deep-mode">Source</a> · <a href="https://github.com/TimothyVang/deep-mode/issues">Support</a> · <a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a></p>
 </div>
 </footer>
 </body>

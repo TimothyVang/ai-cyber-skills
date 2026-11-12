@@ -21,6 +21,12 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 - In deep-mode's `SKILL.md`, the rules above `## Routes` fit in 20,000 bytes (about 5,000 tokens), which is what Claude Code keeps of a skill after it compacts a long session. Put lookup tables below that heading and long detail in `references/`.
 - Every Python file parses, and every `test_*.py` folder passes (`assets/contain`, `assets/loop`, `assets/github-app`, `assets/git-guardrails`, `assets/pr-conversation`). The tests need `git` and `bash`; the omp hook cases also need `bun` and are skipped without it. The check takes about two minutes.
 
+## Keep it rebrandable
+
+Resellers ship this repo under their own brand with `scripts/whitelabel.py` (see `docs/rebrand.md`). When you add a name, a page section, an image or a manifest field, run `python scripts/test_whitelabel.py` and build the example brand into a folder outside the repo: `python scripts/whitelabel.py --brand brand/examples/acme.json --out ../acme-review`. It must print `OK` with 0 leftovers.
+
+A line that names the product grows when a reseller's names are longer. `test_whitelabel.py` builds this repo with the longest names a brand file may carry (`MAX_BYTES` in `scripts/media/brandlib.py`) and fails on any Markdown line that would pass 760 bytes. Split a line it reports.
+
 ## Testing a behavior change
 
 A wording change can change what agents do. Before a PR that changes a playbook or technique, run the change on a throwaway repo with a small planted bug:

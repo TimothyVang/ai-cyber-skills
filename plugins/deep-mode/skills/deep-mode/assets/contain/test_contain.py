@@ -187,7 +187,7 @@ class ClaudeHookEntry(GuardCase):
         return f'bash "{ENTRY.as_posix()}" {" ".join(args)}'
 
     def test_the_skill_hook_denies_outside_writes_and_allows_inside_ones(self):
-        text = (PLUGIN / "skills" / "deep-mode" / "SKILL.md").read_text(encoding="utf-8")
+        text = (PLUGIN / "skills/deep-mode/SKILL.md").read_text(encoding="utf-8")
         command = text.split("command: '", 1)[1].split("'\n", 1)[0]
         self.assertEqual(self.hook(command, self.write(self.outside / "x.txt"))[:2], (0, "deny"))
         self.assertEqual(self.hook(command, self.write(self.proj / "a.txt"))[:2], (0, "allow"))

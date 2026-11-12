@@ -1,3 +1,5 @@
+![The deep-mode logo](brand/logo.svg)
+
 # deep-mode
 
 **deep-mode** is an open-source MIT plugin for coding agents. It has two halves:
@@ -213,6 +215,16 @@ Contributor, after installing the plugin:
 
 `plugins/deep-mode/skills/deep-mode/scripts/trending.py` keeps `references/trending/` current with no scheduler: `find <terms>` runs `update` first when the catalog is over a day old (about a minute; uses `GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`), and `find --no-refresh` skips that. `catalog.json` keeps every repo seen in the last 120 days with first-seen date and star growth; `README.md` is the digest agents read. Commit a refreshed catalog when you want the repo copy current for other installs. To add a source, write a `source_*` function in `trending.py` and list it in `SOURCES`; to watch another GitHub topic, add it to `WATCH_TOPICS`.
 
+## Make it your own
+
+deep-mode is MIT licensed, and its brand kit lets you ship it as your own product. One brand file sets the name, logo, colors, command and skill names, bot trigger and URLs. One command builds a complete copy under that brand:
+
+```bash
+py -3 scripts/whitelabel.py --brand brand/examples/acme.json --out ../acme-review
+```
+
+The build renames the plugin, commands, skills, the bot and its GitHub App, rethemes the site, re-renders the images, and updates the SEO and llms files. It fails if any old name is left. LICENSE and NOTICE stay, with your copyright line added. See [the rebrand guide](docs/rebrand.md).
+
 ## Contribute
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: branch, edit, run `python scripts/check.py` (there is no CI, so this is the gate), open a PR.
@@ -230,6 +242,9 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: branch, edit, run `python
 **Will it merge other people's PRs?** No. Only your own PRs merge: your account opened them from your repo, not a fork, and their commits pass the ownership checks in code. Everyone else's PRs get review comments only.
 
 **Has it merged a real PR on its own?** Yes. [PR #19](https://github.com/TimothyVang/deep-mode/pull/19) went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot.
+
+**Can I white-label an AI code review GitHub App?** Yes. deep-mode is MIT licensed and ships a brand kit, so you can sell it as your own product. Write one `brand.json` with your name, slug, command and skill names, bot trigger, colors, logo and URLs, then run `py -3 scripts/whitelabel.py --brand <file> --out <dir>`. It builds a full copy under your brand: the product name and logo, the site colors, the commands and skills, the bot and its GitHub App, the docs site, the README, the images, and the SEO and llms files.
+A last check fails the build if any old name is left. LICENSE and NOTICE stay as they are, with your copyright line added. `install.py --brand <name>` is a shortcut that renames only the bots. See [the rebrand guide](docs/rebrand.md).
 
 ## License
 

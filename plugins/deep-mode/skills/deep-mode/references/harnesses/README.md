@@ -18,7 +18,8 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 
 | deep-mode needs | omp | Claude Code | Codex |
 |---|---|---|---|
-| Install deep-mode | `omp plugin marketplace add TimothyVang/deep-mode`, then `omp plugin install deep-mode@deep-mode` | `/plugin marketplace add TimothyVang/deep-mode`, then `/plugin install deep-mode@deep-mode` | `codex plugin marketplace add TimothyVang/deep-mode`, then `codex plugin add deep-mode@deep-mode` |
+| Add its marketplace | `omp plugin marketplace add TimothyVang/deep-mode` | `/plugin marketplace add TimothyVang/deep-mode` | `codex plugin marketplace add TimothyVang/deep-mode` |
+| Install deep-mode | `omp plugin install deep-mode@deep-mode` | `/plugin install deep-mode@deep-mode` | `codex plugin add deep-mode@deep-mode` |
 | Start deep-mode | `/deep-mode:deep <task>` | `/deep-mode:deep <task>` | `$deep-mode:deep-mode <task>` (plugin `commands/` don't load) |
 | Read a skill file | `skill://<name>/<path>` | `${CLAUDE_PLUGIN_ROOT}/skills/<name>/<path>`, or relative to the skill folder | Real path from the skill list Codex shows |
 | Invoke a skill | `/skill:<name>` | `/<name>`; plugin skills `/deep-mode:<name>` | `$<name>`; plugin skills `$deep-mode:<name>` |

@@ -1,0 +1,26 @@
+{
+  "name": "Acme Review",
+  "displayName": "Acme Review",
+  "slug": "acme-review",
+  "commandName": "acme",
+  "mainSkillName": "acme-review",
+  "stackSkillName": "acme-stack",
+  "envPrefix": "ACME_REVIEW",
+  "botTrigger": "/acme-review",
+  "tagline": "AI code review and merge bots for your GitHub team",
+  "description": "Acme Review is an AI code review plugin for coding agents. Its bots review, fix, verify on a 3-agent panel and merge your own GitHub PRs, on your own GitHub App and subscription, with no API keys. Its skills take work from idea to spec, tickets, code and a merged PR.",
+  "author": {"name": "Acme Review, Inc.", "url": "https://acme-review.example.com"},
+  "homepage": "https://acme-review.example.com/",
+  "repo": "acme-co/acme-review",
+  "supportUrl": "https://acme-review.example.com/support",
+  "colors": {
+    "primary": "#0f766e",
+    "accent": "#2dd4bf",
+    "background": "#071413",
+    "surface": "#0d2220",
+    "text": "#e7f5f2",
+    "muted": "#93b8b1"
+  },
+  "logo": "acme-logo.svg",
+  "favicon": "acme-favicon.svg"
+}
