@@ -16,7 +16,7 @@ from pathlib import Path
 LOOP = Path(__file__).resolve().parent / "loop.py"
 
 FAKE = """
-import json, os, sys, time
+import json, os, re, sys, time
 action = os.environ.get("FAKE_ACTION", "noop")
 record = os.environ.get("FAKE_RECORD")
 prompt = sys.stdin.read()
@@ -41,6 +41,13 @@ elif action == "tamper-protect":
         handle.write("exit 0\\n")
 elif action == "create-conftest":
     open("conftest.py", "w").close()
+elif action == "diagnostic-repair":
+    log_path = next(line.removeprefix("Complete check output: ") for line in prompt.splitlines()
+                    if line.startswith("Complete check output: "))
+    diagnostic = open(log_path, encoding="utf-8").read()
+    missing = re.search(r"missing output artifact: ([a-z.-]+)", diagnostic)
+    if missing:
+        open(missing.group(1), "w").close()
 elif action in ("revise-plan", "adapt"):
     path = "goals/g.md"
     text = open(path, encoding="utf-8").read()
@@ -142,11 +149,58 @@ class LoopCase(unittest.TestCase):
         self.assertIn("missing output artifact", second)
         self.assertTrue((self.repo / "ok.txt").exists())
 
+    def test_complete_check_evidence_survives_bounded_prompt_feedback(self):
+        diagnostic = "early failure\n" + "head noise\n" * 250 + "middle evidence\n" + "tail noise\n" * 250 + "final failure\n"
+        (self.repo / "check.sh").write_text(
+            "cat <<'DIAGNOSTIC'\n" + diagnostic + "DIAGNOSTIC\nexit 1\n", encoding="utf-8", newline="\n")
+        self.goal(max_iterations=1)
+        record = self.tmp / "seen.json"
+        run = self.loop("run", "goals/g.md", FAKE_RECORD=str(record))
+        self.assertEqual(run.returncode, 2, run.stdout + run.stderr)
+        logs = self.repo / ".scratch" / "goals" / "g"
+        input_log = next(logs.glob("*-iteration-1-input-check.log"))
+        output_log = next(logs.glob("*-iteration-1-check.log"))
+        self.assertEqual(input_log.read_text(encoding="utf-8"), "exit: 1\n" + diagnostic)
+        self.assertEqual(output_log.read_text(encoding="utf-8"), "exit: 1\n" + diagnostic)
+        prompt = next(logs.glob("*-iteration-1-prompt.txt")).read_text(encoding="utf-8")
+        self.assertEqual(prompt, json.loads(record.read_text(encoding="utf-8"))["stdin"])
+        feedback = prompt.split("<check-output>\n", 1)[1].split("\n</check-output>", 1)[0]
+        head, tail = feedback.split("\n[check output truncated; middle omitted]\n")
+        self.assertEqual(head, diagnostic[:2000])
+        self.assertEqual(tail, diagnostic[-2000:])
+        self.assertNotIn("middle evidence", feedback)
+        log_path = next(line.removeprefix("Complete check output: ") for line in prompt.splitlines()
+                        if line.startswith("Complete check output: "))
+        self.assertEqual((self.repo / log_path).resolve(), input_log.resolve())
+
+    def test_full_diagnostics_direct_repair_despite_noisy_trailing_output(self):
+        diagnostic = "startup noise\n" * 250 + "missing output artifact: repaired.txt\n" + "trailing noise\n" * 400
+        (self.repo / "check.sh").write_text(
+            "test -f repaired.txt && exit 0\ncat <<'DIAGNOSTIC'\n" + diagnostic + "DIAGNOSTIC\nexit 1\n",
+            encoding="utf-8", newline="\n")
+        self.goal(max_iterations=1)
+        run = self.loop("run", "goals/g.md", action="diagnostic-repair")
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertIn("goal met", run.stdout)
+        self.assertTrue((self.repo / "repaired.txt").exists())
+        self.assertEqual(len(self.trail_rows()), 1)
+        prompt = next((self.repo / ".scratch" / "goals" / "g").glob("*-prompt.txt")).read_text(encoding="utf-8")
+        self.assertNotIn("missing output artifact: repaired.txt", prompt)
+
     def test_plan_only_revisions_do_not_avoid_the_stall_stop(self):
         self.goal(max_iterations=5, stall_after=2)
         run = self.loop("run", "goals/g.md", action="revise-plan")
         self.assertEqual(run.returncode, 3, run.stdout + run.stderr)
         self.assertEqual(len(self.trail_rows()), 2)
+        self.assertFalse((self.repo / "ok.txt").exists())
+
+    @unittest.skipUnless(os.name == "nt", "Windows paths are case-insensitive")
+    def test_case_aliased_goal_plan_edits_still_stall(self):
+        self.goal(max_iterations=3, stall_after=1)
+        run = self.loop("run", "GOALS/G.MD", action="revise-plan")
+        self.assertEqual(run.returncode, 3, run.stdout + run.stderr)
+        trail = self.repo / ".scratch" / "goals" / "G" / "trail.tsv"
+        self.assertEqual(len(trail.read_text(encoding="utf-8").strip().splitlines()), 2)
         self.assertFalse((self.repo / "ok.txt").exists())
 
     def test_editing_the_goal_or_a_protected_file_exits_4(self):
@@ -188,6 +242,19 @@ class LoopCase(unittest.TestCase):
         run = self.loop("run", "goals/g.md")
         self.assertNotEqual(run.returncode, 0)
         self.assertIn("max_cost_usd", run.stdout + run.stderr)
+
+    def test_nonfinite_cost_caps_are_rejected_before_harness_execution(self):
+        record = self.tmp / "seen.json"
+        for harness in ("omp", "claude"):
+            for value in ("nan", "inf", "-inf"):
+                with self.subTest(harness=harness, value=value):
+                    self.goal(harness=harness, max_cost_usd=value)
+                    run = self.loop("run", "goals/g.md", action="done", FAKE_RECORD=str(record))
+                    self.assertEqual(run.returncode, 1, run.stdout + run.stderr)
+                    self.assertIn("max_cost_usd must be a positive number", run.stdout + run.stderr)
+                    self.assertFalse(record.exists())
+                    self.assertFalse((self.repo / "ok.txt").exists())
+                    self.assertFalse((self.repo / ".scratch").exists())
 
     def test_check_reports_without_running_the_harness(self):
         self.goal()
