@@ -266,7 +266,8 @@ class TriggerNameTest(unittest.TestCase):
         self.assertEqual(brand.derive("acme")["mention"], "/acme")
         self.assertEqual(brand.derive("acme", {"mention": "@acme-review"})["mention"], "@acme-review")
         shipped = json.loads(brand.SHIPPED.read_text(encoding="utf-8"))
-        self.assertEqual(brand.derive(shipped["name"], shipped)["mention"], f"/{shipped['name']}")
+        # A white-label build writes its own botTrigger here, which need not be "/" + its name: only the form is fixed.
+        self.assertRegex(brand.derive(shipped["name"], shipped)["mention"], r"^/[a-z0-9][a-z0-9-]*$")
 
     def test_the_old_default_stored_in_bot_json_counts_as_unset(self):
         for stored, default, want in ((None, "/acme", "/acme"), ("@acme", "/acme", "/acme"),
