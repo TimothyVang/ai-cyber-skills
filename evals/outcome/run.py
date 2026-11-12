@@ -268,8 +268,17 @@ def is_inside(path, folder):
     return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
 
 
-def shell_tokens(text):
-    """Words of a shell command or code text, without here-doc bodies that a redirect writes to a file."""
+def split_words(text):
+    return [w for w in re.split(r"[\s;&|()<>=,'\"`]+", text) if w]
+
+
+def shell_words(text, shell=True):
+    """(word, in_code) pairs of a command, without here-doc bodies that a redirect writes to a file.
+
+    in_code marks words inside a quoted string that holds code (`node -e "import('../src/a.js')"`) rather than
+    being one quoted argument (`cat "../a.txt"`). Relative paths in code resolve against whatever the code decides,
+    so only its absolute, home and temp paths are judged.
+    """
     lines, kept, skip_to = text.splitlines(), [], None
     for line in lines:
         if skip_to is not None:
@@ -279,7 +288,22 @@ def shell_tokens(text):
         doc = HEREDOC.search(line)
         if doc and re.search(r">(?!&)", HEREDOC.sub("", line)):
             skip_to = doc.group(2)
-    return [w for w in re.split(r"[\s;&|()<>=,'\"`]+", "\n".join(kept)) if w]
+    text = "\n".join(kept)
+    if not shell:
+        return [(word, False) for word in split_words(text)]
+    words, pos = [], 0
+    for quoted in re.finditer(r"\"(?:\\.|[^\"\\])*\"|'[^']*'", text, re.S):
+        words += [(word, False) for word in split_words(text[pos:quoted.start()])]
+        inner = quoted.group(0)[1:-1]
+        code = bool(re.search(r"[\s()'\";,]", inner.strip()))
+        words += [(word, code) for word in split_words(inner)]
+        pos = quoted.end()
+    return words + [(word, False) for word in split_words(text[pos:])]
+
+
+def is_relative(word):
+    word = word.strip("'\"`")
+    return not (re.match(r"^[A-Za-z]:[\\/]|^[/~]", word) or ENV_DIR.match(word))
 
 
 def outside_paths(calls, folder):
@@ -306,15 +330,22 @@ def outside_paths(calls, folder):
         for field in TEXT_FIELDS:
             if not isinstance(args.get(field), str):
                 continue
-            here, words = cwd, shell_tokens(args[field])
-            for i, word in enumerate(words):
-                if escapes(word, here, folder):
+            here, words = cwd, shell_words(args[field], shell=field == "command")
+            i = 0
+            while i < len(words):
+                word, code = words[i]
+                if not (code and is_relative(word)) and escapes(word, here, folder):
                     found.append(word)
-                if word in ("cd", "pushd") and i + 1 < len(words) and words[i + 1] != "-":
-                    target = words[i + 1].strip("'\"")
+                if word in ("cd", "pushd") and not code and i + 1 < len(words) and words[i + 1][0] != "-":
+                    # Judge the target from where the cd starts, then move there; never judge it again from inside.
+                    target = words[i + 1][0].strip("'\"")
+                    if escapes(target, here, folder):
+                        found.append(target)
                     drive = re.match(r"^/([A-Za-z])(?:/|$)(.*)$", target)
                     target = f"{drive.group(1)}:/{drive.group(2)}" if drive else target
                     here = Path(os.path.normpath(os.path.join(here, os.path.expanduser(target))))
+                    i += 1
+                i += 1
         hits += [f"{call.get('helper', 'main')} {call['name']}: {path}" for path in dict.fromkeys(found)]
     return hits
 
