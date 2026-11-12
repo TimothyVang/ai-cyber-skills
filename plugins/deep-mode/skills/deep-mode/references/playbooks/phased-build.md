@@ -115,10 +115,10 @@ You coordinate; ticket owners write the code. The tickets are a graph, not a lis
    No PR exists yet, because Opening a PR hands every PR straight to pr-conversation, which would land a partial build.
    Done when the ticket's merge commit is on the integration branch and the repo's checks pass there.
 6. **Move the frontier.** After each merge, comment the merge SHA on the ticket, recompute the frontier, and start owners for newly unblocked tickets. A ticket that grows past one session is split with the Tickets playbook's rules and the graph updated.
-   - Local tracker → write the merge-SHA comment in the integration worktree and commit only that ticket file before starting new owners, so their worktrees carry it. Push when there is a remote.
+   - Local tracker → write the merge-SHA comment in the integration worktree and commit that ticket file alone (`git commit -m <msg> -- <ticket file>`) before starting new owners, so their worktrees carry it. Push when there is a remote.
    Done when the ticket has its merge-SHA comment and every newly unblocked ticket has an owner.
 7. **Close the build.** When every ticket is merged:
-   - Local tracker → first set each ticket, and the spec when there is one, to `Status: closed` with its closing comment in the integration worktree. Commit only those files and push when there is a remote, so the review, the fix pass, and the panel all run on a head that holds the closes.
+   - Local tracker → first set each ticket, and the spec when there is one, to `Status: closed` with its closing comment in the integration worktree. Commit those files alone (`git commit -m <msg> -- <files>`) and push when there is a remote, so the review, the fix pass, and the panel all run on a head that holds the closes.
    - Run pr-review on the integration branch against the default branch, with the spec as the claim, so its Spec findings check every user story and Done when item.
    - One fresh owner fixes every finding in one pass on the integration branch.
    - With a remote, open one PR from the integration branch to the default branch through Opening a PR (`references/playbooks/opening-a-pr.md`), with `Closes #<spec>` and one `Closes #<ticket>` line per ticket in its body. It lands through the **pr-conversation** technique (`references/techniques/pr-conversation.md`) on a **panel** pass (`references/techniques/panel.md`) at its head.

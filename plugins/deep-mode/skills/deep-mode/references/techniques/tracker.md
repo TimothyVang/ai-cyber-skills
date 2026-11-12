@@ -39,7 +39,7 @@ GitHub commands assume `R=<owner>/<repo>` and that every body is a file you wrot
 
 | Operation | github | local |
 |---|---|---|
-| Create | `gh issue create -R "$R" --title "<t>" --body-file <f> --label <a>,<b>` prints the URL; the number ends it. | Next four-digit number `NNNN` above every issue file in `docs/deep-mode/issues/` on any branch: the working tree, plus `git ls-tree --name-only <ref> docs/deep-mode/issues/` for each ref `git for-each-ref --format='%(refname)' refs/heads refs/remotes` lists (fetch first when there is a remote). Write `NNNN-<slug>.md` in the local format below. |
+| Create | `gh issue create -R "$R" --title "<t>" --body-file <f> --label <a>,<b>` prints the URL; the number ends it. | Reserve the next number `NNNN` (Local numbers, below), then write `NNNN-<slug>.md` in the local format below. |
 | Read | `gh issue view <n> -R "$R" --json number,title,body,labels,author,comments,state` | Read the file. |
 | Comment | `gh issue comment <n> -R "$R" --body-file <f>` | Append under `## Comments` as `### <date> <author>` then the text. |
 | Set labels | `gh issue edit <n> -R "$R" --add-label <a> --remove-label <b>` | Rewrite the `Labels:` line. |
@@ -52,6 +52,13 @@ GitHub commands assume `R=<owner>/<repo>` and that every body is a file you wrot
 `<id of m>` is the REST id, not the number: `gh api repos/$R/issues/<m> -q .id`.
 
 A ticket is **unblocked** when every issue it lists under Blocked by is closed as completed.
+
+**Local numbers.** Two sessions on different branches or worktrees must never both take one number, so a local Create reserves it before writing the file.
+- Fetch first when there is a remote: `git fetch origin '+refs/deep-mode/issues/*:refs/deep-mode/issues/*'` and the branches.
+- In use: every `NNNN` of a file in `docs/deep-mode/issues/` in the working tree or on any ref (`git ls-tree --name-only <ref> docs/deep-mode/issues/` for each ref `git for-each-ref --format='%(refname)' refs/heads refs/remotes` lists), and every `refs/deep-mode/issues/NNNN` ref.
+- Reserve the next number above all of them: `git update-ref refs/deep-mode/issues/NNNN HEAD ''`. It fails when the ref exists, and every worktree of a clone shares it, so of two racing sessions only one wins. The loser takes the next number.
+- With a remote, also `git push --force-with-lease=refs/deep-mode/issues/NNNN: origin refs/deep-mode/issues/NNNN`. A rejection means another clone holds it; take the next number.
+- A reserved number is never reused, even when its file is never written.
 
 ## Local issue format
 
