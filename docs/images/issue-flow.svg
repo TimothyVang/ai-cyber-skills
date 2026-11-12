@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="t d">
 <title id="t">The deep-mode issue conversation</title>
-<desc id="d">A new issue or mention is read as untrusted data. The author plans, the reviewer critiques, the author answers. If the owner opened the issue or said @deep-mode implement, the author builds it on branch deep-mode/issue-&lt;n&gt;, opens a PR with Closes #&lt;n&gt;, and the PR conversation lands it. Otherwise the bots stop at the discussion.</desc>
+<desc id="d">A new issue or mention is read as untrusted data. The author plans, the reviewer critiques, the author answers. If the owner opened the issue or said @deepmodebot implement, the author builds it on branch deep-mode/issue-&lt;n&gt;, opens a PR with Closes #&lt;n&gt;, and the PR conversation lands it. Otherwise the bots stop at the discussion.</desc>
 <defs>
 <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9fb0c8"/></marker>
 <marker id="ahA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#fbbf24"/></marker>
@@ -14,7 +14,7 @@
 <rect x="40" y="150" width="200" height="5" rx="2" fill="#a78bfa"/>
 <text x="58" y="186" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Trigger</text>
 <text x="58" y="213" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">new issue or</text>
-<text x="58" y="234" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">@deep-mode mention</text>
+<text x="58" y="234" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">@deepmodebot mention</text>
 <rect x="270" y="150" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
 <rect x="270" y="150" width="200" height="5" rx="2" fill="#38bdf8"/>
 <text x="288" y="186" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Read as data</text>
@@ -45,7 +45,7 @@
 <path d="M1060 316 L1170 400 L1060 484 L950 400z" fill="#111b2f" stroke="#fbbf24" stroke-width="1.8"/>
 <text x="1060" y="378" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#e6edf3" text-anchor="middle">Owner opened it,</text>
 <text x="1060" y="396" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="600" fill="#e6edf3" text-anchor="middle">or owner said</text>
-<text x="1060" y="414" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#e6edf3" text-anchor="middle">@deep-mode</text>
+<text x="1060" y="414" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#e6edf3" text-anchor="middle">@deepmodebot</text>
 <text x="1060" y="432" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="13.5" font-weight="500" fill="#e6edf3" text-anchor="middle">implement?</text>
 <rect x="730" y="348" width="200" height="104" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
 <rect x="730" y="348" width="200" height="5" rx="2" fill="#f08a5d"/>

@@ -44,6 +44,7 @@ import stat
 import subprocess
 import sys
 import threading
+import tempfile
 import time
 import traceback
 import uuid
@@ -71,7 +72,8 @@ TASK_NAME = B["autostartId"]
 LAUNCHD_LABEL = f"dev.{TASK_NAME}"
 DEFAULTS = {"author": {"agent": "omp"}, "reviewer": {"agent": "omp"},
             "verifiers": [{"agent": "omp"}, {"agent": "omp"}, {"agent": "omp"}],
-            "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": B["mention"], "parallelRepos": 4,
+            "autonomousMerge": True, "maxRounds": 3, "interval": 120,
+            "mention": B.get("mention") or "@deepmodebot", "parallelRepos": 4,
             "autoUpdate": True, "updateMinutes": 60}
 UPDATE_PATH = CONFIG_DIR / "update.json"  # its own file: `bot.py update` may write it while a watcher runs
 UPDATE_TIMEOUT = 600  # seconds for each omp command of an upgrade
@@ -373,6 +375,16 @@ def thread_text(comments: list) -> str:
 
 # ---------------------------------------------------------------- triggers and gates (pure)
 
+@functools.lru_cache(maxsize=None)
+def trigger_re(mention: str, command: str = "") -> re.Pattern:
+    """Match a whole handle, or a slash trigger opening a line. A command must open a non-code line."""
+    name = re.escape(mention)
+    if command:
+        return re.compile(rf"^ {{0,3}}{name}[ \t]+{re.escape(command)}(?![\w-])", re.I | re.M)
+    return re.compile(rf"^[ \t]*{name}(?=\s|$)" if mention.startswith("/") else rf"(?<![\w-]){name}(?![\w-])",
+                      re.I | re.M)
+
+
 def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, anyone: bool = False,
                    owner_only: bool = False) -> list:
     """Comments after `floor` and after the bot's last turn, by a human, from the owner or mentioning the bot
@@ -384,7 +396,7 @@ def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, any
         login = login_of(c)
         if c.get("createdAt", "") <= floor or is_ours(c) or login.endswith("[bot]"):
             continue
-        if same(login, owner) or (not owner_only and (anyone or mention.lower() in (c.get("body") or "").lower())):
+        if same(login, owner) or (not owner_only and (anyone or trigger_re(mention).search(c.get("body") or ""))):
             picked.append(c)
     return picked
 
@@ -400,6 +412,8 @@ def pr_reasons(pr: dict, item: dict, since, owner: str, mention: str, is_ours):
     reasons, head, known = [], pr["headRefOid"], item.get("heads") or {}
     if head not in known and not pr.get("backlog"):
         reasons.append(f"new head {head[:7]}")
+    if item.get("status") == "awaiting-read-budget":
+        reasons.append("read budget reset after an interrupted turn")
     if item.get("status") in AWAITING and item.get("panelSha") == head:
         # A held PR runs again only once its hold label or its base branch changed (PRConversation.land).
         waiting = {"held": is_held(pr.get("labels")), "base": pr.get("baseRefName")}
@@ -421,6 +435,8 @@ def issue_reasons(issue: dict, item: dict, since, owner: str, mention: str, is_o
     reasons = []
     if not item.get("handled") and (since is None or issue.get("createdAt", "") > since):
         reasons.append("new issue")
+    if item.get("status") == "awaiting-read-budget":
+        reasons.append("read budget reset after an interrupted turn")
     if item.get("status") == "error" and item.get("errors", 0) < MAX_ATTEMPTS:
         reasons.append(f"retry after an error ({item.get('errors', 0)}/{MAX_ATTEMPTS})")
     # An issue a PR's merge waits on: any human comment after the bots' last reply, whatever its age (the
@@ -464,7 +480,7 @@ def wants_implementation(issue: dict, comments: list, item: dict, owner: str, me
     flagged because a PR's merge waits on it (`answerAll`) is only answered: that PR is its implementation."""
     # The command opens a line, as its own word: "... implementation looks wrong", a quoted "> ... implement", and
     # a command shown inside a code block or an HTML comment are talk about the command, not the command.
-    command = re.compile(rf" {{0,3}}{re.escape(mention)}[ \t]+implement(?![\w-])", re.I)
+    command = trigger_re(mention, "implement")
     if any(same(login_of(c), owner) and any(command.match(line) for line in said_lines(c.get("body") or ""))
            for c in comments):
         return True
@@ -576,12 +592,22 @@ def gate_decision(f: dict):
 
 # ---------------------------------------------------------------- config, state, identity
 
-def load_bot_config(write: bool = True) -> dict:
-    """bot.json with defaults for missing keys. Written once when absent (if `write`), never overwritten."""
+def effective_mention(stored, name: str, default: str) -> str:
+    """Only deep-mode's legacy unsafe default is migrated; reseller and explicit triggers stay intact."""
+    return default if stored is None or (name == "deep-mode" and stored == "@deep-mode") else stored
+
+
+def load_bot_config(write: bool = True, note=None) -> dict:
+    """bot.json with defaults for missing keys. Never overwrite stored configuration, even during migration."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     if write and not BOT_CONFIG.is_file():
         BOT_CONFIG.write_text(json.dumps(DEFAULTS, indent=2) + "\n", encoding="utf-8")
     cfg = {**DEFAULTS, **(json.loads(BOT_CONFIG.read_text(encoding="utf-8")) if BOT_CONFIG.is_file() else {})}
+    stored = cfg.get("mention")
+    cfg["mention"] = effective_mention(stored, NAME, B["mention"])
+    if note and stored != cfg["mention"]:
+        note(f'{BOT_CONFIG}: legacy mention "{stored}" notifies an unrelated GitHub account; '
+             f'using {cfg["mention"]}. Remove the mention key or set a different explicit trigger.')
     try:
         cfg["author"], cfg["reviewer"] = as_role(cfg["author"]), as_role(cfg["reviewer"])
         if not isinstance(cfg["verifiers"], list) or not cfg["verifiers"]:
@@ -636,6 +662,102 @@ class Identity:
                 self.installs[name] = inst["id"]
                 names.append(name)
         return names
+
+    def read_token(self, repo: str) -> str:
+        cooldown = getattr(self, "cooldown", {})
+        if cooldown.get("until", 0) > time.time():
+            raise ghapp.RateLimited(cooldown["until"], cooldown["reason"])
+        if repo not in self.installs:
+            self.installs[repo] = ghapp.installation_for(self.app, repo)
+        return ghapp.installation_token(self.app, self.installs[repo])
+
+    def read(self, repo: str, path: str):
+        token = self.read_token(repo)
+        return unlocked(ghapp.request, "GET", path, token, bearer=False)
+
+    def gh_read(self, repo: str, *args):
+        """Data reads only. The installation token lives in this child environment, never the command line."""
+        env = None
+        if self.app:
+            token = self.read_token(repo)
+            env = {**os.environ, "GH_TOKEN": token, "GH_PROMPT_DISABLED": "1"}
+        proc = run(["gh", *args], check=False, env=env)
+        detail = (proc.stderr or proc.stdout).strip()
+        if self.app and proc.returncode and re.search(r"rate[ _]limit|retry-after|abuse detection", detail, re.I):
+            retry = re.search(r"retry-after:\s*(\d+)", detail, re.I)
+            if retry:
+                raise ghapp.rate_limit({"Retry-After": retry[1]}, detail)
+            limits = self.read(repo, "/rate_limit")["resources"]
+            exhausted = [v["reset"] for k, v in limits.items()
+                         if k in ("core", "graphql") and v.get("remaining") == 0]
+            raise ghapp.RateLimited(max(exhausted) if exhausted else time.time() + 60,
+                                   "GitHub installation read rate limit exhausted")
+        return proc
+
+    def pr_view(self, repo: str, number: int, fields: str) -> dict:
+        proc = self.gh_read(repo, "pr", "view", str(number), "-R", repo, "--json", fields)
+        if proc.returncode:
+            raise RuntimeError(f"gh pr view failed: {(proc.stderr or proc.stdout).strip()[-300:]}")
+        return json.loads(proc.stdout)
+
+    def prs_for_head(self, repo: str, branch: str) -> list:
+        if not self.app:
+            return gh_json("pr", "list", "-R", repo, "--head", branch, "--state", "open", "--json", "url") or []
+        rows = self.pages(repo, f"/repos/{repo}/pulls?state=open&head={quote(repo.split('/')[0] + ':' + branch)}")
+        return [{"url": row["html_url"]} for row in rows]
+
+    def pages(self, repo: str, path: str) -> list:
+        rows, page = [], 1
+        separator = "&" if "?" in path else "?"
+        while True:
+            batch = self.read(repo, f"{path}{separator}per_page=100&page={page}") or []
+            rows.extend(batch)
+            if len(batch) < 100:
+                return rows
+            page += 1
+
+    def comments(self, repo: str, number: int) -> list:
+        if not self.app:
+            return issue_comments(repo, number)
+        return [as_comment(c) for c in self.pages(repo, f"/repos/{repo}/issues/{number}/comments")]
+
+    def open_items(self, repo: str, kind: str) -> list:
+        """Discovery uses the app's REST budget; gh's GraphQL reads are only the no-app fallback."""
+        if not self.app:
+            if kind == "pr":
+                rows = gh_json("pr", "list", "-R", repo, "--state", "open", "--limit", str(LIST_LIMIT),
+                               "--json", PR_FIELDS) or []
+            else:
+                listed = run(["gh", "issue", "list", "-R", repo, "--state", "open", "--limit", str(LIST_LIMIT),
+                              "--json", ISSUE_FIELDS], check=False)
+                if listed.returncode and "disabled issues" not in listed.stderr:
+                    raise RuntimeError(f"gh issue list failed: {listed.stderr.strip()[-300:]}")
+                rows = json.loads(listed.stdout or "[]") if listed.returncode == 0 else []
+            if len(rows) >= LIST_LIMIT:
+                log(f"{repo}: {LIST_LIMIT}+ open {kind}s; the oldest beyond that are not polled")
+            comments = open_comments(repo, "pullRequests" if kind == "pr" else "issues") if rows else {}
+            return [{**row, "comments": comments.get(row["number"], [])} for row in rows]
+        endpoint = "pulls" if kind == "pr" else "issues"
+        try:
+            rows = self.pages(repo, f"/repos/{repo}/{endpoint}?state=open&sort=created&direction=asc")
+        except ghapp.RequestError as err:
+            if kind == "issue" and err.status == 410:
+                return []
+            raise
+        result = []
+        for row in rows:
+            if kind == "issue" and "pull_request" in row:
+                continue  # REST's issues endpoint includes PRs.
+            item = {"number": row["number"], "title": row["title"], "body": row.get("body") or "",
+                    "url": row["html_url"], "author": as_comment(row)["author"], "createdAt": row["created_at"],
+                    "labels": row.get("labels") or [], "comments": self.comments(repo, row["number"])}
+            if kind == "pr":
+                head, base = row["head"], row["base"]
+                item.update(isDraft=bool(row.get("draft")), headRefName=head["ref"], headRefOid=head["sha"],
+                            baseRefName=base["ref"],
+                            isCrossRepository=(head.get("repo") or {}).get("id") != (base.get("repo") or {}).get("id"))
+            result.append(item)
+        return result
 
     def is_ours(self, comment: dict) -> bool:
         """Posted by the app, or signed by the owner's account (the bots post as the owner without an app).
@@ -783,17 +905,25 @@ def branch_rules(repo: str, base: str, is_admin: bool):
     return sorted(set(contexts)), {k: sorted(v) for k, v in pinned.items()}, sorted(set(other)), error
 
 
-def app_checks(repo: str, sha: str, name: str, apps: list) -> dict:
+def app_checks(repo: str, sha: str, name: str, apps: list, ident=None) -> dict:
     """Results named `name` on `sha` per required app id, {"<app id>": ["pass", ...]}: that app's check runs,
     and the latest commit status its bot account set for that context. Any other source doesn't count."""
-    out = gh("api", "--paginate", f"repos/{repo}/commits/{sha}/check-runs?per_page=100&check_name={quote(name)}",
-             "--jq", ".check_runs[] | {app: .app.id, status, conclusion} | @json")
+    def read(*args):
+        if not ident:
+            return gh(*args)
+        proc = ident.gh_read(repo, *args)
+        if proc.returncode:
+            raise RuntimeError(f"GitHub check metadata read failed: {(proc.stderr or proc.stdout).strip()[-300:]}")
+        return proc.stdout
+
+    out = read("api", "--paginate", f"repos/{repo}/commits/{sha}/check-runs?per_page=100&check_name={quote(name)}",
+               "--jq", ".check_runs[] | {app: .app.id, status, conclusion} | @json")
     seen = {str(app): [] for app in apps}
     for line in out.splitlines():
         run_ = json.loads(line)
         if str(run_["app"]) in seen:
             seen[str(run_["app"])].append(run_bucket(run_["status"], run_["conclusion"]))
-    out = gh("api", "--paginate", f"repos/{repo}/commits/{sha}/statuses?per_page=100", "--jq",
+    out = read("api", "--paginate", f"repos/{repo}/commits/{sha}/statuses?per_page=100", "--jq",
              f'.[] | select(.context == {json.dumps(name)}) | {{login: .creator.login, type: .creator.type, '
              'state} | @json')
     latest = {}
@@ -801,7 +931,13 @@ def app_checks(repo: str, sha: str, name: str, apps: list) -> dict:
         status = json.loads(line)
         latest.setdefault(status["login"], status)
     for login, status in latest.items():
-        app = app_id_of(login[:-len("[bot]")]) if status["type"] == "Bot" and login.endswith("[bot]") else None
+        app = None
+        if status["type"] == "Bot" and login.endswith("[bot]"):
+            if ident:
+                value = read("api", f"apps/{login[:-len('[bot]')]}", "--jq", ".id").strip()
+                app = int(value) if value.isdigit() else None
+            else:
+                app = app_id_of(login[:-len("[bot]")])
         if str(app) in seen:
             seen[str(app)].append(status_bucket(status["state"]))
     return seen
@@ -891,13 +1027,14 @@ def missing_command(command: str, env: dict, cwd: Path, bash) -> str:
 
 
 def as_comment(node: dict) -> dict:
-    """A GraphQL comment in the shape the triggers read. GraphQL names an app `slug` and REST `slug[bot]`; the
-    REST form is kept, so a bot's comment is never taken for a human's."""
-    author = node.get("author") or {}
+    """Normalize REST and GraphQL authors without making an app's login look human."""
+    author = node.get("author") or node.get("user") or {}
+    kind = author.get("__typename") or author.get("type") or ""
     login = author.get("login") or ""
-    if author.get("__typename") == "Bot" and not login.endswith("[bot]"):
+    if kind == "Bot" and not login.endswith("[bot]"):
         login += "[bot]"
-    return {"author": {"login": login}, "createdAt": node.get("createdAt") or "", "body": node.get("body") or ""}
+    return {"author": {"login": login, "__typename": kind},
+            "createdAt": node.get("createdAt") or node.get("created_at") or "", "body": node.get("body") or ""}
 
 
 def open_comments(repo: str, kind: str) -> dict:
@@ -942,9 +1079,9 @@ def behind_by(clone: Path, base: str, sha: str) -> int:
     return int(count) if proc.returncode == 0 and count.isdigit() else -1
 
 
-def pr_checks(repo: str, number: int, required=False) -> list:
-    cmd = ["gh", "pr", "checks", str(number), "-R", repo, "--json", "name,bucket"]
-    proc = run(cmd + (["--required"] if required else []), check=False)
+def pr_checks(repo: str, number: int, required=False, ident=None) -> list:
+    args = ["pr", "checks", str(number), "-R", repo, "--json", "name,bucket"] + (["--required"] if required else [])
+    proc = ident.gh_read(repo, *args) if ident else run(["gh", *args], check=False)
     if proc.stdout.strip():
         return json.loads(proc.stdout)
     if "checks reported" in proc.stderr:
@@ -952,9 +1089,22 @@ def pr_checks(repo: str, number: int, required=False) -> list:
     raise RuntimeError(f"gh pr checks failed: {proc.stderr.strip()[-300:]}")
 
 
-def merge_pr(repo: str, number: int, sha: str, admin: bool) -> str:
+def merge_pr(repo: str, number: int, sha: str, admin: bool, app=False) -> str:
     """Run `gh pr merge` (squash, else merge) and return the method. It doesn't read the result back:
     PRConversation.finish_merge confirms MERGED, so a failed read-back can be resumed."""
+    if app and not admin:
+        for method in ("squash", "merge"):
+            proc = run(["gh", "api", "--method", "PUT", f"repos/{repo}/pulls/{number}/merge", "--input", "-"],
+                       stdin=json.dumps({"sha": sha, "merge_method": method}), check=False)
+            try:
+                result = json.loads(proc.stdout or "{}")
+            except ValueError:
+                result = {}
+            if proc.returncode == 0 and result.get("merged") is True:
+                return method
+            detail = (proc.stderr or proc.stdout).strip()[-400:]
+            if method != "squash" or "squash" not in detail.lower():
+                raise Blocked(f"REST PR merge failed: {detail}")
     cmd = ["gh", "pr", "merge", str(number), "-R", repo, "--match-head-commit", sha] + (["--admin"] if admin else [])
     method = "squash"
     proc = run(cmd + ["--squash"], cwd=WORK, check=False)
@@ -964,6 +1114,15 @@ def merge_pr(repo: str, number: int, sha: str, admin: bool) -> str:
     if proc.returncode:
         raise Blocked(f"`gh pr merge` failed: {(proc.stderr or proc.stdout).strip()[-400:]}")
     return method
+
+
+def create_pr(repo: str, base: str, head: str, title: str, body: str, cwd: Path, app=False) -> str:
+    if not app:
+        return gh("pr", "create", "-R", repo, "--base", base, "--head", head, "--title", title,
+                  "--body-file", "-", stdin=body, cwd=cwd).strip()
+    reply = gh("api", "--method", "POST", f"repos/{repo}/pulls", "--input", "-",
+               stdin=json.dumps({"base": base, "head": head, "title": title, "body": body}), cwd=cwd)
+    return json.loads(reply)["html_url"]
 
 
 # ---------------------------------------------------------------- one item
@@ -1283,8 +1442,8 @@ class PRConversation:
         git(self.clone, "fetch", "origin", "--quiet", f"+refs/pull/{self.n}/head:refs/{B['branchPrefix']}/pr/{self.n}",
             timeout=1800)
         for _ in range(6):  # GitHub computes mergeability lazily after a push
-            view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json",
-                           "headRefOid,mergeStateStatus,mergeable,reviewDecision,state")
+            view = self.bot.ident.pr_view(self.repo, self.n,
+                                          "headRefOid,mergeStateStatus,mergeable,reviewDecision,state")
             if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                 break
             pause(5)
@@ -1388,20 +1547,28 @@ class PRConversation:
         tree = worktree_at(self.clone, self.check_tree, sha)
         tmp = tree / ".scratch" / "tmp"
         tmp.mkdir(parents=True, exist_ok=True)
-        env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
+        env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS and k.upper() != "PATH"}
         env.update(TMPDIR=str(tmp), TMP=str(tmp), TEMP=str(tmp), PYTHONDONTWRITEBYTECODE="1")
-        if os.name == "nt":
-            # Under pythonw from a logon task the bash child finds no `python`. The bot's interpreter folder
-            # (python.exe sits beside pythonw.exe) goes first, so `python` in the check is the bot's Python.
-            env["PATH"] = os.pathsep.join(filter(None, [str(Path(sys.executable).parent), env.get("PATH")]))
         bash = goal_loop.find_bash()
-        missing = missing_command(command, env, tree, bash)
-        if missing:
-            self.cannot_start(sha, command, missing)
-        log(f"{self.it.key}: repo check `{command}` at {sha[:7]}")
-        code, output = unlocked(goal_loop.run_limited, [bash, "-c", command] if bash else command,
-                                REPO_CHECK_MINUTES, shell=not bash, cwd=tree, env=env, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+        exe = Path(sys.executable)
+        if exe.name.lower() == "pythonw.exe" and exe.with_name("python.exe").is_file():
+            exe = exe.with_name("python.exe")
+        with tempfile.TemporaryDirectory(prefix="check-python-", dir=tmp) as shim:
+            launcher = Path(shim) / "python"
+            launcher.write_text(f"#!/bin/sh\nexec {shlex.quote(exe.as_posix())} \"$@\"\n",
+                                encoding="utf-8", newline="\n")
+            launcher.chmod(0o700)
+            if os.name == "nt":
+                (Path(shim) / "python.cmd").write_text(
+                    f"@{subprocess.list2cmdline([str(exe)])} %*\r\n", encoding="utf-8")
+            env["PATH"] = os.pathsep.join(filter(None, [shim, os.environ.get("PATH")]))
+            missing = missing_command(command, env, tree, bash)
+            if missing:
+                self.cannot_start(sha, command, missing)
+            log(f"{self.it.key}: repo check `{command}` at {sha[:7]}")
+            code, output = unlocked(goal_loop.run_limited, [bash, "-c", command] if bash else command,
+                                    REPO_CHECK_MINUTES, shell=not bash, cwd=tree, env=env, stdout=subprocess.PIPE,
+                                    stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
         self.item["repoCheck"] = {"sha": sha, "code": code, "command": command}
         return command, code, output.strip()[-3000:]
 
@@ -1440,7 +1607,10 @@ class PRConversation:
 
     def ownership(self, head: str) -> bool:
         """is_own_pr freshly from GitHub, and only when GitHub's head is still `head`."""
-        view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "author,isCrossRepository,headRefOid")
+        row = gh_json("api", f"repos/{self.repo}/pulls/{self.n}")
+        view = {"author": as_comment(row)["author"], "headRefOid": row["head"]["sha"],
+                "isCrossRepository": (row["head"].get("repo") or {}).get("id") !=
+                                    (row["base"].get("repo") or {}).get("id")}
         if view["headRefOid"] != head:
             return False
         view["commits"], view["writers"] = pr_commits(self.repo, self.n), push_writers(self.repo)
@@ -1455,11 +1625,11 @@ class PRConversation:
     def open_issues(self) -> list:
         """Issues this PR closes that hold a human comment newer than the bots' last reply there. Each one is
         flagged so the issue conversation answers any human there (in a repo the app is installed on)."""
-        refs = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "closingIssuesReferences") or {}
+        refs = self.bot.ident.pr_view(self.repo, self.n, "closingIssuesReferences") or {}
         waiting = []
         for ref in refs.get("closingIssuesReferences") or []:
             where = re.search(r"github\.com/([^/]+/[^/]+)/issues/\d+", ref.get("url") or "")
-            comments = issue_comments(where.group(1) if where else self.repo, ref["number"])
+            comments = self.bot.ident.comments(where.group(1) if where else self.repo, ref["number"])
             if unanswered(comments, self.bot.ident.is_ours):
                 waiting.append(ref.get("url") or f"#{ref['number']}")
                 key = f"{where.group(1) if where else self.repo}#issue:{ref['number']}"
@@ -1586,13 +1756,14 @@ class PRConversation:
             # Rules are read on every pass, so the gate decides on the ones in force after any check wait.
             contexts, pinned_rules, other, error = branch_rules(self.repo, self.base, is_admin)
             for _ in range(6):  # GitHub computes mergeability lazily
-                view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json",
-                               "headRefOid,mergeStateStatus,mergeable,reviewDecision,labels")
+                view = self.bot.ident.pr_view(self.repo, self.n,
+                                              "headRefOid,mergeStateStatus,mergeable,reviewDecision,labels")
                 if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                     break
                 pause(5)
-            checks, required = pr_checks(self.repo, self.n), pr_checks(self.repo, self.n, required=True)
-            pinned = {name: app_checks(self.repo, view["headRefOid"], name, apps)
+            checks, required = pr_checks(self.repo, self.n, ident=self.bot.ident), \
+                pr_checks(self.repo, self.n, required=True, ident=self.bot.ident)
+            pinned = {name: app_checks(self.repo, view["headRefOid"], name, apps, ident=self.bot.ident)
                       for name, apps in pinned_rules.items()}
             pending = checks_pending(contexts, checks, required, pinned)
             if not pending or time.time() > deadline:
@@ -1670,7 +1841,7 @@ class PRConversation:
         # On an error (even a refusal) the record stays: if GitHub accepted the merge after all, repo_cycle reads
         # MERGED on a later cycle, however late, and finishes it.
         try:
-            step["method"] = merge_pr(self.repo, self.n, sha, admin)
+            step["method"] = merge_pr(self.repo, self.n, sha, admin, app=bool(self.bot.ident.app))
         finally:
             self.bot.save()
         status = self.finish_merge(settle=True)
@@ -1685,7 +1856,7 @@ class PRConversation:
         until it reads MERGED (GitHub settles an accepted merge asynchronously)."""
         deadline = time.monotonic() + (MERGE_SETTLE if settle else 0)
         while True:
-            view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "state,headRefOid,mergeCommit")
+            view = self.bot.ident.pr_view(self.repo, self.n, "state,headRefOid,mergeCommit")
             if view["state"] == "MERGED" or time.monotonic() >= deadline:
                 return view
             pause(3)
@@ -1789,9 +1960,8 @@ class PRConversation:
         git(tree, "push", "--quiet", "origin", f"HEAD:refs/heads/{branch}", timeout=600)
         body = (f"Reverts #{self.n} (`{merged[:7]}`): the {NAME} trunk check failed on `{self.base}` after the "
                 f"merge.\n\n{untrusted('evidence', evidence)}")
-        return gh("pr", "create", "-R", self.repo, "--base", self.base, "--head", branch, "--title",
-                  f"Revert #{self.n}: trunk checks failed after merge", "--body-file", "-", stdin=body,
-                  cwd=self.clone).strip()
+        return create_pr(self.repo, self.base, branch, f"Revert #{self.n}: trunk checks failed after merge",
+                         body, self.clone, app=bool(self.bot.ident.app))
 
 
 # ---------------------------------------------------------------- issue conversation
@@ -1854,7 +2024,7 @@ class IssueConversation:
         """Build on the issue branch in the impl tree and open its PR. `sessions` are the build's one-off
         (author, reviewer, implement) session names from issue_sessions."""
         branch = f"{B['branchPrefix']}/issue-{self.n}"
-        existing = gh_json("pr", "list", "-R", self.repo, "--head", branch, "--state", "open", "--json", "url") or []
+        existing = self.bot.ident.prs_for_head(self.repo, branch)
         if existing:
             self.it.say("coordinator", "bot.py", "", f"{existing[0]['url']} is already open for this issue.")
             return "implemented"
@@ -1889,8 +2059,7 @@ class IssueConversation:
         title = str(meta.get("title") or f"{NAME}: resolve issue #{self.n}").strip()[:200]
         body = (f"{str(meta.get('summary') or '').strip()}\n\nCloses #{self.n}\n\nImplemented by the {NAME} "
                 f"author ({role_label(self.author)}) after a plan review with {role_label(self.reviewer)} in #{self.n}.")
-        url = gh("pr", "create", "-R", self.repo, "--base", self.default, "--head", branch, "--title", title,
-                 "--body-file", "-", stdin=body, cwd=self.clone).strip()
+        url = create_pr(self.repo, self.default, branch, title, body, self.clone, app=bool(self.bot.ident.app))
         self.release(tree, sessions, branch)
         self.item["implemented"] = True
         self.it.say("coordinator", "bot.py", new,
@@ -1919,8 +2088,10 @@ class Bot:
     def __init__(self, args):
         self.args, self.dry = args, bool(args.dry_run)
         self.live_turns = not self.dry or bool(args.item)  # dry-run runs read-only agent turns only for --item
-        self.cfg, self.state, self.ident = load_bot_config(write=not self.dry), load_state(), Identity()
+        self.cfg = load_bot_config(write=not self.dry, note=log)
+        self.state, self.ident = load_state(), Identity()
         self.merged_self = False
+        self.ident.cooldown = self.state.get("readCooldown", {})
 
     def save(self) -> None:
         if not self.dry:
@@ -1935,22 +2106,44 @@ class Bot:
         own.extend(s for s in shas if s not in own)
         del own[:-5000]
 
+    def read_limited(self, err: ghapp.RateLimited) -> None:
+        current = self.state.get("readCooldown", {})
+        if err.retry_at >= current.get("until", 0):
+            self.state["readCooldown"] = {"until": err.retry_at, "reason": err.reason}
+        self.ident.cooldown = self.state["readCooldown"]
+        log(str(err))
+        self.save()
+
     def cycle(self) -> None:
+        cooldown = self.state.get("readCooldown", {})
+        if cooldown.get("until", 0) > time.time():
+            log(str(ghapp.RateLimited(cooldown["until"], cooldown["reason"])))
+            return
+        self.state.pop("readCooldown", None)
+        self.ident.cooldown = {}
         if not self.dry and not self.state.get("since"):
             self.state["since"] = now_iso()  # the install moment: older events are backlog
             self.save()
         since = None if self.args.backlog else (self.state.get("since") or now_iso())
         log(f"cycle as {self.ident.describe()}, events since {since or 'the beginning (backlog)'}"
             f"{', DRY RUN' if self.dry else ''}")
-        repos = [self.args.repo] if self.args.repo else self.ident.repos()
+        try:
+            repos = [self.args.repo] if self.args.repo else self.ident.repos()
+        except ghapp.RateLimited as err:
+            self.read_limited(err)
+            return
 
         def one(repo: str) -> None:
             BIG.acquire()
             _holding.big = True
             try:
+                if self.state.get("readCooldown", {}).get("until", 0) > time.time():
+                    return
                 self.repo_cycle(repo, since)
             except Stopped:
                 log(f"{repo}: stopped")
+            except ghapp.RateLimited as err:
+                self.read_limited(err)
             except Exception as err:
                 log(f"{repo}: {err}")
             finally:
@@ -1984,15 +2177,10 @@ class Bot:
         first_poll = since is not None and repo not in starts and not want
         if since is not None:
             polled = not self.state.get("lastCycle") or any(k.startswith(f"{repo}#") for k in self.state["items"])
-            since = starts.get(repo) or (since if polled else now_iso())
+            since = starts.get(repo) or self.state.setdefault("repoPollStart", {}).setdefault(
+                repo, since if polled else now_iso())
         if not want or want.startswith("pr:"):
-            prs = gh_json("pr", "list", "-R", repo, "--state", "open", "--limit", str(LIST_LIMIT), "--json",
-                          PR_FIELDS) or []
-            if len(prs) >= LIST_LIMIT:
-                log(f"{repo}: {LIST_LIMIT}+ open PRs; the oldest beyond that are not polled")
-            comments = open_comments(repo, "pullRequests") if prs else {}
-            for pr in prs:
-                pr["comments"] = comments.get(pr["number"], [])
+            prs = self.ident.open_items(repo, "pr")
             for pr in prs:
                 key = f"pr:{pr['number']}"
                 if want and want != key:
@@ -2014,6 +2202,7 @@ class Bot:
                 todo.append(("pr", pr, reasons, comments))
             if first_poll:
                 starts[repo] = since  # every open PR is listed and baselined: later heads are new
+                self.state.get("repoPollStart", {}).pop(repo, None)
             scheduled = {data["number"] for kind, data, *_ in todo}
             for key, item in list(self.state["items"].items()):  # merges whose post-merge steps didn't finish
                 step = item.get("afterMerge")
@@ -2025,16 +2214,7 @@ class Bot:
                 found = True
                 todo.append(("pr", dict(step["pr"]), ["finishing after the merge (trunk check)"], []))
         if not want or want.startswith("issue:"):
-            listed = run(["gh", "issue", "list", "-R", repo, "--state", "open", "--limit", str(LIST_LIMIT), "--json",
-                          ISSUE_FIELDS], check=False)
-            if listed.returncode and "disabled issues" not in listed.stderr:
-                raise RuntimeError(f"gh issue list failed: {listed.stderr.strip()[-300:]}")
-            issues = json.loads(listed.stdout or "[]") if listed.returncode == 0 else []
-            if len(issues) >= LIST_LIMIT:
-                log(f"{repo}: {LIST_LIMIT}+ open issues; the oldest beyond that are not polled")
-            comments = open_comments(repo, "issues") if issues else {}
-            for issue in issues:
-                issue["comments"] = comments.get(issue["number"], [])
+            issues = self.ident.open_items(repo, "issue")
             for issue in issues:
                 key = f"issue:{issue['number']}"
                 if want and want != key:
@@ -2053,7 +2233,8 @@ class Bot:
         if not todo:
             return
         clone = ensure_clone(repo)  # only repos with work get cloned
-        default = gh_json("repo", "view", repo, "--json", "defaultBranchRef")["defaultBranchRef"]["name"]
+        default = self.ident.read(repo, f"/repos/{repo}")["default_branch"] if self.ident.app else \
+            gh_json("repo", "view", repo, "--json", "defaultBranchRef")["defaultBranchRef"]["name"]
         if base_config(clone, default).get("bot") is False:
             log(f"{repo}: opted out ({REPO_CONFIG} bot: false)")
             return
@@ -2072,6 +2253,9 @@ class Bot:
             IssueConversation(self, it, data, comments, clone, item, default)
         try:
             status = conversation.run()
+        except ghapp.RateLimited:
+            item.update(status="awaiting-read-budget", updated=now_iso(), pendingComments=comments)
+            raise
         except Exception as err:
             status = "error"
             log(f"{it.key}: error: {err}")
@@ -2602,6 +2786,7 @@ def cmd_status(args) -> None:
                       "owner": (app or {}).get("owner"), "installations": installations, "error": error,
                       "autostart": autostart, "autostartKind": autostart_kind(), "running": running,
                       "lastCycle": state.get("lastCycle"), "since": state.get("since"), "config": config,
+                      "readCooldown": state.get("readCooldown"),
                       "items": statuses, "recent": {k: v.get("status") for k, v in recent},
                       "update": load_update_record(), "workspace": str(WORK), "logs": str(LOGS)}, indent=2))
 

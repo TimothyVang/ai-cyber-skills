@@ -38,7 +38,7 @@ Start from `brand/brand.json` (deep-mode's own brand) or `brand/examples/acme.js
 | `mainSkillName` | `deep-mode` | `acme-review` | The main skill and its folder |
 | `stackSkillName` | `deep-stack` | `acme-stack` | The stack skill and its folder |
 | `envPrefix` | `DEEP_MODE` | `ACME_REVIEW` | Environment variables, like `ACME_REVIEW_CONFIG_DIR` |
-| `botTrigger` | `/deep-mode` | `/acme-review` | What people type in a thread to call the bot |
+| `botTrigger` | `@deepmodebot` | `/acme-review` | What people type in a thread to call the bot; mentions and slash triggers are supported |
 | `tagline` | | | The site title and the og image |
 | `description` | | | Meta and social descriptions, JSON-LD, the plugin and marketplace |
 | `author` | | | `{"name", "url"}`: the site author, JSON-LD, manifests, your copyright line |
