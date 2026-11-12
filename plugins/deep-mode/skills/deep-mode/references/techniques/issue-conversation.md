@@ -28,7 +28,7 @@ The plan, its critique and the build happen as a conversation of bots on the iss
 
 ## Show the user
 
-As in **pr-conversation**'s Show the user: relay each new turn with `python <deep-mode skill dir>/assets/pr-conversation/show_thread.py <issue-url> --since <id>`, and offer the 8-bit terminal display, `python <deep-mode skill dir>/assets/pr-conversation/arena.py <issue-url>`. Both read issue threads the same way as PR threads; `<deep-mode skill dir>` is this skill's folder on disk, not the checkout.
+As in **pr-conversation**'s Show the user: relay each new turn as 8-bit frames with `python <deep-mode skill dir>/assets/pr-conversation/arena.py <issue-url> --frames --since <id>` inside a fenced `text` code block (its last line names the id for next time), or as text with `show_thread.py <issue-url> --since <id>`, and offer the live terminal display, `python <deep-mode skill dir>/assets/pr-conversation/arena.py <issue-url>`. All three read issue threads the same way as PR threads; `<deep-mode skill dir>` is this skill's folder on disk, not the checkout.
 
 ## Output
 
