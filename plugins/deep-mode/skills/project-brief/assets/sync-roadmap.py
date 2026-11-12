@@ -3,13 +3,16 @@
 
 Sections:
   ## Open to claim  - no active claim, no assignee, no open PR referencing it
-  ## Claimed        - active claim comment (or assignee), no open PR yet
+  ## Claimed        - an active claim comment or an assignee, no open PR yet
   ## In review      - an open PR body says closes/fixes/resolves #N
 
-Claim rule (shared with pr-overlap.py): the newest comment containing
-`<!-- deep-mode:claim -->` on an open issue is active if its `Expires:` date
-is today or later and no newer comment from the same author contains
-`<!-- deep-mode:unclaim -->`. An assignee also counts as a claim (files unknown).
+Claim rule (shared with pr-overlap.py): each author's newest comment containing
+`<!-- deep-mode:claim -->` on an open issue is their claim. It is active while
+its `Expires:` date is today or later and that author has posted no comment
+containing `<!-- deep-mode:unclaim -->` after it. Every active claim counts.
+An assignee also counts as a claim (files unknown), unless they posted a claim
+comment on the issue: then only that comment counts, and an expired or released
+one frees the issue.
 
 Output is deterministic for the same GitHub data and date: no timestamps,
 rows sorted by issue number, labels sorted.
@@ -32,6 +35,7 @@ import tempfile
 from typing import Any
 
 LABEL = "help wanted"
+LIVE_QUERY = "is%3Aissue+is%3Aopen+label%3A%22" + LABEL.replace(" ", "+") + "%22"
 CLAIM_MARKER = "<!-- deep-mode:claim -->"
 UNCLAIM_MARKER = "<!-- deep-mode:unclaim -->"
 HEADER = "Generated from GitHub Issues by sync-roadmap.py. Edit issues, not this file."
@@ -117,25 +121,24 @@ def parse_claim(body: str) -> dict[str, Any]:
     return {"plan": plan, "files": paths, "expires": exp_date}
 
 
-def active_claim(comments: list[dict[str, Any]], today: dt.date) -> dict[str, Any] | None:
-    """Apply the shared claim rule to an issue's comments."""
+def active_claims(comments: list[dict[str, Any]], today: dt.date) -> list[dict[str, Any]]:
+    """Apply the shared claim rule to an issue's comments. Returns the active claims, oldest first."""
     ordered = sorted(comments, key=lambda c: (c.get("created_at") or "", c.get("id") or 0))
-    claim_idx = None
+    newest: dict[str, int] = {}  # author -> index of their newest claim comment
     for idx, c in enumerate(ordered):
         if CLAIM_MARKER in (c.get("body") or ""):
-            claim_idx = idx
-    if claim_idx is None:
-        return None
-    c = ordered[claim_idx]
-    author = ((c.get("user") or {}).get("login")) or ""
-    info = parse_claim(c.get("body") or "")
-    if info["expires"] is None or info["expires"] < today:
-        return None
-    for later in ordered[claim_idx + 1:]:
-        if ((later.get("user") or {}).get("login") or "").lower() == author.lower() and UNCLAIM_MARKER in (later.get("body") or ""):
-            return None
-    info["author"] = author
-    return info
+            newest[((c.get("user") or {}).get("login") or "").lower()] = idx
+    active = []
+    for author, idx in sorted(newest.items(), key=lambda item: item[1]):
+        info = parse_claim(ordered[idx].get("body") or "")
+        if info["expires"] is None or info["expires"] < today:
+            continue
+        if any(((later.get("user") or {}).get("login") or "").lower() == author and UNCLAIM_MARKER in (later.get("body") or "")
+               for later in ordered[idx + 1:]):
+            continue
+        info["author"] = (ordered[idx].get("user") or {}).get("login") or ""
+        active.append(info)
+    return active
 
 
 def closing_refs(body: str, repo: str) -> set[int]:
@@ -165,13 +168,13 @@ def collect(repo: str, today: dt.date) -> list[dict[str, Any]]:
     for issue in issues:
         n = issue["number"]
         assignees = sorted({(a or {}).get("login", "") for a in issue.get("assignees") or []} - {""})
-        claim = None
-        if issue.get("comments", 0):
-            claim = active_claim(gh_api(f"repos/{repo}/issues/{n}/comments?per_page=100"), today)
-        claimants = []
-        if claim:
-            claimants.append(claim["author"])
-        claimants += [a for a in assignees if a not in claimants]
+        comments = gh_api(f"repos/{repo}/issues/{n}/comments?per_page=100") if issue.get("comments", 0) else []
+        claims = active_claims(comments, today)
+        claimants = [c["author"] for c in claims]
+        # Claimants self-assign, so anyone who posted a claim comment counts only through it:
+        # an expired or released claim must not live on as an assignee claim.
+        claimed = {((c.get("user") or {}).get("login") or "").lower() for c in comments if CLAIM_MARKER in (c.get("body") or "")}
+        claimants += [a for a in assignees if a.lower() not in claimed]
         prs_for = sorted(in_review.get(n, []), key=lambda p: p["number"])
         if prs_for:
             section = "review"
@@ -185,7 +188,7 @@ def collect(repo: str, today: dt.date) -> list[dict[str, Any]]:
             "title": issue.get("title") or "",
             "labels": sorted({(l or {}).get("name", "") for l in issue.get("labels") or []} - {""}),
             "claimants": claimants,
-            "files": claim["files"] if claim else [],
+            "files": sorted({f for c in claims for f in c["files"]}),
             "prs": [(p["number"], p.get("html_url") or "", ((p.get("user") or {}).get("login")) or "") for p in prs_for],
             "section": section,
         })
@@ -202,6 +205,9 @@ def render(repo: str, rows: list[dict[str, Any]]) -> str:
         "",
         f"Tasks are open issues in `{repo}` labeled `{LABEL}`. "
         "Claim one with `/deep-mode:contribute` or by commenting on the issue.",
+        "",
+        "This file is a snapshot from the maintainer's last sync, so a task may have been claimed since. "
+        f"The live list: [open `{LABEL}` issues](https://github.com/{repo}/issues?q={LIVE_QUERY}).",
         "",
     ]
     sections = [
