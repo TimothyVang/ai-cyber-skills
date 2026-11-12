@@ -1,6 +1,6 @@
 # Handoff
 
-Use when: the work should continue in a fresh context: "hand this off", "write a handoff", "summarize this for another agent", "continue this in a new session", "start a background agent on the rest", or the context is crowded and the next phase is cleanly separable. Stopping for later in this same repo is Pause safely (`references/playbooks/pause-safely.md`); picking up someone else's handoff is Session pickup (`references/playbooks/session-pickup.md`); parallel work while this session continues is a `task` subagent. You own a document a cold agent, another harness, or a colleague can act on without this conversation.
+Use when: the work should continue in a fresh context: "hand this off", "write a handoff", "summarize this for another agent", "continue this in a new session", "start a background agent on the rest", or the context is crowded and the next phase is cleanly separable (then start a background agent on the rest: a handoff you start yourself keeps every ledger item open). Stopping for later in this same repo is Pause safely (`references/playbooks/pause-safely.md`); picking up someone else's handoff is Session pickup (`references/playbooks/session-pickup.md`); parallel work while this session continues is a `task` subagent. You own a document a cold agent, another harness, or a colleague can act on without this conversation.
 
 ## Steps
 
