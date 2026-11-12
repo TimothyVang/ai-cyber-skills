@@ -37,6 +37,7 @@ TEMPLATE = HERE / "arena.html"
 FONT = HERE / "font8x8_basic.hex"  # font8x8_basic by Daniel Hepper, public domain (NOTICE.md); 128 glyphs x 8 rows
 CACHE_SECONDS = 15
 SHA = re.compile(r"^[0-9a-f]{7,40}$")
+FINDING_ID = re.compile(r"^[A-Za-z]+\d+$")  # F1, V2: bot.py's finding and panel-failure ids
 EFFECT = {"P0": "A critical hit!", "P1": "It's super effective!"}
 ANSWER = re.compile(r"^(fixed|dismissed)\b\s*(.*?)(?:\s+in ([0-9a-f]{7,40}))?\s*—\s*(.*)$", re.I)
 VOTE = re.compile(r"^vote:\s*(\S+)(?:\s*—\s*(.*))?$", re.I)
@@ -291,6 +292,9 @@ def battle(meta: dict, found: list[dict]) -> dict:
     merged = meta["state"] == "merged"
     score = {"open": 0, "peak": 0, "votes": [None, None, None], "merged": False}
     seen, head, panel_seen, merge_said, turns = set(), "", False, False, []
+    # Open findings in report order, keyed (reviewer, id). A re-review lists every finding still open
+    # under its old id, so each reviewer's latest list replaces its previous one.
+    open_findings, reported = {}, {}
     for v in found:
         lines = turn_lines(v, full_name(v) not in seen, head)
         seen.add(full_name(v))
@@ -298,15 +302,27 @@ def battle(meta: dict, found: list[dict]) -> dict:
             head = v["head"]
         gist = v.get("gist") or []
         if v["kind"] in ("reviewer", "pr-agent"):
-            score["open"] += sum(1 for g in gist if re.match(r"^P[012]:", g))
+            name = full_name(v)
+            for key in reported.get(name, ()):
+                open_findings.pop(key, None)
+            # Prose findings carry no id: their text is the key.
+            reported[name] = [(name, i) for i in v.get("findings") or [g for g in gist if re.match(r"^P[012]:", g)]]
+            open_findings.update(dict.fromkeys(reported[name]))
         elif v["kind"] == "author":
-            score["open"] = max(0, score["open"] - sum(1 for g in gist if ANSWER.match(g)))
+            for g in gist:
+                if (m := ANSWER.match(g)) and open_findings:
+                    ident = m.group(2).strip()
+                    if not FINDING_ID.match(ident):  # a prose answer names no id: it closes the oldest finding
+                        del open_findings[next(iter(open_findings))]
+                    elif (key := next((k for k in open_findings if k[1] == ident), None)):
+                        del open_findings[key]  # one answer closes one finding, the oldest with that id
         elif v["kind"] == "verifier" and v.get("number") in (1, 2, 3) and (vote := vote_of(v)):
             if panel_seen:  # a new round of votes after an earlier panel
                 score["votes"], panel_seen = [None, None, None], False
             score["votes"][v["number"] - 1] = vote
         elif v["kind"] == "panel":
             panel_seen = True
+        score["open"] = len(open_findings)
         score["peak"] = max(score["peak"], score["open"])
         if merged and not merge_said and is_merge_note(v):
             lines.append(f"{label} was merged!")

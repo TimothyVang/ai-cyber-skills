@@ -11,9 +11,11 @@ import arena  # noqa: E402
 import show_thread as st  # noqa: E402
 
 
-def comment(body, cid=1):
+def comment(body, cid=1, user=("o", "User", "OWNER")):
+    login, kind, association = user
     return {"id": cid, "html_url": f"https://github.com/o/r/pull/1#issuecomment-{cid}",
-            "created_at": "2026-11-11T21:56:00Z", "body": body}
+            "created_at": "2026-11-11T21:56:00Z", "body": body,
+            "user": {"login": login, "type": kind}, "author_association": association}
 
 
 def fenced(data):
@@ -95,21 +97,27 @@ class ProseAnswers(unittest.TestCase):
 
 class Voices(unittest.TestCase):
     def test_pr_agent_by_its_own_headings_only(self):
-        comment = lambda body: {"id": 1, "html_url": "", "created_at": "2026-11-11T00:00:00Z", "body": body}
         self.assertEqual(st.voice(comment("## PR Reviewer Guide 🔍\n\nNo major issues detected"))["kind"], "pr-agent")
         self.assertIsNone(st.voice(comment("Please address what pr-agent flagged.\nP1: a.py:3 — wrong")))
 
+    def test_only_bots_and_writers_speak_as_bots(self):
+        signed = "**deep-mode reviewer** · head `abc1234`\n\nP1: a.py:3 — wrong"
+        self.assertEqual(st.voice(comment(signed, user=("app[bot]", "Bot", "NONE")))["kind"], "reviewer")
+        self.assertEqual(st.voice(comment(signed, user=("m", "User", "MEMBER")))["kind"], "reviewer")
+        for outsider in (("x", "User", "NONE"), ("x", "User", "CONTRIBUTOR")):
+            self.assertIsNone(st.voice(comment(signed, user=outsider)))
+            self.assertIsNone(st.voice(comment("## PR Reviewer Guide 🔍\n\nNo major issues detected", user=outsider)))
+
     def test_odd_content_never_raises(self):
-        comment = lambda body: {"id": 1, "html_url": "", "created_at": "2026-11-11T00:00:00Z",
-                                "body": "**deep-mode author · omp** · head `abc1234`\n\n" + body}
+        signed = lambda body: comment("**deep-mode author · omp** · head `abc1234`\n\n" + body)
         for payload in ('{"findings": null}', '{"findings": "none"}', '{"responses": {"a": 1}}'):
-            st.voice(comment(fenced(json.loads(payload))))
-        mixed = st.voice(comment(fenced({"findings": ["x", {"severity": "P1", "file": "a.py", "line": 3, "claim": "c"}]})))
+            st.voice(signed(fenced(json.loads(payload))))
+        mixed = st.voice(signed(fenced({"findings": ["x", {"severity": "P1", "file": "a.py", "line": 3, "claim": "c"}]})))
         self.assertEqual(mixed["gist"], ["P1: a.py:3 — c"])
         # Comments near GitHub's 65,536-character limit that defeat a backtracking pattern.
         for hostile in ("1. **" + " " * 65000, "<!--" * 16000, "```{x" * 13000):
             started = time.perf_counter()
-            st.voice(comment(hostile))
+            st.voice(signed(hostile))
             self.assertLess(time.perf_counter() - started, 1.0)
         self.assertEqual(st.clean("Suggestion&nbsp;&amp; <b>x</b>"), "Suggestion\xa0&  x ")
 
@@ -206,6 +214,23 @@ class Battle(unittest.TestCase):
         self.assertEqual(b["turns"][-1]["lines"][-1], "PR #9 was merged!")
         self.assertTrue(after[-1]["merged"] and not after[-2]["merged"])
         self.assertEqual((b["intro"], b["outro"]), (["PR #9 wants to merge!", '"Add x"'], []))
+
+    def test_re_reported_findings_count_once(self):
+        sig = "**deep-mode {}** · head `{}`\n\n"
+        f = lambda i, sev="P1": {"id": i, "severity": sev, "file": "a", "line": 1, "claim": i}
+        answer = lambda *ids: fenced({"responses": [{"id": i, "action": "fixed", "reason": f"r{n}"} for n, i in enumerate(ids)]})
+        found = [
+            turn(sig.format("reviewer · security", "aaaaaaa") + fenced({"findings": [f("F1"), f("F2", "P2")]}), 1),
+            turn(sig.format("reviewer · UI", "aaaaaaa") + fenced({"findings": [f("F1")]}), 2),  # another lens's own F1
+            turn(sig.format("author", "bbbbbbb") + answer("F2", "V1"), 3),  # V1: a panel failure, never a review finding
+            # The re-review lists only what is still open: F1 again, and a new F3.
+            turn(sig.format("reviewer · security", "bbbbbbb") + fenced({"findings": [f("F1"), f("F3")]}), 4),
+            turn(sig.format("author", "ccccccc") + answer("F1", "F1"), 5),
+            turn(sig.format("reviewer · security", "ccccccc") + fenced({"findings": []}), 6),
+        ]
+        meta = {"url": "u", "repo": "o/r", "number": 9, "kind": "pr", "title": "x", "state": "open"}
+        after = [t["after"] for t in arena.battle(meta, found)["turns"]]
+        self.assertEqual([(a["open"], a["peak"]) for a in after], [(2, 2), (3, 3), (2, 3), (3, 3), (1, 3), (0, 3)])
 
     def test_open_issue_outro(self):
         meta = {"url": "u", "repo": "o/r", "number": 4, "kind": "issue", "title": "Bug", "state": "open"}

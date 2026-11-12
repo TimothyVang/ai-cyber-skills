@@ -6,8 +6,9 @@ Usage:
 
 Reads the thread's comments with `gh` and keeps the bot voices (comments whose first line is the
 pr-conversation signature, `**<brand> <role> · <agent> (<model>)** · head \`<sha>\``) plus
-PR-Agent's review. For each it prints the time, the voice, the head it covers, and its gist: the
-findings (P0/P1/P2), the author's fixed/dismissed answers, a vote or tally, or the first sentence.
+PR-Agent's review, from bot accounts and people with write access only. For each it prints the
+time, the voice, the head it covers, and its gist: the findings (P0/P1/P2), the author's
+fixed/dismissed answers, a vote or tally, or the first sentence.
 --full prints each body instead. --since prints only comments newer than that id, so a
 coordinator can show the user each new turn as it lands.
 
@@ -92,11 +93,18 @@ def parse_signature(line: str):
 
 # Its "Persistent review updated" notices only point at the edited review, so they are not turns.
 PR_AGENT_MARKERS = ("PR Reviewer Guide", "PR Code Suggestions")
+# Without an app the bots and PR-Agent post as the repo's owner; with one, as the app's bot account.
+WRITERS = {"OWNER", "MEMBER", "COLLABORATOR"}
 
 
 def is_pr_agent(body: str) -> bool:
     """PR-Agent's own headings; a person merely mentioning pr-agent is not its turn."""
     return any(marker in body for marker in PR_AGENT_MARKERS)
+
+
+def may_speak(comment: dict) -> bool:
+    """A bot account or someone with write access; a signature from anyone else is a person posing as a bot."""
+    return (comment.get("user") or {}).get("type") == "Bot" or comment.get("author_association") in WRITERS
 
 
 def clean(text: str) -> str:
@@ -116,8 +124,8 @@ def clip(text: str, limit) -> str:
     return text if limit is None else text[:limit]
 
 
-def json_gist(body: str, limit=140) -> list[str]:
-    """The fenced JSON the ACP roles end with: findings, answers or a vote. Each text cut at `limit` (None: whole)."""
+def json_objects(body: str) -> list[dict]:
+    """The fenced JSON objects the ACP roles end with."""
     out = []
     # Fence to fence, then keep objects: matching "{...}" inside the fence rescans the body per opening.
     blocks = (block.strip() for block in re.findall(r"```(?:json)?(.*?)```", body, flags=re.S))
@@ -126,8 +134,15 @@ def json_gist(body: str, limit=140) -> list[str]:
             data = json.loads(block)
         except ValueError:
             continue
-        if not isinstance(data, dict):
-            continue
+        if isinstance(data, dict):
+            out.append(data)
+    return out
+
+
+def json_gist(objects: list[dict], limit=140) -> list[str]:
+    """Findings, answers or a vote from the fenced JSON. Each text cut at `limit` (None: whole)."""
+    out = []
+    for data in objects:
         for f in records(data, "findings"):
             out.append(f"{f.get('severity', '?')}: {f.get('file', '')}:{f.get('line', '')} — {clip(str(f.get('claim', '')), limit)}")
         for r in records(data, "responses"):
@@ -138,6 +153,13 @@ def json_gist(body: str, limit=140) -> list[str]:
         if not out and "findings" in data:
             out.append("no findings")
     return list(dict.fromkeys(out))  # a reply that repeats its JSON block counts once
+
+
+def finding_ids(objects: list[dict]) -> list[str]:
+    """The P0-P2 findings' ids, numbered F1, F2... where one is missing, as bot.py numbers them."""
+    return list(dict.fromkeys(
+        str(f.get("id") or f"F{i}") for data in objects for i, f in enumerate(records(data, "findings"), 1)
+        if str(f.get("severity", "")).upper() in ("P0", "P1", "P2")))
 
 
 def prose_answers(lines: list[str], limit=140) -> list[str]:
@@ -156,7 +178,7 @@ def prose_answers(lines: list[str], limit=140) -> list[str]:
     return out
 
 
-def gist(body: str, kind: str = "", limit=140) -> list[str]:
+def gist(body: str, kind: str = "", limit=140, objects=None) -> list[str]:
     if "PR Reviewer Guide" in body:  # PR-Agent: its focus-area titles, or its all-clear line
         if "Recommended focus areas" in body:
             section = body.split("Recommended focus areas", 1)[1].split("</table>", 1)[0]
@@ -165,7 +187,7 @@ def gist(body: str, kind: str = "", limit=140) -> list[str]:
                 return ["focus: " + "; ".join(dict.fromkeys(t.strip() for t in titles))]
         clear = re.search(r"No major issues detected[^<\n]*", body)
         return [clear.group(0).strip() if clear else "No major issues detected"]
-    structured = json_gist(body, limit)
+    structured = json_gist(json_objects(body) if objects is None else objects, limit)
     if structured:
         return structured
     # Lines are cut to MAX_LINE: the answer patterns backtrack quadratically on a long run of spaces.
@@ -188,6 +210,8 @@ def gist(body: str, kind: str = "", limit=140) -> list[str]:
 def voice(comment: dict, limit=140):
     """One comment as a bot voice, or None when no bot or PR-Agent wrote it."""
     body = comment.get("body") or ""
+    if not may_speak(comment):
+        return None
     first = body.strip().splitlines()[0] if body.strip() else ""
     who = parse_signature(first)
     if not who:
@@ -195,8 +219,10 @@ def voice(comment: dict, limit=140):
             return None
         who = {"role": "pr-agent", "voice": "pr-agent", "kind": "pr-agent", "number": None, "lens": None,
                "agent": None, "model": None, "head": ""}
+    objects = json_objects(body)
     return {"id": comment["id"], "html_url": comment.get("html_url", ""), "time": comment.get("created_at", ""),
-            **who, "gist": gist(body, who["kind"], limit), "body": body}
+            **who, "gist": gist(body, who["kind"], limit, objects), "findings": finding_ids(objects),
+            "body": body}
 
 
 def voices(url: str, limit=140) -> list[dict]:
@@ -228,7 +254,8 @@ def main() -> int:
             continue
         shown += 1
         print(f"\n{v['time'][11:16]}  {v['voice']}" + (f"  @ {v['head']}" if v["head"] else "") + f"  (#{v['id']})")
-        for line in (v["body"].strip().splitlines()[1:] if opts.full else v["gist"]):
+        lines = v["body"].strip().splitlines()  # a signed body's first line is the signature printed above
+        for line in ((lines if v["kind"] == "pr-agent" else lines[1:]) if opts.full else v["gist"]):
             print(f"    {line}")
     if not shown:
         print("show_thread: no bot or PR-Agent comments" + (" since that id" if opts.since else ""))
