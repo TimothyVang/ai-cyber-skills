@@ -1,0 +1,215 @@
+#!/usr/bin/env python3
+r"""Show what the bots said on a PR or issue, as a short readable thread.
+
+Usage:
+  python show_thread.py <pr-or-issue-url> [--full] [--since <comment-id>]
+
+Reads the thread's comments with `gh` and keeps the bot voices (comments whose first line is the
+pr-conversation signature, `**<brand> <role> · <agent> (<model>)** · head \`<sha>\``) plus
+PR-Agent's review. For each it prints the time, the voice, the head it covers, and its gist: the
+findings (P0/P1/P2), the author's fixed/dismissed answers, a vote or tally, or the first sentence.
+--full prints each body instead. --since prints only comments newer than that id, so a
+coordinator can show the user each new turn as it lands.
+
+As a module, `voices(url)` returns the same comments as dicts (arena.py draws them).
+"""
+
+import argparse
+import itertools
+import json
+import re
+import subprocess
+import sys
+
+ROLES = r"(?:author|reviewer|verifier \d|panel|coordinator|trunk check)"
+SIGNATURE = re.compile(rf"^\*\*\S+ ({ROLES}\b[^*]*)\*\*\s*·\s*(.*)$")
+THREAD_URL = re.compile(r"^https://github\.com/([\w.-]+/[\w.-]+)/(pull|issues)/(\d+)(?:[/?#].*)?$")
+FINDING = re.compile(r"^\s*[-*]?\s*\**(P[012])\b[^—\n]*—\s*(.+)$")
+VERDICT = re.compile(r"(VERDICT:\s*(?:NOT )?DONE|^`?(?:panel|conversation):\s*[^\n]+)", re.I)
+# An author's prose answers (threads without the JSON reply): "3. **Empty pane: fixed.** ...",
+# "| <finding> | **fixed**: ... |", "| <finding> | **fixed in `<sha>`**. ... |" or "... is **fixed**: ..."
+ANSWER_ITEM = re.compile(r"^\s*(?:\d+[.)]|[-*])\s*\*\*(.+?)[:.]?\s+(fixed|dismissed)\.?\*\*\s*(.*)$", re.I)
+ANSWER_ROW = re.compile(r"^\|\s*(.+?)\s*\|\s*\*\*(fixed|dismissed)(?: in `?[0-9a-f]{7,40}`?)?\*\*[:.]?\s*(.*?)\s*\|?$", re.I)
+ANSWER_INLINE = re.compile(r"\*\*(fixed|dismissed)(?: in `?[0-9a-f]{7,40}`?)?\*\*", re.I)
+MODELED = re.compile(r"^(\S+) \((.+)\)$")
+# acpx agent names, and bot.py, which signs the panel and coordinator; any other label is a review lens.
+AGENTS = {"omp", "claude", "codex", "gemini", "cursor", "copilot", "opencode", "qwen", "kimi", "droid",
+          "kiro", "pi", "iflow", "auggie", "goose", "amp", "bot.py"}
+
+
+class GhError(RuntimeError):
+    pass
+
+
+def parse_url(url: str):
+    """(owner/repo, number, "pr" | "issue") for a GitHub PR or issue URL, else None."""
+    match = THREAD_URL.match(url.strip())
+    if not match:
+        return None
+    repo, kind, number = match.groups()
+    return repo, int(number), "pr" if kind == "pull" else "issue"
+
+
+def gh_json(path: str, paginate: bool = False):
+    """`gh api <path>` parsed; paginated arrays come back as one list."""
+    cmd = ["gh", "api", *(["--paginate", "--jq", ".[]"] if paginate else []), path]
+    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    if out.returncode:
+        raise GhError(f"gh api {path} failed: {out.stderr.strip()[-400:]}")
+    if paginate:
+        return [json.loads(line) for line in out.stdout.splitlines() if line.strip()]
+    return json.loads(out.stdout)
+
+
+def comments(repo: str, number: int) -> list[dict]:
+    return gh_json(f"repos/{repo}/issues/{number}/comments", paginate=True)
+
+
+def parse_signature(line: str):
+    """The voice in a signature line: role, kind, verifier number, lens, agent, model and head; else None."""
+    sig = SIGNATURE.match(line.strip())
+    if not sig:
+        return None
+    voice = sig.group(1).strip()
+    head = sig.group(2).replace("head", "").replace("`", "").strip()
+    role, *labels = [part.strip() for part in voice.split("·")]
+    kind = "verifier" if role == "trunk check" else role.split()[0]
+    number = int(role.split()[1]) if kind == "verifier" and role != "trunk check" else None
+    lens = agent = model = None
+    for label in filter(None, labels):
+        modeled = MODELED.match(label)
+        if modeled:
+            agent, model = modeled.groups()
+        elif label in AGENTS:
+            agent = label
+        else:
+            lens = label
+    return {"role": role, "voice": voice, "kind": kind, "number": number, "lens": lens,
+            "agent": agent, "model": model, "head": head}
+
+
+def is_pr_agent(body: str) -> bool:
+    return "PR Reviewer Guide" in body or "pr-agent" in body
+
+
+def clean(text: str) -> str:
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    text = re.sub(r"```.*?```", "", text, flags=re.S)
+    return re.sub(r"<[^>]+>", " ", text)
+
+
+def clip(text: str, limit) -> str:
+    return text if limit is None else text[:limit]
+
+
+def json_gist(body: str, limit=140) -> list[str]:
+    """The fenced JSON the ACP roles end with: findings, answers or a vote. Each text cut at `limit` (None: whole)."""
+    out = []
+    for block in re.findall(r"```(?:json)?\s*(\{.*?\})\s*```", body, flags=re.S):
+        try:
+            data = json.loads(block)
+        except ValueError:
+            continue
+        if not isinstance(data, dict):
+            continue
+        for f in data.get("findings", []):
+            out.append(f"{f.get('severity', '?')}: {f.get('file', '')}:{f.get('line', '')} — {clip(str(f.get('claim', '')), limit)}")
+        for r in data.get("responses", []):
+            where = f" in {str(r['sha'])[:8]}" if r.get("sha") else ""
+            out.append(f"{r.get('action', '?')} {r.get('id', '')}{where} — {clip(str(r.get('reason', '')), limit)}")
+        if "vote" in data:
+            out.append(f"vote: {data['vote']} — {clip(str(data.get('evidence', '')), limit)}")
+        if not out and "findings" in data:
+            out.append("no findings")
+    return list(dict.fromkeys(out))  # a reply that repeats its JSON block counts once
+
+
+def prose_answers(lines: list[str], limit=140) -> list[str]:
+    """An author's fixed/dismissed answers written as prose, in the JSON answers' `<action> <id> — <reason>` form."""
+    out = []
+    for line in lines:
+        item = ANSWER_ITEM.match(line) or ANSWER_ROW.match(line)
+        if item:
+            title, action, rest = item.groups()
+            out.append(f"{action.lower()} {title.replace('**', '').strip()} — {clip(rest.replace('**', ''), limit)}")
+            continue
+        inline = ANSWER_INLINE.search(line)
+        if inline:
+            sentence = next(s for s in re.split(r"(?<=[.!?])\s+", line) if ANSWER_INLINE.search(s))
+            out.append(f"{inline.group(1).lower()} — {clip(sentence.replace('**', ''), limit)}")
+    return out
+
+
+def gist(body: str, kind: str = "", limit=140) -> list[str]:
+    if "PR Reviewer Guide" in body:  # PR-Agent: its focus-area titles, or its all-clear line
+        titles = re.findall(r"<strong>([^<]{3,80})</strong>", body.split("Recommended focus areas", 1)[-1])
+        return ["focus: " + "; ".join(dict.fromkeys(titles))] if titles else ["No major issues detected"]
+    structured = json_gist(body, limit)
+    if structured:
+        return structured
+    lines = [line.strip() for line in clean(body).splitlines() if line.strip()]
+    found = [f"{m.group(1)}: {clip(m.group(2).replace('**', ''), limit)}" for line in lines if (m := FINDING.match(line))]
+    verdict = next((m.group(1) for line in lines if (m := VERDICT.search(line))), None)
+    if found:
+        return ([verdict] if verdict else []) + found
+    if verdict:
+        return [verdict]
+    first = next((line for line in lines[1:] if not line.startswith("#")), "")
+    answers = prose_answers(lines[1:], limit) if kind == "author" else []
+    if answers:  # the opening line, up to its own first answer
+        first = "" if ANSWER_ITEM.match(first) or ANSWER_ROW.match(first) else " ".join(
+            itertools.takewhile(lambda s: not ANSWER_INLINE.search(s), re.split(r"(?<=[.!?])\s+", first)))
+    first = clip(first.replace("**", ""), limit and limit + 60)
+    return ([first] if first else []) + answers
+
+
+def voice(comment: dict, limit=140):
+    """One comment as a bot voice, or None when no bot or PR-Agent wrote it."""
+    body = comment.get("body") or ""
+    first = body.strip().splitlines()[0] if body.strip() else ""
+    who = parse_signature(first)
+    if not who:
+        if not is_pr_agent(body):
+            return None
+        who = {"role": "pr-agent", "voice": "pr-agent", "kind": "pr-agent", "number": None, "lens": None,
+               "agent": None, "model": None, "head": ""}
+    return {"id": comment["id"], "html_url": comment.get("html_url", ""), "time": comment.get("created_at", ""),
+            **who, "gist": gist(body, who["kind"], limit), "body": body}
+
+
+def voices(url: str, limit=140) -> list[dict]:
+    """Every bot and PR-Agent comment on the PR or issue at `url`, oldest first; gist texts cut at `limit` (None: whole)."""
+    parsed = parse_url(url)
+    if not parsed:
+        raise ValueError(f"not a GitHub PR or issue URL: {url}")
+    repo, number, _ = parsed
+    return [v for c in comments(repo, number) if (v := voice(c, limit))]
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("url", metavar="pr-or-issue-url")
+    parser.add_argument("--full", action="store_true", help="print each comment's whole body")
+    parser.add_argument("--since", type=int, default=0, help="only comments with a larger id")
+    opts = parser.parse_args()
+    if not parse_url(opts.url):
+        sys.exit("show_thread: give a GitHub PR or issue URL, e.g. https://github.com/owner/repo/pull/12")
+    try:
+        found = voices(opts.url)
+    except GhError as err:
+        sys.exit(f"show_thread: {err}")
+    shown = 0
+    for v in found:
+        if v["id"] <= opts.since:
+            continue
+        shown += 1
+        print(f"\n{v['time'][11:16]}  {v['voice']}" + (f"  @ {v['head']}" if v["head"] else "") + f"  (#{v['id']})")
+        for line in (v["body"].strip().splitlines()[1:] if opts.full else v["gist"]):
+            print(f"    {line}")
+    if not shown:
+        print("show_thread: no bot or PR-Agent comments" + (" since that id" if opts.since else ""))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
