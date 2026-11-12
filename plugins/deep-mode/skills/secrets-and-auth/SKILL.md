@@ -11,10 +11,10 @@ Read before any task that touches API keys, tokens, `.env` files, passwords, use
 
 | File | Read when |
 |---|---|
-| `secrets-and-env.md` | Storing, sharing, encrypting, or injecting API keys and `.env` (dotenvx, SOPS + age, Infisical, Bitwarden Secrets Manager, OpenBao, Doppler, Phase); credential brokers; how omp, Claude Code, and Codex pass env and MCP secrets |
-| `logins-and-passwords.md` | Usernames, passwords, website and CLI logins, TOTP and passkeys (Bitwarden + Agent Access, Vaultwarden, KeePassXC, gopass, Proton Pass); browser session reuse; dedicated agent accounts; passing secrets to commands; transcripts on disk |
-| `agent-authentication.md` | Protecting an MCP server or agent API, on-behalf-of delegation, human approval, CI and cloud federation (MCP auth 2026-07-28, OAuth 2.1, RFC 8693, DPoP, device flow, CIBA, ID-JAG, SPIFFE); OSS identity servers (Keycloak, Better Auth, Pomerium, Zitadel, authentik); hosted free tiers |
-| `leak-prevention.md` | Secret scanning, agent read and env controls, egress sandboxes, documented 2025-2026 incidents, rotation playbook, and the pre-commit checklist |
+| `references/secrets-and-env.md` | Storing, sharing, encrypting, or injecting API keys and `.env` (dotenvx, SOPS + age, Infisical, Bitwarden Secrets Manager, OpenBao, Doppler, Phase); credential brokers; how omp, Claude Code, and Codex pass env and MCP secrets |
+| `references/logins-and-passwords.md` | Usernames, passwords, website and CLI logins, TOTP and passkeys (Bitwarden + Agent Access, Vaultwarden, KeePassXC, gopass, Proton Pass); browser session reuse; dedicated agent accounts; passing secrets to commands; transcripts on disk |
+| `references/agent-authentication.md` | Protecting an MCP server or agent API, on-behalf-of delegation, human approval, CI and cloud federation (MCP auth 2026-07-28, OAuth 2.1, RFC 8693, DPoP, device flow, CIBA, ID-JAG, SPIFFE); OSS identity servers (Keycloak, Better Auth, Pomerium, Zitadel, authentik); hosted free tiers |
+| `references/leak-prevention.md` | Secret scanning, agent read and env controls, egress sandboxes, documented 2025-2026 incidents, rotation playbook, and the pre-commit checklist |
 
 ## Rules for the agent
 
@@ -27,7 +27,7 @@ Read before any task that touches API keys, tokens, `.env` files, passwords, use
 7. **CI uses OIDC, not stored cloud keys,** with the trust policy pinned to repo and environment (`sub`). npm publishes through trusted publishing.
 8. **Scan before every commit and push** (gitleaks with `--redact`; checklist in `leak-prevention.md`). Never bypass a hook, push protection, or scanner finding; stop and tell the user.
 9. **Agent config is code.** Review diffs to `.claude/`, `.codex/`, `.gemini/`, `.cursor/`, `.vscode/tasks.json`, `.mcp.json`, `AGENTS.md`, and `CLAUDE.md` like executable changes; pin MCP servers and re-approve them when their tools change.
-10. **Changing the user's machine is the user's call.** Creating vault accounts, writing `~/.codex/config.toml` or `~/.claude/settings.json`, storing keys in the OS keychain, and installing tools globally are hard stops (SKILL.md Autonomy): propose the exact change and let the user apply or approve it.
+10. **Changing the user's machine is the user's call.** Creating vault accounts, writing `~/.codex/config.toml` or `~/.claude/settings.json`, storing keys in the OS keychain, and installing tools globally are hard stops (deep-mode's SKILL.md Autonomy): propose the exact change and let the user apply or approve it.
 11. **On a leak:** revoke or rotate first, check provider logs, hunt persistence in agent config folders and shell rc files, then rewrite history only if still needed. Forks and clones keep the old commits.
 
 ## What deep-mode enforces

@@ -1,6 +1,6 @@
 # DevOps, tooling, and CS fundamentals
 
-Read when working with Linux, the shell, git, Docker, Kubernetes, Terraform, CI/CD, deployments, or configuration and secrets, or when a bug turns on data structures, complexity, memory, floating point, concurrency, or networking protocols. Source keys are in `README.md`.
+Read when working with Linux, the shell, git, Docker, Kubernetes, Terraform, CI/CD, deployments, or configuration and secrets, or when a bug turns on data structures, complexity, memory, floating point, concurrency, or networking protocols. Source keys are in this skill's `SKILL.md`.
 
 ## Linux
 

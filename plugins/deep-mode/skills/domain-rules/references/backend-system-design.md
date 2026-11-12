@@ -1,6 +1,6 @@
 # Backend craft and system design
 
-Read when writing or reviewing backend code, designing an API, choosing or tuning a database, adding a cache or queue, scaling a service, hardening security, or choosing a language. Where a rule matches an existing deep-mode principle, the principle is named; follow the principle file for detail. Per-language runtime, tooling, and traps are in `language-ecosystems.md`. Source keys are in `README.md`.
+Read when writing or reviewing backend code, designing an API, choosing or tuning a database, adding a cache or queue, scaling a service, hardening security, or choosing a language. Where a rule matches an existing deep-mode principle, the principle is named; follow the principle file for detail. Per-language runtime, tooling, and traps are in `language-ecosystems.md`. Source keys are in this skill's `SKILL.md`.
 
 ## Coding laws
 

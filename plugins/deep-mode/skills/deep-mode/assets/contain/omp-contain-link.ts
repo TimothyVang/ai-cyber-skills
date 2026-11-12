@@ -6,8 +6,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 
-const guard = path.join(os.homedir(), ".omp", "plugins", "node_modules", "deep-mode", "skills", "deep-mode", "assets",
-	"contain", "omp-contain.ts");
+const guard = path.join(os.homedir(), ".omp/plugins/node_modules/deep-mode", "skills/deep-mode/assets/contain/omp-contain.ts");
 const mod = await import(pathToFileURL(guard).href); // dynamic: the path depends on the user's home folder
 
 export default mod.default;

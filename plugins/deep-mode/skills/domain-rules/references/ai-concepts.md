@@ -1,6 +1,6 @@
 # AI concepts
 
-Read when a task involves LLM fundamentals, RAG or retrieval, fine-tuning, inference cost or hardware, local models, model choice, or explaining AI terms. How to design and review agents is in `agent-engineering.md`; this file is the vocabulary and mechanics. Model, price, and market facts are dated to the source video and go stale fast; verify before relying on them. Source keys are in `README.md`.
+Read when a task involves LLM fundamentals, RAG or retrieval, fine-tuning, inference cost or hardware, local models, model choice, or explaining AI terms. How to design and review agents is in `agent-engineering.md`; this file is the vocabulary and mechanics. Model, price, and market facts are dated to the source video and go stale fast; verify before relying on them. Source keys are in this skill's `SKILL.md`.
 
 ## Model basics
 

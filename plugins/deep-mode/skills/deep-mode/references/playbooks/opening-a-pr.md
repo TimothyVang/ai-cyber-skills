@@ -12,7 +12,7 @@ Rules:
 - Measure it with `git diff --numstat <base>...<head>`. Sum both number columns over every row. Count the rows for files.
 - It must touch nothing about auth, permissions, secrets or credentials, input parsing at a trust boundary, database migrations, CI workflows, or agent config.
 - Anything else is M or L and takes the Steps below in full.
-- The deep-mode bot (`references/techniques/github-app.md`) applies the light panel by itself when a PR's diff fits S.
+- The deep-mode bot (`references/techniques/github-app.md`) applies the light panel by itself when a PR's diff fits S. It judges from the diff's size and paths, so it can't see input parsing at a trust boundary: give such a PR the `full-panel` label.
 
 Steps:
 
@@ -21,9 +21,9 @@ Steps:
 3. Prove it once on the real artifact. Done when you have one real run's command and output that shows the change working.
 4. Review your own diff yourself against the **pr-review** checklist (`references/techniques/pr-review.md`), which is its four lenses and its smell baseline. Spawn no subagents and do not run PR-Agent. Done when every finding is fixed or dismissed with a reason and you have the pr-review line for the committed head.
 5. Open the PR as in Steps 6 to 11 below. Done when `gh pr view <n> --json isDraft,url` shows `false` and the URL.
-6. Land it through the **pr-conversation** technique (`references/techniques/pr-conversation.md`) with a **light panel** (`references/techniques/panel.md`, Light panel).
+6. Land it through the **pr-conversation** technique (`references/techniques/pr-conversation.md`) with a **light panel** (`references/techniques/panel.md`, Light panel). When the deep-mode bot watches the repo, it runs steps 6 to 8; don't run a second conversation in the session.
    One verifier, from a different model family when one is available, must PASS with evidence at the exact head.
-   Done when that vote is PASS at the head SHA, the required checks are green, and the repo check (a base-branch `.deep-mode.json` `"check"`) exits 0 at that head.
+   Done when that vote is PASS at the head SHA, the required checks are green, and the repo check (a base-branch `.deep-mode.json` `"check"`) exits 0 at that head, or the repo sets none.
 7. Merge with `gh pr merge <n> --match-head-commit <sha>`. Done when `gh pr view <n> --json state` prints `MERGED`.
 8. Run the trunk check on the merge commit (pr-conversation step 8). Done when the repo check passes there, or a verifier passes it when no check is set, or a revert PR is open.
 

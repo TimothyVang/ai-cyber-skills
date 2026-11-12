@@ -18,7 +18,7 @@ Use when: something is slow or heavy and needs a one-off fix tied to a measureme
    Done when the fix is implemented and, for Size M, the self-review has no open P0/P1.
 4. Verify each attempt before trying the next (`references/principles/sequence-verifiable-units.md`). Capture a post-fix trace. Done when a post-fix artifact exists for the kept attempt.
 5. Parse and compare artifacts (JSON → sqlite, diff). Done when you have a baseline, post-fix, and delta number from the same harness.
-6. Cite the measurement in the hand-off (and the commit and PR description). Done when those numbers appear in the commit message and the PR body.
+6. Cite the measurement in the hand-off (and the commit and PR description). Done when those numbers are in the commit message and drafted for the PR body that step 7 opens.
 7. Commit, run **Opening a PR** (`references/playbooks/opening-a-pr.md`), which lands a single PR through **pr-conversation** on a panel pass; a stack lands through `references/playbooks/shipping.md`.
    Done when the PR is merged, or the stack is handed to Shipping.
 

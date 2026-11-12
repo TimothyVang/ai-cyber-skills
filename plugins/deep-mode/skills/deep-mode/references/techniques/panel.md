@@ -35,7 +35,7 @@ Run the steps above with these changes:
 - Step 4 passes only when that one verifier votes DONE (PASS in pr-conversation) with evidence you checked at the exact head.
 - Step 5 does not apply, since a pass has no dissent.
 
-The deep-mode bot (`references/techniques/github-app.md`) applies the light panel by itself when a PR's diff fits S.
+The deep-mode bot (`references/techniques/github-app.md`) applies the light panel by itself when a PR's diff fits S. It judges from size and paths only; a `full-panel` label on the PR gets the three-verifier panel for what paths can't show, such as input parsing at a trust boundary.
 
 ## Gates
 

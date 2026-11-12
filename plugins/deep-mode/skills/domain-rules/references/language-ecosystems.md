@@ -1,6 +1,6 @@
 # Language ecosystems
 
-Read when choosing a language or runtime, setting up a project's build, test, or debug tooling, or working in an unfamiliar language and needing its runtime model, concurrency model, and traps. The one-line pick-by-domain table is in `backend-system-design.md`; this file has the depth. Source keys are in `README.md`.
+Read when choosing a language or runtime, setting up a project's build, test, or debug tooling, or working in an unfamiliar language and needing its runtime model, concurrency model, and traps. The one-line pick-by-domain table is in `backend-system-design.md`; this file has the depth. Source keys are in this skill's `SKILL.md`.
 
 ## Runtime model at a glance
 

@@ -11,12 +11,12 @@ Read before designing or changing a project's shape: repo layout and workspace t
 
 | File | Read when |
 |---|---|
-| `monorepos.md` | Monorepo or not; `apps/` and `packages/` layout; pnpm, Turborepo, Nx, uv, Go, Cargo, Bazel; enforced boundaries; affected-only CI and caching; nested `AGENTS.md`; worktrees for parallel agents |
-| `ontology.md` | Naming the domain: glossary, bounded contexts, ADRs; one typed model (Pydantic, Zod, LinkML) feeding API, DB, and agent tools; RDF, OWL, SHACL; property graphs; semantic layers; Palantir-style ontology for agent actions; GraphRAG and agent memory |
-| `databases.md` | Choosing a database or extension, hosted free tiers and branching, schema and migrations in the repo, ORMs, zero-downtime migrations, tenancy and RLS, IDs, backups, and letting agents near a database safely |
-| `backend-infrastructure.md` | Monolith or services, reliability (timeouts, retries, idempotency, SLOs, health checks), queues and durable workflows, caching, API style and errors, OpenTelemetry, deployment and IaC, capacity and cost |
+| `references/monorepos.md` | Monorepo or not; `apps/` and `packages/` layout; pnpm, Turborepo, Nx, uv, Go, Cargo, Bazel; enforced boundaries; affected-only CI and caching; nested `AGENTS.md`; worktrees for parallel agents |
+| `references/ontology.md` | Naming the domain: glossary, bounded contexts, ADRs; one typed model (Pydantic, Zod, LinkML) feeding API, DB, and agent tools; RDF, OWL, SHACL; property graphs; semantic layers; Palantir-style ontology for agent actions; GraphRAG and agent memory |
+| `references/databases.md` | Choosing a database or extension, hosted free tiers and branching, schema and migrations in the repo, ORMs, zero-downtime migrations, tenancy and RLS, IDs, backups, and letting agents near a database safely |
+| `references/backend-infrastructure.md` | Monolith or services, reliability (timeouts, retries, idempotency, SLOs, health checks), queues and durable workflows, caching, API style and errors, OpenTelemetry, deployment and IaC, capacity and cost |
 
-These files build on `skill://domain-rules/references/backend-system-design.md` (API naming, indexing, cache and queue basics) and the `model-the-domain` principle. Where they disagree, these primary-source files win: for example, retries follow the AWS Builders' Library token-bucket advice rather than a circuit breaker on every call. Cloud security and pipelines stay in `skill://cloud-devsecops`; secrets and auth in `skill://secrets-and-auth`.
+These files build on `skill://domain-rules/references/backend-system-design.md` (API naming, indexing, cache and queue basics) and deep-mode's `model-the-domain` principle (`skill://deep-mode/references/principles/model-the-domain.md`). Where they disagree, these primary-source files win: for example, retries follow the AWS Builders' Library token-bucket advice rather than a circuit breaker on every call. Cloud security and pipelines stay in `skill://cloud-devsecops`; secrets and auth in `skill://secrets-and-auth`.
 
 ## Rules for the agent
 

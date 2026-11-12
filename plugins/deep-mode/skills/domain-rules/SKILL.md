@@ -11,13 +11,13 @@ Rules distilled from 161 public engineering explainer videos published in 2026, 
 
 | File | Read when |
 |---|---|
-| `agent-engineering.md` | Building, reviewing, or debugging an AI agent, harness, multi-agent system, MCP/WebMCP integration, or an agent instruction file |
-| `ai-concepts.md` | LLM fundamentals, RAG and retrieval, fine-tuning, inference cost and hardware, local models, model choice, AI terms |
-| `aws-networking.md` | AWS or VPC design, a cloud connectivity failure, IAM, cloud cost, or picking an AWS service |
-| `backend-system-design.md` | Backend code, API design, database choice or tuning, caching, queues, scaling, resilience, observability, security, language choice |
-| `language-ecosystems.md` | Runtime, memory, and concurrency model, build/test/debug tooling, and traps for C, C++, Rust, Go, Java, C#, Python, JS/TS, PHP, Ruby, Kotlin, Swift |
-| `devops-and-fundamentals.md` | Linux, CLI tools, git, Docker, Kubernetes, Terraform, CI/CD, deployment strategies, secrets, data structures and complexity, memory, floats, concurrency, network protocols |
-| `engineering-practice.md` | Unfamiliar codebase, stuck on an error, debugging slowness, memory, or races, legacy code, PR or commit text, incidents, estimates, pushing back |
+| `references/agent-engineering.md` | Building, reviewing, or debugging an AI agent, harness, multi-agent system, MCP/WebMCP integration, or an agent instruction file |
+| `references/ai-concepts.md` | LLM fundamentals, RAG and retrieval, fine-tuning, inference cost and hardware, local models, model choice, AI terms |
+| `references/aws-networking.md` | AWS or VPC design, a cloud connectivity failure, IAM, cloud cost, or picking an AWS service |
+| `references/backend-system-design.md` | Backend code, API design, database choice or tuning, caching, queues, scaling, resilience, observability, security, language choice |
+| `references/language-ecosystems.md` | Runtime, memory, and concurrency model, build/test/debug tooling, and traps for C, C++, Rust, Go, Java, C#, Python, JS/TS, PHP, Ruby, Kotlin, Swift |
+| `references/devops-and-fundamentals.md` | Linux, CLI tools, git, Docker, Kubernetes, Terraform, CI/CD, deployment strategies, secrets, data structures and complexity, memory, floats, concurrency, network protocols |
+| `references/engineering-practice.md` | Unfamiliar codebase, stuck on an error, debugging slowness, memory, or races, legacy code, PR or commit text, incidents, estimates, pushing back |
 
 Deep-mode's principles, gates, and playbooks win any conflict. These files supply domain rules, not process.
 

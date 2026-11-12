@@ -20,7 +20,7 @@ Stopping for later in this same repo is Pause safely (`references/playbooks/paus
    - **Start with:** the deep-mode route the next agent should take (playbook or technique names and paths), and the skills it should load.
    - Done when the file exists with all eight sections filled.
 4. Redact before saving: API keys, tokens, passwords, connection strings, private hostnames that matter for security, personal data about anyone. Replace each with `<redacted: what it was>` and say where the real value lives (`.env`, a secret manager). Scan the file for key-shaped strings (`sk-`, `ghp_`, `AKIA`, `-----BEGIN`, `password=`) before going on.
-   Done when that scan finds zero matches.
+   Done when every match of that scan is a `<redacted: ...>` placeholder.
 5. Decide where it lives. Next agent on this machine → leave the file untracked. Next agent elsewhere or a colleague → commit it to the working branch and push. Print its absolute path.
    Done when the absolute path is printed and, for a remote reader, the pushed branch contains the file.
 6. Launch, only when asked for a background or new agent. Pass the file, not pasted text, so the shell never expands `$` or backticks in it:

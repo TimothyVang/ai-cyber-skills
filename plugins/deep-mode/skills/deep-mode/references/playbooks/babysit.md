@@ -42,7 +42,7 @@ Use when: the user asks to babysit, get green, make merge-ready, address review 
     - Only a failure in the diff's own code gets a commit.
     - Done when every failing required check is classified flake, stale base, or diff-caused, with its action taken.
 11. Trust the forge's merge verdict, not a green check list. For a stack, capture the PR list bottom-to-top once and reuse that frozen list on every re-arm. If another actor merges the frontier, continue with the new frontier.
-    Done when the frontier's `mergeStateStatus` read live is `CLEAN` or every stack PR is merged.
+    Done when the frontier's `mergeStateStatus` read live is `CLEAN` or every stack PR is merged; in `check` mode, when that status is reported.
 12. Answer user questions mid-loop and continue; only an explicit stop ends `drive` early.
 13. At the stop, sweep the run's triage decisions once. Offer any team-useful dismissal pattern as a candidate entry for the repo's shared review-triage doc (its own PR); never keep it only in private memory.
     Done when the report lists each candidate pattern, or says there were none.

@@ -76,8 +76,13 @@ REPO_CHECK_MINUTES = 30  # time limit for the base branch's `check` command (.de
 # this many files, and no path that touches auth, secrets, permissions, migrations, CI, or agent config.
 LIGHT_PANEL_LINES, LIGHT_PANEL_FILES = 30, 2
 SENSITIVE_PATH = re.compile(r"auth|login|password|secret|credential|token|permission|security|migration|"
-                            r"(^|/)\.github/|(^|/)\.env|(^|/)\.(omp|claude|codex|agents|cursor)/|(^|/)agents\.md$|"
-                            r"(^|/)claude\.md$|mcp\.json$|(^|/)\.deep-mode\.json$", re.I)
+                            r"(^|/)\.github/|(^|/)\.gitlab-ci\.yml$|(^|/)jenkinsfile$|pipelines?\.ya?ml$|"
+                            r"(^|/)\.(circleci|buildkite|husky)/|(^|/)\.env|(^|/)\.(omp|claude|codex|agents|cursor|"
+                            r"gemini|windsurf|kiro|pi)/|(^|/)(agents|claude|gemini|skill)\.md$|(^|/)\.(cursor|windsurf|"
+                            r"cline)rules$|mcp\.json$|(^|/)\.deep-mode\.json$", re.I)
+# A label that asks for the full panel on a diff the bot would size S, for what paths can't show (a change to
+# input parsing at a trust boundary).
+FULL_PANEL_LABELS = frozenset({"full-panel"})
 LIST_LIMIT = 100_000  # open PRs or issues listed per repo per cycle: gh pages through all of them
 MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for a new push or comment
 MERGE_SETTLE = 60  # seconds a merge read-back polls for MERGED before calling the merge not done
@@ -808,8 +813,8 @@ def diff_size(numstat: str) -> dict:
     """Changed lines and files from `git diff --numstat`, and whether the diff is size S (a light panel): at most
     LIGHT_PANEL_LINES lines in LIGHT_PANEL_FILES files, no binary file, no SENSITIVE_PATH."""
     lines, files, small = 0, 0, True
-    for row in filter(str.strip, numstat.splitlines()):
-        added, deleted, path = row.split("\t", 2)
+    for row in filter(str.strip, numstat.split("\0")):  # `--numstat -z --no-renames`: a rename is a delete and an add
+        added, deleted, path = row.strip("\n").split("\t", 2)
         files += 1
         if not (added.isdigit() and deleted.isdigit()) or SENSITIVE_PATH.search(path.replace("\\", "/")):
             small = False
@@ -1443,12 +1448,17 @@ class PRConversation:
     def panel(self):
         self.require_own()  # verifiers run with --approve-all: the head must still be the owner's own work
         sha, configured = self.head, self.cfg["verifiers"]
-        size = diff_size(git(self.clone, "diff", "--numstat", f"origin/{self.base}...{sha}"))
-        # A size S diff gets a light panel: one verifier, from another model family than the author when one is
-        # configured. Everything else gets every configured verifier.
+        size = diff_size(git(self.clone, "diff", "--numstat", "-z", "--no-renames", f"origin/{self.base}...{sha}"))
+        if size["small"] and any((label.get("name") or "").lower() in FULL_PANEL_LABELS
+                                 for label in self.pr.get("labels") or []):
+            size["small"] = False
+        # A size S diff gets a light panel: one verifier, from another agent than the author's if one is configured,
+        # else another model. Everything else gets every configured verifier.
         if size["small"]:
-            other = [i for i, v in enumerate(configured) if v.get("model") != self.author.get("model")]
-            seats = (other or [0])[:1]
+            agent, model = self.author["agent"], self.author.get("model")
+            ranked = sorted(range(len(configured)), key=lambda i: (configured[i]["agent"] == agent,
+                                                                     configured[i].get("model") == model))
+            seats = ranked[:1]
         else:
             seats = list(range(len(configured)))
         verifiers = [configured[i] for i in seats]

@@ -21,4 +21,4 @@
 
 **Output:** caller usage sketch → type sketch (one file for small changes; module map + types for larger), plus a rationale: usage sketch, candidates considered, red-flag screen, synthesis decision.
 
-**Done when** the implemented code matches the agreed sketch and the rationale names every candidate considered.
+**Done when** the implemented code matches the agreed sketch, or every deviation is listed with its cause, and the rationale names every candidate considered.

@@ -13,13 +13,13 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 
 | File | Read when |
 |---|---|
-| `omp.md` | Running in omp, scripting `omp -p`, omp hooks, approval modes, `task` agents, `omp acp` |
-| `claude-code.md` | Running in Claude Code, `claude -p`, the Agent SDK, `.claude/` settings, hooks, permissions, plugins |
-| `codex.md` | Running in Codex CLI, IDE, app, or cloud; `codex exec`, `config.toml`, sandbox and approvals, plugins |
-| `protocols.md` | Building, configuring, testing, or securing MCP servers and clients; ACP; A2A; WebMCP |
-| `ai-native-tooling.md` | Portable `AGENTS.md` and Agent Skills, plugin and marketplace formats, other harnesses (Gemini, Antigravity, Cursor, Copilot, OpenCode, Amp, Goose, Zed, Devin, Kiro), browser automation, docs for agents, orchestrators |
-| `self-authoring.md` | Writing prompts, commands, or skills from inside a session; native goal and loop modes (`/goal`, `/loop`, ralph-loop, `/autoresearch`); headless loop flags and cost caps; skill spec and validation; self-modification risks |
-| `delegation-efficiency.md` | Whether to delegate; which model and effort per task type in omp, Claude Code, and Codex; current model line-ups and prices; subscription limits; caching and token-saving; spend caps |
+| `references/omp.md` | Running in omp, scripting `omp -p`, omp hooks, approval modes, `task` agents, `omp acp` |
+| `references/claude-code.md` | Running in Claude Code, `claude -p`, the Agent SDK, `.claude/` settings, hooks, permissions, plugins |
+| `references/codex.md` | Running in Codex CLI, IDE, app, or cloud; `codex exec`, `config.toml`, sandbox and approvals, plugins |
+| `references/protocols.md` | Building, configuring, testing, or securing MCP servers and clients; ACP; A2A; WebMCP |
+| `references/ai-native-tooling.md` | Portable `AGENTS.md` and Agent Skills, plugin and marketplace formats, other harnesses (Gemini, Antigravity, Cursor, Copilot, OpenCode, Amp, Goose, Zed, Devin, Kiro), browser automation, docs for agents, orchestrators |
+| `references/self-authoring.md` | Writing prompts, commands, or skills from inside a session; native goal and loop modes (`/goal`, `/loop`, ralph-loop, `/autoresearch`); headless loop flags and cost caps; skill spec and validation; self-modification risks |
+| `references/delegation-efficiency.md` | Whether to delegate; which model and effort per task type in omp, Claude Code, and Codex; current model line-ups and prices; subscription limits; caching and token-saving; spend caps |
 
 ## Cross-harness map
 

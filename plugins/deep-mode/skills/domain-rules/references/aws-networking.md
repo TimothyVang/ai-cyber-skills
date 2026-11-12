@@ -1,6 +1,6 @@
 # AWS networking and cloud
 
-Read when designing, changing, or debugging AWS infrastructure: VPCs, subnets, routing, gateways, firewalls, DNS, load balancers, cross-network links, IAM, cost, or picking an AWS service. Almost all of it is from AWS-NET; other source keys are marked. Keys are in `README.md`.
+Read when designing, changing, or debugging AWS infrastructure: VPCs, subnets, routing, gateways, firewalls, DNS, load balancers, cross-network links, IAM, cost, or picking an AWS service. Almost all of it is from AWS-NET; other source keys are marked. Keys are in this skill's `SKILL.md`.
 
 ## Debug a connection (do this first on any "can't connect")
 

@@ -8,12 +8,12 @@ Core discipline: one change, one measurement, keep or revert. Never stack untest
 1. Ground workload and architecture with the **how** technique (`references/techniques/how.md`): name the workload dimensions that move the result (data size, history, state, concurrency) and pick a case that reproduces the user's complaint.
    Done when the dimensions are listed and the chosen case is named.
 2. Fix one metric, the better direction, and a checkable stop predicate pairing a target with a minimum attempt count (e.g. "≥50% better than baseline and ≥10 iterations"). Use the user's numbers, else pick them yourself and log why.
-   Done when the metric, direction, and predicate are written in the decision log.
+   Done when the metric, direction, and predicate are written down; they become the first rows of the decision log (step 6).
 3. Build the harness (`references/principles/build-the-lever.md`): run contrasting realistic workloads; confirm the target case shows the symptom and easier cases separate. Can't distinguish → revise workload or metric.
    Done when harness output shows the target case's metric separated from the easier cases beyond noise.
 4. Vet the harness with the **benchmark-checklist** technique (`references/techniques/benchmark-checklist.md`); make it print its error count and a work-done count. Freeze it: one repeatable command, median of N samples to clear noise.
    Done when the frozen command prints zero errors, a nonzero work-done count, and a median.
-5. Record the baseline metric and a green run of the regression gate before any change. Done when both are logged in `decisions.tsv`.
+5. Record the baseline metric and a green run of the regression gate before any change. Done when both are written down with the commands that produced them; they go into `decisions.tsv` once step 6 creates it.
 6. Keep the decision log per the **show-me-your-work** technique (`references/techniques/show-me-your-work.md`): its gitignored `decisions.tsv` with header `ts\tphase\tdecision\twhy\tevidence\tresult`, plus metric columns after `result` (`before\tafter\tdelta\ttests`).
    One row per attempt: `decision` = hypothesis and change, `result` = kept/reverted. Read it before each attempt.
    Done when the file exists with that header and `git check-ignore` reports it ignored.

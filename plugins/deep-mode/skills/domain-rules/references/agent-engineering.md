@@ -1,6 +1,6 @@
 # Agent engineering
 
-Read when building, reviewing, or debugging an AI agent, agent harness, multi-agent system, MCP or WebMCP integration, or an agent instruction file (CLAUDE.md, AGENTS.md, a skill). AI vocabulary and inference mechanics are in `ai-concepts.md`. Source keys are in `README.md`.
+Read when building, reviewing, or debugging an AI agent, agent harness, multi-agent system, MCP or WebMCP integration, or an agent instruction file (CLAUDE.md, AGENTS.md, a skill). AI vocabulary and inference mechanics are in `ai-concepts.md`. Source keys are in this skill's `SKILL.md`.
 
 ## The model is not the agent
 

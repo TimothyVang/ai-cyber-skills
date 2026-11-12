@@ -28,8 +28,8 @@ SKILL_DIR = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SKILL_DIR / "assets" / "github-app"))
 import brand  # noqa: E402  (the repo that publishes the catalog)
 
-PUBLISHED = brand.BRAND["homepage"].replace("https://github.com/", "https://raw.githubusercontent.com/") \
-    + "/main/trending/catalog.json"
+PUBLISHED = f"https://raw.githubusercontent.com/{brand.BRAND['repo']}/main/trending/catalog.json" \
+    if brand.BRAND.get("repo") else None
 STALE_AFTER_DAYS = 1
 USER_AGENT = "deep-mode-trending (+https://github.com/TimothyVang/deep-mode)"
 WATCH_TOPICS = [
@@ -302,27 +302,29 @@ def is_stale(catalog) -> bool:
     return (catalog["updated"] or "") <= (today() - dt.timedelta(days=STALE_AFTER_DAYS)).isoformat()
 
 
-def fetch_published(out: Path) -> bool:
-    """Copy the published catalog into `out` when it is fresher than the local one. True when `out` is now fresh."""
+def fetch_published(out: Path, local) -> bool:
+    """Copy the published catalog into `out` when it is newer than the local copy, even if it is a day old itself:
+    an old catalog still beats none when a rebuild fails. True when `out` now holds a fresh catalog."""
+    if not PUBLISHED:
+        return False
     try:
         published = json.loads(fetch(PUBLISHED, None))
     except (urllib.error.URLError, OSError, ValueError) as err:
         print(f"warning: could not read the published catalog ({err})", file=sys.stderr)
         return False
-    if is_stale(published):
-        return False
-    out.mkdir(parents=True, exist_ok=True)
-    (out / "catalog.json").write_text(json.dumps(published, indent=1, ensure_ascii=False) + "\n", encoding="utf-8",
-                                      newline="\n")
-    (out / "README.md").write_text(render(published), encoding="utf-8", newline="\n")
-    return True
+    if (published.get("updated") or "") > (local["updated"] or ""):
+        out.mkdir(parents=True, exist_ok=True)
+        (out / "catalog.json").write_text(json.dumps(published, indent=1, ensure_ascii=False) + "\n",
+                                          encoding="utf-8", newline="\n")
+        (out / "README.md").write_text(render(published), encoding="utf-8", newline="\n")
+    return not is_stale(published)
 
 
 def find(args):
     out = args.out or project_cache()
     catalog_path = out / "catalog.json"
     catalog = load_catalog(catalog_path)
-    if not args.no_refresh and is_stale(catalog) and not fetch_published(out):
+    if not args.no_refresh and is_stale(catalog) and not fetch_published(out, catalog):
         print(f"catalog last updated {catalog['updated']}; rebuilding it (about a minute)", file=sys.stderr)
         try:
             update(argparse.Namespace(out=out))

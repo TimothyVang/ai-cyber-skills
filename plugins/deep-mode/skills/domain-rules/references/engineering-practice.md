@@ -1,6 +1,6 @@
 # Day-to-day engineering practice
 
-Read when entering an unfamiliar codebase, stuck on an error, debugging slowness, memory, or races, working in legacy code, writing a PR, commit, or status message, handling a production incident, estimating, or pushing back on scope. Most rules are from DEV-LIFE; other keys are marked. Tool and CS background is in `devops-and-fundamentals.md`. Keys are in `README.md`.
+Read when entering an unfamiliar codebase, stuck on an error, debugging slowness, memory, or races, working in legacy code, writing a PR, commit, or status message, handling a production incident, estimating, or pushing back on scope. Most rules are from DEV-LIFE; other keys are marked. Tool and CS background is in `devops-and-fundamentals.md`. Keys are in this skill's `SKILL.md`.
 
 ## Entering an unfamiliar codebase
 

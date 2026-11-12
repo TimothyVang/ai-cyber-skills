@@ -77,7 +77,7 @@ Work two tracks at once: the tactical one (land the next unit) and the strategic
    Done when about ten workers are in flight, or every remaining unit is running or done.
 8. When new work needs a worker's checkout, uncommitted changes, or running process, message that worker (`write agent://<id>`, which also revives it) or spawn a fresh worker pointed at its worktree/branch. There is no fork. Never message a worker just to check on it.
    Done when the tracker shows the new work under the worker holding that state, or under a fresh worker on its worktree.
-9. Give each PR a **panel** (`references/techniques/panel.md`): three verifiers that didn't author it, default `task` agents (they must run the app and prove behavior; `reviewer` is read-only and only reviews a diff), on different model families when available.
+9. Give each PR a **panel** (`references/techniques/panel.md`): three verifiers that didn't author it (one, the light panel, for a size S PR), default `task` agents (they must run the app and prove behavior; `reviewer` is read-only and only reviews a diff), on different model families when available.
    The owner merges only on a panel pass at the current head. That pass includes a pr-review round in PR mode on the current head with no P0/P1 open and every P2 fixed or dismissed with a reason; the review is evidence, never a substitute for the panel's live proof.
    Done when every merged PR has a panel pass and a pr-review line at its merge head in the tracker.
 10. Supervise by artifacts. Read the diff or artifact, not only the summary. Green CI is an input, not a verdict; behavioral work needs more than a type check. A new push needs a new verdict and a new pr-review round.
@@ -86,10 +86,10 @@ Work two tracks at once: the tactical one (land the next unit) and the strategic
 11. Send back work that drifts from scope or grows past the ask; keep only fixes that block the program, park the rest as follow-ups.
     Done when every out-of-scope change is out of its PR or parked as a follow-up in the tracker.
 12. Check live PR state before reporting it: `gh pr view <pr>` and `gh pr checks <pr>`, not a worker's last report. Account for every spawned worker as done, replaced, or absorbed.
-    Done when every PR you report matches this tick's `gh pr view` and `gh pr checks`, and every spawned worker is marked done, replaced, or absorbed.
+    Done when every PR you report matches a `gh pr view` and `gh pr checks` run just before the report, and every spawned worker is marked done, replaced, or absorbed.
 13. Stop or replace a worker that stalls or loops, judged by pushes and PR activity, not status text. Retry by cause: smaller scope after a context limit, same kickoff after a dropped connection, a different model after a tool error. After two retries, drop the unit and replan around it.
     A stopped worker that returns late: check its result against the PR's current state and hand unique findings to a fresh worker.
-    Done when no running worker has gone a full tick without a push or PR activity, and no unit has had a third retry.
+    Done when no running worker has gone an hour, or the interval you set for it, without a push or PR activity, and no unit has had a third retry.
 14. Strategic track. Before each new unit, ask what change to the environment would make it and later units go right by default, and hand that to a worker as its own unit.
     Candidates: narrower interfaces, a lint rule, type, or test (**correct**), a pre-commit hook (`references/techniques/pre-commit.md`), a git guard (`references/techniques/git-guardrails.md`), a `CODING_STANDARDS.md` rule the reviewer enforces, or data the agents lack (dev-server logs teed to a file, a test database, browser access).
     No workarounds. A deviation from the repo's conventions gets fixed before more feature work lands on top of it.
@@ -105,7 +105,7 @@ Work two tracks at once: the tactical one (land the next unit) and the strategic
 ## Gates
 
 Both scales:
-- Stop only when the predicate is met, or on a genuine dead end (surface it rather than spin).
+- Stop only when the completion predicate is met (session scale step 1; at program scale, the goal's acceptance criteria), or on a genuine dead end (surface it rather than spin).
 - Never relax the predicate to declare victory.
 - Don't park reversible work for the human or use `ask`. Decide product and design calls yourself and log them (SKILL.md Autonomy). Surface only irreversible actions outside the grant, what only the user can supply, or a real dead end.
 - Push and open PRs as the work needs. Merges need a panel pass and go through `references/playbooks/shipping.md`.

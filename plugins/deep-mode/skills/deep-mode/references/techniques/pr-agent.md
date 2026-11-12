@@ -29,7 +29,7 @@ It also refuses omp's auth-broker mode, or a broker setting it can't read, since
 4. **Feed the panel.** Give the review text to the panel's verifiers (`references/techniques/panel.md`) as one more input. PR-Agent never votes, and its approval is not a verdict.
    Done when every verifier brief holds the review text.
 
-**Done when** describe, review, and improve have run on the PR's current head and every finding has a triage outcome.
+**Done when** describe, review, and improve have run on the PR's current head and every finding has a triage outcome, or omp is missing and pr-review ran in its place.
 
 ## Limits
 

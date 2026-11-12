@@ -155,7 +155,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <img src="images/how-it-works.svg" width="1200" height="650" alt="Diagram: on GitHub, your private app deep-mode-login, PR and issue threads, and branches and checks. On your machine, the config directory, bot.py watch, your gh and git, and acpx connecting an author agent and a reviewer agent, omp by default.">
 </figure>
 <h3>The PR conversation</h3>
-<p>The coordinator posts a kickoff. When the branch conflicts with its base, the author agent merges the base into the head and pushes; it never rebases or force-pushes. The reviewer agent returns findings as JSON with evidence. The author fixes each one or dismisses it with proof. They repeat until no P0 or P1 is open, for at most three rounds, and an owner's <code>@deep-mode continue</code> starts more. Then three verifier agents, each in its own worktree at the final head, vote PASS or FAIL. Two PASS votes are needed.</p>
+<p>The coordinator posts a kickoff. When the branch conflicts with its base, the author agent merges the base into the head and pushes; it never rebases or force-pushes. The reviewer agent returns findings as JSON with evidence. The author fixes each one or dismisses it with proof. They repeat until no P0 or P1 is open, for at most three rounds, and an owner's <code>@deep-mode continue</code> starts more. Then the repo's own check runs (its <code>.deep-mode.json</code> <code>check</code> command), and three verifier agents, each in its own worktree at the final head, vote PASS or FAIL. Two PASS votes are needed; a small change (at most 30 lines in 2 files, nothing security-sensitive) gets one verifier, who must pass it.</p>
 <figure>
 <img src="images/pr-conversation.svg" width="1200" height="940" alt="Sequence diagram of the PR conversation: kickoff, conflict merge, review and answer rounds over ACP mirrored to the thread, a three-verifier panel, and the merge gate checks before a squash merge.">
 </figure>
@@ -243,7 +243,7 @@ py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre
 <h3>What is deep-mode?</h3>
 <p>deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel.</p>
 <h3>How do the deep-mode PR bots work?</h3>
-<p>A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote, and a gate in code merges your own PR at the voted head.</p>
+<p>A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. The repo's check command runs, verifiers vote (three, or one for a small change), and a gate in code merges your own PR at the voted head.</p>
 <h3>Does deep-mode need an API key?</h3>
 <p>No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage.</p>
 <h3>Which agents and harnesses does deep-mode work with?</h3>
