@@ -1447,6 +1447,11 @@ class AskTest(unittest.TestCase):
             self.ask(finished(3, "half a plan about PERMISSION_DENIED\n",
                               "[acpx] error: TIMEOUT QUEUE_RUNTIME_PROMPT_FAILED Timed out after 3600000ms"))
 
+    def test_a_marker_line_in_the_reply_is_not_acpx(self):
+        # acpx writes its error lines to stderr; the same text on stdout is the agent's reply, cut short here.
+        with self.assertRaisesRegex(RuntimeError, "exit 5"):
+            self.ask(finished(5, "partial plan\n[acpx] error: PERMISSION_DENIED Permission request denied\n", ""))
+
 
 class FakeScheduler:
     """Stands in for bot.run: one Task Scheduler task that schtasks /Create, /Query and /Delete act on."""
@@ -1502,8 +1507,8 @@ class WindowsAutostartTest(unittest.TestCase):
         self.assertEqual(kind, "startup-folder")
         self.assertIn("Access is denied", said)  # the reason for the fallback is shown
         text = self.launcher.read_text(encoding="utf-8")
-        self.assertIn('"C:\\py\\pythonw.exe" "C:\\app\\bot.py" "watch"', text)
-        self.assertIn(f'"{self.logs / "watch.log"}"', text)
+        for part in [*self.COMMAND, str(self.logs / "watch.log")]:
+            self.assertIn(part, text)  # the real run is test_launcher_starts_the_command_and_logs_its_output
         self.assertEqual(bot.windows_autostart(), ["startup-folder"])
 
     def test_missing_schtasks_falls_back_too(self):
@@ -1543,11 +1548,20 @@ class WindowsAutostartTest(unittest.TestCase):
         self.assertIn("Access is denied", left[0])
         self.assertEqual(bot.windows_autostart(), ["schtasks"])
 
+    def test_uninstall_does_not_report_a_task_it_could_not_check_as_removed(self):
+        self.scheduler(task=True, missing=True)  # schtasks missing or hung: neither /Delete nor /Query ran
+        left = bot.uninstall_windows_autostart()
+        self.assertEqual(len(left), 1)
+        self.assertIn("not checked", left[0])
+        self.assertIn("schtasks not found", left[0])
+
     @unittest.skipUnless(os.name == "nt", "runs a real .cmd launcher")
     def test_launcher_starts_the_command_and_logs_its_output(self):
-        # cmd parses the launcher twice, so the paths carry what breaks batch files: a space, %, &, ( ) and non-ASCII.
-        with tempfile.TemporaryDirectory(prefix="auto 100% é & (x) ", ignore_cleanup_errors=True) as tmp:
-            stub, log_file, launcher = Path(tmp) / "stub.py", Path(tmp) / "watch.log", Path(tmp) / "launcher.cmd"
+        # cmd parses the launcher twice, so the paths carry what breaks batch files: a space, %, a defined %NAME%,
+        # &, ( ), ! and non-ASCII. The launcher sits elsewhere: the cmd /c that starts it would expand its path.
+        with tempfile.TemporaryDirectory(prefix="auto 100% %USERNAME% é & (x) ! ", ignore_cleanup_errors=True) as tmp, \
+                tempfile.TemporaryDirectory() as plain:
+            stub, log_file, launcher = Path(tmp) / "stub.py", Path(tmp) / "watch.log", Path(plain) / "launcher.cmd"
             stub.write_text("import sys\nprint('stub ran', sys.argv[1:], flush=True)\nraise RuntimeError('stub boom')\n",
                             encoding="utf-8")
             bot.write_launcher(launcher, [bot.autostart_command()[0], str(stub), "watch"], log_file)

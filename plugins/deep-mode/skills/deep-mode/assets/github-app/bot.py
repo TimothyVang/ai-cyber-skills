@@ -1027,7 +1027,8 @@ class Item:
         # A read-only role that tried a denied tool (e.g. running tests) still answered. acpx reports that once
         # the turn has ended and the whole reply is on stdout: a non-zero exit (5 in acpx 0.22) whose only error
         # line is PERMISSION_DENIED. Any other error line means the turn was cut short and the reply is partial.
-        errors = [line for line in (proc.stdout + "\n" + proc.stderr).splitlines() if line.startswith("[acpx] error")]
+        # acpx writes its error lines to stderr; one on stdout is the agent's text, so it never counts.
+        errors = [line for line in proc.stderr.splitlines() if line.startswith("[acpx] error")]
         denied = (perms == "--approve-reads" and bool(errors)
                   and all(line.startswith("[acpx] error: PERMISSION_DENIED") for line in errors))
         if (proc.returncode and not denied) or not reply:
@@ -2466,28 +2467,34 @@ def startup_launcher() -> Path:
 def write_launcher(launcher: Path, command: list, log_file: Path) -> None:
     """Write the .cmd that runs `command` in a minimized window of its own and appends its output to `log_file`.
     The window is the cmd that holds the redirect; `start` passes none to the program it launches.
-    The file is UTF-8, so it switches the code page first. The inner command line is one string whose outer
-    quotes and redirects are caret-escaped; that keeps every path inside quotes each time cmd parses it, so
-    only `%` needs doubling."""
-    quoted = " ".join(f'"{part}"' for part in command)
-    line = f'start "{TASK_NAME}" /min cmd /s /c ^"{quoted} ^>^> "{log_file}" 2^>^&1^"'.replace("%", "%%")
+    The file is UTF-8, so it switches the code page first. cmd parses the start line twice, and the second
+    parse, in the new window, expands any %NAME% that is defined, which no escape inside quotes prevents. So
+    the paths go into variables, set here where doubling `%` is the only escape, and the new window reads them
+    with delayed expansion (`/v:on`), whose values are never parsed again. Its outer quotes and redirects are
+    caret-escaped, so they belong to the new window, not to this file."""
+    values = [*command, log_file]
+    sets = [f'set "BOT_LAUNCH_{i}={value}"'.replace("%", "%%") for i, value in enumerate(values)]
+    args = " ".join(f'"!BOT_LAUNCH_{i}!"' for i in range(len(command)))
+    line = (f'start "{TASK_NAME}" /min cmd /v:on /s /c ^"{args} ^>^> "!BOT_LAUNCH_{len(command)}!" 2^>^&1^"'
+            .replace("%", "%%"))
     launcher.parent.mkdir(parents=True, exist_ok=True)
-    launcher.write_bytes("\r\n".join(["@echo off", "chcp 65001 >nul", line, ""]).encode("utf-8"))
+    launcher.write_bytes("\r\n".join(["@echo off", "chcp 65001 >nul", "setlocal DisableDelayedExpansion",
+                                      *sets, line, ""]).encode("utf-8"))
 
 
 def schtasks(*args) -> tuple:
-    """One schtasks call as (ok, detail). A missing or hung schtasks is a failure, not an exception, so `status`
-    never raises here."""
+    """One schtasks call as (exit code, detail); the code is None when schtasks could not run (missing or hung).
+    That is a result, not an exception, so `status` never raises here."""
     try:
         proc = run(["schtasks", *args], check=False, timeout=60)
     except (OSError, subprocess.SubprocessError) as err:
-        return False, str(err)
-    return proc.returncode == 0, (proc.stderr or proc.stdout).strip()[-400:]
+        return None, str(err)
+    return proc.returncode, (proc.stderr or proc.stdout).strip()[-400:]
 
 
 def windows_autostart() -> list:
     """The Windows autostart entries present now, the Task Scheduler task first."""
-    kinds = ["schtasks"] if schtasks("/Query", "/TN", TASK_NAME)[0] else []
+    kinds = ["schtasks"] if schtasks("/Query", "/TN", TASK_NAME)[0] == 0 else []
     return kinds + (["startup-folder"] if startup_launcher().is_file() else [])
 
 
@@ -2496,9 +2503,9 @@ def install_windows_autostart(command: list) -> tuple:
     elevated terminal on most machines, so any failure there falls back to a launcher in the user's Startup
     folder, which needs no admin rights. A reinstall tries the task again and then drops the launcher."""
     launcher = startup_launcher()
-    ok, detail = schtasks("/Create", "/TN", TASK_NAME, "/TR", subprocess.list2cmdline(command),
-                          "/SC", "ONLOGON", "/IT", "/F")
-    if ok:
+    code, detail = schtasks("/Create", "/TN", TASK_NAME, "/TR", subprocess.list2cmdline(command),
+                            "/SC", "ONLOGON", "/IT", "/F")
+    if code == 0:
         launcher.unlink(missing_ok=True)
         return "schtasks", f"Task Scheduler task {TASK_NAME}"
     try:
@@ -2511,17 +2518,24 @@ def install_windows_autostart(command: list) -> tuple:
 
 
 def uninstall_windows_autostart() -> list:
-    """Remove the task and the launcher; returns one line for each entry that is still there, with the reason."""
+    """Remove the task and the launcher; returns one line for each entry that is still there, with the reason.
+    A task that neither /Delete removed nor /Query could check (schtasks missing or hung) counts as still there."""
     launcher = startup_launcher()
-    _, task_error = schtasks("/Delete", "/TN", TASK_NAME, "/F")
+    deleted, task_error = schtasks("/Delete", "/TN", TASK_NAME, "/F")
     try:
         launcher.unlink(missing_ok=True)
         launcher_error = ""
     except OSError as err:
         launcher_error = str(err)
-    left = {"schtasks": f"Task Scheduler task {TASK_NAME}: {task_error}",
-            "startup-folder": f"Startup-folder launcher {launcher}: {launcher_error}"}
-    return [left[kind] for kind in windows_autostart()]
+    queried, query_error = schtasks("/Query", "/TN", TASK_NAME)
+    left = []
+    if queried == 0:
+        left.append(f"Task Scheduler task {TASK_NAME}: {task_error}")
+    elif queried is None and deleted != 0:
+        left.append(f"Task Scheduler task {TASK_NAME}, not checked: {task_error}; {query_error}")
+    if launcher.is_file():
+        left.append(f"Startup-folder launcher {launcher}: {launcher_error}")
+    return left
 
 
 def autostart_kind() -> str:
