@@ -28,7 +28,9 @@ Claim comment format (posted on an issue):
 A claim is active if it is the newest claim comment on an open issue, its
 Expires date is today (UTC) or later, and no newer comment from the same author
 contains <!-- deep-mode:unclaim -->. An issue assignee also counts as a claim
-with unknown files: it never overlaps by file, only by issue.
+with unknown files: it never overlaps by file, only by issue. An assignee who
+posted a claim comment on the issue counts only through that comment: once it
+expires or is released, the assignment stops counting too.
 """
 
 from __future__ import annotations
@@ -311,16 +313,18 @@ def fetch_active_claims(repo: str) -> list[Claim]:
     for number, issue in issues.items():
         title = issue.get("title") or ""
         url = issue.get("html_url") or ""
-        found = None
-        if number in comments_by_issue:
-            found = active_claim_from_comments(comments_by_issue[number], today)
+        comments = comments_by_issue.get(number, [])
+        found = active_claim_from_comments(comments, today)
         if found:
             claims.append(Claim(number, title, url, found["author"], "comment",
                                 found["plan"], found["files"], found["expires"]))
             continue
+        # Claimants self-assign. A claim that expired or was released must not live on as an assignee claim.
+        lapsed = {_login(c.get("user")).lower() for c in comments if CLAIM_MARKER in (c.get("body") or "")}
         assignees = [_login(a) for a in issue.get("assignees") or [] if _login(a)]
         if not assignees and _login(issue.get("assignee")):
             assignees = [_login(issue.get("assignee"))]
+        assignees = [a for a in assignees if a.lower() not in lapsed]
         if assignees:
             claims.append(Claim(number, title, url, ", ".join(assignees), "assignee"))
     claims.sort(key=lambda c: c.issue)

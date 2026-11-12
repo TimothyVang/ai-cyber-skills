@@ -28,7 +28,7 @@ Known gaps:
 - The wizard template has not run under macOS's default bash 3.2 (#40).
 - The git-guardrails hooks have unit-style checks (`git-guard.sh --check`) but no recorded live run inside omp or Claude Code (#41, #42).
 - The tracker technique documents GitHub and local trackers in full; GitLab falls under "other" with no exact commands (#43).
-- `check_skill.py` reports one false positive (#44), and the overlap script has no tests (#45).
+- `check_skill.py` reports five false positives (#44), and the overlap script's path and claim-parsing functions have no tests (#45).
 
 The bots are building some fixes themselves right now (open issues #21, #27, #29, #30, #37). Those are not open to claim.
 
@@ -65,7 +65,7 @@ A harness loads `SKILL.md`, which routes a task to one playbook. The playbook ci
 
 ## Run and verify
 
-Every command below ran on Windows 11 with Python 3.13 and Git Bash at commit `ffd987c`, with the result shown.
+Every command below ran on Windows 11 with Python 3.13 and Git Bash at commit `ffd987c`, with the result shown. The test and check block ran again, top to bottom from the repo root, at `7285779`.
 
 Setup:
 
@@ -84,9 +84,9 @@ Test and check (run these before every PR; there is no CI):
 
 ```bash
 py -3 scripts/check.py                     # prints OK
-cd plugins/deep-mode/skills/deep-mode/assets/github-app && py -3 test_bot.py   # Ran 40 tests ... OK
+py -3 plugins/deep-mode/skills/deep-mode/assets/github-app/test_bot.py   # Ran 63 tests ... OK
 py -3 plugins/deep-mode/skills/deep-mode/scripts/check_skill.py plugins/deep-mode/skills/*
-#   prints 1 problem: references/frontend/README.md cites another repo's script (#44)
+#   prints 5 problems, exit 1: each path exists in another skill or at the repo root (#44)
 bash plugins/deep-mode/skills/deep-mode/assets/git-guardrails/git-guard.sh --check 'git reset --hard'
 #   prints the block reason, exit 2
 py -3 plugins/deep-mode/skills/deep-mode/assets/github-app/bot.py --help   # lists once, watch, status, install-autostart, uninstall-autostart

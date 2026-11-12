@@ -5,6 +5,8 @@ _Generated from GitHub Issues by sync-roadmap.py. Edit issues, not this file._
 
 Tasks are open issues in `TimothyVang/deep-mode` labeled `help wanted`. Claim one with `/deep-mode:contribute` or by commenting on the issue.
 
+This file is a snapshot from the maintainer's last sync, so a task may have been claimed since. The live list: [open `help wanted` issues](https://github.com/TimothyVang/deep-mode/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22).
+
 ## Open to claim
 
 | Issue | Title | Labels | Claimed by | Files |

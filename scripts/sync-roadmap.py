@@ -9,7 +9,9 @@ Sections:
 Claim rule (shared with pr-overlap.py): the newest comment containing
 `<!-- deep-mode:claim -->` on an open issue is active if its `Expires:` date
 is today or later and no newer comment from the same author contains
-`<!-- deep-mode:unclaim -->`. An assignee also counts as a claim (files unknown).
+`<!-- deep-mode:unclaim -->`. An assignee also counts as a claim (files unknown),
+unless they posted a claim comment on the issue: then only that comment counts,
+and an expired or released one frees the issue.
 
 Output is deterministic for the same GitHub data and date: no timestamps,
 rows sorted by issue number, labels sorted.
@@ -32,6 +34,7 @@ import tempfile
 from typing import Any
 
 LABEL = "help wanted"
+LIVE_QUERY = "is%3Aissue+is%3Aopen+label%3A%22" + LABEL.replace(" ", "+") + "%22"
 CLAIM_MARKER = "<!-- deep-mode:claim -->"
 UNCLAIM_MARKER = "<!-- deep-mode:unclaim -->"
 HEADER = "Generated from GitHub Issues by sync-roadmap.py. Edit issues, not this file."
@@ -165,13 +168,12 @@ def collect(repo: str, today: dt.date) -> list[dict[str, Any]]:
     for issue in issues:
         n = issue["number"]
         assignees = sorted({(a or {}).get("login", "") for a in issue.get("assignees") or []} - {""})
-        claim = None
-        if issue.get("comments", 0):
-            claim = active_claim(gh_api(f"repos/{repo}/issues/{n}/comments?per_page=100"), today)
-        claimants = []
-        if claim:
-            claimants.append(claim["author"])
-        claimants += [a for a in assignees if a not in claimants]
+        comments = gh_api(f"repos/{repo}/issues/{n}/comments?per_page=100") if issue.get("comments", 0) else []
+        claim = active_claim(comments, today)
+        claimants = [claim["author"]] if claim else []
+        # Claimants self-assign. A claim that expired or was released must not live on as an assignee claim.
+        lapsed = {((c.get("user") or {}).get("login") or "").lower() for c in comments if CLAIM_MARKER in (c.get("body") or "")}
+        claimants += [a for a in assignees if a not in claimants and a.lower() not in lapsed]
         prs_for = sorted(in_review.get(n, []), key=lambda p: p["number"])
         if prs_for:
             section = "review"
@@ -202,6 +204,9 @@ def render(repo: str, rows: list[dict[str, Any]]) -> str:
         "",
         f"Tasks are open issues in `{repo}` labeled `{LABEL}`. "
         "Claim one with `/deep-mode:contribute` or by commenting on the issue.",
+        "",
+        "This file is a snapshot from the maintainer's last sync, so a task may have been claimed since. "
+        f"The live list: [open `{LABEL}` issues](https://github.com/{repo}/issues?q={LIVE_QUERY}).",
         "",
     ]
     sections = [
