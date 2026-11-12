@@ -48,4 +48,4 @@ Merge only on a deep-mode panel pass at the PR's exact head (`skill://deep-mode/
 
 ## Checks in this repo
 
-Replace this section with the repo's commands (typecheck, lint, test, build) and what each proves. Keep generated evidence in a gitignored `.artifacts/` directory.
+Replace this section with the repo's commands (typecheck, lint, test, build) and what each proves. Keep generated evidence in the self-ignored `.scratch/evidence/` directory.

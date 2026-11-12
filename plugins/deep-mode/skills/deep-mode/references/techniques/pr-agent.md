@@ -10,7 +10,7 @@ It also refuses omp's auth-broker mode, or a broker setting it can't read, since
 
 **After each call** the reply must name that provider and one of its OAuth credential ids. Any other credential discards the reply and stops the run. Model calls run one at a time, so a source the first check missed can cost at most one call.
 
-1. **Check the tools:** `omp` logged in to a subscription, `gh` logged in, `uvx` on PATH. A missing login is a hard stop for the user (`omp` → `/login`, `gh auth login`).
+1. **Check the tools:** `omp` logged in to a subscription, `gh` logged in, `uvx` on PATH. A missing login is a hard stop for the user (`omp` → `/login`, `gh auth login`). No `omp` on the machine (a Claude Code or Codex only setup) → this technique can't run: say so, and review the PR with the **pr-review** technique (`references/techniques/pr-review.md`) in PR mode, which runs on any harness.
 2. **Run the three commands** on the PR, in order, from any directory:
    ```bash
    python <deep-mode skill dir>/assets/pr-agent/pr_agent_local.py <pr-url> describe

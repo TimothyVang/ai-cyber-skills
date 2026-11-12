@@ -20,14 +20,14 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | Piece | What it does |
 |---|---|
 | `/deep <anything>` | The one command. It reads your request and the repo, routes it (fix, feature, review a PR, write a spec, cut tickets, drive a board, run a factory, chart a big effort, grill a plan, contribute to a project, start a new app and pick its stack), sizes it (fast path for small jobs, full playbook for big ones), proves the result on the real app, lands it on a 3-agent panel pass, and reports what it decided. |
-| `deep-mode` skill | 32 playbooks, 24 principles and 43 techniques, listed below. Every task is proven on the real artifact and merges only on a verifier panel pass. |
+| `deep-mode` skill | 33 playbooks, 24 principles and 43 techniques, indexed in its `SKILL.md`. Every task is proven on the real artifact and merges only on a verifier panel pass. |
 | PR and issue bots | Install your own private GitHub App on your repos and a poller on your machine runs the bots: it reviews and lands your own PRs, resolves their merge conflicts, and plans and builds the issues you open. See [GitHub App bots](#github-app-bots). |
 | PR review | `/deep-mode:review-pr <PR number>` reviews a PR with your own agent and parallel reviewer subagents through correctness, security, spec and standards lenses, keeps only findings a code read or run proves, posts one comment-only review, and re-reviews new commits until clean. No outside review service; code stays where the agent runs. |
-| Land a PR | `/deep-mode:land-pr <PR number>` finishes and merges your own PR with no human: a reviewer bot posts findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. It never merges over a failing check. |
+| Land a PR | `/deep-mode:land-pr <PR number>` finishes and merges your own PR with no human: a reviewer bot posts findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. It never merges over a failing check. You see each turn in the session as it lands, drawn as an 8-bit frame right in the chat (each bot a sprite, each turn a dialog box), or watch the whole conversation play live as an 8-bit battle screen in your terminal; `/deep-mode:pr-thread <PR or issue URL>` shows any bot conversation later. |
 | `deep-stack` skill | Stack picks and a ship loop: a default software stack and the decision rules behind it for any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), an agent-driven UI design workflow, and a per-task loop of worktree, build, recorded evidence and reviewed PR. |
 | Verification skills | `create-verification-skill` builds a per-repo `verify-<app>` skill (a control CLI plus a feature map) so agents can drive your app and capture proof. `maintain-verification-skill` keeps it accurate as the app changes. |
 | `project-brief` and `contribute` | A maintainer publishes a newcomer brief, claimable tasks as issues, a roadmap and templates. A contributor's agent finds an unclaimed task that doesn't overlap open PRs, claims it, builds it through deep-mode, and opens a PR. |
-| Trending catalog | `scripts/trending.py` keeps a digest of new and trending repos that deep-mode searches before building anything. |
+| Trending catalog | `plugins/deep-mode/skills/deep-mode/scripts/trending.py` keeps a digest of new and trending repos that deep-mode searches before building anything. |
 | Harness references | Cited, dated guides (checked 2026-11-11) for using omp, Claude Code, and Codex, the MCP, ACP, A2A, and WebMCP protocols, and portable AI-native conventions (`AGENTS.md`, Agent Skills, plugin marketplaces). A cross-harness map translates every omp tool and path deep-mode names into Claude Code and Codex. In `plugins/deep-mode/skills/deep-mode/references/harnesses/`. |
 | Contained work | The agent works only inside the project's repo. Scratch and temp files go in `.scratch/`, worktrees in `.worktrees/` (both git-ignored), never system temp or folders outside the repo. With no repo it creates a named one first. A guard enforces this in Claude Code and omp; Codex's sandbox does it natively. |
 | Credentials and auth | Cited, free-first guidance (checked 2026-11-11) for sharing API keys and `.env` safely, passwords and usernames, logins and MFA for agents, credential brokers, protecting MCP servers and agent APIs, CI OIDC, secret scanning, and leak response. In `plugins/deep-mode/skills/deep-mode/references/credentials/`. |
@@ -71,6 +71,7 @@ Around the main line:
 - **git-guardrails:** Turns the git hard stops into a hook the harness enforces before a destructive command runs.
 - **deep-stack:** Stack picks and decision rules for any app, an agent-driven UI design workflow, and a per-task ship loop.
 - **Verification skills:** Build and maintain a per-repo `verify-<app>` skill so agents can drive your app and capture proof.
+- **Self-authoring:** Writes, validates and proves a reusable prompt, skill, goal or loop, and runs a goal unattended until its check passes.
 
 ## Install
 
@@ -98,7 +99,7 @@ Optional: append `agents-snippet.md` to `~/.omp/agent/AGENTS.md`. It routes larg
 /plugin install deep-mode@deep-mode
 ```
 
-Once any `/deep-mode:` command runs in a session, the plugin's hook denies `Write`, `Edit`, and `NotebookEdit` outside the project for the rest of that session. Your other sessions are untouched. It needs `python` or `python3` on `PATH`.
+Once any `/deep-mode:` command runs in a session, the plugin's hook denies `Write`, `Edit`, and `NotebookEdit` outside the project for the rest of that session. Your other sessions are untouched. It needs Python 3.8 or newer (`python3` or `python`) on `PATH`: without it the guard cannot check paths, so it denies those three tools in a deep-mode session until Python is installed.
 
 The skills name omp tools (`task`, `todo`, `ask`). `plugins/deep-mode/skills/deep-mode/references/harnesses/README.md` maps them: `Agent`, `TaskCreate` or `TodoWrite`, and `AskUserQuestion`.
 
@@ -134,6 +135,8 @@ For one run only, pass `--hook <path to omp-contain.ts>` instead. To let the age
 
 ## Use it
 
+The examples use the bare `/deep`. With a plugin install, type `/deep-mode:deep` in omp and Claude Code, or `$deep-mode:deep-mode` in Codex.
+
 ```text
 /deep the coupon total is wrong. fix it
 /deep add CSV export to the reports page
@@ -149,7 +152,7 @@ For one run only, pass `--hook <path to omp-contain.ts>` instead. To let the age
 - Small jobs take the fast path. Big ones get the full playbook, subagents, and a decision log.
 - It decides and acts without asking: commits, pushes, PRs, board cards, and merges after a panel pass. It asks once at the end only for hard stops (deploys, deletions, shared-history rewrites, outside messages, money, secrets), and lists every decision it made so you can reverse any.
 - On a new repo, medium and large jobs first build a `verify-<app>` skill so the agent can prove changes. Later runs reuse it.
-- The direct commands still work: `/deep-mode:review-pr`, `/deep-mode:land-pr`, `/deep-mode:contribute`, `/deep-mode:project-brief`.
+- The direct commands still work: `/deep-mode:review-pr`, `/deep-mode:land-pr`, `/deep-mode:pr-thread`, `/deep-mode:contribute`, `/deep-mode:project-brief`.
 
 ## GitHub App bots
 

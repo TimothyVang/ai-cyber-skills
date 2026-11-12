@@ -6,6 +6,7 @@
 #   audit-pr.sh <pr-number>            audit the PR, post or update its comment, exit 1 to block
 #   audit-pr.sh --range <base> <head>  audit a local range, print the verdict, post nothing
 #   add --dry-run to stop after preparing the diff and prompt (no model call)
+# Exit 2: the audit cannot run on this machine (native Windows, or no claude CLI). That is not a pass.
 #
 # Trust: prompt.md and gate.cjs come from this skill install, never from the PR. Accepted
 # findings come from the base branch's .deep-mode/security-audit-accepted.txt, so a PR can't
@@ -31,6 +32,19 @@ else
   PR="${1:?usage: audit-pr.sh <pr-number> | --range <base> <head> [--dry-run]}"; shift
 fi
 [ "${1:-}" = "--dry-run" ] && DRY_RUN=true
+
+# The pinned skill's validators open their input with O_NOFOLLOW and O_NONBLOCK, which Windows doesn't have, so
+# on Git for Windows the gate could only fail closed after the model budget was spent. Stop first.
+case "$(uname -s)" in
+  MINGW*|MSYS*|CYGWIN*)
+    echo "audit-pr.sh can't run on native Windows: the pinned security-audit validators need POSIX file flags." >&2
+    echo "Run it from WSL, Linux, or macOS. This is not a pass." >&2
+    exit 2 ;;
+esac
+if ! $DRY_RUN && ! command -v claude >/dev/null 2>&1; then
+  echo "audit-pr.sh needs the claude CLI for its locked-down audit run, and it isn't on PATH. This is not a pass." >&2
+  exit 2
+fi
 
 T="$(mktemp -d)"
 cleanup() { git worktree remove --force "$T/target" >/dev/null 2>&1 || true; rm -rf "$T"; }
