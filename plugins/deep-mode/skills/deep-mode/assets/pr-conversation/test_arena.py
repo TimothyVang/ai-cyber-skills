@@ -1,5 +1,7 @@
 """Pure-function tests for show_thread.py and arena.py (no network). Run: python -m unittest test_arena"""
 
+import contextlib
+import io
 import json
 import sys
 import time
@@ -488,6 +490,96 @@ class TerminalFrame(unittest.TestCase):
         self.assertEqual(ui.mode, "menu")
         ui.key("enter")
         self.assertEqual(ui.key("q"), "quit")
+
+
+class InlineFrames(unittest.TestCase):
+    LONG = ("the findings bar drops before the author answers, because the score counts each answer line "
+            "rather than each finding id; a turn that answers one finding twice empties the bar too early, "
+            "and the vote pips then reset on a second panel round even when nothing changed at the head")
+
+    def threads(self):
+        """PR #12345 with turns 1 (review), 2 (fix), 4 (a long review), and issue #7 with turn 3."""
+        sig = "**deep-mode {}** · head `{}`\n\n"
+        review = turn(sig.format("reviewer · omp", "aaaaaaa") + fenced({"findings": [
+            {"severity": "P1", "file": "a.py", "line": 1, "claim": "x"}]}), 1)
+        fix = turn(sig.format("author · omp", "bbbbbbb") + fenced({"responses": [
+            {"id": "F1", "action": "fixed", "sha": "bbbbbbb", "reason": "done"}]}), 2)
+        long = turn(sig.format("reviewer · omp", "ddddddd") + fenced({"findings": [
+            {"severity": "P2", "file": "arena.py", "line": 7, "claim": self.LONG}]}), 4)
+        pr = arena.battle({"url": "https://github.com/o/r/pull/12345", "repo": "o/r", "number": 12345, "kind": "pr",
+                           "title": "A pull request", "state": "open"}, [review, fix, long])
+        return [pr, two_threads()[1]]
+
+    def test_lines_fit_and_no_escape_codes(self):
+        for mode in ("mono", "ascii"):
+            for width in (60, 80, 120):
+                for line in tui.frames(self.threads(), last=10, width=width, mode=mode, sprites=arena.SPRITES):
+                    self.assertLessEqual(len(line), width, (mode, width, line))
+                    self.assertNotIn("\x1b", line)
+                    if mode == "ascii":
+                        self.assertTrue(all(" " <= ch < "\x7f" for ch in line), line)
+        coloured = tui.frames(self.threads(), last=1, width=80, mode="truecolor", sprites=arena.SPRITES)
+        self.assertTrue(any("\x1b[" in line for line in coloured))
+        self.assertTrue(all(len(line) <= 80 for line in plain(coloured)))
+
+    def test_dialog_boxes_close_at_the_width(self):
+        out = tui.frames(self.threads(), last=1, width=80, mode="mono", sprites=arena.SPRITES)
+        dialog = [line for line in out if line.startswith(("╔", "║", "╚"))]
+        self.assertTrue(dialog)
+        self.assertTrue(all(len(line) == 80 and line.endswith(("╗", "║", "╝")) for line in dialog))
+
+    def test_since_takes_only_newer_turns(self):
+        out = "\n".join(tui.frames(self.threads(), since=2, width=80, sprites=arena.SPRITES))
+        self.assertEqual(out.count("TURN "), 2)
+        self.assertIn("TURN 3/3", out)                 # the PR's comment 4
+        self.assertIn("TURN 1/1", out)                 # the issue's comment 3
+        self.assertNotIn("TURN 1/3", out)
+        self.assertNotIn("TURN 2/3", out)
+        none = tui.frames(self.threads(), since=4, width=80, sprites=arena.SPRITES)
+        self.assertEqual(none, ["arena: no bot turns since 4", "arena: newest comment 4 (next: --since 4)"])
+
+    def test_default_and_last(self):
+        out = "\n".join(tui.frames(self.threads(), width=80, sprites=arena.SPRITES))
+        self.assertEqual(out.count("TURN "), 4)  # the PR's 3 turns (the default is the newest 3) and the issue's 1
+        out = "\n".join(tui.frames(self.threads(), last=1, width=80, sprites=arena.SPRITES))
+        self.assertEqual(out.count("TURN "), 2)
+
+    def test_long_finding_in_full(self):
+        out = tui.frames(self.threads(), last=1, width=60, mode="mono", sprites=arena.SPRITES)
+        text = " ".join(line.strip("║ ") for line in out if line.startswith("║"))
+        self.assertIn(self.LONG, " ".join(text.split()))
+        self.assertNotIn("...", text)
+
+    def test_trailing_id_line(self):
+        self.assertEqual(tui.frames(self.threads(), width=80, sprites=arena.SPRITES)[-1],
+                         "arena: newest comment 4 (next: --since 4)")
+
+    def run_frames(self, threads, errors):
+        original_gather, original_argv = arena.gather, sys.argv
+        arena.gather = lambda *_: (threads, errors)
+        sys.argv = ["arena.py", "https://github.com/o/r/pull/9", "--frames"]
+        out = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                try:
+                    code = arena.main()
+                except SystemExit as stop:
+                    code = stop.code
+        finally:
+            arena.gather, sys.argv = original_gather, original_argv
+        return code, out.getvalue()
+
+    def test_a_failed_fetch_is_not_a_quiet_thread(self):
+        code, out = self.run_frames([], ["o/r#9: gh: Not Found (HTTP 404)"])
+        self.assertNotIn(code, (0, None))
+        self.assertNotIn("no bot turns", out)
+
+    def test_a_partial_failure_keeps_the_cursor(self):
+        code, out = self.run_frames(self.threads(), ["o/r#8: HTTP 502"])
+        self.assertEqual(code, 1)
+        self.assertIn("TURN", out)
+        self.assertNotIn("--since 4)", out)
+        self.assertIn("run again with the same --since", out.strip().splitlines()[-1])
 
 
 if __name__ == "__main__":

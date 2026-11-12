@@ -280,7 +280,8 @@ def digest(found: list[dict], full: bool = False) -> list[str]:
 
 def main() -> int:
     # A pipe on Windows defaults to the locale code page; thread text carries emoji and arrows.
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    if hasattr(sys.stdout, "reconfigure"):  # a real text stream, not a test capture
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("url", metavar="pr-or-issue-url")
     parser.add_argument("--full", action="store_true", help="print each comment's whole body")
