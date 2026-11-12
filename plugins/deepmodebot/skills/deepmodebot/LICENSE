@@ -3,6 +3,8 @@ MIT License
 Copyright (c) 2026 Lauren Tan
 Copyright (c) 2026 Matt Pocock (references/techniques/grill.md and
 references/playbooks/wayfinder.md are adapted from github.com/mattpocock/skills)
+Copyright (c) 2026 Matt Van Horn (assets/research/social.py adapts the approach of
+github.com/mvanhorn/last30days-skill)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
