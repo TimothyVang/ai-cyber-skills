@@ -6,7 +6,8 @@ This eval follows the Eval playbook (`plugins/deep-mode/skills/deep-mode/referen
 ## Design
 
 - **Variant under test.** deep-mode installed versus not installed.
-- **With deep-mode.** The skill from a chosen commit is copied into the candidate's `.omp/skills/deep-mode/`.
+- **With deep-mode.** Every skill under `plugins/deep-mode/skills/` at a chosen commit is copied into the candidate's `.omp/skills/`.
+  `SKILL.md` and `/deep` point at the sibling skills (`create-verification-skill`, `software-architecture` and others), so all of them ship.
   The prompt starts with what `/deep` expands to (`plugins/deep-mode/commands/deep.md` at that commit), with the task's request as its argument.
 - **Without.** The same project and the same request, nothing else.
 - **Tasks.** Each task is a folder under `tasks/`. See Tasks below.
@@ -15,15 +16,18 @@ This eval follows the Eval playbook (`plugins/deep-mode/skills/deep-mode/referen
   `.omp/` sits in `.git/info/exclude` in every folder, so `git status` looks the same in both variants.
 - **Isolation.** Each candidate is one `omp -p --max-cost <cap>` process with its folder as the working directory.
   Both variants run with `--no-rules --no-context-files --no-extensions`, so the user's global `AGENTS.md`, rules, and contain hook stay out.
-  The deep-mode candidates run with `--skills deep-mode`, which loads the project copy.
+  The deep-mode candidates run with `--skills` naming every copied skill, which loads the project copies.
   The others run with `--no-skills`, because deep-mode is also installed globally on the machine that ran this.
   The API keys are removed from the child's environment, so every run bills the subscription.
   omp checks the cost cap between turns, so one turn can overshoot it.
 - **Primary score.** The task's hidden checks, run at collect time against a copy of each candidate's final tree.
   Candidates never see them. The score is the number that pass.
 - **Secondary score.** Two blinded judges, `anthropic/claude-opus-5-5` and `openai-codex/gpt-6.1-terra`, score the task's rubric.
-  Each runs as its own `omp -p` process in its own copy of the judge pack, so one judge's trial runs never reach the other.
+  Each runs as its own `omp -p` process in its own copy of the judge pack, at `.scratch/judge-<random>/pack`.
+  So one judge's trial runs never reach the other, and no run data sits beside a judge's folder.
   `judge` reports both judges separately and how far they agree.
+  It always writes each raw reply and `judges.json`, with a `parse_error` for a reply it could not read.
+  `judge --reparse` reads the saved replies again without calling a model, for example after fixing a malformed one by hand.
 
 ## Tasks
 
@@ -45,22 +49,27 @@ Two tasks exist.
 - **kitty** is a medium feature across several files.
   `kitty` is a CLI ledger of shared costs for a flat. The request asks for exact and percentage splits and a `settle` command.
   The traps are the parts a quick patch misses.
-  Balances are floats, so `$100` among three already shows balances that add up to a cent over zero.
-  Settling those balances leaves a cent behind or prints a `$0.00` payment.
+  Balances are floats, so `$100` among three shows balances that add up to a cent over zero, and settling them leaves a cent behind.
   Summing split amounts or percentages as floats rejects valid input (`9.99 + 10.00` is not `19.99` in floating point).
   Percentage shares rounded one by one miss the total by a cent.
   A new expense shape must still work in `list`, in case-insensitive names, in who joins the tab, and with ledger files the old version saved.
-  Its 18 hidden checks cover each of those. The original passes 3.
-  Those are the two refusals, because it rejects `--split` outright, and plain `--among`.
-  A float-based quick patch, tried while building the task, passes 10.
+  Its 19 hidden checks cover each of those, and each follows from the request or from what the project's README documents.
+  `settle` is judged on whether everyone ends up even, not on what `balances` prints, so leaving `--among` as it was costs nothing.
+  A rounded share counts as right when the shares add up to the total and each is less than `people - 1` cents from exact.
+  The original passes 3. Those are the two refusals, because it rejects `--split` outright, and plain `--among`.
+  Probes tried while building the task score as follows.
+  The reference, a variant that keeps `balances` for `--among` exactly as before but settles in cents, and a variant that gives the leftover percentage cents to the last person all pass 19.
+  A float-based quick patch passes 15.
 
 ## Gates
 
 The Eval playbook's blinding gates hold here.
 
 - Candidate folders are named like a user's project (`kitty-1`).
-  No folder, file name, or prompt a candidate sees holds a gate word.
+  No file name or prompt a candidate sees holds a gate word.
   The projects' suites live in `spec/*.spec.js` for that reason. The `npm test` script and the `node:test` import are standard Node and stay.
+  Folder paths are another matter. On the machine that ran this, every candidate's absolute path runs through `deep-mode/.worktrees/eval-medium/`.
+  Both variants share that path, so it tells a candidate nothing about which variant it is.
 - Run data (prompts, event logs, sessions, the variant key, hidden check results) sits in `.scratch/<task>-runs/`, outside every candidate folder.
 - Candidates are never told about each other.
 - The judge pack leaves `.git/`, `.omp/`, `.scratch/` and `.worktrees/` out of each copy and replaces folder paths with `<project>`.
@@ -68,10 +77,14 @@ The Eval playbook's blinding gates hold here.
   In replies and actions it removes "light panel", which names deep-mode's verifier, and replaces "deep-mode" and "playbook" with neutral words.
 - Judges never see the hidden checks or their results.
 - Helper agents a candidate starts write their own session files. `collect` reads those too, for cost, actions, and the outside-path scan.
-- Two residual risks remain.
-  Candidate and judge folders sit inside this repo's `.scratch/`, so a process that lists its parent folder can see its siblings and this repo, hidden checks included.
-  `collect` and `judge` flag every absolute path outside the process's folder found in its tool calls, so a run can confirm none did.
-  The second is behavior. A deep-mode candidate's actions still show its worktree and verifier steps, which a judge may recognize.
+- Candidates and judges can still read outside their folders.
+  Candidate folders sit inside this repo's `.scratch/`, so `../../evals/outcome/tasks/` (hidden checks, reference, rubric), sibling candidates and `<task>-runs/` are a few `..` away.
+  `collect` and `judge` resolve every path in each tool call against that call's working folder.
+  That covers path arguments of file tools, edit targets, and every word of shell commands and code, following `cd` inside a command.
+  A path that lands outside the process's own folder, by an absolute path, a home or temp variable, or `..` that climbs out, is listed.
+  Any hit marks the run `contaminated` in `measurements.json` or `judges.json` and in the printed table.
+  Read the hits. A regex that looks like a path can be a false alarm.
+- The other residual risk is behavior. A deep-mode candidate's actions still show its worktree and verifier steps, which a judge may recognize.
 
 ## Rerun
 

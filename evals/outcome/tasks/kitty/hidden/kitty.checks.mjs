@@ -1,5 +1,6 @@
 // Acceptance checks for the kitty task. Candidates never see this file.
 // They drive the CLI only, so a broken module fails single checks instead of hiding the whole file.
+// Every check follows from the request or from behavior the project's README already documents.
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -32,6 +33,7 @@ function tab() {
 }
 
 const cents = (text) => Math.round(Number(text.replaceAll(',', '')) * 100);
+const sum = (values) => values.reduce((a, b) => a + b, 0);
 
 // `kitty balances` as { name: cents }. Fails when one person shows up twice.
 function balances(t) {
@@ -47,37 +49,55 @@ function balances(t) {
 }
 
 function payments(t) {
-  const out = t.ok('settle');
-  return out.split(/\r?\n/).flatMap((line) => {
+  return t.ok('settle').split(/\r?\n/).flatMap((line) => {
     const m = /^\s*(\S+)\s+pays\s+(\S+)\s+\$([\d,]+\.\d{2})\s*$/i.exec(line);
     return m ? [{ from: m[1].toLowerCase(), to: m[2].toLowerCase(), cents: cents(m[3]) }] : [];
   });
 }
 
-const sum = (rows) => Object.values(rows).reduce((a, b) => a + b, 0);
+// The exact position of each person, in fractional cents, and how far a cent-rounded split may move it.
+// A split that rounds and still adds up to the total moves one share by less than (people - 1) cents.
+function exactTab(expenses) {
+  const tabRows = {};
+  const bump = (name, exact, slack) => {
+    tabRows[name] ??= { exact: 0, slack: 0 };
+    tabRows[name].exact += exact;
+    tabRows[name].slack += slack;
+  };
+  for (const { by, amount, shares } of expenses) {
+    const names = Object.keys(shares);
+    const slack = Object.values(shares).some((s) => !Number.isInteger(s)) ? names.length - 1 : 0;
+    bump(by, amount, 0);
+    for (const name of names) bump(name, -shares[name], slack);
+  }
+  return tabRows;
+}
+const even = (amount, names) => Object.fromEntries(names.map((name) => [name, amount / names.length]));
+const percent = (amount, split) => Object.fromEntries(Object.entries(split).map(([name, p]) => [name, (amount * p) / 100]));
 
-function near(actual, exact, label) {
-  assert.ok(Math.abs(actual - exact) < 1, `${label}: ${actual} cents is not within a cent of ${exact.toFixed(2)}`);
+function near(actual, exact, slack, label) {
+  assert.ok(Math.abs(actual - exact) < Math.max(slack, 0.5),
+    `${label}: ${actual} cents is too far from the exact ${exact.toFixed(2)} cents`);
 }
 
-// Payments must square every balance exactly, with no empty, self or extra payments.
-function assertSettles(t) {
-  const rows = balances(t);
-  assert.equal(sum(rows), 0, `balances add up to ${sum(rows)} cents, not 0`);
+// After the payments everyone must be even: what each person receives minus what they pay
+// matches their exact position within the rounding slack, with no empty, self, or extra payments.
+function assertSettles(t, expenses) {
+  const model = exactTab(expenses);
   const list = payments(t);
-  const left = { ...rows };
+  const moved = Object.fromEntries(Object.keys(model).map((name) => [name, 0]));
   for (const p of list) {
     assert.ok(p.cents > 0, `empty payment ${p.from} -> ${p.to}`);
     assert.notEqual(p.from, p.to, `${p.from} pays themself`);
-    assert.ok(p.from in left && p.to in left, `payment names someone not on the tab: ${p.from} -> ${p.to}`);
-    left[p.from] += p.cents;
-    left[p.to] -= p.cents;
+    assert.ok(p.from in moved && p.to in moved, `payment names someone not on the tab: ${p.from} -> ${p.to}`);
+    moved[p.to] += p.cents;
+    moved[p.from] -= p.cents;
   }
-  for (const [name, rest] of Object.entries(left)) {
-    assert.equal(rest, 0, `${name} is still ${rest} cents off after settling`);
+  for (const [name, { exact, slack }] of Object.entries(model)) {
+    near(moved[name], exact, slack, `${name} after settling`);
   }
-  const owing = Object.values(rows).filter((v) => v !== 0).length;
-  assert.ok(list.length <= Math.max(owing - 1, 0), `${list.length} payments for ${owing} people who are not square`);
+  const owing = Object.values(moved).filter((v) => v !== 0).length;
+  assert.ok(list.length <= Math.max(owing - 1, 0), `${list.length} payments for ${owing} people who are not even`);
   return list;
 }
 
@@ -120,10 +140,10 @@ test('percentage shares are rounded so they add up to the total', () => {
   t.ok('add', '20', 'Pizza', '--by', 'dee', '--split', 'ana=33.33%,ben=33.33%,cy=33.34%');
   const rows = balances(t);
   assert.equal(rows.dee, 2000);
-  assert.equal(sum(rows), 0, `shares add up to ${-(sum(rows) - 2000)} cents, not 2000`);
-  near(-rows.ana, 666.6, 'ana');
-  near(-rows.ben, 666.6, 'ben');
-  near(-rows.cy, 666.8, 'cy');
+  assert.equal(sum(Object.values(rows)), 0, `the shares add up to ${2000 + sum(Object.values(rows))} cents, not 2000`);
+  near(-rows.ana, 666.6, 2, 'ana');
+  near(-rows.ben, 666.6, 2, 'ben');
+  near(-rows.cy, 666.8, 2, 'cy');
 });
 
 test('percentages that add up to 100 are accepted even where floating point sums drift', () => {
@@ -170,16 +190,6 @@ test('--among still splits evenly', () => {
   assert.deepEqual(balances(t), { ana: 4500, ben: -1500, cy: -3000 });
 });
 
-test('an even split that does not divide exactly still adds up', () => {
-  const t = tab();
-  t.ok('add', '100', 'Dinner', '--by', 'ana', '--among', 'ana,ben,cy');
-  const rows = balances(t);
-  assert.equal(sum(rows), 0, `balances add up to ${sum(rows)} cents, not 0`);
-  near(rows.ana, 6666.67, 'ana');
-  near(rows.ben, -3333.33, 'ben');
-  near(rows.cy, -3333.33, 'cy');
-});
-
 test('a ledger saved by the current version still works', () => {
   const t = tab();
   writeFileSync(t.file, `${JSON.stringify({
@@ -188,11 +198,15 @@ test('a ledger saved by the current version still works', () => {
       { id: 2, description: 'Dinner', amount: 90, paidBy: 'ben', among: ['ana', 'ben', 'cy'] },
     ],
   }, null, 2)}\n`);
+  const expenses = [
+    { by: 'ana', amount: 5420, shares: even(5420, ['ana', 'ben', 'cy']) },
+    { by: 'ben', amount: 9000, shares: even(9000, ['ana', 'ben', 'cy']) },
+  ];
   const rows = balances(t);
-  near(rows.ana, 613.33, 'ana');
-  near(rows.ben, 4193.33, 'ben');
-  near(rows.cy, -4806.67, 'cy');
-  assertSettles(t);
+  for (const [name, { exact, slack }] of Object.entries(exactTab(expenses))) {
+    near(rows[name], exact, slack, name);
+  }
+  assertSettles(t, expenses);
   t.ok('add', '12', 'Wine', '--by', 'cy', '--split', 'ana=6,cy=6');
   assert.match(t.ok('list'), /Groceries[\s\S]*Dinner[\s\S]*Wine/);
 });
@@ -206,31 +220,54 @@ test('settle says who pays whom and changes nothing', () => {
   assert.equal(readFileSync(t.file, 'utf8'), before);
 });
 
-test('settle squares a total that does not divide evenly', () => {
+test('settle evens out a total that does not divide evenly', () => {
   const t = tab();
   t.ok('add', '100', 'Dinner', '--by', 'ana', '--among', 'ana,ben,cy');
-  assert.equal(assertSettles(t).length, 2);
+  const list = assertSettles(t, [{ by: 'ana', amount: 10000, shares: even(10000, ['ana', 'ben', 'cy']) }]);
+  assert.equal(list.length, 2);
 });
 
-test('settle squares a busy tab in few payments', () => {
+test('settle evens out a rounded percentage split', () => {
   const t = tab();
-  t.ok('add', '54.20', 'Groceries', '--by', 'ana', '--among', 'ana,ben,cy,dee,eve');
+  t.ok('add', '20', 'Pizza', '--by', 'dee', '--split', 'ana=33.33%,ben=33.33%,cy=33.34%');
+  assertSettles(t, [{ by: 'dee', amount: 2000, shares: percent(2000, { ana: 33.33, ben: 33.33, cy: 33.34 }) }]);
+});
+
+test('settle evens out a busy tab in few payments', () => {
+  const t = tab();
+  const everyone = ['ana', 'ben', 'cy', 'dee', 'eve'];
+  t.ok('add', '54.20', 'Groceries', '--by', 'ana', '--among', everyone.join(','));
   t.ok('add', '1450', 'Rent', '--by', 'ben', '--split', 'ana=12.5%,ben=27.5%,cy=20%,dee=20%,eve=20%');
   t.ok('add', '19.99', 'Wine', '--by', 'cy', '--split', 'dee=9.99,eve=10.00');
   t.ok('add', '100', 'Taxi', '--by', 'dee', '--among', 'ana,ben,cy');
   t.ok('add', '33.33', 'Snacks', '--by', 'eve');
-  assertSettles(t);
+  assertSettles(t, [
+    { by: 'ana', amount: 5420, shares: even(5420, everyone) },
+    { by: 'ben', amount: 145000, shares: percent(145000, { ana: 12.5, ben: 27.5, cy: 20, dee: 20, eve: 20 }) },
+    { by: 'cy', amount: 1999, shares: { dee: 999, eve: 1000 } },
+    { by: 'dee', amount: 10000, shares: even(10000, ['ana', 'ben', 'cy']) },
+    { by: 'eve', amount: 3333, shares: even(3333, everyone) },
+  ]);
 });
 
-test('a square tab needs no payments and shows $0.00', () => {
+test('settle on a tab that is already even prints no payments', () => {
   const t = tab();
   for (const payer of ['ana', 'ben', 'cy']) {
     t.ok('add', '0.30', 'Coffee', '--by', payer, '--among', 'ana,ben,cy');
   }
   assert.deepEqual(payments(t), []);
-  const lines = t.ok('balances').split(/\r?\n/).filter((line) => /\$/.test(line));
-  assert.equal(lines.length, 3);
-  for (const line of lines) {
-    assert.match(line, /^\s*\S+\s+\$0\.00\s*$/, `not shown as square: ${line.trim()}`);
+});
+
+test('after everyone pays what settle says, nothing is left to settle', () => {
+  const t = tab();
+  t.ok('add', '100', 'Dinner', '--by', 'ana', '--among', 'ana,ben,cy');
+  t.ok('add', '54.20', 'Groceries', '--by', 'ben', '--among', 'ana,ben,cy,dee');
+  t.ok('add', '20', 'Pizza', '--by', 'dee', '--split', 'ana=33.33%,ben=33.33%,cy=33.34%');
+  const list = payments(t);
+  assert.ok(list.length > 0, 'settle printed no payments for an uneven tab');
+  // The way a user records paying someone back: an expense the payer covers for the one they owe.
+  for (const p of list) {
+    t.ok('add', (p.cents / 100).toFixed(2), 'Payback', '--by', p.from, '--among', p.to);
   }
+  assert.deepEqual(payments(t), []);
 });

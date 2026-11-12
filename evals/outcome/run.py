@@ -4,7 +4,7 @@
   python evals/outcome/run.py setup [--task billsplit] [--ref HEAD] [--per-variant 2] [--seed N]
   python evals/outcome/run.py run [--task billsplit] [--max-cost 3] [--model ID]
   python evals/outcome/run.py collect [--task billsplit]
-  python evals/outcome/run.py judge [--task billsplit] [--max-cost 3] [--dry-run]
+  python evals/outcome/run.py judge [--task billsplit] [--max-cost 3] [--dry-run | --reparse]
   python evals/outcome/run.py selftest [--task billsplit]
 
 A task is a folder tasks/<task>/ holding project/ (what candidates get), prompt.txt (the request), rubric.md (judges
@@ -12,8 +12,9 @@ only), hidden/ (node:test files run against each final tree at collect time) and
 setup builds one project folder per candidate under .scratch/<task>-<n>/ and keeps the variant key in
 .scratch/<task>-runs/. run starts every candidate at once as its own `omp -p` process. collect runs the hidden checks
 on a copy of each result, measures it, and writes a judge pack under .scratch/<task>-review/ with candidates behind
-shuffled letters. judge gives each judge model its own copy of the pack and reports both scores and their agreement.
-selftest proves the hidden checks fail on the original project and pass on the reference.
+shuffled letters. judge gives each judge model its own copy of the pack under .scratch/judge-<random>/pack and
+reports both scores and their agreement. collect and judge mark a run contaminated when a tool call reaches outside
+its own folder. selftest proves the hidden checks fail on the original project and pass on the reference.
 """
 import argparse
 import difflib
@@ -22,6 +23,7 @@ import json
 import os
 import random
 import re
+import secrets
 import shutil
 import subprocess
 import sys
@@ -64,15 +66,18 @@ def setup(args):
     if t.key.exists():
         sys.exit(f"{t.key.relative_to(ROOT)} exists; remove .scratch/{t.name}-* first for a fresh run")
     ref_sha = git("rev-parse", args.ref, cwd=ROOT)
-    skill_tar = subprocess.run(["git", "archive", f"{ref_sha}:plugins/deep-mode/skills/deep-mode"],
-                               cwd=ROOT, check=True, capture_output=True).stdout
+    # The deep-mode variant gets every skill the plugin ships, since SKILL.md and /deep point at its siblings.
+    skills_tar = subprocess.run(["git", "archive", f"{ref_sha}:plugins/deep-mode/skills"],
+                                cwd=ROOT, check=True, capture_output=True).stdout
+    with tarfile.open(fileobj=io.BytesIO(skills_tar)) as tar:
+        skills = sorted(m.name.split("/")[0] for m in tar.getmembers() if re.fullmatch(r"[^/]+/SKILL\.md", m.name))
     command = git("show", f"{ref_sha}:plugins/deep-mode/commands/deep.md", cwd=ROOT)
     body = re.sub(r"^---\n.*?\n---\n", "", command, flags=re.S).strip()
     request = (t.home / "prompt.txt").read_text(encoding="utf-8").strip()
     package = json.loads((t.project / "package.json").read_text(encoding="utf-8"))
     variants = ["deep-mode"] * args.per_variant + ["plain"] * args.per_variant
     random.Random(args.seed).shuffle(variants)
-    key = {"task": t.name, "ref": ref_sha, "seed": args.seed, "candidates": {}}
+    key = {"task": t.name, "ref": ref_sha, "seed": args.seed, "skills": skills, "candidates": {}}
     for number, variant in enumerate(variants, 1):
         folder = SCRATCH / f"{t.name}-{number}"
         if folder.exists():
@@ -83,9 +88,9 @@ def setup(args):
         git("commit", "-q", "-m", f"{package['name']} {package['version']}", cwd=folder)
         (folder / ".git/info/exclude").write_text(".omp/\n", encoding="utf-8")
         if variant == "deep-mode":
-            target = folder / ".omp/skills/deep-mode"
+            target = folder / ".omp/skills"
             target.mkdir(parents=True)
-            with tarfile.open(fileobj=io.BytesIO(skill_tar)) as tar:
+            with tarfile.open(fileobj=io.BytesIO(skills_tar)) as tar:
                 tar.extractall(target, filter="data")
         prompt = body.replace("$ARGUMENTS", request) if variant == "deep-mode" else request
         run_dir = t.runs / str(number)
@@ -130,7 +135,8 @@ def run(args):
     jobs = []
     for number, info in key["candidates"].items():
         run_dir = t.runs / number
-        skills = ["--skills", "deep-mode"] if info["variant"] == "deep-mode" else ["--no-skills"]
+        deep = info["variant"] == "deep-mode"
+        skills = ["--skills", ",".join(key["skills"])] if deep else ["--no-skills"]
         cmd = omp_command(omp, run_dir, args, args.model, skills)
         jobs.append((number, cmd + [(run_dir / "prompt.txt").read_text(encoding="utf-8").strip()], info["folder"], run_dir))
     for number, (code, seconds) in run_all(jobs).items():
@@ -228,16 +234,88 @@ def hidden_checks(t, folder, scored):
             "passing": [r["name"] for r in result["results"] if r["ok"]]}
 
 
+# Tool-call arguments that name a path, and those that hold shell or code text to scan token by token.
+PATH_FIELDS = ("path", "paths", "file", "files", "cwd", "dir", "directory", "output", "destination", "source", "target")
+TEXT_FIELDS = ("command", "code")
+INTERNAL_URL = re.compile(r"^[a-z][a-z0-9+.-]*://", re.I)
+ENV_DIR = re.compile(r"^(?:\$\{?(?:HOME|TEMP|TMP|TMPDIR|USERPROFILE|APPDATA)\b|\$env:|%\w+%)", re.I)
+DEVICES = {"/dev/null", "/dev/stdout", "/dev/stderr", "nul"}
+# In shell text a leading slash is often a regex or a sed script; only these roots count as absolute paths there.
+POSIX_ROOT = re.compile(r"^/(?:[a-z](?:/|$)|tmp|home|users|mnt|etc|var|usr|opt|root|private|proc)\b", re.I)
+HEREDOC = re.compile(r"<<-?\s*(['\"]?)(\w+)\1")
+SELECTOR = re.compile(r"(?<=[^:/\\])(?::(?:raw|conflicts|img|-?\d[\d,+\-]*))+$|\?.*$")
+
+
+def escapes(token, cwd, folder, path_field=False):
+    """True when token, read as a path from cwd, lands outside folder. `..` segments that climb out count."""
+    token = token.strip().strip("'\"`").lstrip("!")
+    if not token or INTERNAL_URL.match(token) or token.lower() in DEVICES:
+        return False
+    if ENV_DIR.match(token) or token.startswith("~"):
+        return True
+    if not path_field and token.startswith("/") and not POSIX_ROOT.match(token):
+        return False
+    if not path_field and not re.match(r"^[A-Za-z]:[\\/]|^/", token) and ".." not in re.split(r"[\\/]", token):
+        # A plain relative word only leaves the folder when an earlier `cd` already did; count path-shaped ones.
+        return bool(re.search(r"[\\/]", token)) and not is_inside(Path(cwd), folder)
+    drive = re.match(r"^/([A-Za-z])(?:/|$)(.*)$", token)
+    native = f"{drive.group(1)}:/{drive.group(2)}" if drive else token
+    return not is_inside(Path(os.path.normpath(os.path.join(cwd, native))), folder)
+
+
+def is_inside(path, folder):
+    path, root = os.path.normcase(os.path.normpath(path)), os.path.normcase(os.path.normpath(folder))
+    return path == root or path.startswith(root.rstrip(os.sep) + os.sep)
+
+
+def shell_tokens(text):
+    """Words of a shell command or code text, without here-doc bodies that a redirect writes to a file."""
+    lines, kept, skip_to = text.splitlines(), [], None
+    for line in lines:
+        if skip_to is not None:
+            skip_to = None if line.strip() == skip_to else skip_to
+            continue
+        kept.append(line)
+        doc = HEREDOC.search(line)
+        if doc and re.search(r">(?!&)", HEREDOC.sub("", line)):
+            skip_to = doc.group(2)
+    return [w for w in re.split(r"[\s;&|()<>=,'\"`]+", "\n".join(kept)) if w]
+
+
 def outside_paths(calls, folder):
-    inside = {str(folder).lower().replace("\\", "/"), str(folder).lower()}
-    pattern = re.compile(r"(?:(?<![A-Za-z])[A-Za-z]:[\\/]|(?<![\w.])/tmp\b|\$TMPDIR|%TEMP%|\$TEMP|~/|/c/Users)[^\s'\"`]*")
+    """Every path in the tool calls that resolves outside folder, relative ones against the call's cwd."""
+    folder = Path(folder)
     hits = []
     for call in calls:
-        blob = json.dumps(call["args"]) if call["name"] not in ("bash",) else str(call["args"].get("command", ""))
-        blob = blob.replace("\\\\", "\\")
-        for match in pattern.findall(blob):
-            if not any(match.lower().replace("\\", "/").startswith(p.replace("\\", "/")) for p in inside):
-                hits.append(f"{call.get('helper', 'main')} {call['name']}: {match}")
+        args = call["args"] if isinstance(call["args"], dict) else {}
+        cwd = folder
+        if isinstance(args.get("cwd"), str):
+            cwd = Path(os.path.normpath(os.path.join(folder, args["cwd"])))
+        found = []
+        for field in PATH_FIELDS:
+            values = args.get(field)
+            for value in values if isinstance(values, list) else [values]:
+                for part in str(value).split(";") if isinstance(value, str) else []:
+                    if escapes(SELECTOR.sub("", part.strip()), folder, folder, path_field=True):
+                        found.append(part.strip())
+        if isinstance(args.get("input"), str):
+            for target in re.findall(r"^\[(.+?)#[0-9A-Fa-f]{4}\]$|^MV\s+(.+)$", args["input"], re.M):
+                path = target[0] or target[1]
+                if escapes(path, folder, folder, path_field=True):
+                    found.append(path)
+        for field in TEXT_FIELDS:
+            if not isinstance(args.get(field), str):
+                continue
+            here, words = cwd, shell_tokens(args[field])
+            for i, word in enumerate(words):
+                if escapes(word, here, folder):
+                    found.append(word)
+                if word in ("cd", "pushd") and i + 1 < len(words) and words[i + 1] != "-":
+                    target = words[i + 1].strip("'\"")
+                    drive = re.match(r"^/([A-Za-z])(?:/|$)(.*)$", target)
+                    target = f"{drive.group(1)}:/{drive.group(2)}" if drive else target
+                    here = Path(os.path.normpath(os.path.join(here, os.path.expanduser(target))))
+        hits += [f"{call.get('helper', 'main')} {call['name']}: {path}" for path in dict.fromkeys(found)]
     return hits
 
 
@@ -305,6 +383,8 @@ def collect(args):
             "outside_paths": outside_paths(calls, folder),
             "files_read": sorted({str(c["args"].get("path")) for c in calls if c["name"] == "read"}),
         }
+        # Any path outside its own folder could reach the hidden checks, the reference, a sibling or the key.
+        measurements[number]["contaminated"] = bool(measurements[number]["outside_paths"])
         target = t.pack / label
         shutil.copytree(folder, target / "repo", ignore=shutil.ignore_patterns(*SKIP_DIRS))
         (target / "reply.md").write_text(sanitize(reply, folder, t.name) + "\n", encoding="utf-8")
@@ -317,7 +397,10 @@ def collect(args):
         h = m["hidden"]
         print(f"{number} {m['label']} {m['variant']:9} ${m['cost']:<7} hidden {h['passed']}/{h['total']}"
               f"  calls {m['tool_calls']}  wall {m['wall_seconds'] or '-'}s  specs after {m['specs_after']}"
-              f"  on old code {m['specs_on_old_code']}  diff {m['diff_lines']} lines  outside {len(m['outside_paths'])}")
+              f"  on old code {m['specs_on_old_code']}  diff {m['diff_lines']} lines  outside {len(m['outside_paths'])}"
+              + ("  CONTAMINATED" if m["contaminated"] else ""))
+        for hit in m["outside_paths"]:
+            print(f"    outside: {hit}")
     print(f"judge pack: {t.pack.relative_to(ROOT)}")
 
 
@@ -364,18 +447,27 @@ It maps each letter to its {count} criterion scores, in rubric order, and one or
 
 
 def parse_scores(reply, letters, count):
+    """The last json block as {letter: scores, total, notes}, or (None, the reason it could not be read)."""
     blocks = re.findall(r"```json\s*(\{.*?\})\s*```", reply, re.S)
     if not blocks:
-        return None
-    data = json.loads(blocks[-1])
+        return None, "no fenced json block in the reply"
+    try:
+        data = json.loads(blocks[-1])
+    except ValueError as err:
+        return None, f"json does not parse: {err}"
+    if not isinstance(data, dict):
+        return None, "json is not an object"
     scores = {}
     for letter in letters:
-        row = data.get(letter, {}).get("scores")
+        entry = data.get(letter)
+        row = entry.get("scores") if isinstance(entry, dict) else None
         if not isinstance(row, list) or len(row) != count:
-            return None
-        scores[letter] = {"scores": [int(s) for s in row], "total": sum(int(s) for s in row),
-                          "notes": data[letter].get("notes", "")}
-    return scores
+            return None, f"{letter}: needs a list of {count} scores, got {row!r}"
+        if not all(isinstance(s, (int, float)) and not isinstance(s, bool) and s in (0, 1, 2) for s in row):
+            return None, f"{letter}: every score must be 0, 1 or 2, got {row!r}"
+        row = [int(s) for s in row]
+        scores[letter] = {"scores": row, "total": sum(row), "notes": str(entry.get("notes", ""))}
+    return scores, None
 
 
 def ranks(values):
@@ -414,33 +506,28 @@ def judge(args):
     t = task_paths(args.task)
     rubric = (t.home / "rubric.md").read_text(encoding="utf-8")
     letters = sorted(p.name for p in t.pack.iterdir() if p.is_dir() and p.name != "base")
-    prompt = judge_prompt(t, letters, rubric)
-    (t.runs / "judge-prompt.txt").write_text(prompt, encoding="utf-8")
-    if args.dry_run:
-        print(prompt)
-        return
-    omp = shutil.which("omp") or sys.exit("omp is not on PATH")
-    jobs, packs = [], {}
-    for index, model in enumerate(JUDGES, 1):
-        # Each judge gets its own copy, so one judge's trial runs never show up in the other's folders.
-        pack = SCRATCH / f"{t.name}-review-{index}"
-        if pack.exists():
-            shutil.rmtree(pack)
-        shutil.copytree(t.pack, pack)
-        run_dir = t.runs / f"judge-{index}"
-        if run_dir.exists():
-            shutil.rmtree(run_dir)
-        run_dir.mkdir(parents=True)
-        packs[model] = (pack, run_dir)
-        jobs.append((model, omp_command(omp, run_dir, args, model, ["--no-skills"]) + [prompt], pack, run_dir))
-    run_all(jobs)
+    if not args.reparse:
+        prompt = judge_prompt(t, letters, rubric)
+        (t.runs / "judge-prompt.txt").write_text(prompt, encoding="utf-8")
+        if args.dry_run:
+            print(prompt)
+            return
+        start_judges(t, args, prompt)
     count = criteria_count(rubric)
     verdicts = {}
-    for model, (pack, run_dir) in packs.items():
+    for model, index in zip(JUDGES, range(1, len(JUDGES) + 1)):
+        run_dir = t.runs / f"judge-{index}"
+        meta = json.loads((run_dir / "meta.json").read_text(encoding="utf-8"))
         reply, cost, models, calls = read_run(run_dir)
-        (run_dir / "reply.md").write_text(reply + "\n", encoding="utf-8")
-        verdicts[model] = {"cost": cost, "models": models, "scores": parse_scores(reply, letters, count),
-                           "outside_paths": outside_paths(calls, pack)}
+        saved = run_dir / "reply.md"
+        if args.reparse and saved.exists():
+            reply = saved.read_text(encoding="utf-8").strip()
+        else:
+            saved.write_text(reply + "\n", encoding="utf-8")
+        scores, error = parse_scores(reply, letters, count)
+        hits = outside_paths(calls, Path(meta["pack"]))
+        verdicts[model] = {"cost": cost, "models": models, "exit": meta.get("exit"), "pack": meta["pack"],
+                           "scores": scores, "parse_error": error, "outside_paths": hits, "contaminated": bool(hits)}
     result = {"letters": letters, "judges": verdicts}
     first, second = (verdicts[m]["scores"] for m in JUDGES)
     if first and second:
@@ -449,18 +536,46 @@ def judge(args):
     report(t, result)
 
 
+def start_judges(t, args, prompt):
+    """Run every judge at once, each in its own copy of the pack under a random folder with no run data beside it."""
+    omp = shutil.which("omp") or sys.exit("omp is not on PATH")
+    jobs = []
+    for index, model in enumerate(JUDGES, 1):
+        run_dir = t.runs / f"judge-{index}"
+        if (run_dir / "meta.json").exists():
+            old = Path(json.loads((run_dir / "meta.json").read_text(encoding="utf-8"))["pack"]).parent
+            shutil.rmtree(old, ignore_errors=True)
+        if run_dir.exists():
+            shutil.rmtree(run_dir)
+        run_dir.mkdir(parents=True)
+        pack = SCRATCH / f"judge-{secrets.token_hex(4)}" / "pack"
+        shutil.copytree(t.pack, pack)
+        (run_dir / "meta.json").write_text(json.dumps({"model": model, "pack": str(pack)}, indent=2) + "\n", encoding="utf-8")
+        jobs.append((index, omp_command(omp, run_dir, args, model, ["--no-skills"]) + [prompt], pack, run_dir))
+    for index, (code, seconds) in run_all(jobs).items():
+        meta_path = t.runs / f"judge-{index}" / "meta.json"
+        meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        meta.update({"exit": code, "wall_seconds": seconds})
+        meta_path.write_text(json.dumps(meta, indent=2) + "\n", encoding="utf-8")
+
+
 def report(t, result):
     measurements = json.loads((t.runs / "measurements.json").read_text(encoding="utf-8"))
     by_label = {m["label"]: m for m in measurements.values()}
     for model, verdict in result["judges"].items():
         print(f"{model}: ${verdict['cost']}  scores {'parsed' if verdict['scores'] else 'MISSING'}"
-              f"  outside {len(verdict['outside_paths'])}")
+              f"  outside {len(verdict['outside_paths'])}" + ("  CONTAMINATED" if verdict["contaminated"] else ""))
+        if verdict["parse_error"]:
+            print(f"    parse error: {verdict['parse_error']} (fix the reply.md, then judge --reparse)")
+        for hit in verdict["outside_paths"]:
+            print(f"    outside: {hit}")
     print("letter variant   hidden  cost     calls  wall   " + "  ".join(m.split("/")[1] for m in JUDGES))
     for letter in result["letters"]:
         m = by_label[letter]
         totals = [str(v["scores"][letter]["total"]) if v["scores"] else "-" for v in result["judges"].values()]
         print(f"{letter}      {m['variant']:9} {m['hidden']['passed']:>2}/{m['hidden']['total']:<3} ${m['cost']:<7}"
-              f" {m['tool_calls']:>5}  {m['wall_seconds'] or '-'}s  " + "  ".join(totals))
+              f" {m['tool_calls']:>5}  {m['wall_seconds'] or '-'}s  " + "  ".join(totals)
+              + ("  CONTAMINATED" if m.get("contaminated") else ""))
     if "agreement" in result:
         print(f"agreement: {result['agreement']}")
 
@@ -515,6 +630,7 @@ def main():
             p.add_argument("--model", help="omp --model for every candidate (default: omp's default model)")
         if step == "judge":
             p.add_argument("--dry-run", action="store_true", help="write and print the judge prompt; call no model")
+            p.add_argument("--reparse", action="store_true", help="re-read the saved judge replies; call no model")
     args = parser.parse_args()
     steps[args.step](args)
 
