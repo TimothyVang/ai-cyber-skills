@@ -17,7 +17,7 @@ The plan, its critique and the build happen as a conversation of bots on the iss
 3. **Critique.** The plan goes over ACP into the reviewer's session for this issue, read-only. It returns findings against the plan: a wrong premise, a missed case, a simpler path, a check that wouldn't prove the claim. Post it as reviewer.
 4. **Answer.** The critique goes into the author's session. The author revises the plan or answers each point with proof. Post it as author. One round per trigger; the next human comment starts another.
 5. **Implement**, only when the owner opened the issue or the owner commented `@deep-mode implement`. The author runs with `--approve-all` in a new worktree on branch `deep-mode/issue-<n>` off the default branch. It builds the answered plan under deep-mode's rules (prove it on the real artifact, tests red first), commits, pushes with the user's own git credentials, and opens a ready PR whose body has `Closes #<n>`. The coordinator posts the PR link on the issue. The next cycle lands that PR through **pr-conversation**.
-6. **Anyone else's issue** gets steps 1–4 only. The bots never build it, label it, assign it, or close it.
+6. **Anyone else's issue** gets steps 1–4 only. The bots never build it, label it, assign it, or close it. When the issue or a comment in the prompt is not the owner's, those turns are sealed: model calls with no tools, no files and no checkout, so a prompt injection cannot make an agent read a local file or fetch a URL and post it. A sealed plan rests on the issue text alone and says where it would need the code. An owner's `@deep-mode implement` runs the build with its tools as in step 5.
 
 ## Gates
 

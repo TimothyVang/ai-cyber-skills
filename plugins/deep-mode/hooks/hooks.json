@@ -6,7 +6,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude-guard.sh\"; [ -f \"$f\" ] || exit 0; exec bash \"$f\" activate \"${CLAUDE_PLUGIN_DATA}\""
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude-guard.sh\"; [ -f \"$f\" ] || exit 0; exec \"${BASH:-bash}\" \"$f\" activate \"${CLAUDE_PLUGIN_DATA}\""
           }
         ]
       }
@@ -17,7 +17,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude-guard.sh\"; [ -f \"$f\" ] || exit 0; exec bash \"$f\" if-active \"${CLAUDE_PLUGIN_DATA}\""
+            "command": "f=\"${CLAUDE_PLUGIN_ROOT}/skills/deep-mode/assets/contain/claude-guard.sh\"; [ -f \"$f\" ] || exit 0; exec \"${BASH:-bash}\" \"$f\" if-active \"${CLAUDE_PLUGIN_DATA}\""
           }
         ]
       }

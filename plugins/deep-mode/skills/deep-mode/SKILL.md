@@ -7,7 +7,7 @@ hooks:
     - matcher: "Write|Edit|NotebookEdit"
       hooks:
         - type: command
-          command: 'for f in "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/deep-mode/assets/contain/claude-guard.sh" "$HOME/.claude/skills/deep-mode/assets/contain/claude-guard.sh"; do if [ -f "$f" ]; then exec bash "$f" enforce; fi; done; exit 0'
+          command: 'for f in "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/deep-mode/assets/contain/claude-guard.sh" "$HOME/.claude/skills/deep-mode/assets/contain/claude-guard.sh"; do if [ -f "$f" ]; then exec "${BASH:-bash}" "$f" enforce; fi; done; exit 0'
 ---
 
 # Deep mode

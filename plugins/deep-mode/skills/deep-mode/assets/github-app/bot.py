@@ -67,6 +67,7 @@ SIGNATURE = f"**{NAME} "
 SEVERITIES = ("P0", "P1", "P2")
 AGENT_TIMEOUT = 3600
 CHECK_WAIT = 1800
+MISSING_LOOKS = 3  # cycles a required check may stay unreported, with nothing running, after the wait
 LIST_LIMIT = 100_000  # open PRs or issues listed per repo per cycle: gh pages through all of them
 MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for a new push or comment
 MERGE_SETTLE = 60  # seconds a merge read-back polls for MERGED before calling the merge not done
@@ -111,7 +112,7 @@ RULES = ("Follow the repo's AGENTS.md and CONTRIBUTING rules. Never take real-mo
 READ_ONLY_NOTE = ("You are read-only: you can read and search files, but you cannot run commands or tests or "
                   "write anything (those requests are denied), so ground every claim in the code you read.")
 SEALED_NOTE = ("You have no tools and no files: everything you can check is in this message. Ground every claim "
-               "in the diff below, and say so when a finding depends on code you cannot see.")
+               "in the text below, and say so when a point depends on code you cannot see.")
 
 
 class Blocked(Exception):
@@ -380,10 +381,11 @@ def with_pending(pending: list, comments: list) -> list:
 def wants_implementation(issue: dict, comments: list, item: dict, owner: str, mention: str) -> bool:
     """The owner asked (`<mention> implement`), or opened the issue and didn't mark it discussion-only. An issue
     flagged because a PR's merge waits on it (`answerAll`) is only answered: that PR is its implementation."""
-    # The command opens a line, as its own word: "... implementation looks wrong" and a quoted "> ... implement"
-    # are talk about the command, not the command.
-    command = re.compile(rf"^[ \t]*{re.escape(mention)}[ \t]+implement(?![\w-])", re.I | re.M)
-    if any(same(login_of(c), owner) and command.search(c.get("body") or "") for c in comments):
+    # The command opens a line, as its own word: "... implementation looks wrong", a quoted "> ... implement", and
+    # a command shown inside a code block or an HTML comment are talk about the command, not the command.
+    command = re.compile(rf"^ {{0,3}}{re.escape(mention)}[ \t]+implement(?![\w-])", re.I | re.M)
+    shown = re.compile(r"```.*?(```|\Z)|~~~.*?(~~~|\Z)|<!--.*?(-->|\Z)", re.S)
+    if any(same(login_of(c), owner) and command.search(shown.sub("", c.get("body") or "")) for c in comments):
         return True
     if item.get("handled") or item.get("implemented") or item.get("answerAll") or not same(login_of(issue), owner):
         return False
@@ -861,10 +863,12 @@ class Item:
                                                    pr_agent_local.omp_oauth_credentials(model))
         except SystemExit as err:  # pr_agent_local reports a setup problem by exiting
             raise RuntimeError(str(err)) from None
+        # pr_agent_local puts a word joiner after each @ of the prompt so omp attaches no file; drop the echoes.
+        reply = reply.replace("\u2060", "").strip()
         self.note(f"REPLY <- {role_label(role)} (sealed)\n\n{reply}")
-        if not reply.strip():
+        if not reply:
             raise RuntimeError(f"{role_label(role)} sealed turn returned nothing")
-        return reply.strip()
+        return reply
 
 
 # ---------------------------------------------------------------- prompts
@@ -966,7 +970,11 @@ def issue_text(issue: dict) -> str:
 
 def plan_prompt(c) -> str:
     thread = f"\n{untrusted('comments', thread_text(c.comments))}\n" if c.comments else ""
-    return f"""You are the {NAME} author on issue {c.repo}#{c.n}. Your working directory is a checkout of `{c.default}`; do not edit files or post anything: the coordinator posts your reply to the issue. {READ_ONLY_NOTE}
+    setting = (f"The repo's default branch is `{c.default}`. Do not post anything: the coordinator posts your reply "
+               f"to the issue. {SEALED_NOTE}" if c.sealed else
+               f"Your working directory is a checkout of `{c.default}`; do not edit files or post anything: the "
+               f"coordinator posts your reply to the issue. {READ_ONLY_NOTE}")
+    return f"""You are the {NAME} author on issue {c.repo}#{c.n}. {setting}
 
 {UNTRUSTED_NOTE}
 
@@ -977,7 +985,10 @@ Propose a concrete plan: what is being asked, the files to change, the approach,
 
 
 def critique_prompt(c, plan: str) -> str:
-    return f"""You are the {NAME} reviewer on issue {c.repo}#{c.n}. Your working directory is a checkout of `{c.default}`; do not edit files or post anything. {READ_ONLY_NOTE} The author's proposal is below. Critique it against the code: what is wrong, missing or risky, and what would make the result verifiable. Be specific and brief; say so plainly if the plan is sound.
+    setting = (f"Do not post anything. {SEALED_NOTE}" if c.sealed else
+               f"Your working directory is a checkout of `{c.default}`; do not edit files or post anything. "
+               f"{READ_ONLY_NOTE}")
+    return f"""You are the {NAME} reviewer on issue {c.repo}#{c.n}. {setting} The author's proposal is below. Critique it against the code: what is wrong, missing or risky, and what would make the result verifiable. Be specific and brief; say so plainly if the plan is sound.
 
 {UNTRUSTED_NOTE}
 
@@ -989,8 +1000,8 @@ def critique_prompt(c, plan: str) -> str:
 """
 
 
-def answer_prompt(critique: str) -> str:
-    return f"""The reviewer critiqued your proposal (below). Answer each point: accept it and give the revised plan, or rebut it with evidence from the code. Do not edit files or post anything. {READ_ONLY_NOTE}
+def answer_prompt(critique: str, sealed: bool = False) -> str:
+    return f"""The reviewer critiqued your proposal (below). Answer each point: accept it and give the revised plan, or rebut it with evidence from the code. Do not edit files or post anything. {SEALED_NOTE if sealed else READ_ONLY_NOTE}
 
 {UNTRUSTED_NOTE}
 
@@ -1053,7 +1064,10 @@ class PRConversation:
             if not self.own:
                 self.review(1)
                 return "reviewed"
-            if self.item.get("status") in ("awaiting-checks", "awaiting-issues", "awaiting-hold") \
+            # A held PR whose base changed since it was parked gets a fresh review and panel against the new base.
+            parked = self.item.get("status") != "awaiting-hold" or \
+                (self.item.get("heldAt") or {}).get("base") == self.base
+            if self.item.get("status") in ("awaiting-checks", "awaiting-issues", "awaiting-hold") and parked \
                     and self.item.get("panelSha") == self.head \
                     and not self.comments:
                 return self.land(self.item.get("panelTally", "?"))
@@ -1104,26 +1118,37 @@ class PRConversation:
 
     def review(self, round_no: int) -> list:
         self.refresh()
+        if self.own and self.head != self.pr.get("headRefOid") and not self.ownership(self.head):
+            self.own = False  # someone else pushed since this cycle listed the commits: this head is reviewed sealed
         span = f"origin/{self.base}...{self.head}"
         stat = git(self.clone, "diff", "--stat", span)
         if self.own:
             worktree_at(self.clone, self.review_tree, self.head)
             diff, cut = git(self.clone, "diff", span), "; read the changed files in the working directory"
-        else:  # someone else's PR: the reviewer is sealed and sees only this text, so the diff carries more context
-            diff, cut = git(self.clone, "diff", "--unified=40", span), ""
+        else:
+            # Someone else's PR: the reviewer is sealed and sees only this text, so the diff carries as much
+            # context as still fits.
+            cut = ""
+            for context in (40, 10, 3):
+                diff = git(self.clone, "diff", f"--unified={context}", span)
+                if len(diff) <= MAX_DIFF:
+                    break
         if len(diff) > MAX_DIFF:
             diff = diff[:MAX_DIFF] + f"\n[diff truncated{cut}]"
         session = f"{self.it.tag}-reviewer" if self.own and not self.bot.dry else None
         prompt = review_prompt(self, round_no, f"{stat}\n\n{diff}", self.author_reply)
+        again = ("Your reply had no parseable findings block. Reply again: the summary, then exactly one fenced "
+                 "```json block {\"findings\":[...]}.")
         if self.own:
             reply = self.it.ask(self.reviewer, prompt, self.review_tree, "--approve-reads", session)
         else:
             reply = self.it.ask_sealed(self.reviewer, prompt)
         findings = parse_findings(reply)
         if findings is None and session:
-            reply = self.it.ask(self.reviewer, "Your reply had no parseable findings block. Reply again: the "
-                                "summary, then exactly one fenced ```json block {\"findings\":[...]}.",
-                                self.review_tree, "--approve-reads", session)
+            reply = self.it.ask(self.reviewer, again, self.review_tree, "--approve-reads", session)
+            findings = parse_findings(reply)
+        elif findings is None and not self.own:  # a sealed call keeps no session: ask the whole thing once more
+            reply = self.it.ask_sealed(self.reviewer, f"{prompt}\n\n{again}")
             findings = parse_findings(reply)
         if findings is None:
             raise Blocked(f"reviewer {role_label(self.reviewer)} returned no findings JSON")
@@ -1325,16 +1350,19 @@ class PRConversation:
         sha = self.item.get("panelSha")
         # One CHECK_WAIT per head: a later cycle looks without waiting, so a slow or missing check never holds up
         # every other item for half an hour each cycle.
-        facts = self.gate_facts(sha, wait=self.item.get("checksWaited") != sha)
-        if facts["pending"]:
-            self.item["checksWaited"] = sha
+        waited = self.item.get("checksWaited") == sha
+        facts = self.gate_facts(sha, wait=not waited)
+        if facts["pending"] and not waited:
+            self.item.update(checksWaited=sha, missingLooks=0)
         ok, admin, reasons = gate_decision(facts)
         if not ok:
             # Retried by the next cycle (AWAITING) when the head is the panel's and nothing else blocks.
             rest = gate_decision({**facts, "openIssues": [], "behindBy": 0, "held": False, "stackBase": None})[2]
             if facts["pending"] and facts["head"] == sha:
-                # Running checks are looked at again next cycle; one that never reported blocks after the wait.
-                status = "awaiting-checks" if facts["running"] else "blocked"
+                # Running checks are looked at again next cycle. One that hasn't reported while nothing runs gets
+                # MISSING_LOOKS cycles (a check that starts only when another finishes), then blocks.
+                self.item["missingLooks"] = 0 if facts["running"] else self.item.get("missingLooks", 0) + 1
+                status = "awaiting-checks" if self.item["missingLooks"] < MISSING_LOOKS else "blocked"
             elif not rest and facts["head"] == sha and (facts["held"] or facts["stackBase"]):
                 status = "awaiting-hold"
                 self.item["heldAt"] = {"held": facts["held"], "base": self.base}
@@ -1468,30 +1496,48 @@ class IssueConversation:
         self.cfg, self.repo, self.n, self.default = bot.cfg, it.repo, issue["number"], default
         self.author, self.reviewer = self.cfg["author"], self.cfg["reviewer"]
         self.tree = WORK / "worktrees" / slug(self.repo) / f"issue{self.n}"
+        self.sealed = False
+
+    def turn(self, role: dict, prompt: str, session: str = None) -> str:
+        """One discussion turn: sealed (no tools) when someone else's text is in the prompt, else read-only in the
+        checkout."""
+        if self.sealed:
+            return self.it.ask_sealed(role, prompt)
+        return self.it.ask(role, prompt, self.tree, "--approve-reads", session)
 
     def run(self) -> str:
         sha = git(self.clone, "rev-parse", f"origin/{self.default}")
-        implement = wants_implementation(self.issue, self.comments, self.item, self.bot.ident.owner,
-                                         self.cfg["mention"])
+        owner = self.bot.ident.owner
+        implement = wants_implementation(self.issue, self.comments, self.item, owner, self.cfg["mention"])
         if implement:  # the build runs with --approve-all: only the owner's comments shape its plan
-            self.comments = [c for c in self.comments if same(login_of(c), self.bot.ident.owner)]
-        worktree_at(self.clone, self.tree, sha)
+            self.comments = [c for c in self.comments if same(login_of(c), owner)]
+        # Text from anyone but the owner never reaches an agent with tools: it could be talked into reading a local
+        # file or fetching a URL, and the replies are posted. A build the owner asked for keeps its tools.
+        self.sealed = not implement and not all(same(login_of(x), owner) for x in [self.issue, *self.comments])
+        if self.sealed and not self.author["agent"] == self.reviewer["agent"] == "omp":
+            log(f"{self.it.key}: not discussed: someone else's issue needs sealed turns, which only omp can run")
+            return "not-discussed"
+        if not self.sealed:
+            worktree_at(self.clone, self.tree, sha)
         if self.bot.dry:
             print(f"  [dry-run] author {role_label(self.author)} would propose a plan, reviewer "
                   f"{role_label(self.reviewer)} critique it, "
                   f"the author answer" + (f"; then implement on {B['branchPrefix']}/issue-{self.n} and open a PR"
-                                          if implement else " (discussion only)"), flush=True)
+                                          if implement else " (discussion only)")
+                  + (", sealed: no tools" if self.sealed else ""), flush=True)
             if self.bot.live_turns:
-                self.it.say("author", self.author, sha,
-                            self.it.ask(self.author, plan_prompt(self), self.tree, "--approve-reads"))
+                self.it.say("author", self.author, sha, self.turn(self.author, plan_prompt(self)))
             return "dry-run"
         author_session, reviewer_session, build_session = issue_sessions(self.it.tag, implement)
-        plan = self.it.ask(self.author, plan_prompt(self), self.tree, "--approve-reads", author_session)
+        plan = self.turn(self.author, plan_prompt(self), author_session)
         self.it.say("author", self.author, sha, plan)
-        critique = self.it.ask(self.reviewer, critique_prompt(self, plan), self.tree, "--approve-reads",
-                               reviewer_session)
+        critique = self.turn(self.reviewer, critique_prompt(self, plan), reviewer_session)
         self.it.say("reviewer", self.reviewer, sha, critique)
-        answer = self.it.ask(self.author, answer_prompt(critique), self.tree, "--approve-reads", author_session)
+        if self.sealed:  # no session to remember the plan: the answer turn gets the whole exchange
+            answer = self.turn(self.author, f"{plan_prompt(self)}\n<your-proposal>\n{defang_prompt(plan)}\n"
+                               f"</your-proposal>\n\n{answer_prompt(critique, sealed=True)}")
+        else:
+            answer = self.turn(self.author, answer_prompt(critique), author_session)
         self.it.say("author", self.author, sha, answer)
         if not implement:
             return "discussed"

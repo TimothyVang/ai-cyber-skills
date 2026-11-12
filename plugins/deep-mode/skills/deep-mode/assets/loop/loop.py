@@ -8,9 +8,9 @@ A goal file is Markdown with frontmatter (one `key: value` per line):
     goal: one-line objective
     check: shell command; exit 0 means done
     protect: tests/test_x.py scripts/check.sh  (required: files and folders the check runs, which the agent must not
-                                              change; a path that doesn't exist yet, such as a root conftest.py,
-                                              must stay absent; `none` when the check reads nothing the agent
-                                              could edit)
+                                              change; `absent:conftest.py` for a path that doesn't exist and must
+                                              stay absent; `none` when the check reads nothing the agent could
+                                              edit)
     harness: omp | claude | codex            (default omp)
     max_iterations: 10                       (hard cap, required)
     max_cost_usd: 2                          (per iteration; omp --max-cost, claude --max-budget-usd; required for
@@ -96,16 +96,24 @@ def project_root(path):
 
 
 def protected_paths(fields, root, goal_path):
-    """Resolve `protect` to root-relative paths inside the root, never the root itself. A path may be absent: then
-    creating it counts as a change (protect_digest records it as missing)."""
+    """Resolve `protect` to root-relative paths inside the root, never the root itself. Each must exist, so a typo
+    is caught, unless it is written `absent:<path>`: that one must not exist, and creating it counts as a change
+    (protect_digest records it as missing)."""
     if fields["protect"].strip().lower() == "none":
         return []
     paths = []
     for entry in shlex.split(fields["protect"]):
-        full = os.path.normpath(os.path.join(root, entry))
+        absent = entry.startswith("absent:")
+        name = entry[len("absent:"):] if absent else entry
+        full = os.path.normpath(os.path.join(root, name))
         rel = os.path.relpath(full, root)
         if rel == "." or rel.startswith(".."):
-            raise SystemExit(f"{goal_path}: protect path {entry!r} must be inside the project root and not the root")
+            raise SystemExit(f"{goal_path}: protect path {name!r} must be inside the project root and not the root")
+        if absent and os.path.lexists(full):
+            raise SystemExit(f"{goal_path}: protect path {name!r} exists; drop its `absent:` prefix")
+        if not absent and not os.path.lexists(full):
+            raise SystemExit(f"{goal_path}: protect path {name!r} does not exist (write `absent:{name}` for a path "
+                             "that must stay absent)")
         paths.append(rel.replace(os.sep, "/"))
     return paths
 

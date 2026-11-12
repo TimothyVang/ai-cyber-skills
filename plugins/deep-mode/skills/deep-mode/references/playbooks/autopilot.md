@@ -43,7 +43,7 @@ Use when: a queue of PRs is to be built and verified with full autonomy, one own
 ## Gates
 
 - Merge only in `merge` mode, only queue items, only on a panel pass at the head and trunk it lands on. Green CI alone never authorizes a merge.
-- `stack-only`: never merge; after handoff, no pushes without the operator's go. When the deep-mode bot watches the repo, give every PR the `hold` label as it opens (`gh pr edit <n> --add-label hold`): the bot reviews and verifies a held PR but never merges it.
+- `stack-only`: never merge; after handoff, no pushes without the operator's go. When the deep-mode bot watches the repo, give every PR the `hold` label as it opens (`gh label create hold --force` once, then `gh pr edit <n> --add-label hold`): the bot reviews and verifies a held PR but never merges it.
 - Never bypass forge-enforced approvals; loosened gates need proof + countersign.
 - Operator stop → zero writes immediately.
 - No verdict from an agent that wrote the code; verifiers use a different model family than the author when one is available.

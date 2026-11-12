@@ -178,6 +178,11 @@ class TriggerTest(unittest.TestCase):
         self.assertFalse(asks(f"{MENTION} implementation looks wrong, do not build this"))
         self.assertFalse(asks(f"> {MENTION} implement\n\nNo, hold off."))  # quoting the command
         self.assertFalse(asks(f"I will not say {MENTION} implement yet"))
+        fence = "`" * 3
+        self.assertFalse(asks(f"To build it, write:\n{fence}\n{MENTION} implement\n{fence}"))  # shown, not said
+        self.assertFalse(asks(f"Example:\n\n    {MENTION} implement"))  # an indented code block
+        self.assertFalse(asks(f"<!-- {MENTION} implement\n{MENTION} implement -->"))
+        self.assertTrue(asks(f"{fence}\nsome log\n{fence}\n{MENTION} implement"))  # after a closed block it counts
 
     def test_retry_keeps_the_triggering_comments(self):
         request = comment(OWNER, "2026-01-01T00:00:01Z", f"{MENTION} implement, and keep the API stable")
@@ -416,12 +421,23 @@ class LandTest(unittest.TestCase):
         c.gate_facts = mock.Mock(return_value=GateTest.facts(self, **facts))
         return c.land("3/3"), c
 
-    def test_a_required_check_that_never_reports_blocks_after_one_wait(self):
-        item = {"panelSha": self.SHA}
-        status, c = self.land(item, requiredContexts=["check", "e2e"], pending=True)
-        self.assertEqual(status, "blocked")
-        c.gate_facts.assert_called_once_with(self.SHA, wait=True)
-        self.assertIn("`e2e` never reported", c.it.posts[0][1])
+    def test_a_required_check_that_never_reports_blocks_a_few_cycles_after_the_one_wait(self):
+        item, missing = {"panelSha": self.SHA}, {"requiredContexts": ["check", "e2e"], "pending": True}
+        waits, statuses = [], []
+        for _ in range(bot.MISSING_LOOKS):
+            status, c = self.land(item, **missing)
+            item["status"] = status
+            waits.append(c.gate_facts.call_args.kwargs["wait"])
+            statuses.append(status)
+        self.assertEqual(waits, [True] + [False] * (bot.MISSING_LOOKS - 1))  # half an hour once, never again
+        self.assertEqual(statuses, ["awaiting-checks"] * (bot.MISSING_LOOKS - 1) + ["blocked"])
+        self.assertIn("`e2e` never reported", c.it.posts[-1][1])
+
+    def test_a_check_that_starts_running_again_resets_the_missing_count(self):
+        item = {"panelSha": self.SHA, "checksWaited": self.SHA, "missingLooks": bot.MISSING_LOOKS - 1}
+        running = {"required": [{"name": "check", "bucket": "pending"}], "pending": True, "running": True}
+        self.assertEqual(self.land(item, **running)[0], "awaiting-checks")
+        self.assertEqual(item["missingLooks"], 0)
 
     def test_running_checks_are_waited_for_once_per_head(self):
         item = {"panelSha": self.SHA}
@@ -486,14 +502,53 @@ class CommentTest(unittest.TestCase):
 
 
 class SealedReviewTest(unittest.TestCase):
+    def setUp(self):
+        log = mock.patch.object(bot, "log")  # the real one appends to the user's bot.log
+        log.start()
+        self.addCleanup(log.stop)
+
     def conversation(self, own, reviewer="omp"):
         c = object.__new__(bot.PRConversation)
         c.repo, c.n, c.base, c.head, c.own = "o/r", 7, "main", "a" * 40, own
-        c.pr, c.comments, c.author_reply = {"title": "t", "author": {"login": "contributor"}}, [], None
+        c.pr = {"title": "t", "author": {"login": "contributor"}, "headRefOid": c.head}
+        c.comments, c.author_reply = [], None
         c.clone, c.review_tree, c.reviewer, c.item = Path("clone"), Path("tree"), {"agent": reviewer}, {}
         c.bot, c.it, c.refresh = mock.Mock(dry=False), mock.Mock(tag="o-r-pr-7", key="o/r#pr:7"), mock.Mock()
         c.it.ask.return_value = c.it.ask_sealed.return_value = 'fine\n```json\n{"findings":[]}\n```'
         return c
+
+    def test_a_sealed_reply_without_findings_is_asked_for_once_more(self):
+        c = self.conversation(own=False)
+        c.it.ask_sealed.side_effect = ["no json here", 'ok\n```json\n{"findings":[]}\n```']
+        with mock.patch.object(bot, "git", return_value="diff"):
+            self.assertEqual(c.review(1), [])
+        self.assertEqual(c.it.ask_sealed.call_count, 2)
+        c.it.ask_sealed.side_effect = ["no json here", "still none"]
+        with mock.patch.object(bot, "git", return_value="diff"), self.assertRaises(bot.Blocked):
+            c.review(1)
+
+    def test_the_sealed_diff_keeps_as_much_context_as_fits(self):
+        c = self.conversation(own=False)
+        sizes = {"--unified=40": bot.MAX_DIFF + 1, "--unified=10": bot.MAX_DIFF + 1, "--unified=3": 50}
+        asked = []
+
+        def git(clone, *args):
+            asked.append(args[1])
+            return "x" * sizes.get(args[1], 5)
+
+        with mock.patch.object(bot, "git", side_effect=git):
+            c.review(1)
+        self.assertEqual(asked, ["--stat", "--unified=40", "--unified=10", "--unified=3"])
+        self.assertNotIn("[diff truncated", c.it.ask_sealed.call_args.args[1])
+
+    def test_a_held_pr_whose_base_changed_is_reviewed_again_before_any_merge(self):
+        c = self.conversation(own=True)
+        c.item = {"status": "awaiting-hold", "panelSha": c.head, "heldAt": {"held": False, "base": "feat/parent"}}
+        c.land, c.converse = mock.Mock(return_value="merged"), mock.Mock(return_value="reviewed-again")
+        self.assertEqual(c.run(), "reviewed-again")  # c.base is now main
+        c.land.assert_not_called()
+        c.item["heldAt"]["base"] = "main"  # same base, the label came off: straight to the gate
+        self.assertEqual(c.run(), "merged")
 
     def test_someone_elses_pr_gets_a_reviewer_with_no_tools_and_no_checkout(self):
         c = self.conversation(own=False)
@@ -513,6 +568,17 @@ class SealedReviewTest(unittest.TestCase):
         tree.assert_called_once()
         self.assertEqual(c.it.ask.call_args.args[3], "--approve-reads")
 
+    def test_a_push_from_someone_else_since_the_listing_seals_the_review(self):
+        c = self.conversation(own=True)
+        c.pr["headRefOid"] = "b" * 40  # the head the cycle listed; refresh() found a newer one
+        c.ownership = mock.Mock(return_value=False)
+        with mock.patch.object(bot, "git", return_value="diff"), mock.patch.object(bot, "worktree_at") as tree:
+            c.review(1)
+        c.ownership.assert_called_once_with(c.head)
+        c.it.ask.assert_not_called()
+        tree.assert_not_called()
+        c.it.ask_sealed.assert_called_once()
+
     def test_a_reviewer_that_cannot_run_sealed_skips_someone_elses_pr(self):
         c = self.conversation(own=False, reviewer="claude")
         self.assertEqual(c.run(), "not-reviewed")
@@ -528,9 +594,66 @@ class SealedReviewTest(unittest.TestCase):
             with self.assertRaisesRegex(RuntimeError, "no login"):
                 it.ask_sealed({"agent": "omp"}, "x")
         with mock.patch.object(bot.pr_agent_local, "omp_oauth_credentials", return_value={"c1"}), \
-                mock.patch.object(bot.pr_agent_local, "omp_complete", return_value=(" reply \n", {})) as complete:
-            self.assertEqual(it.ask_sealed({"agent": "omp", "model": "p/m"}, "the prompt"), "reply")
+                mock.patch.object(bot.pr_agent_local, "omp_complete",
+                                  return_value=(" ping @\u2060alice \n", {})) as complete:
+            # the word joiner pr_agent_local adds after @ is not echoed onto the PR
+            self.assertEqual(it.ask_sealed({"agent": "omp", "model": "p/m"}, "the prompt"), "ping @alice")
         self.assertEqual(complete.call_args.args, ([{"role": "user", "content": "the prompt"}], "p/m", {"c1"}))
+
+
+class SealedIssueTest(unittest.TestCase):
+    def setUp(self):
+        log = mock.patch.object(bot, "log")
+        log.start()
+        self.addCleanup(log.stop)
+
+    def run_issue(self, author, comments=(), agents=("omp", "omp"), item=None):
+        c = object.__new__(bot.IssueConversation)
+        c.bot = mock.Mock(dry=False, ident=mock.Mock(owner=OWNER))
+        c.it = mock.Mock(tag="o-r-issue-9", key="o/r#issue:9")
+        c.it.ask.return_value = c.it.ask_sealed.return_value = "a reply"
+        c.issue = {"number": 9, "title": "t", "body": "discussion only", "author": {"login": author}, "labels": []}
+        c.comments, c.item, c.cfg = list(comments), item or {}, {"mention": MENTION}
+        c.repo, c.n, c.default, c.clone, c.tree, c.sealed = "o/r", 9, "main", Path("clone"), Path("tree"), False
+        c.author, c.reviewer = {"agent": agents[0]}, {"agent": agents[1]}
+        c.implement = mock.Mock(return_value="implemented")
+        with mock.patch.object(bot, "git", return_value="s" * 40), mock.patch.object(bot, "worktree_at") as tree:
+            return c.run(), c, tree
+
+    def test_a_strangers_issue_is_discussed_with_no_tools_and_no_checkout(self):
+        status, c, tree = self.run_issue("stranger")
+        self.assertEqual(status, "discussed")
+        c.it.ask.assert_not_called()
+        tree.assert_not_called()
+        prompts = [call.args[1] for call in c.it.ask_sealed.call_args_list]
+        self.assertEqual(len(prompts), 3)  # plan, critique, answer
+        self.assertTrue(all("You have no tools" in p and "working directory" not in p for p in prompts))
+        self.assertIn("<your-proposal>", prompts[2])  # no session: the answer turn carries the plan
+
+    def test_a_strangers_comment_on_the_owners_issue_seals_the_turns_too(self):
+        stranger = comment("stranger", "2026-01-01T00:00:05Z", f"{MENTION} what about X")
+        status, c, _ = self.run_issue(OWNER, [stranger], item={"handled": True})
+        self.assertEqual(status, "discussed")
+        c.it.ask.assert_not_called()
+
+    def test_the_owners_own_discussion_keeps_its_read_only_tools(self):
+        status, c, tree = self.run_issue(OWNER, item={"handled": True})
+        self.assertEqual(status, "discussed")
+        c.it.ask_sealed.assert_not_called()
+        tree.assert_called_once()
+        self.assertEqual({call.args[3] for call in c.it.ask.call_args_list}, {"--approve-reads"})
+
+    def test_a_build_the_owner_asked_for_keeps_its_tools_on_a_strangers_issue(self):
+        asked = comment(OWNER, "2026-01-01T00:00:06Z", f"{MENTION} implement")
+        status, c, _ = self.run_issue("stranger", [asked])
+        self.assertEqual(status, "implemented")
+        c.it.ask_sealed.assert_not_called()
+
+    def test_without_omp_a_strangers_issue_is_left_alone(self):
+        status, c, _ = self.run_issue("stranger", agents=("claude", "omp"))
+        self.assertEqual(status, "not-discussed")
+        c.it.ask.assert_not_called()
+        c.it.ask_sealed.assert_not_called()
 
 
 class TextTest(unittest.TestCase):
