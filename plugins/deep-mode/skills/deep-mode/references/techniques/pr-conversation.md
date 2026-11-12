@@ -41,7 +41,7 @@ The user follows the bots from the session, not only on GitHub. In a session, af
 python <deep-mode skill dir>/assets/pr-conversation/arena.py <pr-url> --frames --since <last comment id shown>
 ```
 
-`<deep-mode skill dir>` is this skill's folder on disk (in Claude Code, `${CLAUDE_PLUGIN_ROOT}/skills/deep-mode`), not the PR checkout you run in. It needs no terminal, so it works from any agent's shell tool. It prints one fixed-size frame per new bot or PR-Agent turn: the speaker's sprite and status, the PR with its open-findings bar and vote pips, `TURN n/m`, and a dialog box with that turn's lines in full ("REVIEWER appeared!", each finding, "AUTHOR used FIX!", the votes, the merge). Its last line names the newest comment id; pass that as `--since` next time.
+`<deep-mode skill dir>` is this skill's folder on disk (in Claude Code, `${CLAUDE_PLUGIN_ROOT}/skills/deep-mode`), not the PR checkout you run in. It needs no terminal, so it works from any agent's shell tool. It prints one frame, `--width` columns wide (80 by default), per new bot or PR-Agent turn: the speaker's sprite and status, the PR with its open-findings bar and vote pips, `TURN n/m`, and a dialog box with that turn's lines in full ("REVIEWER appeared!", each finding, "AUTHOR used FIX!", the votes, the merge). Its last line names the newest comment id; pass that as `--since` next time. If a thread failed to load it exits 1 and says to rerun with the same `--since`.
 
 Relay the output as it lands inside a fenced `text` code block, so the chat keeps the columns: in omp write it to `out://` so the run keeps going; elsewhere put it in your next message. The frames are plain Unicode with no escape codes, 80 columns wide (`--width` changes it; `--ascii` keeps to 7-bit text).
 

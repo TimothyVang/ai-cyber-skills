@@ -556,7 +556,8 @@ def turn_frame(t: dict, i: int, width: int, mode: str, sprites: dict) -> list[st
     grid.box(0, y, width, len(text) + 2, g, double=True)
     left = f"TURN {i + 1}/{len(t['turns'])}"
     grid.text(2, y, f" {left} ")
-    grid.right(width - 2, y, f" {cut(f'{fold(t['label'])} {g['dot']} #{v['id']}', width - len(left) - 10)} ", 2)
+    where = f"{fold(t['label'])} {g['dot']} #{v['id']}"  # one quote level: nested same-quote f-strings need 3.12
+    grid.right(width - 2, y, f" {cut(where, width - len(left) - 10)} ", 2)
     for k, row in enumerate(text):
         grid.text(2, y + 1 + k, row)
     return emit(grid, mode)
@@ -581,7 +582,7 @@ def frames(threads: list[dict], since: int = 0, last=None, width: int = 80, mode
         if not picked:
             continue
         out.append(cut(f"{t['label']} {g['dot']} {t['state']} {g['dot']} {fold(t['title'])}", width))
-        out.append(fold(t["url"]))
+        out.append(fold(t["url"])[:width])
         for i in picked:
             out.extend(turn_frame(t, i, width, mode, sprites))
             out.append("")

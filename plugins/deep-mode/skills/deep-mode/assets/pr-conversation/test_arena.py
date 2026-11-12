@@ -1,5 +1,7 @@
 """Pure-function tests for show_thread.py and arena.py (no network). Run: python -m unittest test_arena"""
 
+import contextlib
+import io
 import json
 import sys
 import time
@@ -551,6 +553,33 @@ class InlineFrames(unittest.TestCase):
     def test_trailing_id_line(self):
         self.assertEqual(tui.frames(self.threads(), width=80, sprites=arena.SPRITES)[-1],
                          "arena: newest comment 4 (next: --since 4)")
+
+    def run_frames(self, threads, errors):
+        original_gather, original_argv = arena.gather, sys.argv
+        arena.gather = lambda *_: (threads, errors)
+        sys.argv = ["arena.py", "https://github.com/o/r/pull/9", "--frames"]
+        out = io.StringIO()
+        try:
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(io.StringIO()):
+                try:
+                    code = arena.main()
+                except SystemExit as stop:
+                    code = stop.code
+        finally:
+            arena.gather, sys.argv = original_gather, original_argv
+        return code, out.getvalue()
+
+    def test_a_failed_fetch_is_not_a_quiet_thread(self):
+        code, out = self.run_frames([], ["o/r#9: gh: Not Found (HTTP 404)"])
+        self.assertNotIn(code, (0, None))
+        self.assertNotIn("no bot turns", out)
+
+    def test_a_partial_failure_keeps_the_cursor(self):
+        code, out = self.run_frames(self.threads(), ["o/r#8: HTTP 502"])
+        self.assertEqual(code, 1)
+        self.assertIn("TURN", out)
+        self.assertNotIn("--since 4)", out)
+        self.assertIn("run again with the same --since", out.strip().splitlines()[-1])
 
 
 if __name__ == "__main__":

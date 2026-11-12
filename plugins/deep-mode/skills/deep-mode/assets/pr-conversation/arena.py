@@ -480,7 +480,8 @@ def interactive() -> bool:
 
 
 def main() -> int:
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # thread titles can leave the code page
+    if hasattr(sys.stdout, "reconfigure"):  # a real text stream, not a test capture
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # thread titles can leave the code page
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("urls", nargs="*", metavar="thread-url", help="GitHub PR or issue URLs")
     parser.add_argument("--repo", help="owner/repo: load its recently updated PRs and issues with bot turns")
@@ -528,10 +529,15 @@ def main() -> int:
     for err in data["errors"]:
         print(f"arena: {err}", file=sys.stderr)
     if opts.frames:
+        if data["errors"] and not data["threads"]:  # a failed fetch is not a quiet thread
+            sys.exit("arena: could not load any thread (see above)")
         mode = "ascii" if opts.ascii else tui.colour_mode({k: v for k, v in os.environ.items() if k != "NO_COLOR"}) \
             if opts.color else "mono"
-        print("\n".join(tui.frames(data["threads"], opts.since, opts.last, opts.width, mode, SPRITES)))
-        return 0
+        lines = tui.frames(data["threads"], opts.since, opts.last, opts.width, mode, SPRITES)
+        if data["errors"]:  # a thread that failed may hold older unseen turns: don't move the cursor past them
+            lines[-1] = f"arena: {len(data['errors'])} thread(s) failed to load; run again with the same --since"
+        print("\n".join(lines))
+        return 1 if data["errors"] else 0
     if not data["threads"] and not opts.serve:
         sys.exit("arena: no thread with a bot turn to show")
     if not browser:
