@@ -84,6 +84,7 @@ The Eval playbook's blinding gates hold here.
   A `cd` target is judged from where the `cd` starts, so `cd spec && ... && cd ..` stays clean.
   Inside a quoted string that holds code, such as `node -e "import('../src/a.js')"`, only absolute, home and temp paths count.
   So a quoted script that reads `../` is missed. A quoted path given on its own, as in `cat "../x"`, still counts.
+  A `mktemp` with no `-p`, `--tmpdir`, folder template or earlier `TMPDIR=` in the same command counts too, since it lands in system temp.
   A path that lands outside the process's own folder, by an absolute path, a home or temp variable, or `..` that climbs out, is listed.
   Any hit marks the run `contaminated` in `measurements.json` or `judges.json` and in the printed table.
   Read the hits. A regex that looks like a path can be a false alarm. `evals/outcome/test_run.py` holds the cases the scan must get right.

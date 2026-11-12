@@ -306,6 +306,19 @@ def is_relative(word):
     return not (re.match(r"^[A-Za-z]:[\\/]|^[/~]", word) or ENV_DIR.match(word))
 
 
+def system_temp(command):
+    """`mktemp` calls that land in the system temp folder: no -p/--tmpdir, no template with a folder, no TMPDIR set first."""
+    hits = []
+    for call in re.finditer(r"\bmktemp\b([^;&|)\n`]*)", command):
+        options = call.group(1)
+        if re.search(r"(?:^|\s)(?:-p|--tmpdir)(?:[\s=]|$)|(?:^|\s)[^\s-]\S*/", options):
+            continue
+        if re.search(r"\bTMPDIR=", command[:call.start()]):
+            continue
+        hits.append(f"mktemp{options.rstrip()} (system temp)")
+    return hits
+
+
 def outside_paths(calls, folder):
     """Every path in the tool calls that resolves outside folder, relative ones against the call's cwd."""
     folder = Path(folder)
@@ -331,6 +344,8 @@ def outside_paths(calls, folder):
             if not isinstance(args.get(field), str):
                 continue
             here, words = cwd, shell_words(args[field], shell=field == "command")
+            if field == "command":
+                found += system_temp(args[field])
             i = 0
             while i < len(words):
                 word, code = words[i]

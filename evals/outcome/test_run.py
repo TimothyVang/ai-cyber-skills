@@ -41,6 +41,12 @@ CASES = [
     ("bash", {"command": "node --input-type=module -e 'import { a } from \"../src/a.js\"; a()'"}, False),
     ("bash", {"command": "cat \"../kitty-runs/key.json\""}, True),
     ("bash", {"command": "node -e \"require('fs').readFileSync('C:/work/.scratch/kitty-runs/key.json')\""}, True),
+    # mktemp writes to the system temp folder unless told where.
+    ("bash", {"command": "export KITTY_FILE=$(mktemp -d)/k.json; node bin/kitty.js balances"}, True),
+    ("bash", {"command": "cd \"$(mktemp -d)\" && ls"}, True),
+    ("bash", {"command": "D=$(mktemp -d -p .scratch/tmp); export KITTY_FILE=$D/k.json"}, False),
+    ("bash", {"command": "export TMPDIR=$PWD/.scratch/tmp; f=$(mktemp)"}, False),
+    ("bash", {"command": "f=$(mktemp .scratch/tmp/k.XXXX)"}, False),
 ]
 
 
