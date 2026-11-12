@@ -12,9 +12,10 @@ The routing eval reran too: `routing-local-tracker-2026-11-12.json`, 20/20 route
 - Round 2 only: `refs/deep-mode/issues/0003` already exists (another session reserved `0003` and has not committed it), and the user has `TODO.md` staged on `main`.
 - Request, through the `/deep` command body at each ref: write a spec and its tickets for `notes list --json` and `notes add --json <text>`, to be built later on one integration branch; stop once the tickets are published.
 - Skills copied into `.omp/skills/` from each ref, as `run.py setup` does. One `omp -p` per candidate with `--no-rules --no-context-files --no-extensions --skills <every copied skill> --max-cost 6`, API keys removed, default model `anthropic/claude-opus-5-5`.
-- Before: `97ced32` (origin/main). After: `4672da6` in round 1, `693fbb1` in round 2, `77b5f61` in round 3, `2596b54` in round 4 (this branch).
+- Before: `97ced32` (origin/main). After: `4672da6` in round 1, `693fbb1` in round 2, `77b5f61` in round 3, `2596b54` in round 4, `34b6169` in round 5 (this branch).
 - Round 3 uses round 2's setup, except the reservation `refs/deep-mode/issues/0003` points at a blob, as `015cbad` requires. Only the after variant ran.
 - Round 4 adds a shared bare remote. The candidate is a clone of it, and `tracker.md` names it as `Reservations: <url>`. After the clone, another contributor pushes `spec/archive-notes` (issue `0002`) and reserves `0003` on the remote, so neither is visible locally until a fetch. `TODO.md` is staged. Only the after variant ran, with `--model anthropic/claude-opus-5-5`.
+- Round 5 has two fresh setups with no other spec branch and no prior reservation, `TODO.md` staged, on `--model anthropic/claude-opus-5-5`. In 5a the candidate is a clone of a personal fork (its only remote) of an upstream it can't see, and `tracker.md` has no `Reservations:` line. In 5b there is no remote and `tracker.md` says `Reservations: none`.
 - Scoring is the end state of each repo (`git branch`, `git log --name-status`, `git ls-tree` per branch, `git for-each-ref refs/deep-mode`) plus the final reply.
 
 ## Results
@@ -27,12 +28,16 @@ The routing eval reran too: `routing-local-tracker-2026-11-12.json`, 20/20 route
 | round 2 after | `693fbb1` | `0004`, skipping `0002` on the other branch and the reserved `0003` | `0005`, `0006` | spec file and issue in one commit | one commit holding only the two tickets, on `spec/json-output` | untouched; `TODO.md` still staged | 0 | $1.09 |
 | round 3 after | `77b5f61` | `0004`, skipping `0002` and the reserved `0003` | `0005`, `0006` | spec file and issue in one commit | one commit holding only the two tickets, on `spec/json-output` | untouched; `TODO.md` still staged | 0 | $1.65 |
 | round 4 after | `2596b54` | `0004`, skipping `0002` and `0003`, both seen only after fetching the shared remote | `0005`, `0006` | spec file and issue in one commit | one commit holding only the two tickets, on `spec/json-output`, pushed | untouched; `TODO.md` still staged | 0 | $1.30 |
+| round 5a after | `34b6169` | `0002` | `0003`-`0005` | spec file and issue in one commit | one commit holding only the three tickets, on `spec/notes-json-output` | Setup ran first and merged `Reservations: none` into `main` | 0 | $3.10 |
+| round 5b after | `34b6169` | `0002` | `0003`-`0005` | spec file and issue in one commit | one commit holding only the three tickets, on `spec/json-output` | untouched; `TODO.md` still staged | 0 | $1.13 |
 
 Round 2 after reserved `refs/deep-mode/issues/0004` to `0006` before writing each file, so the numbers it took are visible to every worktree.
 No run touched `spec/archive-notes`. Neither round 2 run put `TODO.md` in a commit: both worked in a worktree of the spec branch, so the staged file never sat in their index.
 Round 3 worked in the main checkout itself, switched to `spec/json-output` with `TODO.md` staged, and both commits still held only their named paths. `TODO.md` stayed staged and uncommitted.
 Round 4 fetched the reservation refs and `spec/archive-notes` from the remote named by `Reservations:`, then reserved `0004` to `0006` there: the shared remote holds all four `refs/deep-mode/issues/*` refs, each pointing at a blob.
 Its first attempt, without `--model`, went to omp's current default (`openrouter/openai/gpt-6.1-sol`) and stopped after 17 s on a 402 credit error. That attempt changed nothing in the repo, and the run above repeated it on Opus.
+Round 5a stopped the Create, ran Setup and recorded `Reservations: none`, explaining that `origin` is a personal fork and parallel clones can collide. It never recorded the fork's URL, and the fork holds no `refs/deep-mode/issues/*` ref. Its reply states the collision risk. Setup's extra files (`AGENTS.md`, glossary, ADR, coding standards) explain most of the higher cost.
+Round 5b took `Reservations: none` as the clone-only path and reserved `0002` to `0005` locally, with no stop.
 A scratch-repo check covers the commit form the playbooks now name: with `other.txt` staged, `git commit -m spec -- docs/specs/a.md issue.md` committed exactly those two paths and left `other.txt` staged.
 
 ## Recommendation
