@@ -1,0 +1,262 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>deep-mode: PR and issue bots plus a software-factory skill set for coding agents</title>
+<meta name="description" content="deep-mode is an open-source MIT plugin for coding agents. Its bots review, fix, verify on a 3-agent panel and merge your own GitHub PRs, on your own GitHub App and subscription, with no API keys. Its skills take work from idea to spec, tickets, code and a merged PR.">
+<meta name="author" content="TimothyVang">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://timothyvang.github.io/deep-mode/">
+<link rel="alternate" type="text/markdown" href="llms.txt" title="llms.txt">
+<meta name="theme-color" content="#0b1220">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="deep-mode">
+<meta property="og:title" content="deep-mode: PR and issue bots plus a software-factory skill set">
+<meta property="og:description" content="Bots that review, fix, verify and merge your own PRs on your GitHub App and subscription, and skills that take work from idea to merged PR. Open source, MIT.">
+<meta property="og:url" content="https://timothyvang.github.io/deep-mode/">
+<meta property="og:image" content="https://timothyvang.github.io/deep-mode/images/og.png">
+<meta property="og:image:width" content="1280">
+<meta property="og:image:height" content="640">
+<meta property="og:image:alt" content="deep-mode: PR and issue bots that review, fix, verify and merge, plus a software-factory skill set.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="deep-mode: PR and issue bots plus a software-factory skill set">
+<meta name="twitter:description" content="Bots that review, fix, verify and merge your own PRs on your GitHub App and subscription. Skills from idea to merged PR. MIT.">
+<meta name="twitter:image" content="https://timothyvang.github.io/deep-mode/images/og.png">
+<meta name="twitter:image:alt" content="deep-mode: PR and issue bots plus a software-factory skill set.">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "deep-mode",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Windows, macOS, Linux",
+  "description": "Open-source MIT plugin for coding agents. PR and issue bots on your own private GitHub App run any ACP agent (omp by default) on your own subscription login; they review, fix, verify on a three-agent panel, and merge your own PRs behind a gate in code, and they plan and build your issues. A software-factory skill set takes work from idea to spec, tickets, code and a merged PR.",
+  "url": "https://timothyvang.github.io/deep-mode/",
+  "downloadUrl": "https://github.com/TimothyVang/deep-mode",
+  "codeRepository": "https://github.com/TimothyVang/deep-mode",
+  "license": "https://opensource.org/licenses/MIT",
+  "image": "https://timothyvang.github.io/deep-mode/images/og.png",
+  "screenshot": "https://timothyvang.github.io/deep-mode/images/pr-19-thread.gif",
+  "dateModified": "2026-11-11",
+  "author": {"@type": "Person", "name": "TimothyVang", "url": "https://github.com/TimothyVang"},
+  "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
+  "keywords": "AI code review, GitHub App, PR bots, autonomous merge, verifier panel, ACP, acpx, omp, Claude Code, Codex, software factory, spec, tickets, TDD, agent skills, self-hosted"
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "dateModified": "2026-11-11",
+  "mainEntity": [
+    {"@type": "Question", "name": "What is deep-mode?",
+     "acceptedAnswer": {"@type": "Answer", "text": "deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel."}},
+    {"@type": "Question", "name": "How do the deep-mode PR bots work?",
+     "acceptedAnswer": {"@type": "Answer", "text": "A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote, and a gate in code merges your own PR at the voted head."}},
+    {"@type": "Question", "name": "Does deep-mode need an API key?",
+     "acceptedAnswer": {"@type": "Answer", "text": "No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage."}},
+    {"@type": "Question", "name": "Which agents and harnesses does deep-mode work with?",
+     "acceptedAnswer": {"@type": "Answer", "text": "The bots use any agent acpx reaches over ACP: omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each role can pick its own model, so one harness can seat an author and a reviewer on different model families. The skill runs in omp, Claude Code, Codex, Cursor and other harnesses."}},
+    {"@type": "Question", "name": "Will deep-mode merge other people's PRs?",
+     "acceptedAnswer": {"@type": "Answer", "text": "No. Only your own PRs merge: your account opened them from your repo, not a fork, and their commits pass the ownership checks in code. Everyone else's PRs get review comments only."}},
+    {"@type": "Question", "name": "What is the deep-mode software factory?",
+     "acceptedAnswer": {"@type": "Answer", "text": "A set of playbooks and techniques that take an idea to merged code: set up the repo, grill the idea, prototype a fork, write a spec, cut it into tickets, build them with TDD on one integration branch or one PR per ticket, then review and land through a verifier panel. Triage, research, a domain model, architecture review and retros sit around that line."}},
+    {"@type": "Question", "name": "Has deep-mode merged a real PR on its own?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. PR 19 in TimothyVang/deep-mode went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot. The whole conversation is public in the PR thread."}}
+  ]
+}
+</script>
+<style>
+:root{--bg:#f7f8fb;--fg:#0f172a;--muted:#475569;--card:#ffffff;--edge:#dbe2ee;--accent:#6d28d9;--code:#eef2f8}
+@media (prefers-color-scheme:dark){:root{--bg:#070c16;--fg:#e6edf3;--muted:#9fb0c8;--card:#0f1828;--edge:#22304d;--accent:#a78bfa;--code:#111b2f}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
+a{color:var(--accent)}
+header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
+nav{max-width:1100px;margin:0 auto;padding:10px 24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+nav .brand{font-weight:800;color:var(--fg);text-decoration:none;margin-right:auto}
+nav a{text-decoration:none;color:var(--muted);font-size:15px}
+nav a:hover{color:var(--fg)}
+main{max-width:1100px;margin:0 auto;padding:0 24px 64px}
+section{padding:56px 0 8px}
+h1{font-size:clamp(34px,5vw,54px);line-height:1.1;margin:0 0 16px;letter-spacing:-.02em}
+h2{font-size:30px;margin:0 0 12px;letter-spacing:-.01em}
+h3{font-size:19px;margin:24px 0 6px}
+p.lead{font-size:20px;color:var(--muted);max-width:860px;margin:0 0 24px}
+.hero{padding-top:64px}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:0;list-style:none}
+.pills li{border:1px solid var(--edge);background:var(--card);border-radius:999px;padding:4px 12px;font-size:14px;color:var(--muted)}
+.cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
+.btn{display:inline-block;padding:10px 18px;border-radius:10px;font-weight:600;text-decoration:none;border:1px solid var(--edge);background:var(--card);color:var(--fg)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+figure{margin:24px 0}
+figure img{display:block;width:100%;height:auto;border-radius:18px}
+figcaption{color:var(--muted);font-size:15px;margin-top:10px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:16px 0}
+.card{background:var(--card);border:1px solid var(--edge);border-radius:14px;padding:18px 20px}
+.card h3{margin-top:0}
+pre{background:var(--code);border:1px solid var(--edge);border-radius:12px;padding:16px 18px;overflow:auto;font:14px/1.6 ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,monospace}
+code{font-family:ui-monospace,SFMono-Regular,"Cascadia Mono",Consolas,monospace;font-size:.92em;background:var(--code);padding:1px 5px;border-radius:5px}
+pre code{background:none;padding:0}
+.table-wrap{overflow-x:auto;border:1px solid var(--edge);border-radius:14px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;vertical-align:top;padding:10px 12px;border-bottom:1px solid var(--edge)}
+tr:last-child td,tr:last-child th{border-bottom:0}
+dl.skills{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px 24px;margin:16px 0}
+dl.skills div{background:var(--card);border:1px solid var(--edge);border-radius:12px;padding:12px 16px}
+dl.skills dt{font-weight:700}
+dl.skills dd{margin:4px 0 0;color:var(--muted);font-size:15px}
+footer{border-top:1px solid var(--edge);color:var(--muted);font-size:14px}
+footer div{max-width:1100px;margin:0 auto;padding:24px}
+</style>
+</head>
+<body>
+<header class="top">
+<nav aria-label="Main">
+<a class="brand" href="#top">deep-mode</a>
+<a href="#how">How it works</a>
+<a href="#factory">Software factory</a>
+<a href="#install">Install</a>
+<a href="#safety">Safety</a>
+<a href="#faq">FAQ</a>
+<a href="https://github.com/TimothyVang/deep-mode">GitHub</a>
+</nav>
+</header>
+<main id="top">
+
+<section class="hero" aria-labelledby="hero-title">
+<h1 id="hero-title">Bots that review, fix, verify and merge your PRs. Skills that take work from idea to merged code.</h1>
+<p class="lead">deep-mode is an open-source MIT plugin for coding agents. Its PR and issue bots run on your own private GitHub App with any ACP agent (omp by default, or Claude Code, Codex and others) on your own subscription login. They review each PR in the thread, fix their own findings, vote on a three-agent panel, and merge your own PRs behind a gate in code. Its skill set takes an idea through a grill, a spec, tickets, TDD and review to a merged PR. No API keys, no webhooks, no server.</p>
+<ul class="pills" aria-label="Key facts">
+<li>MIT licensed</li><li>Runs on your machine</li><li>Subscription logins, no API keys</li><li>Any ACP agent via acpx</li><li>3-agent verifier panel</li><li>Spec to tickets to merged PR</li>
+</ul>
+<div class="cta">
+<a class="btn primary" href="#install">Install</a>
+<a class="btn" href="https://github.com/TimothyVang/deep-mode">View on GitHub</a>
+<a class="btn" href="https://github.com/TimothyVang/deep-mode/pull/19">See a real run</a>
+</div>
+<figure>
+<img src="images/pr-19-thread.gif" width="960" height="600" alt="The real thread of PR 19: the author bot merges main into the PR, the reviewer posts findings, the author fixes them, the coordinator blocks after three rounds, the owner says continue, two panels fail with evidence, the third passes 2/3, and the bot squash-merges.">
+<figcaption>A real run, not a mock-up: the bots took <a href="https://github.com/TimothyVang/deep-mode/pull/19">PR #19</a> through 5 cycles. Two failed panels caught real bugs; the third passed 2/3 and the bot merged it.</figcaption>
+</figure>
+</section>
+
+<section id="how" aria-labelledby="how-title">
+<h2 id="how-title">How the bots work</h2>
+<p>Three parts. A private GitHub App gives the bots a name in your threads. A poller, <code>bot.py watch</code>, runs on your machine and checks the repos the app is installed on every 120 seconds. The agents run through <a href="https://github.com/openclaw/acpx">acpx</a>, a client for the Agent Client Protocol, so any ACP agent can take a seat, each on its own subscription login. The agents only return text. The poller posts it as the app, and it pushes and merges with your own <code>gh</code> and git.</p>
+<figure>
+<img src="images/how-it-works.svg" width="1200" height="650" alt="Diagram: on GitHub, your private app deep-mode-login, PR and issue threads, and branches and checks. On your machine, the config directory, bot.py watch, your gh and git, and acpx connecting an author agent and a reviewer agent, omp by default.">
+</figure>
+<h3>The PR conversation</h3>
+<p>The coordinator posts a kickoff. When the branch conflicts with its base, the author agent merges the base into the head and pushes; it never rebases or force-pushes. The reviewer agent returns findings as JSON with evidence. The author fixes each one or dismisses it with proof. They repeat until no P0 or P1 is open, for at most three rounds, and an owner's <code>@deep-mode continue</code> starts more. Then three verifier agents, each in its own worktree at the final head, vote PASS or FAIL. Two PASS votes are needed.</p>
+<figure>
+<img src="images/pr-conversation.svg" width="1200" height="940" alt="Sequence diagram of the PR conversation: kickoff, conflict merge, review and answer rounds over ACP mirrored to the thread, a three-verifier panel, and the merge gate checks before a squash merge.">
+</figure>
+<p>The merge gate is code, not a prompt. It merges only your own PR, at the same head the panel voted on, with every required check reported and green, with no conflict, and with merges allowed by <code>autonomousMerge</code>. Anyone else's PR gets review comments only.</p>
+<h3>The issue conversation</h3>
+<p>On a new issue, the author agent plans, the reviewer critiques, and the author answers, all read-only and all in the issue thread. When you opened the issue, or you comment <code>@deep-mode implement</code>, the author builds it on <code>deep-mode/issue-&lt;n&gt;</code> and opens a PR that closes the issue. The PR conversation then lands it.</p>
+<figure>
+<img src="images/issue-flow.svg" width="1200" height="630" alt="Flow diagram: trigger, read as untrusted data, plan, critique, answer, then if the owner opened the issue or said implement, build on a branch, open a PR with Closes, land it with the PR conversation, and the merge closes the issue.">
+</figure>
+</section>
+
+<section id="factory" aria-labelledby="factory-title">
+<h2 id="factory-title">The software factory</h2>
+<p>One command, <code>/deep</code>, reads your request and the repo and routes it to a playbook. You never pick a skill. The main line takes an idea to merged code; skip the phases a job doesn't need.</p>
+<div class="table-wrap">
+<table>
+<thead><tr><th scope="col">Phase</th><th scope="col">Flow</th><th scope="col">Leaves behind</th></tr></thead>
+<tbody>
+<tr><td>0. Set up the repo once</td><td>Setup</td><td>A tracker (GitHub issues, local files, or another tracker), mapped labels, <code>GLOSSARY.md</code>, <code>docs/adr/</code>, <code>CODING_STANDARDS.md</code>, an <code>AGENTS.md</code> section</td></tr>
+<tr><td>1. Sharpen the idea</td><td>Grill, with its With docs mode</td><td>A decision table, glossary terms, ADRs</td></tr>
+<tr><td>2. Settle a fork by running it</td><td>Prototype</td><td>A decision backed by an observation</td></tr>
+<tr><td>3. Write it down</td><td>Spec</td><td><code>docs/specs/&lt;slug&gt;.md</code> and a spec issue</td></tr>
+<tr><td>4. Cut it up</td><td>Tickets</td><td>Tickets with their blockers</td></tr>
+<tr><td>5. Build it</td><td>Implement spec (one integration branch) or Board (one PR per ticket), with TDD</td><td>Merged code</td></tr>
+<tr><td>6. Review and land</td><td>PR review (correctness, security, spec and standards lenses), verifier panel, PR conversation</td><td>A merged PR with evidence</td></tr>
+</tbody>
+</table>
+</div>
+<h3>Around the main line</h3>
+<dl class="skills">
+<div><dt>Triage</dt><dd>Sorts incoming issues and outside PRs into a category and a state, and posts a brief or the questions that block them.</dd></div>
+<div><dt>Wayfinder</dt><dd>Charts an effort too big for one session and hands its decisions to a spec.</dd></div>
+<div><dt>Board</dt><dd>Runs a project on GitHub issues with status labels. Every task ends in a merge after a panel pass.</dd></div>
+<div><dt>Factory</dt><dd>Runs a queue of labeled issues through the <code>factory</code> CLI: spec, hidden tests, code, reviews and merge for each job.</dd></div>
+<div><dt>Orchestrate</dt><dd>Runs a multi-day program with many stacked PRs and subagents from one coordinator.</dd></div>
+<div><dt>domain-model</dt><dd>Keeps <code>GLOSSARY.md</code> and ADRs current as names and decisions change.</dd></div>
+<div><dt>research</dt><dd>Writes an answer that later sessions will cite into the repo.</dd></div>
+<div><dt>architecture-review</dt><dd>Finds structural friction across the codebase and settles which refactors to make.</dd></div>
+<div><dt>security-audit</dt><dd>Audits a PR's security before it merges, run by your own agent.</dd></div>
+<div><dt>retro</dt><dd>Improves the repo's files, checks and docs after a session, so the next agent works faster.</dd></div>
+<div><dt>Handoff and Pause safely</dt><dd>A portable doc for another session, harness or person, or a resume note for later in this repo.</dd></div>
+<div><dt>questionnaire</dt><dd>Writes the questions for the one person who holds a fact nobody else has.</dd></div>
+<div><dt>wizard</dt><dd>A guided script for steps only a human can do: dashboards, credentials, irreversible clicks.</dd></div>
+<div><dt>teach and course</dt><dd>Explains a change or subsystem, or runs a course on a topic over many sessions.</dd></div>
+<div><dt>pre-commit</dt><dd>Runs the repo's own lint, typecheck and tests at commit time.</dd></div>
+<div><dt>git-guardrails</dt><dd>Turns the git hard stops into a hook the harness enforces before a destructive command runs.</dd></div>
+<div><dt>deep-stack</dt><dd>Stack picks and decision rules for any app, an agent-driven UI design workflow, and a per-task ship loop.</dd></div>
+<div><dt>Verification skills</dt><dd>Build and maintain a per-repo <code>verify-&lt;app&gt;</code> skill so agents can drive your app and capture proof.</dd></div>
+</dl>
+</section>
+
+<section id="install" aria-labelledby="install-title">
+<h2 id="install-title">Install</h2>
+<h3>The skills</h3>
+<p>In omp:</p>
+<pre><code>omp plugin marketplace add TimothyVang/deep-mode
+omp plugin install deep-mode@deep-mode</code></pre>
+<p>In Claude Code, run <code>/plugin marketplace add TimothyVang/deep-mode</code> and <code>/plugin install deep-mode@deep-mode</code>. Codex, Cursor and other harnesses that load <code>SKILL.md</code> skills take the folders in <code>plugins/deep-mode/skills/</code>. Then, in any repo, run <code>/deep-mode:deep &lt;your task&gt;</code>.</p>
+<h3>The bots</h3>
+<p>You need git, <code>gh</code> logged in, openssl (Git for Windows ships one), Node and npm, Python 3.10 or newer, and at least one ACP agent CLI on its subscription login. Then run three commands:</p>
+<pre><code>git clone https://github.com/TimothyVang/deep-mode
+cd deep-mode/plugins/deep-mode/skills/deep-mode
+py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre>
+<p>The installer checks your tools, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private GitHub App in the browser, waits while you install it on the repos you pick, writes <code>bot.json</code>, and registers the poller to start on its own (Task Scheduler, launchd, systemd or cron). It asks before each change. <code>--yes</code> accepts every default, and <code>--check</code> reports what is missing and changes nothing.</p>
+<figure>
+<img src="images/install.gif" width="827" height="515" alt="Terminal recording of a real run of install.py --check: tools, the agent harnesses found (omp, Claude Code, Codex, OpenCode), an ACP round trip to omp, and the GitHub App installation all report ok.">
+<figcaption>A real run of <code>install.py --check</code>, recorded to <a href="images/install.cast">an asciicast</a>.</figcaption>
+</figure>
+<p>Day to day, <code>bot.py status</code> shows what it is doing, and <code>bot.py once --repo &lt;owner/repo&gt; --dry-run</code> previews a cycle without posting.</p>
+</section>
+
+<section id="safety" aria-labelledby="safety-title">
+<h2 id="safety-title">Safety</h2>
+<div class="grid">
+<div class="card"><h3>Installing is the opt-in</h3><p>The bots work only in repos where you installed your app. A base-branch <code>.deep-mode.json</code> with <code>"bot": false</code> skips a repo, and <code>"autonomousMerge": false</code> stops at merge-ready.</p></div>
+<div class="card"><h3>Only your PRs merge</h3><p>Your account opened the PR from your repo, not a fork, and its commits pass the ownership checks in code. Everyone else's PRs get review comments only.</p></div>
+<div class="card"><h3>A gate in code</h3><p>Same head as the panel, every required check green, no conflict, merge authorized. The opt-out file is read from the base branch, so a PR cannot grant itself a merge.</p></div>
+<div class="card"><h3>Thread text is data</h3><p>PR and issue text is wrapped as untrusted input, and <code>@path</code> mentions are defanged. A request in it to merge, push or post elsewhere is reported as a finding.</p></div>
+<div class="card"><h3>History stays intact</h3><p>Conflicts are fixed by merging the base into the head. No rebase, no force-push, no branch deletion.</p></div>
+<div class="card"><h3>Secrets stay local</h3><p>The app's private key and one-hour installation tokens stay in <code>~/.config/deep-mode/</code>. They never go into prompts, logs or repos.</p></div>
+</div>
+</section>
+
+<section id="faq" aria-labelledby="faq-title">
+<h2 id="faq-title">FAQ</h2>
+<h3>What is deep-mode?</h3>
+<p>deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel.</p>
+<h3>How do the deep-mode PR bots work?</h3>
+<p>A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote, and a gate in code merges your own PR at the voted head.</p>
+<h3>Does deep-mode need an API key?</h3>
+<p>No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage.</p>
+<h3>Which agents and harnesses does deep-mode work with?</h3>
+<p>The bots use any agent acpx reaches over ACP: omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each role can pick its own model, so one harness can seat an author and a reviewer on different model families. The skill runs in omp, Claude Code, Codex, Cursor and other harnesses.</p>
+<h3>Will deep-mode merge other people's PRs?</h3>
+<p>No. Only your own PRs merge: your account opened them from your repo, not a fork, and their commits pass the ownership checks in code. Everyone else's PRs get review comments only.</p>
+<h3>What is the deep-mode software factory?</h3>
+<p>A set of playbooks and techniques that take an idea to merged code: set up the repo, grill the idea, prototype a fork, write a spec, cut it into tickets, build them with TDD on one integration branch or one PR per ticket, then review and land through a verifier panel. Triage, research, a domain model, architecture review and retros sit around that line.</p>
+<h3>Has deep-mode merged a real PR on its own?</h3>
+<p>Yes. <a href="https://github.com/TimothyVang/deep-mode/pull/19">PR 19</a> in TimothyVang/deep-mode went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot. The whole conversation is public in the PR thread.</p>
+</section>
+</main>
+<footer>
+<div>
+<p>deep-mode is MIT licensed, by <a href="https://github.com/TimothyVang">TimothyVang</a>. See <a href="https://github.com/TimothyVang/deep-mode/blob/main/LICENSE">LICENSE</a> and <a href="https://github.com/TimothyVang/deep-mode/blob/main/NOTICE.md">NOTICE.md</a>. Agents are reached through <a href="https://github.com/openclaw/acpx">acpx</a>. The diagrams are hand-written SVG; the GIFs are encoded with <a href="https://github.com/ImageOptim/gifski">gifski</a> and <a href="https://github.com/asciinema/agg">agg</a> from real screenshots and a real terminal recording.</p>
+<p><a href="https://github.com/TimothyVang/deep-mode">Source</a> · <a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a></p>
+</div>
+</footer>
+</body>
+</html>

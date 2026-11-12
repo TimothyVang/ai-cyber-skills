@@ -1,0 +1,63 @@
+## 8. Quality floor (always, unannounced)
+[anthropic frontend-design skill; vercel; .claude/skills/web-design-guidelines]
+- Responsive down to mobile. Visible keyboard focus. Reduced motion respected. Contrast at WCAG AA.
+- Accessible names on icon buttons and inputs.
+- 44 px minimum hit areas.
+- Preserve user input through errors.
+- Design every reachable state: loading, empty, sparse, populated, validation, error, permission, disabled, optimistic, stale, destructive, responsive.
+- No nested modals, with one exception: a discard-changes confirm over a form dialog. Prefer inline disclosure to modals. Radios over a select for 2–5 options; a combobox only when the list needs search. [articles/component-gallery/modal; articles/component-gallery/combobox]
+- **Focus and composite widgets** [articles/wai-aria-apg]:
+  - Composite widgets (toolbar, tabs, listbox, grid, tree) have one tab stop with arrow keys inside.
+  - Focus never falls to `body`: after a delete, the next item; after a close, the opener.
+  - Focus looks different from selection.
+  - Disabled items inside composites stay focusable via `aria-disabled`.
+  - No positive `tabindex`.
+  - Tooltips go only on interactive elements, wired via `aria-labelledby` / `aria-describedby`.
+  - Tab state lives in the URL.
+- **Shortcuts:** avoid modifier + Tab / Enter / Space / Escape. Every shortcut target is also reachable by navigation, so ⌘K's command menu needs a visible trigger. [articles/wai-aria-apg]
+- **Data tables** are a `<table>` unless cells are interactive, in which case they're an ARIA grid [articles/wai-aria-apg/grid; articles/component-gallery/table]:
+  - Right-align comparable numbers; start-align IDs; never center text.
+  - An empty state replaces the whole table, headers included.
+- **Panes and scrolling:** panes work at 320–360 px and cap content width on wide windows. A scroll stays with the region where it started, so a hovered side pane never steals the wheel from a streaming thread. [articles/app-type-guides; articles/rauno]
+- **Sensitive content** is blurred when the app is backgrounded. No telemetry without consent. [articles/rauno; articles/clig]
+- **Accessibility, verified in the accessibility tree** [youtube/ob_M_qXeDVE]:
+  - Check role, name and state on every interactive element; do a screen-reader pass when semantics change.
+  - Name order: visible text → `<label>` / native attribute → `aria-labelledby` → `aria-label` last. No `title` (except on `iframe`). Decorative icons are `aria-hidden`.
+  - Custom checkboxes, radios and switches keep the native input positioned over the visual at hit-area size with `opacity: 0`. Never visually-hidden or off-canvas, because touch exploration can't find it.
+  - Disclosures expose state (`aria-expanded`, or native `<details>` / popover). Hover or focus content must be dismissible and hoverable (WCAG 1.4.13).
+  - A popover is not a modal. Anything with a backdrop is a dialog: trap focus, make the background inert, return focus to the opener.
+- **AI is optional:** the core task works with AI off, and the UI discloses when data leaves the device. External links carry an icon and a destination label; regulated steps (payment, identity) hand off explicitly. [articles/ai-ux/apple-hig-generative-ai; articles/ai-ux/google-connected-apps-guidelines]
+- **Focus after thread changes:** deleting a thread or artifact moves focus to the previous item; creating one moves it to its composer or first control. Repeated row buttons are named "Manage: {title}"; state goes in ARIA, never in the name. [articles/ai-ux/primer-copilot-accessibility-practices]
+- **Agent-surface acceptance checks** [youtube/YNJvm7t3yq8; youtube/QrMcNe2jjt8]:
+  - Refreshing mid-stream resumes with no lost or duplicated tokens; so does going offline and back online.
+  - A second tab mirrors the in-flight run, and Stop from another tab works.
+  - Running each generative-UI request 3–4 times gives the same layout and labels.
+- **Streaming performance** [youtube/uAmRtE52mYk]:
+  - Never hold the thread (messages, tool calls, token deltas) in one root context value. Use a store with per-message subscriptions.
+  - Enable React Compiler and virtualize long threads.
+  - Park hidden panels with `<Activity>`.
+  - Use transitions or optimistic updates for non-urgent work.
+- Stress-test with worst-case data: long names, one-letter names, huge counts, empty lists [.claude/skills/break-ui]:
+  - Decide per field whether text wraps, truncates at the end, truncates in the middle (filenames, emails) or clamps.
+  - Never truncate numbers.
+  - `min-w-0` on flex children.
+- **Forms** [github/vercel-labs-web-interface-guidelines; github/raunofreiberg-interfaces]:
+  - Clickable labels; `autocomplete` plus the correct `type` / `inputmode`; inputs at least 16 px on mobile.
+  - Never block paste. Keep submit enabled until the request starts. In-place settings may disable Save until something changes; never disable it for validation. [articles/checklist-design]
+  - Validate on blur, never per keystroke; clear the error when the field regains focus. A single field or inline save focuses the field with the error; a multi-field submit focuses an error summary at the top that links to each field (GOV.UK). Warn about unsaved changes. [articles/app-type-guides; articles/checklist-design]
+  - Multi-step forms validate per step, keep later answers on Back, and end with a review step.
+- **Feedback next to its trigger:**
+  - Copy confirms with an inline checkmark, not a toast.
+  - Optimistic updates roll back on failure.
+  - Async messages use `aria-live="polite"`.
+  - The URL reflects UI state.
+- **Mobile baseline before the first component** [.claude/skills/mobile-native]:
+  - `viewport-fit=cover`, `interactive-widget=resizes-content`, a per-scheme `theme-color`.
+  - `touch-action: manipulation`, `100dvh`, safe-area insets.
+  - `overscroll-behavior` only under `(pointer: fine)`, to keep pull-to-refresh.
+- **Native ports** (if boop-agent ships them) follow `TimothyVang/frontend:reference/articles/app-type-guides.md`:
+  - platform target sizes: 48 dp Android, 60 pt visionOS, 66 pt tvOS (44 px stays the web floor);
+  - native body text sizes: 13 pt macOS, 14 epx Windows;
+  - Wear OS black backgrounds (an exception to "never #000").
+
+The full ~60 deltas from the free-source batch, including the ones not adopted here, are in `TimothyVang/frontend:reference/articles/_batch-free-sources.md`.

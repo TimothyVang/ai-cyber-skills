@@ -9,7 +9,7 @@ Read before designing or changing a project's shape: repo layout and workspace t
 | `databases.md` | Choosing a database or extension, hosted free tiers and branching, schema and migrations in the repo, ORMs, zero-downtime migrations, tenancy and RLS, IDs, backups, and letting agents near a database safely |
 | `backend-infrastructure.md` | Monolith or services, reliability (timeouts, retries, idempotency, SLOs, health checks), queues and durable workflows, caching, API style and errors, OpenTelemetry, deployment and IaC, capacity and cost |
 
-These files build on `references/cloudxberry/backend-system-design.md` (API naming, indexing, cache and queue basics) and the `model-the-domain` principle. Where they disagree, these primary-source files win: for example, retries follow the AWS Builders' Library token-bucket advice rather than a circuit breaker on every call. Cloud security and pipelines stay in `references/cloud-devsecops/`; secrets and auth in `references/credentials/README.md`.
+These files build on `references/domain-rules/backend-system-design.md` (API naming, indexing, cache and queue basics) and the `model-the-domain` principle. Where they disagree, these primary-source files win: for example, retries follow the AWS Builders' Library token-bucket advice rather than a circuit breaker on every call. Cloud security and pipelines stay in `references/cloud-devsecops/`; secrets and auth in `references/credentials/README.md`.
 
 ## Rules for the agent
 

@@ -1,0 +1,35 @@
+# deep-mode
+
+> deep-mode is an open-source (MIT) plugin for coding agents with two halves. (1) PR and issue bots on your own private GitHub App: a poller on your machine runs any ACP agent through acpx (omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others) on your own subscription login, with no API keys, webhooks or server. The bots review PRs in the thread, fix their own findings, vote on a three-agent verifier panel, and merge your own PRs behind a gate in code; they plan and build the issues you open. (2) A software-factory skill set: one `/deep` command routes any task to a playbook, and the main line goes setup, grill, prototype, spec, tickets, implement with TDD, review and land.
+
+Key facts:
+
+- Real run: the bots took PR #19 (https://github.com/TimothyVang/deep-mode/pull/19) through 5 cycles. Two failed panels caught real bugs; the third passed 2/3 and the bot squash-merged it.
+- Self-hosted: `bot.py watch` polls the repos where your app is installed every 120 seconds. Installing the app on a repo is the opt-in.
+- Subscriptions, not API keys: each agent CLI uses its own subscription login, such as Claude Code with Claude.ai or Codex with ChatGPT.
+- Agent agnostic: each role in `~/.config/deep-mode/bot.json` is `{"agent": "omp", "model": "<optional>"}`, so one harness can seat an author and a reviewer on different model families.
+- Merge gate in code: only your own PRs merge, at the head the panel voted on, with every required check green, no conflict, and `autonomousMerge` allowed. Others' PRs get review comments only.
+- Conflicts are resolved by merging the base into the head. Never rebase or force-push.
+- Install the bots: `git clone https://github.com/TimothyVang/deep-mode`, `cd deep-mode/plugins/deep-mode/skills/deep-mode`, `py -3 assets/github-app/install.py`.
+- Install the skills: `omp plugin marketplace add TimothyVang/deep-mode` then `omp plugin install deep-mode@deep-mode`; in Claude Code, `/plugin marketplace add TimothyVang/deep-mode` and `/plugin install deep-mode@deep-mode`.
+
+## Docs
+
+- [Site](https://timothyvang.github.io/deep-mode/): overview, the real PR #19 run, diagrams, the software factory, install, safety, FAQ
+- [README](https://github.com/TimothyVang/deep-mode/blob/main/README.md): what the plugin ships, install, the bots, the software factory, FAQ
+- [Flow map](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/flows.md): the main line from idea to merged code, on-ramps, and what to do between phases
+- [github-app technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/github-app.md): setup with install.py, running the poller, bot.json, opt-out, safety
+- [pr-conversation technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/pr-conversation.md): the author, reviewer and verifier turns over ACP, the panel, and every merge gate
+- [issue-conversation technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/issue-conversation.md): plan, critique and answer in the issue thread, then build on the owner's issues
+- [SKILL.md](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/SKILL.md): the router, principles, playbooks and techniques of the deep-mode skill
+
+## Code
+
+- [install.py](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/assets/github-app/install.py): one-command setup: tools, agents, ACP round trip, the GitHub App, bot.json, autostart
+- [bot.py](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/assets/github-app/bot.py): the poller and coordinator that runs the conversations and enforces the gates
+- [ghapp.py](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/assets/github-app/ghapp.py): creates your private GitHub App with the manifest flow and mints installation tokens
+
+## Optional
+
+- [llms-full.txt](https://timothyvang.github.io/deep-mode/llms-full.txt): the README, flow map and bot techniques concatenated as plain markdown
+- [License](https://github.com/TimothyVang/deep-mode/blob/main/LICENSE): MIT

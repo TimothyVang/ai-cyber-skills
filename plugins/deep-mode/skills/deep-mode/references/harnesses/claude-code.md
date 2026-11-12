@@ -159,7 +159,7 @@ Exact names from [tools-reference](https://code.claude.com/docs/en/tools-referen
 - omp `todo` -> `TaskCreate`/`TaskUpdate`, or `TodoWrite`. On current models neither exists by default; do not fail, keep a checklist in a repo file or ask the user to set `CLAUDE_CODE_ENABLE_TODO_TOOLS=1`.
 - omp `ask` -> `AskUserQuestion` (multiple choice). It does not exist for the model in `-p`/`dontAsk` runs; decide and record the assumption.
 - `skill://deep-mode/...` paths do not resolve. Use relative links from SKILL.md or `${CLAUDE_SKILL_DIR}/...` and open them with `Read`.
-- `/skill:<name>` is omp syntax. Claude Code uses `/<name>`; plugin commands are `/deep-mode:poteto` only when installed as plugin `deep-mode`.
+- `/skill:<name>` is omp syntax. Claude Code uses `/<name>`; plugin commands are `/deep-mode:deep` only when installed as plugin `deep-mode`.
 - Project verify skills belong in `.claude/skills/verify-<app>/SKILL.md`, not `.omp/skills/`. Read both if the repo has the omp copy.
 - `omp -p` -> `claude -p`. To stay on the subscription, unset `ANTHROPIC_API_KEY` and do not pass `--bare` (bare never reads OAuth). Use `CLAUDE_CODE_OAUTH_TOKEN` for unattended runs.
 - `local://` artifacts do not exist. Write scratch files to a gitignored repo dir; Claude's own spills live under `~/.claude/projects/` and are not yours.

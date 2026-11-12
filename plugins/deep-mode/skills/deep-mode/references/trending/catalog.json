@@ -1,0 +1,5471 @@
+{
+ "updated": "2026-11-11",
+ "sources": {
+  "github-trending": "36 repos",
+  "github-search": "122 repos",
+  "githubawesome": "42 repos"
+ },
+ "repos": {
+  "a11delavar/mitra": {
+   "name": "a11delavar/mitra",
+   "url": "https://github.com/a11delavar/mitra",
+   "description": "One calendar to plan your events and tasks",
+   "language": "TypeScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "apple-calendar",
+    "caldav",
+    "calendar",
+    "events",
+    "google-calendar",
+    "notion",
+    "planning",
+    "reminders",
+    "self-hosted",
+    "tasks"
+   ],
+   "stars": 164,
+   "created": "2026-05-21",
+   "pushed": "2026-11-08",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 164,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "abacusai/abacusai-bot": {
+   "name": "abacusai/abacusai-bot",
+   "url": "https://github.com/abacusai/abacusai-bot",
+   "description": "100% free, open-source personal agents for your messaging apps, tools, and services",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "agent",
+    "ai",
+    "ai-agents",
+    "android",
+    "cli",
+    "coding-agent",
+    "developer-tools",
+    "electron",
+    "ios",
+    "llm",
+    "local-llm",
+    "mcp"
+   ],
+   "stars": 529,
+   "created": "2026-09-11",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 529,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "abdulmannanmalik13-wq/adobe-substance-3d-studio": {
+   "name": "abdulmannanmalik13-wq/adobe-substance-3d-studio",
+   "url": "https://github.com/abdulmannanmalik13-wq/adobe-substance-3d-studio",
+   "description": "Adobe Substance 3D Creative Studio 2026 - Secure Asset Pipeline Desktop Installer",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "automation",
+    "desktop",
+    "developer-tools",
+    "open-source",
+    "python",
+    "scripts",
+    "software-engineering",
+    "substance",
+    "substance-3d",
+    "substance-3d-painter",
+    "substance-abuse",
+    "substance-designer"
+   ],
+   "stars": 1304,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1304,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "abhikamane/ai-app-builder-open": {
+   "name": "AbhiKamane/ai-app-builder-open",
+   "url": "https://github.com/AbhiKamane/ai-app-builder-open",
+   "description": "Open-source AI app builder for full-stack Next.js apps with hosting and auth",
+   "language": "HTML",
+   "license": null,
+   "topics": [
+    "ai-app-builder",
+    "ai-code-generation",
+    "ai-open-source",
+    "ai-web-app-builder",
+    "ai-web-builder",
+    "app-builder",
+    "auth",
+    "bolt-alternative",
+    "database",
+    "domain",
+    "fullstack",
+    "hosting"
+   ],
+   "stars": 481,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 481,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "addyosmani/agent-skills": {
+   "name": "addyosmani/agent-skills",
+   "url": "https://github.com/addyosmani/agent-skills",
+   "description": "Production-grade engineering skills for AI coding agents.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "antigravity",
+    "claude-code",
+    "codex",
+    "cursor",
+    "skills"
+   ],
+   "stars": 115846,
+   "created": "2026-02-15",
+   "pushed": "2026-11-01",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 115813,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "adn8naiagent/f1replaytiming": {
+   "name": "adn8naiagent/F1ReplayTiming",
+   "url": "https://github.com/adn8naiagent/F1ReplayTiming",
+   "description": "Visualisation of real-time track data and telemetry synced to F1 replays.",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "f1",
+    "formula1",
+    "formula1-analysis",
+    "formula1-data-analysis"
+   ],
+   "stars": 937,
+   "created": "2026-03-08",
+   "pushed": "2026-11-01",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 937,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "agricidaniel/claude-seo": {
+   "name": "AgriciDaniel/claude-seo",
+   "url": "https://github.com/AgriciDaniel/claude-seo",
+   "description": "Universal SEO skill for Claude Code. 26 sub-skills + 19 sub-agents covering technical SEO, E-E-A-T, schema, GEO/AEO, agent readiness (Lighthouse Agentic Browsing, WebMCP, llms.txt), backlinks, local SEO, e-commerce, int…",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "ai",
+    "ai-seo",
+    "claude-code",
+    "claude-code-skill",
+    "marketing-automation",
+    "open-source",
+    "seo"
+   ],
+   "stars": 28206,
+   "created": "2026-02-07",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 28182,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "aientech/dossier": {
+   "name": "AienTech/dossier",
+   "url": "https://github.com/AienTech/dossier",
+   "description": "A self-hosted job search and resume builder app that writes tailored resumes and cover letters from your profile.",
+   "language": "TypeScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "caprover",
+    "cover-letter",
+    "docker",
+    "job-application-tracker",
+    "job-search",
+    "llm",
+    "local-llm",
+    "nextjs",
+    "ollama",
+    "postgresql",
+    "resume",
+    "self-hosted"
+   ],
+   "stars": 5026,
+   "created": "2026-10-03",
+   "pushed": "2026-11-08",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 5024,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "alchaincyf/huashu-art-motion": {
+   "name": "alchaincyf/huashu-art-motion",
+   "url": "https://github.com/alchaincyf/huashu-art-motion",
+   "description": "艺术动画skill：35种艺术风格、9种解说语法，用代码让画动起来。",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "animation",
+    "claude-code",
+    "claude-code-skills",
+    "claude-skills",
+    "codex",
+    "explainer-video",
+    "generative-art",
+    "huashu-skills",
+    "motion-graphics",
+    "skills",
+    "video"
+   ],
+   "stars": 6751,
+   "created": "2026-10-06",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6750,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:agent-skills",
+    "github-search:topic:claude-skills"
+   ]
+  },
+  "alchaincyf/huashu-chrome": {
+   "name": "alchaincyf/huashu-chrome",
+   "url": "https://github.com/alchaincyf/huashu-chrome",
+   "description": "让任何 AI agent 操控你自己的 Chrome——带着全部登录态。MCP + Chrome 扩展，Claude Code / Codex / Cursor / Gemini CLI 通用。",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "browser-automation",
+    "chrome-extension",
+    "claude-code",
+    "codex",
+    "cursor",
+    "gemini-cli",
+    "huashu-skills",
+    "mcp",
+    "mcp-server",
+    "openclaw",
+    "opencode"
+   ],
+   "stars": 590,
+   "created": "2026-08-26",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 590,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation"
+   ]
+  },
+  "aleribeiro44/archicad-desktop-setup": {
+   "name": "AleRibeiro44/archicad-desktop-setup",
+   "url": "https://github.com/AleRibeiro44/archicad-desktop-setup",
+   "description": "Archicad 2026 complete standalone desktop setup with pre-configured ready-to-run installation build",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "archicad",
+    "archicad-2026",
+    "archicad-download",
+    "automation",
+    "desktop",
+    "developer-tools",
+    "graphisoft-archicad-install-setup-windows-2026",
+    "open-source",
+    "python",
+    "scripts",
+    "software-engineering",
+    "system"
+   ],
+   "stars": 1301,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1301,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "amontlabs/lcu": {
+   "name": "amontlabs/lcu",
+   "url": "https://github.com/amontlabs/lcu",
+   "description": "Codex computer use, decoupled from the app, for usage inside any harness.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "accessibility",
+    "agent-skills",
+    "browser-automation",
+    "claude-code",
+    "codex-cli",
+    "computer-use",
+    "desktop-automation",
+    "library",
+    "linux",
+    "macos",
+    "mcp",
+    "pi-agent"
+   ],
+   "stars": 2414,
+   "created": "2026-09-22",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2414,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation"
+   ]
+  },
+  "amosblomqvist/learnharness": {
+   "name": "amosblomqvist/learnharness",
+   "url": "https://github.com/amosblomqvist/learnharness",
+   "description": "Agent harness for learning difficult things.",
+   "language": "TypeScript",
+   "license": "AGPL-3.0",
+   "topics": [],
+   "stars": 8702,
+   "created": "2026-10-16",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8687,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "githubawesome"
+   ]
+  },
+  "anefzaoui/misterdownloadmanager": {
+   "name": "anefzaoui/misterdownloadmanager",
+   "url": "https://github.com/anefzaoui/misterdownloadmanager",
+   "description": "misterdownloadmanager: The ultimate open-source, clean-room download manager written from scratch in pure Rust for Windows, Mac, and Linux",
+   "language": "Rust",
+   "license": "GPL-3.0",
+   "topics": [
+    "bittorrent-client",
+    "debrid",
+    "download-accelerator",
+    "download-manager",
+    "downloadmanager",
+    "egui",
+    "file-downloader",
+    "gallery-dl",
+    "idm",
+    "idm-alternative",
+    "internet-download-manager",
+    "m3u8-downloader"
+   ],
+   "stars": 6741,
+   "created": "2026-10-29",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6715,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "anhao/ai-pose-gallery-zh": {
+   "name": "anhao/ai-pose-gallery-zh",
+   "url": "https://github.com/anhao/ai-pose-gallery-zh",
+   "description": "中文版 AI 姿势参考图库 · 1439 组 / 2878 张图片 / 完整汉化 · 零依赖静态画廊",
+   "language": "TypeScript",
+   "license": "NOASSERTION",
+   "topics": [
+    "ai-art",
+    "chinese",
+    "cloudflare-pages",
+    "gallery",
+    "i18n",
+    "pose",
+    "reference-images",
+    "static-site"
+   ],
+   "stars": 6752,
+   "created": "2026-10-27",
+   "pushed": "2026-11-04",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6751,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "anomalyco/rune": {
+   "name": "anomalyco/rune",
+   "url": "https://github.com/anomalyco/rune",
+   "description": "Rune: Native UI framework",
+   "language": "Rust",
+   "license": "MIT",
+   "topics": [],
+   "stars": 6618,
+   "created": "2026-10-22",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6608,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "githubawesome"
+   ]
+  },
+  "anthropics/claude-plugins-official": {
+   "name": "anthropics/claude-plugins-official",
+   "url": "https://github.com/anthropics/claude-plugins-official",
+   "description": "Official, Anthropic-managed directory of high quality Claude Code Plugins.",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "claude-code",
+    "mcp",
+    "skills"
+   ],
+   "stars": 46906,
+   "created": "2025-11-20",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 46901,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "anthropics/knowledge-work-plugins": {
+   "name": "anthropics/knowledge-work-plugins",
+   "url": "https://github.com/anthropics/knowledge-work-plugins",
+   "description": "Open source repository of plugins primarily intended for knowledge workers to use in Claude Cowork",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 35463,
+   "created": "2026-01-23",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 35461,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "anthropics/skills": {
+   "name": "anthropics/skills",
+   "url": "https://github.com/anthropics/skills",
+   "description": "Public repository for Agent Skills",
+   "language": "Python",
+   "license": null,
+   "topics": [
+    "agent-skills"
+   ],
+   "stars": 193061,
+   "created": "2025-09-22",
+   "pushed": "2026-11-06",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 193039,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly",
+    "github-trending-weekly"
+   ]
+  },
+  "arda313131882/aion-2-trainer-tool": {
+   "name": "Arda313131882/aion-2-trainer-tool",
+   "url": "https://github.com/Arda313131882/aion-2-trainer-tool",
+   "description": "Aion 2 AI Prompt Engineering Toolkit - Standalone Desktop Trainer Setup",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "aion-2",
+    "aion-2-2026",
+    "aion-2-game",
+    "aion-2-optimizer",
+    "aion-2-trainer",
+    "aion-2-trainer-tool",
+    "aion2-combat-analysis",
+    "aion2-meter",
+    "automation",
+    "desktop",
+    "developer-tools",
+    "open-source"
+   ],
+   "stars": 1296,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1296,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "arjun-ingole/hop": {
+   "name": "Arjun-Ingole/hop",
+   "url": "https://github.com/Arjun-Ingole/hop",
+   "description": "Install Linux next to Windows without a USB stick",
+   "language": "PowerShell",
+   "license": "MIT",
+   "topics": [],
+   "stars": 1650,
+   "created": "2026-10-30",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1649,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "arvarik/contrack": {
+   "name": "arvarik/contrack",
+   "url": "https://github.com/arvarik/contrack",
+   "description": "Self-hosted contact management + tracking + online enrichment for your personal and professional needs 🐦‍⬛",
+   "language": "TypeScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "ai",
+    "contact-enrichment",
+    "contact-management",
+    "crm",
+    "docker",
+    "homelab",
+    "local-first",
+    "mcp",
+    "mcp-server",
+    "open-source",
+    "personal-crm",
+    "privacy"
+   ],
+   "stars": 115,
+   "created": "2026-04-01",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 115,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "ayaka-notes/ayakaleaf-pro": {
+   "name": "ayaka-notes/ayakaleaf-pro",
+   "url": "https://github.com/ayaka-notes/ayakaleaf-pro",
+   "description": "The ultimate open-source Overleaf extension and alternative: a free, self-hosted, drop-in replacement for Overleaf Community Edition with nearly all Pro feature—SSO, AI Assistant, Git(Hub/Lab）/ Dropbox sync, track chang…",
+   "language": "JavaScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "ai",
+    "ai-latex",
+    "ayakaleaf",
+    "ayakaleaf-pro",
+    "docker",
+    "editor",
+    "git-bridge",
+    "latex",
+    "latex-editor",
+    "overleaf",
+    "overleaf-alternative",
+    "overleaf-pro"
+   ],
+   "stars": 1670,
+   "created": "2026-01-22",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1669,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "bojieli/ai-infra-book": {
+   "name": "bojieli/ai-infra-book",
+   "url": "https://github.com/bojieli/ai-infra-book",
+   "description": "《深入理解 AI Infra：量化分析与系统设计》（李博杰 著）开源书稿：从硬件约束和模型架构出发，量化推导 LLM 推理与训练系统设计。含全书正文、PDF、配套计算工具与实验",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "accelerator",
+    "ai-infra",
+    "ai-infrastructure",
+    "book",
+    "datacenter-network",
+    "deepseek",
+    "distributed-systems",
+    "gpu",
+    "kv-cache",
+    "llm",
+    "llm-inference",
+    "llm-serving"
+   ],
+   "stars": 7493,
+   "created": "2026-08-22",
+   "pushed": "2026-10-01",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7493,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:llm"
+   ]
+  },
+  "ccch1mneyyy/dsh-go": {
+   "name": "ccch1mneyyy/dsh-Go",
+   "url": "https://github.com/ccch1mneyyy/dsh-Go",
+   "description": "dsh-go — DeepSeek Harness 装进口袋：手机本机运行，也能遥控你的电脑。",
+   "language": "Dart",
+   "license": "AGPL-3.0",
+   "topics": [
+    "ai-agent",
+    "android",
+    "android-app",
+    "coding-agent",
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "dsh-tui",
+    "flutter",
+    "llm"
+   ],
+   "stars": 19666,
+   "created": "2026-10-25",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 19663,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "github-search:topic:coding-agent",
+    "github-search:topic:llm"
+   ]
+  },
+  "cloudflare/security-audit-skill": {
+   "name": "cloudflare/security-audit-skill",
+   "url": "https://github.com/cloudflare/security-audit-skill",
+   "description": "A coding-agent skill for multi-phase security audits with independently verified, machine-readable findings",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [],
+   "stars": 70255,
+   "created": "2026-06-18",
+   "pushed": "2026-09-14",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 70192,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly",
+    "github-trending-weekly"
+   ]
+  },
+  "codesouvik/clion-standalone-enhancement": {
+   "name": "CodeSouvik/clion-standalone-enhancement",
+   "url": "https://github.com/CodeSouvik/clion-standalone-enhancement",
+   "description": "CLion full installer: complete standalone setup, all features activated",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "automation",
+    "clion-2026",
+    "clion-download-windows",
+    "cmake-ide",
+    "cpp-ide",
+    "desktop",
+    "developer-tools",
+    "jetbrains-clion",
+    "jetbrains-clion-install-setup-2026",
+    "open-source",
+    "python",
+    "scripts"
+   ],
+   "stars": 1298,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1298,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "copilotkit/openbot": {
+   "name": "CopilotKit/OpenBot",
+   "url": "https://github.com/CopilotKit/OpenBot",
+   "description": "Open-source AI coworkers that each get a computer of their own: a browser, files and tools, with every action decided before it happens and recorded after. Bring any AG-UI agent.",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "ag-ui",
+    "agent-governance",
+    "ai-agents",
+    "browser-automation",
+    "copilotkit",
+    "generative-ui",
+    "mcp"
+   ],
+   "stars": 11054,
+   "created": "2026-08-17",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 11041,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:ai-agents",
+    "github-search:topic:browser-automation",
+    "github-search:topic:mcp"
+   ]
+  },
+  "cristianadrielbraun/gofer": {
+   "name": "cristianadrielbraun/gofer",
+   "url": "https://github.com/cristianadrielbraun/gofer",
+   "description": "Self-hosted multi-account email client with support for JMAP/IMAP/SMTP, direct integration with Gmail and Outlook APIs. Also Contacts and Calendar. Built with Go, templ, and HTMX, SQLite for storage",
+   "language": "Go",
+   "license": "MIT",
+   "topics": [
+    "email",
+    "gmail",
+    "go",
+    "golang",
+    "htmx",
+    "imap",
+    "jmap",
+    "jmap-client",
+    "mail-client",
+    "self-hosted",
+    "smtp",
+    "sqlite"
+   ],
+   "stars": 196,
+   "created": "2026-05-05",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 196,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "ctoldigital/axuse": {
+   "name": "ctoldigital/axuse",
+   "url": "https://github.com/ctoldigital/axuse",
+   "description": "Accessibility-first browser & computer use for AI agents — one MCP server for every harness (Codex, Claude Code, OpenCode, Antigravity). Instruments the DOM/accessibility tree via CDP instead of screenshot loops: diffed…",
+   "language": "JavaScript",
+   "license": "NOASSERTION",
+   "topics": [
+    "agentic-automation",
+    "ai-agents",
+    "browser-automation",
+    "browser-use",
+    "cdp",
+    "chrome-devtools-protocol",
+    "computer-use",
+    "cua",
+    "mcp",
+    "model-context-protocol",
+    "rpa",
+    "web-automation"
+   ],
+   "stars": 804,
+   "created": "2026-10-14",
+   "pushed": "2026-11-03",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 804,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation"
+   ]
+  },
+  "d4vinci/scrapling": {
+   "name": "D4Vinci/Scrapling",
+   "url": "https://github.com/D4Vinci/Scrapling",
+   "description": "🕷️ The BEST Web Scraping framework that handles everything from a single request to a full-scale crawl! Don't be shy, join here: https://discord.gg/EMgGbDceNQ and follow here for daily tips and tricks: https://x.com/Scr…",
+   "language": "Python",
+   "license": "BSD-3-Clause",
+   "topics": [
+    "ai",
+    "ai-scraping",
+    "automation",
+    "crawler",
+    "crawling",
+    "crawling-python",
+    "data",
+    "data-extraction",
+    "mcp",
+    "mcp-server",
+    "playwright",
+    "python"
+   ],
+   "stars": 101603,
+   "created": "2024-10-13",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 101589,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "davemessew/agentflux": {
+   "name": "davemessew/AgentFlux",
+   "url": "https://github.com/davemessew/AgentFlux",
+   "description": "Agentic AI platform for visual workflows and autonomous agents. Run it with Docker on your own computer or server.",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [
+    "ai-agents",
+    "docker",
+    "ollama",
+    "self-hosted",
+    "workflows"
+   ],
+   "stars": 180,
+   "created": "2026-10-27",
+   "pushed": "2026-10-30",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 180,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "debpalash/voicestudio": {
+   "name": "debpalash/VoiceStudio",
+   "url": "https://github.com/debpalash/VoiceStudio",
+   "description": "VoiceStudio is the open-source, fully-local ElevenLabs alternative — voice cloning, voice design, video dubbing, dictation, transcription & audiobook creation in 646 languages.",
+   "language": "Python",
+   "license": "AGPL-3.0",
+   "topics": [
+    "ai",
+    "audiobook",
+    "cuda",
+    "dubbing",
+    "elevenlabs-alternative",
+    "huggingface",
+    "local-first",
+    "mlx",
+    "omnivoice-studio",
+    "speech-to-text",
+    "text-to-speech",
+    "transcription"
+   ],
+   "stars": 108242,
+   "created": "2026-04-09",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 108194,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "deepseek-ai/deepinfer": {
+   "name": "deepseek-ai/DeepInfer",
+   "url": "https://github.com/deepseek-ai/DeepInfer",
+   "description": "DeepInfer: High-performance, large-scale inference framework for DeepSeek models",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 25861,
+   "created": "2026-10-16",
+   "pushed": "2026-11-03",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 25859,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "deepseek-ai/dsh-superagent-prototype": {
+   "name": "deepseek-ai/dsh-superagent-prototype",
+   "url": "https://github.com/deepseek-ai/dsh-superagent-prototype",
+   "description": "Towards a More Autonomous Agent System",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [],
+   "stars": 22479,
+   "created": "2026-10-31",
+   "pushed": "2026-11-03",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 22476,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "devvmhq/devvm": {
+   "name": "devvmhq/devvm",
+   "url": "https://github.com/devvmhq/devvm",
+   "description": "One VM for every project. An isolated sandbox with your project’s toolchain, ready for you or a coding agent to start coding",
+   "language": "Go",
+   "license": "MIT",
+   "topics": [
+    "coding-agent",
+    "coding-agents",
+    "developer-tools",
+    "development",
+    "lima",
+    "lima-vm",
+    "linux",
+    "sandbox",
+    "sandbox-environment",
+    "ubuntu",
+    "virtual-machine",
+    "vm"
+   ],
+   "stars": 557,
+   "created": "2026-11-06",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 556,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "dfarm6/prism-browser-community": {
+   "name": "DFarm6/Prism-Browser-Community",
+   "url": "https://github.com/DFarm6/Prism-Browser-Community",
+   "description": "Local-first open-source multi-profile fingerprint browser based on Chromium and Electron",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "anti-detect-browser",
+    "antidetect-browser",
+    "browser-automation",
+    "chromium",
+    "electron",
+    "fingerprint-browser",
+    "mcp",
+    "multi-account",
+    "privacy"
+   ],
+   "stars": 763,
+   "created": "2026-08-17",
+   "pushed": "2026-10-03",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 763,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation"
+   ]
+  },
+  "diygod/pinky": {
+   "name": "DIYgod/pinky",
+   "url": "https://github.com/DIYgod/pinky",
+   "description": "Let AI agents use your phone, with you in the loop.",
+   "language": "Go",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 1857,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1854,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "donchitos/claude-code-game-studios": {
+   "name": "Donchitos/Claude-Code-Game-Studios",
+   "url": "https://github.com/Donchitos/Claude-Code-Game-Studios",
+   "description": "Turn Claude Code into a full game dev studio — 49 AI agents, 72 workflow skills, and a complete coordination system mirroring real studio hierarchy.",
+   "language": "Shell",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "ai-assisted-development",
+    "anthropic",
+    "claude",
+    "claude-code",
+    "game-design",
+    "game-development",
+    "gamedev",
+    "godot",
+    "indie-game-dev",
+    "unity",
+    "unreal-engine"
+   ],
+   "stars": 38426,
+   "created": "2026-02-12",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 38412,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "dsh-app/dsha": {
+   "name": "DSH-APP/DSHA",
+   "url": "https://github.com/DSH-APP/DSHA",
+   "description": "免 ROOT 免 Termux，在手机上跑 DeepSeek Harness。完整 Ubuntu 环境 + proroot 零 ptrace 开销 · AI 输出实时上屏 · ADB 直连 · 数据不丢",
+   "language": "Java",
+   "license": "MIT",
+   "topics": [
+    "android",
+    "coding-agent",
+    "deepseek",
+    "deepseek-harness",
+    "launcher",
+    "llm",
+    "proot",
+    "proroot",
+    "shizuku",
+    "webui"
+   ],
+   "stars": 3292,
+   "created": "2026-08-14",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 3290,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:coding-agent"
+   ]
+  },
+  "duty1g/x64dbg-mcp-server": {
+   "name": "duty1g/x64dbg-mcp-server",
+   "url": "https://github.com/duty1g/x64dbg-mcp-server",
+   "description": "x64dbg-MCP Server is a native MCP (Model Context Protocol) plugin for x64dbg that exposes the debugger's full functionality over HTTP. Connect any MCP-compatible AI assistant and control x64dbg programmatically: set bre…",
+   "language": "Zig",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "ai-debugging",
+    "binary-analysis",
+    "claude",
+    "claude-code",
+    "malware-analysis",
+    "malware-research",
+    "malware-scanner",
+    "mcp",
+    "mcp-server",
+    "mcp-servers",
+    "x64dbg"
+   ],
+   "stars": 2815,
+   "created": "2026-08-22",
+   "pushed": "2026-11-03",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2815,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "ebony-vinyl/dsh-our-free-model": {
+   "name": "Ebony-Vinyl/dsh-our-free-model",
+   "url": "https://github.com/Ebony-Vinyl/dsh-our-free-model",
+   "description": "在 dsh 里装上这个插件即可，无需登录、注册或填 API Key，就能使用包括 DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全免费，不限量。 All you do is install this plugin in dsh: no login, no sign-up, no API key — the frontier models are just there, DeepSeek V4.1 Flas…",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "deepseek",
+    "deepseek-harness",
+    "developer-tools",
+    "dsh",
+    "dsh-plugin",
+    "free-model",
+    "llm",
+    "model-provider",
+    "openai-compatible"
+   ],
+   "stars": 69964,
+   "created": "2026-09-24",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 69945,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:ai-agents",
+    "github-search:topic:llm"
+   ]
+  },
+  "ebtsamalhakmy-sketch/desktop-backup-suite": {
+   "name": "ebtsamalhakmy-sketch/desktop-backup-suite",
+   "url": "https://github.com/ebtsamalhakmy-sketch/desktop-backup-suite",
+   "description": "Aomei Backupper 2026: Full-Feature Desktop Backup and Recovery Suite",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "aomei",
+    "aomei-partition",
+    "aomei-setup",
+    "automation",
+    "developer-tools",
+    "disk-manager",
+    "disk-partitioning",
+    "merge-partitions",
+    "open-source",
+    "os-migration",
+    "partition-assistant",
+    "partition-manager"
+   ],
+   "stars": 1296,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1296,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "egoist/kero": {
+   "name": "egoist/kero",
+   "url": "https://github.com/egoist/kero",
+   "description": "A cross-platform native terminal app optimized for agents",
+   "language": "Go",
+   "license": "MIT",
+   "topics": [],
+   "stars": 1466,
+   "created": "2026-07-18",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1466,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "elegantic/designcenter-nx-desktop": {
+   "name": "Elegantic/designcenter-nx-desktop",
+   "url": "https://github.com/Elegantic/designcenter-nx-desktop",
+   "description": "Designcenter-NX: Full-Feature Desktop Installer for Immediate Deployment",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "automation",
+    "desktop",
+    "developer-tools",
+    "nx-cad",
+    "nxopen",
+    "open-source",
+    "python",
+    "scripts",
+    "siemens-2026",
+    "siemens-cad",
+    "siemens-nx",
+    "siemens-nx-2026"
+   ],
+   "stars": 1279,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1279,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "emanuele-em/kanzo": {
+   "name": "emanuele-em/kanzo",
+   "url": "https://github.com/emanuele-em/kanzo",
+   "description": "Self-hosted, sharable kanban for humans and agents. One 4.7 MB binary, 5 MB of RAM, 10 to 60 tokens per agent reply, starts in 3 ms, zero setup.",
+   "language": "Rust",
+   "license": "AGPL-3.0",
+   "topics": [
+    "ai-agents",
+    "claude-code",
+    "cli",
+    "codex",
+    "coding-agents",
+    "kanban",
+    "local-first",
+    "mcp",
+    "mcp-server",
+    "model-context-protocol",
+    "productivity",
+    "project-management"
+   ],
+   "stars": 1156,
+   "created": "2026-10-25",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1156,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "feder-cr/git-ai": {
+   "name": "feder-cr/git-ai",
+   "url": "https://github.com/feder-cr/git-ai",
+   "description": "Git designed for AI agents. Open-source, in the spirit of Anthropic's Scion and OpenAI's Pando. Not affiliated with either.",
+   "language": "Go",
+   "license": "NOASSERTION",
+   "topics": [
+    "ai-agents",
+    "coding-agents",
+    "git",
+    "golang",
+    "pando",
+    "scion",
+    "version-control"
+   ],
+   "stars": 1010,
+   "created": "2026-10-15",
+   "pushed": "2026-11-05",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1010,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "feder-cr/invisible_playwright_mcp": {
+   "name": "feder-cr/invisible_playwright_mcp",
+   "url": "https://github.com/feder-cr/invisible_playwright_mcp",
+   "description": "Playwright MCP server undetected by anti-bots and captchas: AI agent browses the web on anti-detect stealth Firefox, Python, undetected browser automation, scraping, computer use.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "ai-tools",
+    "antidetect-browser",
+    "autonomous-agents",
+    "browser-agent",
+    "browser-automation",
+    "claude-code-plugin",
+    "computer-use",
+    "gemini-cli",
+    "gemini-cli-extension",
+    "job-hunting",
+    "job-search",
+    "llm-agent"
+   ],
+   "stars": 879,
+   "created": "2026-09-29",
+   "pushed": "2026-10-21",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 879,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation"
+   ]
+  },
+  "furey/freetvarr": {
+   "name": "furey/freetvarr",
+   "url": "https://github.com/furey/freetvarr",
+   "description": "Self-hosted Free-to-air TV",
+   "language": "JavaScript",
+   "license": "GPL-3.0",
+   "topics": [
+    "arr",
+    "docker",
+    "dvb-t",
+    "dvr",
+    "epg",
+    "free-to-air",
+    "hdhomerun",
+    "homelab",
+    "iptv",
+    "media-server",
+    "nodejs",
+    "plex"
+   ],
+   "stars": 15,
+   "created": "2026-09-21",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 15,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "gathin23/cleanyourtv": {
+   "name": "Gathin23/cleanyourtv",
+   "url": "https://github.com/Gathin23/cleanyourtv",
+   "description": "Debloat any Android or Google TV over Wi-Fi and get an Apple TV-style home.",
+   "language": "Python",
+   "license": "NOASSERTION",
+   "topics": [
+    "adb",
+    "adblock",
+    "android-tv",
+    "android-tv-launcher",
+    "apple-tv",
+    "bloatware-removal",
+    "claude-code",
+    "debloat",
+    "fire-tv",
+    "google-tv",
+    "launcher",
+    "privacy"
+   ],
+   "stars": 56460,
+   "created": "2026-10-17",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 56430,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "github-search:topic:claude-code",
+    "githubawesome"
+   ]
+  },
+  "google-deepmind/mujoco": {
+   "name": "google-deepmind/mujoco",
+   "url": "https://github.com/google-deepmind/mujoco",
+   "description": "Multi-Joint dynamics with Contact. A general purpose physics simulator.",
+   "language": "C++",
+   "license": "Apache-2.0",
+   "topics": [
+    "mujoco",
+    "physics",
+    "robotics"
+   ],
+   "stars": 17626,
+   "created": "2021-08-27",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 17620,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "google/elephant-goldfish-model": {
+   "name": "google/elephant-goldfish-model",
+   "url": "https://github.com/google/elephant-goldfish-model",
+   "description": "Open-source plugin for designing and reviewing software with agents",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "agent-skills",
+    "ai-agents",
+    "antigravity",
+    "claude-code",
+    "claude-code-plugin",
+    "claude-skills",
+    "codex",
+    "codex-plugin",
+    "coding-agents",
+    "context-engineering",
+    "developer-tools",
+    "gemini"
+   ],
+   "stars": 17610,
+   "created": "2026-09-13",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 17584,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:agent-skills",
+    "github-search:topic:ai-agents",
+    "github-search:topic:claude-code",
+    "github-search:topic:claude-skills",
+    "github-search:topic:llm"
+   ]
+  },
+  "google/skills": {
+   "name": "google/skills",
+   "url": "https://github.com/google/skills",
+   "description": "Agent Skills for Google products and technologies",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "google",
+    "googlecloud",
+    "skills"
+   ],
+   "stars": 23926,
+   "created": "2026-03-31",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 23914,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "googlechrome/modern-web-guidance": {
+   "name": "GoogleChrome/modern-web-guidance",
+   "url": "https://github.com/GoogleChrome/modern-web-guidance",
+   "description": "Keep your coding agent up to date with the latest web best practices",
+   "language": null,
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 4846,
+   "created": "2026-03-23",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 4793,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "googlechrome/modern-web-guidance-src": {
+   "name": "GoogleChrome/modern-web-guidance-src",
+   "url": "https://github.com/GoogleChrome/modern-web-guidance-src",
+   "description": "",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 1663,
+   "created": "2026-01-27",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1643,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "gtsteffaniak/filebrowser": {
+   "name": "gtsteffaniak/filebrowser",
+   "url": "https://github.com/gtsteffaniak/filebrowser",
+   "description": "📂 Web File Browser",
+   "language": "Go",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 9130,
+   "created": "2023-06-11",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 9130,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "harvil1/codeagent": {
+   "name": "Harvil1/codeAgent",
+   "url": "https://github.com/Harvil1/codeAgent",
+   "description": "CodeAgent is an open-source coding agent that lives in your terminal. It understands your repository, plans multi-step changes, writes and edits files, runs commands and tests, and iterates until the task is done — all…",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "agent",
+    "ai-agent",
+    "cli",
+    "coding-agent",
+    "context-engineering",
+    "deepseek",
+    "llm",
+    "mcp",
+    "python",
+    "terminal"
+   ],
+   "stars": 1011,
+   "created": "2026-10-02",
+   "pushed": "2026-10-14",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1011,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:coding-agent"
+   ]
+  },
+  "helixmap/sigwood": {
+   "name": "helixmap/sigwood",
+   "url": "https://github.com/helixmap/sigwood",
+   "description": "Local-first threat hunting for the logs you already have: Zeek, Pi-hole, syslog or the systemd journal, CloudTrail. Every run names the technique behind each detector. No agent, no daemon, no black box - between grep an…",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "anomaly-detection",
+    "blue-team",
+    "cloudtrail",
+    "dfir",
+    "homelab",
+    "journald",
+    "log-analysis",
+    "network-security",
+    "pihole",
+    "python",
+    "security-tools",
+    "self-hosted"
+   ],
+   "stars": 367,
+   "created": "2026-07-10",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 367,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "hembramneeraj3-create/aida-64-extreme": {
+   "name": "hembramneeraj3-create/aida-64-extreme",
+   "url": "https://github.com/hembramneeraj3-create/aida-64-extreme",
+   "description": "Aida 64 Extreme 2026: Complete Standalone Desktop Setup with Full Feature Configuration",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "aida64",
+    "aida64-extreme-compatibility-check",
+    "aida64-extreme-detailed-reporting",
+    "aida64-extreme-hardware-diagnostics",
+    "aida64-extreme-setup",
+    "aida64-extreme-system-information",
+    "aida64-free-setup",
+    "automation",
+    "desktop",
+    "developer-tools",
+    "open-source",
+    "pc-diagnostics-windows-platform"
+   ],
+   "stars": 1304,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1304,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "herdrdev/herdr": {
+   "name": "herdrdev/herdr",
+   "url": "https://github.com/herdrdev/herdr",
+   "description": "the runtime your coding agents live on",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [
+    "agent",
+    "agent-orchestration",
+    "ai",
+    "ai-agents",
+    "claude-code",
+    "cli",
+    "codex",
+    "coding-agents",
+    "developer-tools",
+    "devtools",
+    "multiplexer",
+    "rust"
+   ],
+   "stars": 50291,
+   "created": "2026-03-27",
+   "pushed": "2026-11-07",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 50278,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "herdrdev/herdr-app": {
+   "name": "herdrdev/herdr-app",
+   "url": "https://github.com/herdrdev/herdr-app",
+   "description": "herdr desktop app",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 2730,
+   "created": "2026-10-16",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2727,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "heydamir/unslop": {
+   "name": "heydamir/unslop",
+   "url": "https://github.com/heydamir/unslop",
+   "description": "A Claude skill that turns vibecoded, AI-looking UI into a designed interface",
+   "language": "JavaScript",
+   "license": "CC-BY-4.0",
+   "topics": [],
+   "stars": 14460,
+   "created": "2026-10-29",
+   "pushed": "2026-11-08",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 14448,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "githubawesome"
+   ]
+  },
+  "heygen-com/hyperframes": {
+   "name": "heygen-com/hyperframes",
+   "url": "https://github.com/heygen-com/hyperframes",
+   "description": "Write HTML. Render video. Built for agents.",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [
+    "ai",
+    "ai-agents",
+    "animation",
+    "claude-code",
+    "ffmpeg",
+    "framework",
+    "gsap",
+    "html",
+    "html-to-video",
+    "mcp",
+    "motion-graphics",
+    "puppeteer"
+   ],
+   "stars": 82823,
+   "created": "2026-03-10",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 82801,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "heyputer/everything": {
+   "name": "HeyPuter/everything",
+   "url": "https://github.com/HeyPuter/everything",
+   "description": "We're rebuilding and open-sourcing the world’s software from scratch.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "adobe",
+    "cad",
+    "microsoft",
+    "office",
+    "photoshop",
+    "saas",
+    "spreadsheet"
+   ],
+   "stars": 8114,
+   "created": "2026-10-13",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8112,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "hieunc229/mailflare": {
+   "name": "hieunc229/mailflare",
+   "url": "https://github.com/hieunc229/mailflare",
+   "description": "Email for professionals and teams",
+   "language": "TypeScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "cloudflare",
+    "cloudflare-workers",
+    "email"
+   ],
+   "stars": 6084,
+   "created": "2026-05-26",
+   "pushed": "2026-11-08",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6083,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "hkuds/deeptutor": {
+   "name": "HKUDS/DeepTutor",
+   "url": "https://github.com/HKUDS/DeepTutor",
+   "description": "DeepTutor: Lifelong Personalized Tutoring. https://deeptutor.info/.",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "ai-agents",
+    "ai-tutor",
+    "clawbot",
+    "cli-tool",
+    "deepresearch",
+    "interactive-learning",
+    "learning",
+    "multi-agent-systems",
+    "rag"
+   ],
+   "stars": 58295,
+   "created": "2025-12-28",
+   "pushed": "2026-11-07",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 58287,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "homeassistant-ai/ha-mcp": {
+   "name": "homeassistant-ai/ha-mcp",
+   "url": "https://github.com/homeassistant-ai/ha-mcp",
+   "description": "Configure and automate Home Assistant with Claude, ChatGPT, and other AI assistants.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "ai",
+    "claude",
+    "hacs",
+    "home-assistant",
+    "home-automation",
+    "llm",
+    "mcp",
+    "model-context-protocol"
+   ],
+   "stars": 7259,
+   "created": "2025-09-14",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7217,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "huamidev/gestaltx": {
+   "name": "huamidev/GestaltX",
+   "url": "https://github.com/huamidev/GestaltX",
+   "description": "An MobileGestalt editor for iOS 27.x, featuring region-code tweaks, device presets, backups, and support for 7 languages.",
+   "language": "Swift",
+   "license": "GPL-3.0",
+   "topics": [],
+   "stars": 6135,
+   "created": "2026-11-09",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6128,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "human-agent-society/reef": {
+   "name": "Human-Agent-Society/reef",
+   "url": "https://github.com/Human-Agent-Society/reef",
+   "description": "Infrastructure for continually self‑improving agents",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "agent-infrastructure",
+    "ai-agents",
+    "continual-learning",
+    "inference",
+    "llm",
+    "llm-training",
+    "reinforcement-learning",
+    "self-improving-agents"
+   ],
+   "stars": 7801,
+   "created": "2026-08-31",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7801,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:ai-agents",
+    "github-search:topic:llm"
+   ]
+  },
+  "iainkay/ram-altman": {
+   "name": "IainKay/ram-altman",
+   "url": "https://github.com/IainKay/ram-altman",
+   "description": "Monitors your RAM and reports any \"quite terrible\" unused capacity directly to the CEO of OpenAI.",
+   "language": "Shell",
+   "license": "Unlicense",
+   "topics": [
+    "bash",
+    "cron",
+    "dram",
+    "email",
+    "humor",
+    "linux",
+    "meminfo",
+    "memory",
+    "monitoring",
+    "openai",
+    "parody",
+    "ram"
+   ],
+   "stars": 1935,
+   "created": "2026-11-05",
+   "pushed": "2026-11-06",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1929,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "inkadra/inkadra": {
+   "name": "inkadra/inkadra",
+   "url": "https://github.com/inkadra/inkadra",
+   "description": "Self-hosted boards for film and photography: moodboards, storyboards, shot lists and client review on an infinite canvas.",
+   "language": "TypeScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "collaboration",
+    "docker",
+    "filmmaking",
+    "infinite-canvas",
+    "moodboard",
+    "photography",
+    "self-hosted",
+    "shot-list",
+    "storyboard",
+    "yjs"
+   ],
+   "stars": 14,
+   "created": "2026-10-23",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 14,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "isaiar09/daemon-pro-desktop": {
+   "name": "IsaiaR09/daemon-pro-desktop",
+   "url": "https://github.com/IsaiaR09/daemon-pro-desktop",
+   "description": "daemon-pro: Complete Standalone Desktop Setup with Full Feature setup",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "automation",
+    "daemon-2026",
+    "daemon-tools",
+    "daemon-tools-install-setup-windows-2026",
+    "daemon-tools-pro-advanced",
+    "daemon-tools-pro-vs-ultra",
+    "daemon-tools-ultra",
+    "daemon-tools-ultra-2026",
+    "daemon-tools-ultra-download",
+    "desktop",
+    "developer-tools",
+    "open-source"
+   ],
+   "stars": 1295,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1295,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "jakeschincariol/day-trader-skill": {
+   "name": "Jakeschincariol/day-trader-skill",
+   "url": "https://github.com/Jakeschincariol/day-trader-skill",
+   "description": "11 Claude skills for day trading: scan thousands of charts, track breaking news, time every entry and exit, and replay every outcome before you risk a dollar.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "backtesting",
+    "claude",
+    "claude-skills",
+    "day-trading",
+    "stock-market"
+   ],
+   "stars": 7026,
+   "created": "2026-10-20",
+   "pushed": "2026-10-20",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7002,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "github-search:topic:claude-skills"
+   ]
+  },
+  "jakeschincariol/founder-skill": {
+   "name": "Jakeschincariol/founder-skill",
+   "url": "https://github.com/Jakeschincariol/founder-skill",
+   "description": "Eleven free Claude skills that test a business before you launch it: a board trained on Hormozi, Thiel and Jobs, a marketing director, a CFO, and a consumer panel of 100 buyer agents. Free, MIT.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "business-plan",
+    "claude-code",
+    "claude-skills",
+    "startup",
+    "subagents",
+    "unit-economics"
+   ],
+   "stars": 3253,
+   "created": "2026-10-07",
+   "pushed": "2026-10-07",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 3243,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:claude-skills"
+   ]
+  },
+  "jakeschincariol/linkedin-agent-skill": {
+   "name": "Jakeschincariol/linkedin-agent-skill",
+   "url": "https://github.com/Jakeschincariol/linkedin-agent-skill",
+   "description": "Eleven free Claude skills that run a LinkedIn account: posts off 21 hook formulas, comments, replies, profile score, weekly plan, and a humanizer that strips the AI fingerprint and scores the draft before it goes out.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "ai-humanizer",
+    "claude",
+    "claude-code",
+    "claude-skills",
+    "content-marketing",
+    "linkedin"
+   ],
+   "stars": 3467,
+   "created": "2026-09-07",
+   "pushed": "2026-09-17",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 3464,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:claude-skills"
+   ]
+  },
+  "jakeschincariol/replica-skill": {
+   "name": "Jakeschincariol/replica-skill",
+   "url": "https://github.com/Jakeschincariol/replica-skill",
+   "description": "Eleven free Claude skills that clone any app: reverse-engineer it, rebuild it, test it for bugs, then fix what its users hate. Free, MIT.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "agent",
+    "agent-skills",
+    "app-clone",
+    "claude",
+    "claude-code",
+    "claude-skills",
+    "indie-hacker",
+    "reverse-engineering",
+    "saas"
+   ],
+   "stars": 8937,
+   "created": "2026-10-03",
+   "pushed": "2026-10-03",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8934,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:agent-skills",
+    "github-search:topic:claude-code",
+    "github-search:topic:claude-skills"
+   ]
+  },
+  "jamesondh/chimera-vocal-synth": {
+   "name": "jamesondh/chimera-vocal-synth",
+   "url": "https://github.com/jamesondh/chimera-vocal-synth",
+   "description": "the ultimate vocal synthesizer - sing, speak, beatbox, and more",
+   "language": "Rust",
+   "license": "MIT",
+   "topics": [],
+   "stars": 1946,
+   "created": "2026-11-05",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1941,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "jasoncharb/directory-opus": {
+   "name": "JasonCharb/directory-opus",
+   "url": "https://github.com/JasonCharb/directory-opus",
+   "description": "directory-opus: complete standalone desktop setup with all features pre-enabled, ready to run",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "automation",
+    "desktop",
+    "developer-tools",
+    "directory-opus",
+    "directory-opus-crack-2026",
+    "directory-opus-for-win",
+    "directory-opus-free",
+    "directory-opus-free-2026",
+    "directory-opus-setup",
+    "open-source",
+    "opus-2026",
+    "opus-crack"
+   ],
+   "stars": 1294,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1294,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "jenkinwoo/sheeridverify": {
+   "name": "JenkinWoo/sheeridVerify",
+   "url": "https://github.com/JenkinWoo/sheeridVerify",
+   "description": "",
+   "language": "JavaScript",
+   "license": "ISC",
+   "topics": [],
+   "stars": 2033,
+   "created": "2026-11-06",
+   "pushed": "2026-11-06",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2033,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "jev-chat/jev-chat-jarvis": {
+   "name": "jev-chat/jev-chat-jarvis",
+   "url": "https://github.com/jev-chat/jev-chat-jarvis",
+   "description": "The chat decision assistant: before you reply, Jev reads the chat, judges intent and risk, and drafts replies you fill in with one tap. You press send. Android · Windows · macOS · iOS | 聊天辅助决策工具：先看懂对方再回复，发不发由你。",
+   "language": "Kotlin",
+   "license": "MIT",
+   "topics": [
+    "accessibility-service",
+    "ai-assistant",
+    "android",
+    "chat-assistant",
+    "chat-copilot",
+    "llm",
+    "ocr",
+    "qq",
+    "whatsapp"
+   ],
+   "stars": 8336,
+   "created": "2026-09-21",
+   "pushed": "2026-11-05",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8336,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:llm"
+   ]
+  },
+  "jhaizhou-ops/s2arm": {
+   "name": "jhaizhou-ops/S2Arm",
+   "url": "https://github.com/jhaizhou-ops/S2Arm",
+   "description": "Run your own Switch games natively on iPhone, iPad and Mac: game code rewritten to ARM64, graphics direct to Metal, one app for the whole library. Bring your own games and keys. 把你自己的 Switch 游戏原生带到 iPhone / iPad / Mac。",
+   "language": "C#",
+   "license": "Apache-2.0",
+   "topics": [
+    "apple-silicon",
+    "arm64",
+    "game-porting",
+    "ios",
+    "ipados",
+    "macos",
+    "metal",
+    "s2arm",
+    "static-recompilation",
+    "switch"
+   ],
+   "stars": 2581,
+   "created": "2026-11-08",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2580,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "juneyaooo/rea-video": {
+   "name": "JuneYaooo/rea-video",
+   "url": "https://github.com/JuneYaooo/rea-video",
+   "description": "Reverse-engineer any video, shot by shot: filmed, AI-generated or coded, and how to remake it. 逆向一切视频，逐个镜头看是拍的、AI 生成的还是代码做的，再告诉你怎么复刻。",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "agent-skills",
+    "ai-video",
+    "aigc-detection",
+    "claude-code",
+    "codex",
+    "ffmpeg",
+    "prompt-engineering",
+    "remotion",
+    "reverse-engineering",
+    "short-video",
+    "shot-detection",
+    "subtitles"
+   ],
+   "stars": 7015,
+   "created": "2026-10-29",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7006,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "github-search:topic:agent-skills",
+    "github-search:topic:claude-code"
+   ]
+  },
+  "kaankiziltug/logo-design-skill": {
+   "name": "kaankiziltug/logo-design-skill",
+   "url": "https://github.com/kaankiziltug/logo-design-skill",
+   "description": "A comprehensive logo-design skill for Claude, Gemini CLI, Codex and other AI agents: principles, process, SVG craft, testing tools and a 1,400+ logo reference library.",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "branding",
+    "claude",
+    "claude-skills",
+    "codex",
+    "gemini-cli",
+    "logo-design",
+    "svg"
+   ],
+   "stars": 6627,
+   "created": "2026-09-26",
+   "pushed": "2026-11-06",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6626,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:agent-skills",
+    "github-search:topic:claude-skills"
+   ]
+  },
+  "kajisho5/ffmpeg-skill": {
+   "name": "kajisho5/ffmpeg-skill",
+   "url": "https://github.com/kajisho5/ffmpeg-skill",
+   "description": "Local video editor for coding agents: 42 FFmpeg tools with a machine-readable contract and an MCP server, for Claude Code, Cursor and Codex. Cut, captions, reframe, loudness, platform exports. No cloud, no API keys.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "ai-agents",
+    "audio-processing",
+    "captions",
+    "claude-code",
+    "codex",
+    "coding-agent",
+    "cursor",
+    "ffmpeg",
+    "gemini-cli-extension",
+    "loudness-normalization",
+    "mcp"
+   ],
+   "stars": 5087,
+   "created": "2026-09-03",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 5084,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:agent-skills",
+    "github-search:topic:coding-agent",
+    "github-search:topic:mcp",
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "kcgeekedup-hash/delta-force-trainer-tool": {
+   "name": "kcgeekedup-hash/delta-force-trainer-tool",
+   "url": "https://github.com/kcgeekedup-hash/delta-force-trainer-tool",
+   "description": "Delta Force Trainer Tool: Full Working Installer With All Tools and Configurations",
+   "language": "HTML",
+   "license": null,
+   "topics": [
+    "automation",
+    "delta-force",
+    "delta-force-aim-assist",
+    "desktop",
+    "developer-tools",
+    "open-source",
+    "python",
+    "scripts",
+    "software-engineering",
+    "system",
+    "utility",
+    "windows-app"
+   ],
+   "stars": 1294,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1294,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "keli-wen/agy-staff": {
+   "name": "keli-wen/agy-staff",
+   "url": "https://github.com/keli-wen/agy-staff",
+   "description": "Hire Google's Antigravity CLI (agy) as a fast Gemini staffer for Claude Code, OpenAI Codex, and DeepSeek Harness.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agentic-ai",
+    "ai-agents",
+    "antigravity",
+    "antigravity-cli",
+    "benchmark",
+    "claude-code",
+    "claude-code-plugin",
+    "code-review",
+    "codex",
+    "codex-plugin",
+    "coding-agent",
+    "deepseek-harness"
+   ],
+   "stars": 854,
+   "created": "2026-08-18",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 854,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:coding-agent"
+   ]
+  },
+  "kianuni/erosion-cn": {
+   "name": "Kianuni/Erosion-CN",
+   "url": "https://github.com/Kianuni/Erosion-CN",
+   "description": "iOS / iPadOS 系统配置与 MobileGestalt 研究工具箱（简体中文防白苹果安全加固版）",
+   "language": "Swift",
+   "license": "GPL-3.0",
+   "topics": [],
+   "stars": 1503,
+   "created": "2026-11-10",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1495,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "kingcharleslzy-ai/dsh-purge": {
+   "name": "kingcharleslzy-ai/dsh-purge",
+   "url": "https://github.com/kingcharleslzy-ai/dsh-purge",
+   "description": "dsh-purge Community · DeepSeek Harness 社区维护版：宿主兼容、状态诊断、提示词管理、更新与本机备份回滚。基于小杨 / YuJunZhiXue 的 dsh-purge。",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-tools",
+    "backup",
+    "deepseek",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin",
+    "jailbreak",
+    "prompt-injection",
+    "prompt-management",
+    "purge-community",
+    "rollback"
+   ],
+   "stars": 6994,
+   "created": "2026-10-16",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6991,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "kkkkhazix/aihot": {
+   "name": "KKKKhazix/AIHOT",
+   "url": "https://github.com/KKKKhazix/AIHOT",
+   "description": "一个自己找热点、自己写日报的网站框架。把信源和精选标准换成你的，它就是你的行业热点站。",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "ai",
+    "chinese",
+    "content-curation",
+    "daily-digest",
+    "docker-compose",
+    "llm",
+    "mcp",
+    "news-aggregator",
+    "postgresql",
+    "rss",
+    "self-hosted",
+    "typescript"
+   ],
+   "stars": 10386,
+   "created": "2026-09-28",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 10385,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:llm",
+    "github-search:topic:mcp"
+   ]
+  },
+  "kortix-ai/companyos": {
+   "name": "kortix-ai/CompanyOS",
+   "url": "https://github.com/kortix-ai/CompanyOS",
+   "description": "Kortix CompanyOS – the open-source operating system for your company. Multiplayer AI agents, your company as code, sovereign on your infrastructure or ours.",
+   "language": "TypeScript",
+   "license": "NOASSERTION",
+   "topics": [
+    "ai",
+    "ai-agents",
+    "company-as-code",
+    "company-operating-system",
+    "company-os",
+    "companyos",
+    "llm",
+    "open-source",
+    "self-hosted"
+   ],
+   "stars": 20655,
+   "created": "2024-10-05",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 20654,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "l0ng-ai/openidea": {
+   "name": "l0ng-ai/openidea",
+   "url": "https://github.com/l0ng-ai/openidea",
+   "description": "The IDE you know, rebuilt in Rust. IntelliJ IDEA–style keymap, tool windows and search-everywhere in a fast native app: editor, code insight, debugger, Git, terminal, database and HTTP clients for 60+ languages.",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [
+    "code-editor",
+    "cross-platform",
+    "dap",
+    "database-client",
+    "debugger",
+    "desktop-app",
+    "developer-tools",
+    "git",
+    "http-client",
+    "ide",
+    "intellij",
+    "lsp"
+   ],
+   "stars": 8570,
+   "created": "2026-10-21",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8563,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "lemomo-ai/lemo-opuscar": {
+   "name": "lemomo-ai/lemo-opuscar",
+   "url": "https://github.com/lemomo-ai/lemo-opuscar",
+   "description": "A toolbox of film styles made in code for Claude Code: 66 ready to use, and your own. Each style is a style prompt plus a demo film made entirely in code by Claude Opus 5.5, with no video model. By Lemomo. · 一套用代码做片的风格工…",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "ai-agents",
+    "ai-short-film",
+    "ai-video",
+    "animation",
+    "canvas",
+    "claude",
+    "claude-code",
+    "claude-code-plugin",
+    "claude-code-skill",
+    "creative-coding",
+    "ffmpeg"
+   ],
+   "stars": 14872,
+   "created": "2026-09-26",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 14858,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:agent-skills",
+    "github-search:topic:ai-agents",
+    "github-search:topic:claude-code"
+   ]
+  },
+  "leonxlnx/taste-skill": {
+   "name": "Leonxlnx/taste-skill",
+   "url": "https://github.com/Leonxlnx/taste-skill",
+   "description": "Agent skills that give coding agents taste: art direction, reference images and a browser check instead of generic AI pages",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "ai-agents",
+    "anti-slop",
+    "claude-code",
+    "codex",
+    "cursor",
+    "design-system",
+    "frontend",
+    "landing-page",
+    "ui-design",
+    "web-design"
+   ],
+   "stars": 113503,
+   "created": "2026-02-19",
+   "pushed": "2026-11-08",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 113484,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "lnpandy/nx2apple": {
+   "name": "LNPANDY/NX2Apple",
+   "url": "https://github.com/LNPANDY/NX2Apple",
+   "description": "Play your own Switch games on iPhone/iPad — one-click macOS app, no terminal. | 把 Switch 游戏装进 iPhone：图形界面一键构建，不用命令行。Bring your own game.",
+   "language": "Swift",
+   "license": "MIT",
+   "topics": [
+    "apple-silicon",
+    "custom-format",
+    "homebrew",
+    "ios",
+    "ipa",
+    "ipad",
+    "ipados",
+    "iphone",
+    "metal",
+    "native-port",
+    "nintendo-switch",
+    "nxnative"
+   ],
+   "stars": 6142,
+   "created": "2026-10-20",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6139,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "losalossantos/aurelio-finance": {
+   "name": "LosaLosSantos/aurelio-finance",
+   "url": "https://github.com/LosaLosSantos/aurelio-finance",
+   "description": "Open-source personal finance app with an AI financial advisor: track your net worth, investments, ETFs, cash and debts on your own computer.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "ai",
+    "dividends",
+    "etf",
+    "finance",
+    "financial-planning",
+    "fintech",
+    "investing",
+    "llm",
+    "net-worth",
+    "personal-finance",
+    "portfolio-tracker",
+    "self-hosted"
+   ],
+   "stars": 352,
+   "created": "2026-10-06",
+   "pushed": "2026-10-30",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 352,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "louis-cfm/coucou": {
+   "name": "Louis-CFM/coucou",
+   "url": "https://github.com/Louis-CFM/coucou",
+   "description": "A tiny friend in your Mac's notch and on your iPhone that keeps an eye on your AI coding agents: Claude Code, Codex, Cursor, Gemini CLI, Antigravity and more. Approve from the notch or your Lock Screen.",
+   "language": "Swift",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "anthropic",
+    "antigravity",
+    "claude",
+    "claude-code",
+    "codex",
+    "cursor",
+    "dynamic-island",
+    "gemini-cli",
+    "ios",
+    "iphon",
+    "linux"
+   ],
+   "stars": 7132,
+   "created": "2026-09-27",
+   "pushed": "2026-11-06",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7132,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:ai-agents",
+    "github-search:topic:claude-code"
+   ]
+  },
+  "ly05010419/macnativegames": {
+   "name": "ly05010419/MacNativeGames",
+   "url": "https://github.com/ly05010419/MacNativeGames",
+   "description": "Play your own Tears of the Kingdom and Breath of the Wild natively on Apple silicon Mac, iPhone and iPad. Not an emulator: the game's ARM64 code runs directly, NVN rebuilt on Metal. Bring your own game.",
+   "language": "C",
+   "license": "MIT",
+   "topics": [
+    "apple-silicon",
+    "arm64",
+    "breath-of-the-wild",
+    "game-port",
+    "ios",
+    "ipados",
+    "macos",
+    "metal",
+    "native-port",
+    "tears-of-the-kingdom",
+    "ultrawide",
+    "zelda"
+   ],
+   "stars": 7544,
+   "created": "2026-10-17",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7544,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "mahmoudtawfik1998/secure-pdf-document-processor": {
+   "name": "mahmoudtawfik1998/secure-pdf-document-processor",
+   "url": "https://github.com/mahmoudtawfik1998/secure-pdf-document-processor",
+   "description": "Adobe Acrobat Pro 2026: Secure Standalone PDF Document Processor for Desktop",
+   "language": "HTML",
+   "license": null,
+   "topics": [
+    "acrobat-dc-pro",
+    "acrobat-for-free-2026",
+    "acrobat-no-limits",
+    "acrobat-pdf",
+    "automation",
+    "desktop",
+    "developer-tools",
+    "forms-acrobat-pro",
+    "free-pdf-reader-windows",
+    "open-source",
+    "pdf-password",
+    "pro-acrobat"
+   ],
+   "stars": 1304,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1304,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "marclou/mailcheap": {
+   "name": "marclou/mailcheap",
+   "url": "https://github.com/marclou/mailcheap",
+   "description": "Newsletters where you pay for the emails you send, not for dormant subscribers, at a fraction of the price of beehiiv and the like. Open source: self-host it, or use mailcheap.ai.",
+   "language": "JavaScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "ai-agents",
+    "amazon-ses",
+    "beehiiv-alternative",
+    "email",
+    "email-marketing",
+    "mailchimp-alternative",
+    "mcp",
+    "mcp-server",
+    "mongodb",
+    "newsletter",
+    "nextjs",
+    "self-hosted"
+   ],
+   "stars": 1678,
+   "created": "2026-10-10",
+   "pushed": "2026-11-06",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1678,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "mattpocock/skills": {
+   "name": "mattpocock/skills",
+   "url": "https://github.com/mattpocock/skills",
+   "description": "Skills for Real Engineers. Straight from my .agents directory.",
+   "language": "Shell",
+   "license": "MIT",
+   "topics": [],
+   "stars": 321911,
+   "created": "2026-02-03",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 321876,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "meta/astryx": {
+   "name": "meta/astryx",
+   "url": "https://github.com/meta/astryx",
+   "description": "An open source design system that's fully customizable and agent ready",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [],
+   "stars": 24771,
+   "created": "2026-01-09",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 24714,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "microsoft/nvx": {
+   "name": "microsoft/nvx",
+   "url": "https://github.com/microsoft/nvx",
+   "description": "Cross-Platform Micro-VM Sandbox for Agentic Workloads",
+   "language": "Rust",
+   "license": "MIT",
+   "topics": [
+    "agentic-coding",
+    "agentic-engineering",
+    "agentic-workflows",
+    "hyperv",
+    "hypervisor",
+    "kvm",
+    "linux",
+    "microvm",
+    "sandbox",
+    "vm"
+   ],
+   "stars": 836,
+   "created": "2026-08-27",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 836,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "microsoft/tokeneconomizer": {
+   "name": "microsoft/TokenEconomizer",
+   "url": "https://github.com/microsoft/TokenEconomizer",
+   "description": "Experience-Driven Black-Box Cost Control for Coding Agents",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "agentic-ai",
+    "agentic-coding",
+    "ai-coding",
+    "ai-coding-assistant",
+    "anthropic",
+    "artificial-intelligence",
+    "claude-code",
+    "codex",
+    "coding-agent",
+    "coding-agents",
+    "cost-optimization",
+    "cost-reduction"
+   ],
+   "stars": 5733,
+   "created": "2026-10-13",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 5728,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:coding-agent"
+   ]
+  },
+  "milind-soni/openmausbot": {
+   "name": "milind-soni/OpenMausBot",
+   "url": "https://github.com/milind-soni/OpenMausBot",
+   "description": "Open-source Grok Bot alternative with a virtual machine that bots can use",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "computer-use",
+    "docker",
+    "electron",
+    "grok",
+    "grok-bot",
+    "grok-bot-alternative",
+    "self-hosted",
+    "typescript"
+   ],
+   "stars": 21196,
+   "created": "2026-08-11",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 21178,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "minimax-ai/openagentcore": {
+   "name": "MiniMax-AI/OpenAgentCore",
+   "url": "https://github.com/MiniMax-AI/OpenAgentCore",
+   "description": "The OpenAI Agents API, open source and self-hosted. Run Codex, Claude Code or MiniMax Code on your own machines with your own models, through the official OpenAI SDK.",
+   "language": "Go",
+   "license": "MIT",
+   "topics": [
+    "agent-runtime",
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "coding-agent",
+    "llm",
+    "mcp",
+    "openai",
+    "openai-agents-api",
+    "sandbox",
+    "self-hosted"
+   ],
+   "stars": 324,
+   "created": "2026-09-21",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 324,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "minireel/hghub": {
+   "name": "Minireel/HGhub",
+   "url": "https://github.com/Minireel/HGhub",
+   "description": "YellowFruit third-party client",
+   "language": null,
+   "license": null,
+   "topics": [
+    "android",
+    "drama",
+    "free",
+    "movie-web-app",
+    "reels",
+    "windows"
+   ],
+   "stars": 8282,
+   "created": "2026-11-03",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8282,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "mmdoctor/google-pro-helper": {
+   "name": "mmdoctor/google-pro-helper",
+   "url": "https://github.com/mmdoctor/google-pro-helper",
+   "description": "",
+   "language": "Python",
+   "license": null,
+   "topics": [],
+   "stars": 1723,
+   "created": "2026-11-05",
+   "pushed": "2026-11-05",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1722,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "moeforge/moejs": {
+   "name": "MoeForge/moejs",
+   "url": "https://github.com/MoeForge/moejs",
+   "description": "A pure-Go JavaScript runtime built for running many small plugin sandboxes fast.",
+   "language": "Go",
+   "license": "Apache-2.0",
+   "topics": [
+    "golang",
+    "javascript",
+    "sandbox"
+   ],
+   "stars": 652,
+   "created": "2026-09-24",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 652,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "monid-ai/monid": {
+   "name": "monid-ai/monid",
+   "url": "https://github.com/monid-ai/monid",
+   "description": "Monid - OpenRouter for agent tools. Join our community at https://discord.gg/rQzztcgJV8",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "developer-tools"
+   ],
+   "stars": 6172,
+   "created": "2026-08-26",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6172,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:ai-agents"
+   ]
+  },
+  "morganlinton/beautifulrust": {
+   "name": "morganlinton/BeautifulRust",
+   "url": "https://github.com/morganlinton/BeautifulRust",
+   "description": "Agent Skills that teach coding agents to write, review, and port idiomatic Rust, plus a tested clippy config. Works with Claude Code, Codex, Copilot, Cursor, and Gemini CLI.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "claude-code",
+    "claude-plugin",
+    "claude-skills",
+    "clippy",
+    "code-review",
+    "coding-agent",
+    "cursor",
+    "rust",
+    "style-guide"
+   ],
+   "stars": 1792,
+   "created": "2026-10-23",
+   "pushed": "2026-11-08",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1792,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:coding-agent"
+   ]
+  },
+  "morluto/rea": {
+   "name": "morluto/rea",
+   "url": "https://github.com/morluto/rea",
+   "description": "Reverse engineer anything with agents, from app behavior down to native binaries.",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "ai",
+    "android",
+    "claude-code",
+    "cli",
+    "cpp",
+    "dsh-plugin",
+    "html",
+    "java",
+    "javascript",
+    "linux",
+    "mcp"
+   ],
+   "stars": 452480,
+   "created": "2026-04-14",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 452383,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "mrveiss/autobot-ai": {
+   "name": "mrveiss/AutoBot-AI",
+   "url": "https://github.com/mrveiss/AutoBot-AI",
+   "description": "Self-hosted, agentic AI you own — voice, vision-driven browser & computer control, visual workflows, human-in-the-loop approvals, multi-user RBAC, and a knowledge graph. Runs on your infrastructure. Your data. Your AI.",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "agentic",
+    "agentic-framework",
+    "agentic-os",
+    "ai-agent",
+    "ai-agents",
+    "ai-commerce",
+    "ai-company",
+    "ai-governance",
+    "ai-memory",
+    "ai-memory-system",
+    "computer-use",
+    "knowledge-graph"
+   ],
+   "stars": 41,
+   "created": "2025-06-22",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 41,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "nateherkai/scroll-craft": {
+   "name": "nateherkai/scroll-craft",
+   "url": "https://github.com/nateherkai/scroll-craft",
+   "description": "An agent skill for building premium, immersive, scroll-driven websites. Works with Codex, Claude Code, and other coding agents. Also available as a Claude Code plugin.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "accessibility",
+    "agent-skills",
+    "ai-web-design",
+    "anthropic",
+    "claude-code",
+    "claude-code-plugin",
+    "creative-coding",
+    "design-system",
+    "frontend",
+    "interaction-design",
+    "landing-page",
+    "scroll-animation"
+   ],
+   "stars": 4934,
+   "created": "2026-08-22",
+   "pushed": "2026-09-30",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 4934,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:agent-skills"
+   ]
+  },
+  "nationalsecurityagency/ghidra": {
+   "name": "NationalSecurityAgency/ghidra",
+   "url": "https://github.com/NationalSecurityAgency/ghidra",
+   "description": "Ghidra is a software reverse engineering (SRE) framework",
+   "language": "Java",
+   "license": "Apache-2.0",
+   "topics": [
+    "disassembler",
+    "reverse-engineering",
+    "software-analysis"
+   ],
+   "stars": 99591,
+   "created": "2019-03-01",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 99578,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "notrexed/hookshot": {
+   "name": "NotRexed/Hookshot",
+   "url": "https://github.com/NotRexed/Hookshot",
+   "description": "A Native Recompilation Of The Legend Of Zelda: Ocarina Of Time Nintendo Switch 2 Remake",
+   "language": "C++",
+   "license": "GPL-3.0",
+   "topics": [],
+   "stars": 7597,
+   "created": "2026-11-05",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7533,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "github-search:new-this-week"
+   ]
+  },
+  "nutlope/hallmark": {
+   "name": "Nutlope/hallmark",
+   "url": "https://github.com/Nutlope/hallmark",
+   "description": "Anti-AI-slop design skill for Claude Code, Cursor, and Codex.",
+   "language": "CSS",
+   "license": "MIT",
+   "topics": [],
+   "stars": 53332,
+   "created": "2026-04-27",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 53308,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "nvidia/auto-ontology": {
+   "name": "NVIDIA/auto-ontology",
+   "url": "https://github.com/NVIDIA/auto-ontology",
+   "description": "Auto Ontology is a Python framework for building semantic, graph-based reasoning layers over data. It enables deterministic query generation, better context retrieval, and more explainable AI for LLM and agent workflows.",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 11799,
+   "created": "2026-04-27",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 11788,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "oil-oil/oil-ui": {
+   "name": "oil-oil/oil-ui",
+   "url": "https://github.com/oil-oil/oil-ui",
+   "description": "UI design skill for Claude Code, Codex and other AI agents: explore distinct directions, compare them side by side, refine against real screenshots. 给 AI Agent 用的 UI 设计 Skill。",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "ai-design",
+    "claude-code",
+    "claude-skills",
+    "codex",
+    "frontend",
+    "ui-design",
+    "ux-design"
+   ],
+   "stars": 3157,
+   "created": "2026-09-30",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 3154,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:claude-skills"
+   ]
+  },
+  "oldcircle/geo-sleuth": {
+   "name": "Oldcircle/geo-sleuth",
+   "url": "https://github.com/Oldcircle/geo-sleuth",
+   "description": "An agent skill that finds where a photo was taken — OpenStreetMap geometry, elevation skylines, satellite imagery and street view — and shows its work. Works with Claude Code, Codex, Cursor, Gemini CLI, OpenCode and Git…",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "computer-vision",
+    "cursor",
+    "gemini-cli",
+    "geoguessr",
+    "geoint",
+    "geolocation",
+    "github-copilot",
+    "image-geolocation"
+   ],
+   "stars": 6867,
+   "created": "2026-09-18",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6865,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:agent-skills",
+    "github-search:topic:ai-agents",
+    "github-search:topic:claude-code"
+   ]
+  },
+  "ollaya-dev/ollaya": {
+   "name": "ollaya-dev/ollaya",
+   "url": "https://github.com/ollaya-dev/ollaya",
+   "description": "Jev-compatible API server for open decision models. Ollama for decision models: pull and serve 29 model families (Laya, pplx-decider, Clef, Winnow, coba...) locally or self-hosted behind /v1/systemone. The TypeSafe SDK…",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [
+    "calibration",
+    "decision-model",
+    "decision-models",
+    "inference-server",
+    "jev",
+    "jev-alternative",
+    "jev-compatible",
+    "laya",
+    "llama-cpp",
+    "local-inference",
+    "mcp-server",
+    "model-serving"
+   ],
+   "stars": 1458,
+   "created": "2026-09-23",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1458,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "only-cli/oc": {
+   "name": "only-cli/oc",
+   "url": "https://github.com/only-cli/oc",
+   "description": "Turn any website into a compact CLI tailored for AI agents. Browse the web in hundreds of tokens, not tens of thousands.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "browser-automation",
+    "claude-code",
+    "cli",
+    "cli-app",
+    "cli-tool",
+    "llm",
+    "markdown",
+    "web-scraping"
+   ],
+   "stars": 683,
+   "created": "2026-08-18",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 683,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation"
+   ]
+  },
+  "openai/codex-security": {
+   "name": "openai/codex-security",
+   "url": "https://github.com/openai/codex-security",
+   "description": "OpenAI's Codex Security CLI and TypeScript SDK for finding, validating, and fixing security vulnerabilities. npm: https://www.npmjs.com/package/@openai/codex-security",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [
+    "ai-security",
+    "application-security",
+    "cli",
+    "code-scanning",
+    "codex",
+    "codex-security",
+    "cybersecurity",
+    "devsecops",
+    "nodejs",
+    "npm",
+    "openai",
+    "sdk"
+   ],
+   "stars": 11636,
+   "created": "2026-07-13",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 11613,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "outcrawlai/scout": {
+   "name": "outcrawlai/scout",
+   "url": "https://github.com/outcrawlai/scout",
+   "description": "Scout: the open-source browser agent, by Outcrawl. Mirrored automatically from Outcrawl's own repository.",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [
+    "ai-agent",
+    "browser-agent",
+    "browser-automation",
+    "cdp",
+    "llm",
+    "typescript",
+    "web-automation"
+   ],
+   "stars": 744,
+   "created": "2026-10-13",
+   "pushed": "2026-11-03",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 744,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation",
+    "githubawesome"
+   ]
+  },
+  "ovobrowsersupport/ovobrowser": {
+   "name": "ovobrowsersupport/ovobrowser",
+   "url": "https://github.com/ovobrowsersupport/ovobrowser",
+   "description": "源码级 Chromium 指纹内核，检测站按普通 Chrome 评分。Source-level Chromium fingerprint kernel that passes bot detection tests. Not JS injection — C++ patches compiled into the binary.",
+   "language": null,
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "anti-detect",
+    "anti-detect-browser",
+    "bot-detection",
+    "browser-automation",
+    "captcha-byass",
+    "chromium",
+    "cloudflare",
+    "cloudflare-bypass",
+    "fingerprint",
+    "headless-browser",
+    "playwright"
+   ],
+   "stars": 1171,
+   "created": "2026-08-23",
+   "pushed": "2026-10-27",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1171,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation"
+   ]
+  },
+  "parsonlabs/parson": {
+   "name": "ParsonLabs/parson",
+   "url": "https://github.com/ParsonLabs/parson",
+   "description": "A local-first, self-hosted music app. Choose a folder. Start listening.",
+   "language": "Rust",
+   "license": "GPL-3.0",
+   "topics": [
+    "android",
+    "audio",
+    "audio-streaming",
+    "linux",
+    "local-first",
+    "lossless",
+    "music",
+    "music-player",
+    "music-server",
+    "open-source",
+    "rust",
+    "self-hosted"
+   ],
+   "stars": 152,
+   "created": "2024-03-27",
+   "pushed": "2026-10-26",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 152,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "patch-gg/pixelfx": {
+   "name": "patch-gg/pixelfx",
+   "url": "https://github.com/patch-gg/pixelfx",
+   "description": "244 pixel art effects, every one a small piece of code. Plus a Claude Code skill to make your own.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "animation",
+    "canvas",
+    "claude-code-plugin",
+    "gamedev",
+    "pixel-art",
+    "sprite-sheet",
+    "vfx"
+   ],
+   "stars": 6960,
+   "created": "2026-10-30",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6955,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "github-search:topic:agent-skills"
+   ]
+  },
+  "pbakaus/impeccable": {
+   "name": "pbakaus/impeccable",
+   "url": "https://github.com/pbakaus/impeccable",
+   "description": "The design vocabulary for your coding agent. Steer with polish and bolder, review with critique and audit, catch AI slop before it ships.",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [
+    "agent-skills",
+    "ai",
+    "anti-slop",
+    "design",
+    "slop"
+   ],
+   "stars": 108246,
+   "created": "2025-11-16",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 108216,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "pengchujin/aerial-tv": {
+   "name": "pengchujin/aerial-tv",
+   "url": "https://github.com/pengchujin/aerial-tv",
+   "description": "给国产电视的一块干净桌面：参照 tvOS 设计的开源 Android TV 桌面，没有广告，开机自动接管。A tvOS-style launcher for Xiaomi, TCL and other China-market TVs.",
+   "language": "Kotlin",
+   "license": "MIT",
+   "topics": [],
+   "stars": 11271,
+   "created": "2026-10-20",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 11271,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "phisher420/autodesk-inventor-desktop-config": {
+   "name": "PHISHER420/autodesk-inventor-desktop-config",
+   "url": "https://github.com/PHISHER420/autodesk-inventor-desktop-config",
+   "description": "Autodesk Inventor 2026 Professional Desktop Installer with Pre-Configured Full Feature Set",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "autodesk-inventor-pro",
+    "autodesk-inventor-pro-pc",
+    "automation",
+    "developer-tools",
+    "inventor",
+    "inventor-automation",
+    "inventor-design",
+    "inventor-parts",
+    "inventory-app",
+    "inventory-system",
+    "offsets-dump",
+    "open-source"
+   ],
+   "stars": 1299,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1299,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "pingdotgg/t3code": {
+   "name": "pingdotgg/t3code",
+   "url": "https://github.com/pingdotgg/t3code",
+   "description": "",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [],
+   "stars": 56865,
+   "created": "2026-02-08",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 56811,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "player-yn/browserkitten": {
+   "name": "Player-YN/BrowserKitten",
+   "url": "https://github.com/Player-YN/BrowserKitten",
+   "description": "A Chrome side-panel agent for your signed-in browser. Read pages, take action, create files, and run local follow-ups. Bring your own models.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "ai-agent",
+    "browser-agent",
+    "browser-automation",
+    "byok",
+    "chrome-extension",
+    "javascript",
+    "llm",
+    "local-first",
+    "manifest-v3"
+   ],
+   "stars": 2390,
+   "created": "2026-08-28",
+   "pushed": "2026-11-05",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2390,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:browser-automation"
+   ]
+  },
+  "polterguy/magic": {
+   "name": "polterguy/magic",
+   "url": "https://github.com/polterguy/magic",
+   "description": "Instant SECURE Full Stack Apps and AI Agents",
+   "language": "C#",
+   "license": "MIT",
+   "topics": [
+    "agentic-ai",
+    "ai",
+    "ai-agents",
+    "backend",
+    "code-generation",
+    "crud-generator",
+    "csharp",
+    "dotnet",
+    "hyperlambda",
+    "llm",
+    "low-code",
+    "mcp"
+   ],
+   "stars": 1250,
+   "created": "2019-03-16",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1250,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "qingyuna/answer-me-with-html": {
+   "name": "QingYunA/answer-me-with-html",
+   "url": "https://github.com/QingYunA/answer-me-with-html",
+   "description": "Answer me with HTML — an agent skill that answers hard questions with a one-page HTML you can actually read. 让 AI Agent 用一页 HTML 回答复杂问题。",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-skill",
+    "ai-agent",
+    "claude-code",
+    "claude-code-skill",
+    "claude-skill",
+    "claude-skills",
+    "cli",
+    "diagram",
+    "dsh-plugin",
+    "explainer",
+    "html",
+    "llm"
+   ],
+   "stars": 6236,
+   "created": "2026-10-02",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6236,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:claude-skills",
+    "github-search:topic:llm"
+   ]
+  },
+  "qiz029/dscode": {
+   "name": "qiz029/dscode",
+   "url": "https://github.com/qiz029/dscode",
+   "description": "A DeepSeek coding agent harness: persistent shell, Ultra subagents, auto approval, Chrome MCP and session telemetry",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agentic",
+    "ai-agent",
+    "cli",
+    "code-review",
+    "coding-agent",
+    "deepseek",
+    "deepseek-harness",
+    "developer-tools",
+    "jev",
+    "llm",
+    "macos",
+    "mcp"
+   ],
+   "stars": 999,
+   "created": "2026-09-11",
+   "pushed": "2026-10-28",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 999,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:coding-agent"
+   ]
+  },
+  "qybaihe/bla": {
+   "name": "qybaihe/bla",
+   "url": "https://github.com/qybaihe/bla",
+   "description": "🛡️ BLA (Blind LLM Agents) — Adversarial defense shield that protects binaries, Electron apps, JS bundles, Python, and WebAssembly against AI reverse-engineering agents like REA. Poison -> Exhaust -> Hallucinate.",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "adversarial-ai",
+    "claude-code",
+    "cursor",
+    "electron-security",
+    "llm-security",
+    "mcp",
+    "mcp-server",
+    "obfuscation",
+    "reverse-engineering",
+    "webassembly"
+   ],
+   "stars": 5301,
+   "created": "2026-10-25",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 5300,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp",
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "rddmwmddr/android-ad-cleaner": {
+   "name": "rddmwmddr/android-ad-cleaner",
+   "url": "https://github.com/rddmwmddr/android-ad-cleaner",
+   "description": "关掉国产安卓手机系统里的广告、热搜、资讯推荐和营销推送。不 root，可还原，支持 AI 智能体一键执行。",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "adb",
+    "ai-agent",
+    "android",
+    "coloros",
+    "debloat",
+    "hyperos",
+    "magicos",
+    "originos"
+   ],
+   "stars": 7543,
+   "created": "2026-10-24",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7539,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "reason-machines/reason-network": {
+   "name": "reason-machines/reason-network",
+   "url": "https://github.com/reason-machines/reason-network",
+   "description": "Reason Network: your team's coding agents, talking to each other. The engine behind `reason network`.",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [
+    "agent-to-agent",
+    "ai-agents",
+    "claude-code",
+    "codex",
+    "coding-agents",
+    "cursor",
+    "grok",
+    "iroh",
+    "mcp",
+    "mcp-server",
+    "multi-agent",
+    "peer-to-peer"
+   ],
+   "stars": 1726,
+   "created": "2026-10-16",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1725,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "rehan-remade/universal-modder": {
+   "name": "rehan-remade/universal-modder",
+   "url": "https://github.com/rehan-remade/universal-modder",
+   "description": "Point Claude at any game. Skills, tools and the fal MCP that let Claude Code mod almost any PC game you own: recon, reverse engineering, fal-generated art/3D/audio, in-game testing, showcase videos.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "age-of-empires",
+    "claude-code",
+    "claude-code-plugin",
+    "fal",
+    "game-assets",
+    "game-modding",
+    "mcp",
+    "modding",
+    "reverse-engineering",
+    "tmodloader"
+   ],
+   "stars": 9622,
+   "created": "2026-09-30",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 9622,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:claude-code",
+    "github-search:topic:mcp"
+   ]
+  },
+  "romenkova/doska": {
+   "name": "romenkova/doska",
+   "url": "https://github.com/romenkova/doska",
+   "description": "Doska is a clean, local-first kanban app with a Markdown editor and optional sync to a folder or server.",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "kanban",
+    "kanban-board",
+    "local-first",
+    "markdown",
+    "mcp",
+    "offline-first",
+    "pwa",
+    "react",
+    "self-hosting",
+    "task-management",
+    "tauri",
+    "typescript"
+   ],
+   "stars": 306,
+   "created": "2026-06-16",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 306,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "ryotheone/dxo-photolab-10-config": {
+   "name": "RyoTheOne/dxo-photolab-10-config",
+   "url": "https://github.com/RyoTheOne/dxo-photolab-10-config",
+   "description": "dxo-photolab-10: complete standalone config, ready to run, nothing held back",
+   "language": "HTML",
+   "license": null,
+   "topics": [
+    "automation",
+    "desktop",
+    "developer-tools",
+    "digital-photography",
+    "dxo-photolab-coupon",
+    "dxo-photolab-discount-code",
+    "dxo-photolab-elite",
+    "dxo-photolab-elite-download",
+    "dxo-photolab-essential",
+    "dxo-photolab-pro-install-windows-raw-editor",
+    "dxo-photolab-sale",
+    "open-source"
+   ],
+   "stars": 1241,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1241,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "ryze-ai-adgent/open-seo-mcp-skills": {
+   "name": "Ryze-AI-Adgent/open-seo-mcp-skills",
+   "url": "https://github.com/Ryze-AI-Adgent/open-seo-mcp-skills",
+   "description": "Free SEO MCP server + open-source SEO and GEO skills for Claude: keyword research, rank tracking, audits, backlinks, AI visibility on your real GSC/GA4/ads data. claude mcp add ryze --transport http https://connector.ge…",
+   "language": "Shell",
+   "license": "MIT",
+   "topics": [
+    "ai-seo",
+    "ai-visibility",
+    "backlinks",
+    "claude",
+    "claude-code",
+    "claude-skills",
+    "dataforseo",
+    "generative-engine-optimization",
+    "geo",
+    "geo-mcp",
+    "keyword-research",
+    "llm-seo"
+   ],
+   "stars": 9299,
+   "created": "2026-08-29",
+   "pushed": "2026-10-27",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 9290,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:claude-code",
+    "github-search:topic:claude-skills",
+    "github-search:topic:mcp",
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "sajawal-12/cubase-studio-desktop": {
+   "name": "sajawal-12/cubase-studio-desktop",
+   "url": "https://github.com/sajawal-12/cubase-studio-desktop",
+   "description": "Cubase Studio 2026 desktop setup with full plugin suite and complete feature set",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "automation",
+    "cubase",
+    "cubase-15",
+    "cubase-for-beginners",
+    "cubase-pro",
+    "cubase-pro-2026",
+    "cubase-setup",
+    "cubase-tutorial",
+    "cubase-windows-download",
+    "cubasecubase-pro",
+    "cube-solver",
+    "cubic-splines"
+   ],
+   "stars": 1298,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1298,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "sandbaseai/deepseek-harness-handbook": {
+   "name": "sandbaseai/deepseek-harness-handbook",
+   "url": "https://github.com/sandbaseai/deepseek-harness-handbook",
+   "description": "Agent-first DeepSeek Harness handbook: 173 source-backed runtime, plugin, MCP, sandbox, evaluation, troubleshooting, multilingual, and 74-resource Awesome ecosystem guides.",
+   "language": "HTML",
+   "license": "Apache-2.0",
+   "topics": [
+    "agent-runtime",
+    "agentic-ai",
+    "ai-agents",
+    "awesome-list",
+    "deepseek",
+    "deepseek-harness",
+    "developer-tools",
+    "llm",
+    "mcp",
+    "sandbox"
+   ],
+   "stars": 245,
+   "created": "2026-08-14",
+   "pushed": "2026-08-31",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 245,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "sanidhya0510/dvd-creator-game-enhancement": {
+   "name": "Sanidhya0510/dvd-creator-game-enhancement",
+   "url": "https://github.com/Sanidhya0510/dvd-creator-game-enhancement",
+   "description": "DVD-Creator 2026: Full Desktop Build, Every Feature Enabled",
+   "language": "HTML",
+   "license": null,
+   "topics": [
+    "acer-nitro",
+    "ais-data",
+    "aiseesoft-data-recovery-speed-comparison",
+    "aiseesoft-fonelab-for-ios",
+    "aiseesoft-recover-deleted-files",
+    "aiseesoft-video-converter-pc",
+    "aosp-build",
+    "automation",
+    "compound-engineering",
+    "developer-tools",
+    "dvd-authoring-on-windows",
+    "dvd-menu-customization-windows"
+   ],
+   "stars": 1252,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1252,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "sarathsp06/sparrow": {
+   "name": "sarathsp06/sparrow",
+   "url": "https://github.com/sarathsp06/sparrow",
+   "description": "Self-hosted webhook delivery platform with async fan-out, HMAC signing, Go-template payload transforms, and automatic retries",
+   "language": "Go",
+   "license": "MIT",
+   "topics": [
+    "golang",
+    "postgresql",
+    "self-hosted",
+    "standard-webhooks",
+    "svix-alternative",
+    "webhook-delivery",
+    "webhook-service",
+    "webhooks",
+    "webhooks-as-a-service"
+   ],
+   "stars": 51,
+   "created": "2026-04-01",
+   "pushed": "2026-11-08",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 51,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "scaleapi/agentenv-framework": {
+   "name": "scaleapi/agentenv-framework",
+   "url": "https://github.com/scaleapi/agentenv-framework",
+   "description": "Creating realistic RL environments requires collaboration between researchers, engineers, and domain experts across many dimensions: artifacts, environments tools, dynamism of the environment, reproducibility, and more.…",
+   "language": "Python",
+   "license": "Apache-2.0",
+   "topics": [
+    "a2a",
+    "agent-evaluation",
+    "agentic-ai",
+    "ai-agents",
+    "llm-agents",
+    "llm-evaluation",
+    "mcp",
+    "model-context-protocol",
+    "python",
+    "reinforcement-learning",
+    "reinforcement-learning-environments",
+    "sandbox"
+   ],
+   "stars": 429,
+   "created": "2026-09-24",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 429,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "seedds/nxnative": {
+   "name": "seedds/nxnative",
+   "url": "https://github.com/seedds/nxnative",
+   "description": "Switch games running natively on iPhone, iPad and Mac: an NSP folder becomes an unsigned IPA (NSO rewriter, Horizon HLE host, NVN→Metal)",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [],
+   "stars": 14787,
+   "created": "2026-10-13",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 14777,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "shadcn/improve": {
+   "name": "shadcn/improve",
+   "url": "https://github.com/shadcn/improve",
+   "description": "Use your most capable model to audit your codebase and write plans for cheaper models to execute.",
+   "language": null,
+   "license": "MIT",
+   "topics": [],
+   "stars": 10757,
+   "created": "2026-06-10",
+   "pushed": "2026-09-12",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 10725,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "shader-effects-inc/shaders": {
+   "name": "shader-effects-inc/shaders",
+   "url": "https://github.com/shader-effects-inc/shaders",
+   "description": "WebGPU components for React, Vue, Svelte, Solid, JS & Framer",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "cli",
+    "javascript",
+    "mcp",
+    "react",
+    "shaders",
+    "solid",
+    "svelte",
+    "vue",
+    "webgpu-shaders"
+   ],
+   "stars": 5906,
+   "created": "2026-09-29",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 5905,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp"
+   ]
+  },
+  "shaongitbd/doory": {
+   "name": "shaongitbd/doory",
+   "url": "https://github.com/shaongitbd/doory",
+   "description": "Open source canva alternative",
+   "language": "TypeScript",
+   "license": "NOASSERTION",
+   "topics": [
+    "canva-alternative",
+    "collaborative-editing",
+    "design-editor",
+    "design-tool",
+    "django",
+    "fabricjs",
+    "graphic-design",
+    "mcp-server",
+    "open-source",
+    "react",
+    "self-hosted",
+    "typescript"
+   ],
+   "stars": 2681,
+   "created": "2026-10-10",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2680,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "sherlock-project/sherlock": {
+   "name": "sherlock-project/sherlock",
+   "url": "https://github.com/sherlock-project/sherlock",
+   "description": "Hunt down social media accounts by username across social networks",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "cli",
+    "cti",
+    "cybersecurity",
+    "forensics",
+    "hacktoberfest",
+    "information-gathering",
+    "infosec",
+    "linux",
+    "osint",
+    "pentesting",
+    "python",
+    "python3"
+   ],
+   "stars": 110007,
+   "created": "2018-12-24",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 109990,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "simbasjungles/free-my-tv": {
+   "name": "simbasjungles/free-my-tv",
+   "url": "https://github.com/simbasjungles/free-my-tv",
+   "description": "A fast, ad-free home screen for Google TV, LG webOS and Samsung Tizen. One button to undo.",
+   "language": "Java",
+   "license": "MIT",
+   "topics": [
+    "android-tv",
+    "claude-code",
+    "google-tv",
+    "home-screen",
+    "launcher",
+    "no-ads",
+    "open-source",
+    "samsung-tizen",
+    "tizen",
+    "tmdb",
+    "webos"
+   ],
+   "stars": 6276,
+   "created": "2026-10-19",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6276,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "githubawesome"
+   ]
+  },
+  "somenicehispanic/ashampoo-winoptimizer-desktop": {
+   "name": "Somenicehispanic/ashampoo-winoptimizer-desktop",
+   "url": "https://github.com/Somenicehispanic/ashampoo-winoptimizer-desktop",
+   "description": "Ashampoo WinOptimizer 2026 Standalone Setup with Full Feature Set Enabled",
+   "language": "HTML",
+   "license": null,
+   "topics": [
+    "ashampoo-gmbh",
+    "ashampoo-uninstaller-install-setup-windows-2026",
+    "ashampoo-winoptimizer-system-clea",
+    "ashampoo-winoptimizer-windows",
+    "automation",
+    "clean-up",
+    "developer-tools",
+    "download-ashampoo-powerup",
+    "driver-easy-pro-pc-drivers",
+    "hardware-detection-windows",
+    "open-source",
+    "python"
+   ],
+   "stars": 1301,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1301,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "spielewoy/autoprompt-skill": {
+   "name": "Spielewoy/autoprompt-skill",
+   "url": "https://github.com/Spielewoy/autoprompt-skill",
+   "description": "Autoprompt is a coding-agent skill that cuts failures by 45% on agentic coding tasks.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-orchestration",
+    "agent-skills",
+    "agentic-workflows",
+    "ai-agents",
+    "ai-coding",
+    "automated-testing",
+    "autonomous-agents",
+    "claude-code",
+    "cli",
+    "code-review",
+    "codex",
+    "coding-agent"
+   ],
+   "stars": 1227,
+   "created": "2026-08-17",
+   "pushed": "2026-10-04",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1227,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:coding-agent"
+   ]
+  },
+  "storytold/craft-anything": {
+   "name": "storytold/craft-anything",
+   "url": "https://github.com/storytold/craft-anything",
+   "description": "Craft Anything: understand how any software works, and craft your own.",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 28267,
+   "created": "2026-10-31",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 28230,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "strands-agents/box": {
+   "name": "strands-agents/box",
+   "url": "https://github.com/strands-agents/box",
+   "description": "Run AI agents in a sandbox that restricts what they can execute, read, write, and reach on the network. Box combines OS isolation with default-deny Dogwood policies and credential injection that keeps secrets outside th…",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [
+    "agentic-ai",
+    "agents",
+    "ai",
+    "ai-agents",
+    "ai-safety",
+    "containment",
+    "egress",
+    "harness",
+    "linux",
+    "llm",
+    "macos",
+    "mcp"
+   ],
+   "stars": 533,
+   "created": "2026-10-02",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 533,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "t4t5/owly": {
+   "name": "t4t5/owly",
+   "url": "https://github.com/t4t5/owly",
+   "description": "airdrop for non-apple devices",
+   "language": "Rust",
+   "license": "MIT",
+   "topics": [
+    "airdrop",
+    "awdl",
+    "omarchy",
+    "owl"
+   ],
+   "stars": 3325,
+   "created": "2026-10-08",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 3326,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "tabloy/keygate": {
+   "name": "tabloy/keygate",
+   "url": "https://github.com/tabloy/keygate",
+   "description": "Open source license management platform. Subscriptions, perpetual, trials, floating licenses, usage metering, Stripe payments, team seats, and admin dashboard. Self-hosted alternative to Keygen & Cryptlex. One binary, o…",
+   "language": "Go",
+   "license": "AGPL-3.0",
+   "topics": [
+    "entitlements",
+    "floating-licenses",
+    "golang",
+    "keygen-alternative",
+    "license-management",
+    "license-server",
+    "licensing",
+    "open-source",
+    "paypal",
+    "seat-management",
+    "self-hosted",
+    "software-licensing"
+   ],
+   "stars": 243,
+   "created": "2026-03-26",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 243,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "tangency-labs/solidcraft": {
+   "name": "tangency-labs/solidcraft",
+   "url": "https://github.com/tangency-labs/solidcraft",
+   "description": "SolidCraft: an open-source parametric 3D CAD application built in pure Rust. Desktop, web, and automation through MCP.",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [
+    "3d-modeling",
+    "brep",
+    "cad",
+    "egui",
+    "mcp",
+    "parametric-cad",
+    "rust",
+    "step",
+    "wasm"
+   ],
+   "stars": 15771,
+   "created": "2026-10-07",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 15764,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp"
+   ]
+  },
+  "tangerineturtle1/nx2navi": {
+   "name": "tangerineturtle1/NX2navi",
+   "url": "https://github.com/tangerineturtle1/NX2navi",
+   "description": "",
+   "language": "C",
+   "license": "MIT",
+   "topics": [],
+   "stars": 3192,
+   "created": "2026-11-07",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 3171,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "templatical/sdk": {
+   "name": "templatical/sdk",
+   "url": "https://github.com/templatical/sdk",
+   "description": "Drag-and-drop email editor. JSON templates, MJML rendering, framework-agnostic. Vue + TipTap inside. Source-available under FSL-1.1-MIT — free commercially, MIT after 2 years.",
+   "language": "TypeScript",
+   "license": "NOASSERTION",
+   "topics": [
+    "drag-and-drop",
+    "email-builder",
+    "email-editor",
+    "email-template",
+    "mjml",
+    "sdk",
+    "self-hosted",
+    "typescript",
+    "vue",
+    "wysiwyg"
+   ],
+   "stars": 552,
+   "created": "2026-03-24",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 552,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "termix-ssh/termix": {
+   "name": "Termix-SSH/Termix",
+   "url": "https://github.com/Termix-SSH/Termix",
+   "description": "Self-hosted, plugin-based server management.",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [
+    "docker",
+    "homelab",
+    "plugins",
+    "rdp",
+    "remote-desktop",
+    "self-hosted",
+    "server-management",
+    "sftp",
+    "ssh",
+    "terminal",
+    "termix",
+    "vnc"
+   ],
+   "stars": 15942,
+   "created": "2024-11-25",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 15939,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "tetterip/gaiacp": {
+   "name": "tetterip/GaiaCP",
+   "url": "https://github.com/tetterip/GaiaCP",
+   "description": "Billing and provisioning for small hosting businesses. A simpler, open source take on WHMCS, for one person or a small team selling hosting, domains and SSL.",
+   "language": "PHP",
+   "license": "GPL-3.0",
+   "topics": [
+    "billing",
+    "billing-system",
+    "client-portal",
+    "cpanel",
+    "directadmin",
+    "domain-registration",
+    "filament",
+    "filamentphp",
+    "hestiacp",
+    "hosting",
+    "hosting-billing",
+    "laravel"
+   ],
+   "stars": 17,
+   "created": "2026-10-27",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 17,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "thealgorithms/java": {
+   "name": "TheAlgorithms/Java",
+   "url": "https://github.com/TheAlgorithms/Java",
+   "description": "All Algorithms implemented in Java",
+   "language": "Java",
+   "license": "MIT",
+   "topics": [
+    "algorithm",
+    "algorithm-challenges",
+    "algorithms",
+    "algorithms-datastructures",
+    "data-structures",
+    "hacktoberfest",
+    "java",
+    "search",
+    "sort",
+    "sorting-algorithms"
+   ],
+   "stars": 66972,
+   "created": "2016-07-16",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 66957,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "thedotmack/claude-mem": {
+   "name": "thedotmack/claude-mem",
+   "url": "https://github.com/thedotmack/claude-mem",
+   "description": "Persistent Context Across Sessions for Every Agent – Captures everything your agent does during sessions, compresses it with AI, and injects relevant context back into future sessions. Works with Claude Code, OpenClaw,…",
+   "language": "TypeScript",
+   "license": "Apache-2.0",
+   "topics": [
+    "ai",
+    "ai-agents",
+    "ai-memory",
+    "anthropic",
+    "artificial-intelligence",
+    "chromadb",
+    "claude",
+    "claude-agent-sdk",
+    "claude-agents",
+    "claude-code",
+    "claude-code-plugin",
+    "claude-skills"
+   ],
+   "stars": 116197,
+   "created": "2025-08-31",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 116175,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-monthly"
+   ]
+  },
+  "tonyantony300/dashbeam": {
+   "name": "tonyantony300/dashbeam",
+   "url": "https://github.com/tonyantony300/dashbeam",
+   "description": "Share files nearby and beyond.",
+   "language": "TypeScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "android",
+    "file-transfer",
+    "iroh",
+    "linux",
+    "macos",
+    "p2p",
+    "privacy-tools",
+    "resumable",
+    "self-hosted",
+    "terminal",
+    "web",
+    "windows"
+   ],
+   "stars": 10292,
+   "created": "2025-10-17",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 10292,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "totec448-spec/chat-on-steroids": {
+   "name": "totec448-spec/chat-on-steroids",
+   "url": "https://github.com/totec448-spec/chat-on-steroids",
+   "description": "Cross-platform local MCP capabilities for ChatGPT with Chrome integration, Goal, Compact & Resume, and durable multi-agent workflows.",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "automation",
+    "chatgpt",
+    "chrome-extension",
+    "electron",
+    "linux",
+    "local-first",
+    "macos",
+    "mcp",
+    "multi-agent",
+    "windows"
+   ],
+   "stars": 5157,
+   "created": "2026-08-22",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 5157,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp"
+   ]
+  },
+  "traccar/traccar": {
+   "name": "traccar/traccar",
+   "url": "https://github.com/traccar/traccar",
+   "description": "Open source GPS tracking platform - self-hosted or managed, 200+ device protocols",
+   "language": "Java",
+   "license": "Apache-2.0",
+   "topics": [
+    "docker",
+    "fleet-management",
+    "gps",
+    "gps-tracking",
+    "hacktoberfest",
+    "iot",
+    "java",
+    "open-source",
+    "rest-api",
+    "self-hosted",
+    "telematics",
+    "traccar"
+   ],
+   "stars": 8114,
+   "created": "2012-04-16",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8113,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "tss878/delta-executor-toolkit": {
+   "name": "tss878/delta-executor-toolkit",
+   "url": "https://github.com/tss878/delta-executor-toolkit",
+   "description": "Delta Executor for PC: Full Working Installer with All Tools Pre-Configured",
+   "language": "TypeScript",
+   "license": null,
+   "topics": [
+    "automation",
+    "delta-exec",
+    "delta-executor-26",
+    "delta-executor-exploit",
+    "delta-executor-for-free",
+    "delta-executor-for-pc-2026",
+    "delta-executor-for-win",
+    "delta-executor-lua",
+    "delta-executor-pc-2026",
+    "delta-for-pc",
+    "delta-for-pc-2026",
+    "delta-free-executor"
+   ],
+   "stars": 1294,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1294,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "unclebob/ub-mode": {
+   "name": "unclebob/ub-mode",
+   "url": "https://github.com/unclebob/ub-mode",
+   "description": "",
+   "language": null,
+   "license": "MIT",
+   "topics": [],
+   "stars": 7748,
+   "created": "2026-10-25",
+   "pushed": "2026-11-02",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7746,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "useagenthq/useagent": {
+   "name": "useagenthq/useagent",
+   "url": "https://github.com/useagenthq/useagent",
+   "description": "The open-source Devin alternative. Run Claude Code, Codex or OpenCode in isolated cloud workspaces you can self-host.",
+   "language": "TypeScript",
+   "license": "AGPL-3.0",
+   "topics": [
+    "agents",
+    "ai",
+    "ai-agents",
+    "automation",
+    "autonomous-agents",
+    "claude",
+    "claude-code",
+    "codex",
+    "coding-agent",
+    "computer-use",
+    "developer-tools",
+    "devin-alternative"
+   ],
+   "stars": 380,
+   "created": "2026-08-29",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 380,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:sandbox"
+   ]
+  },
+  "valentderah/totk-pc-recomp": {
+   "name": "valentderah/totk-pc-recomp",
+   "url": "https://github.com/valentderah/totk-pc-recomp",
+   "description": "Static recompilation of The Legend of Zelda: Tears of the Kingdom to native Windows and Linux x86-64, with a Vulkan renderer. Game files not included.",
+   "language": "C",
+   "license": "MIT",
+   "topics": [
+    "game",
+    "linux",
+    "port",
+    "recompilation",
+    "windows"
+   ],
+   "stars": 6706,
+   "created": "2026-10-29",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 6694,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "veloxbase/veloxdb": {
+   "name": "veloxbase/veloxdb",
+   "url": "https://github.com/veloxbase/veloxdb",
+   "description": "Database management, built for developers",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "admin",
+    "linux",
+    "macos",
+    "mysql",
+    "postgressql",
+    "rust",
+    "shadcn-ui",
+    "sqlite",
+    "tauri",
+    "windows"
+   ],
+   "stars": 921,
+   "created": "2026-03-17",
+   "pushed": "2026-10-27",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 921,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "vercel-labs/agent-browser": {
+   "name": "vercel-labs/agent-browser",
+   "url": "https://github.com/vercel-labs/agent-browser",
+   "description": "Browser automation CLI for AI agents",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [],
+   "stars": 49797,
+   "created": "2026-01-11",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 49781,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily",
+    "github-trending-weekly"
+   ]
+  },
+  "vercel-labs/agent-desktop": {
+   "name": "vercel-labs/agent-desktop",
+   "url": "https://github.com/vercel-labs/agent-desktop",
+   "description": "Computer use CLI for AI agents",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [
+    "accessibility",
+    "accessibility-api",
+    "ai-agents",
+    "automation",
+    "cli",
+    "computer-use",
+    "computer-use-agent",
+    "computer-use-agents",
+    "desktop-automation",
+    "macos",
+    "mcp",
+    "rust"
+   ],
+   "stars": 21996,
+   "created": "2026-02-19",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 21970,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "vesuvio1/display-fusion": {
+   "name": "Vesuvio1/display-fusion",
+   "url": "https://github.com/Vesuvio1/display-fusion",
+   "description": "Display Fusion 2026 standalone desktop setup with complete feature configuration",
+   "language": "HTML",
+   "license": "MIT",
+   "topics": [
+    "automation",
+    "desktop-tools",
+    "developer-tools",
+    "display-management",
+    "displayfusion",
+    "displayfusion-2026",
+    "displayfusion-multi-monitor-install-windows-2026",
+    "displayfusion-pro",
+    "displayfusion-setup",
+    "dual-monitor",
+    "for-displayfusion-tools",
+    "monitor-profiles"
+   ],
+   "stars": 1271,
+   "created": "2026-11-06",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1271,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "voyager-so/vork": {
+   "name": "voyager-so/vork",
+   "url": "https://github.com/voyager-so/vork",
+   "description": "Headless 3D and VFX engine for agents. Research preview.",
+   "language": "Rust",
+   "license": "NOASSERTION",
+   "topics": [
+    "3d",
+    "ai-agents",
+    "gpu",
+    "metal",
+    "ray-tracing",
+    "rendering",
+    "rust",
+    "slang",
+    "vfx",
+    "vulkan"
+   ],
+   "stars": 1429,
+   "created": "2026-11-05",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1422,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "wangzan101/mika": {
+   "name": "wangzan101/Mika",
+   "url": "https://github.com/wangzan101/Mika",
+   "description": "An on-device AI agent for Android that operates apps and the web to get things done for you.",
+   "language": "Kotlin",
+   "license": "Apache-2.0",
+   "topics": [
+    "accessibility",
+    "ai-agent",
+    "android",
+    "automation",
+    "jetpack-compose",
+    "kotlin",
+    "llm",
+    "mobile-agent"
+   ],
+   "stars": 8240,
+   "created": "2026-10-29",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8240,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month",
+    "github-search:topic:llm"
+   ]
+  },
+  "we-promise/sure": {
+   "name": "we-promise/sure",
+   "url": "https://github.com/we-promise/sure",
+   "description": "The personal finance app for everyone (by everyone)",
+   "language": "Ruby",
+   "license": "AGPL-3.0",
+   "topics": [],
+   "stars": 12837,
+   "created": "2025-07-23",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 12801,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "wheresryan22/anatomy": {
+   "name": "wheresryan22/anatomy",
+   "url": "https://github.com/wheresryan22/anatomy",
+   "description": "An agent skill for creating detailed, interactive isometric illustrations of real-world machines and complex systems. Generates polished SVGs with optional WebGL shaders and 3D effects.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "agent-skill",
+    "open-source",
+    "svg",
+    "vizualization"
+   ],
+   "stars": 26727,
+   "created": "2026-10-08",
+   "pushed": "2026-10-18",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 26719,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "woyun520/gif-factory": {
+   "name": "WoYun520/gif-factory",
+   "url": "https://github.com/WoYun520/gif-factory",
+   "description": "GIF 工厂：按风格制作像素、人物与宠物、粘土吉祥物、光栅卡与动态海报的 GIF Skill。",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [],
+   "stars": 1309,
+   "created": "2026-11-05",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1302,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-week"
+   ]
+  },
+  "wuyoscar/aisafetyhot": {
+   "name": "wuyoscar/AISafetyHot",
+   "url": "https://github.com/wuyoscar/AISafetyHot",
+   "description": "AI Safety HOT: daily AI safety news, papers and incidents in one place — jailbreaks, prompt injection, alignment, evals, governance. Website, daily digest, RSS and MCP.",
+   "language": "TeX",
+   "license": "NOASSERTION",
+   "topics": [
+    "ai-alignment",
+    "ai-governance",
+    "ai-safety",
+    "arxiv-papers",
+    "daily-papers",
+    "jailbreak",
+    "llm-security",
+    "mcp-server",
+    "news-aggregator",
+    "prompt-injection",
+    "red-teaming",
+    "rss"
+   ],
+   "stars": 2121,
+   "created": "2026-10-01",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2120,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "xiaoduoya/codex-with-chatgpt": {
+   "name": "XiaoDuoYa/codex-with-chatgpt",
+   "url": "https://github.com/XiaoDuoYa/codex-with-chatgpt",
+   "description": "ChatGPT thinks. Codex works. Use ChatGPT as the planning brain while keeping the Codex harness.",
+   "language": "TypeScript",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "chatgpt",
+    "codex",
+    "mcp",
+    "model-context-protocol",
+    "oauth"
+   ],
+   "stars": 7697,
+   "created": "2026-08-28",
+   "pushed": "2026-10-01",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7697,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:ai-agents",
+    "github-search:topic:mcp"
+   ]
+  },
+  "xiaoyang111222/cn-math-taxonomy": {
+   "name": "xiaoyang111222/cn-math-taxonomy",
+   "url": "https://github.com/xiaoyang111222/cn-math-taxonomy",
+   "description": "数学（小学到高中）、英语（三年级到高中）、初中物理的知识图谱：1644 个知识点、2403 条先修边、6723 道题，对齐课标，附自适应前置诊断。",
+   "language": "Python",
+   "license": "NOASSERTION",
+   "topics": [
+    "chinese",
+    "curriculum",
+    "diagnostic",
+    "edtech",
+    "education",
+    "elementary-school",
+    "english",
+    "high-school",
+    "junior-high-school",
+    "k12",
+    "knowledge-graph",
+    "math"
+   ],
+   "stars": 7665,
+   "created": "2026-10-18",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7664,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "yetone/alma-relay": {
+   "name": "yetone/alma-relay",
+   "url": "https://github.com/yetone/alma-relay",
+   "description": "Self-host the relay for Alma Remote Access — control your desktop Alma from your phone, anywhere. Docker or Cloudflare Workers.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [],
+   "stars": 513,
+   "created": "2026-10-31",
+   "pushed": "2026-11-08",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 513,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "yetone/magpie": {
+   "name": "yetone/magpie",
+   "url": "https://github.com/yetone/magpie",
+   "description": "Every agent's model. One place. Codex on DeepSeek, Claude Code on Kimi, from the menu bar.",
+   "language": "Go",
+   "license": "MIT",
+   "topics": [
+    "claude-code",
+    "codex",
+    "deepseek",
+    "gemini-cli",
+    "llm",
+    "macos"
+   ],
+   "stars": 34673,
+   "created": "2026-09-23",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 34669,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:claude-code",
+    "github-search:topic:llm"
+   ]
+  },
+  "yjh051108/dsh-routing-suite": {
+   "name": "yjh051108/dsh-routing-suite",
+   "url": "https://github.com/yjh051108/dsh-routing-suite",
+   "description": "dsh-routing-suite — injector + router-standard kit: install the runtime injector first, then the task-aware reasoning-mode router preset (measured P1-P23).",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "ai-agents",
+    "cordis",
+    "deepseek-harness",
+    "dsh",
+    "dsh-plugin"
+   ],
+   "stars": 7017,
+   "created": "2026-08-14",
+   "pushed": "2026-09-18",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 7017,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:ai-agents"
+   ]
+  },
+  "zagitta/gpu-unlock": {
+   "name": "Zagitta/gpu-unlock",
+   "url": "https://github.com/Zagitta/gpu-unlock",
+   "description": "Your GeForce runs AI at half speed. This fixes it for 20/30/40 series cards. Up to 2× FP16 / BF16 / TF32 tensor throughput",
+   "language": "C",
+   "license": null,
+   "topics": [],
+   "stars": 18724,
+   "created": "2026-10-18",
+   "pushed": "2026-10-29",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 18719,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  },
+  "zeabur-oss/zeabur": {
+   "name": "zeabur-oss/zeabur",
+   "url": "https://github.com/zeabur-oss/zeabur",
+   "description": "Self-hosted PaaS on your own Kubernetes.",
+   "language": "Rust",
+   "license": "Apache-2.0",
+   "topics": [
+    "databases",
+    "deployment",
+    "docker-compose",
+    "internal-developer-platform",
+    "kubernetes",
+    "paas",
+    "self-hosted",
+    "zeabur"
+   ],
+   "stars": 664,
+   "created": "2026-10-24",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 664,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "githubawesome"
+   ]
+  },
+  "zed-industries/zed": {
+   "name": "zed-industries/zed",
+   "url": "https://github.com/zed-industries/zed",
+   "description": "Code at the speed of thought – Zed is a high-performance, multiplayer code editor from the creators of Atom and Tree-sitter.",
+   "language": "Rust",
+   "license": "NOASSERTION",
+   "topics": [
+    "gpui",
+    "rust-lang",
+    "text-editor",
+    "zed"
+   ],
+   "stars": 94696,
+   "created": "2021-02-20",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 94696,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-weekly"
+   ]
+  },
+  "zhulinsen/daily_stock_analysis": {
+   "name": "ZhuLinsen/daily_stock_analysis",
+   "url": "https://github.com/ZhuLinsen/daily_stock_analysis",
+   "description": "LLM 驱动的多市场股票智能分析系统：多源行情、实时新闻、决策看板与自动推送，支持零成本定时运行。 LLM-powered multi-market stock analysis system with multi-source market data, real-time news, decision dashboard, automated notifications, and cost-free scheduled runs.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "a-stock",
+    "ai-agent",
+    "aigc",
+    "llm",
+    "quant",
+    "quantitative-finance",
+    "quantitative-trading"
+   ],
+   "stars": 70111,
+   "created": "2026-01-10",
+   "pushed": "2026-11-10",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 70080,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-trending-daily"
+   ]
+  },
+  "zhuyansen/new-term-radar": {
+   "name": "zhuyansen/new-term-radar",
+   "url": "https://github.com/zhuyansen/new-term-radar",
+   "description": "Daily radar for new AI terms: names of new models, products and repos, caught on X, Hugging Face, GitHub and sitemaps before keyword tools list them.",
+   "language": "Python",
+   "license": "MIT",
+   "topics": [
+    "agent-skills",
+    "ai",
+    "aisa",
+    "claude-code",
+    "claude-skills",
+    "deepseek-harness",
+    "dsh-plugin",
+    "google-trends",
+    "keyword-research",
+    "mcp",
+    "mcp-server",
+    "seo"
+   ],
+   "stars": 2162,
+   "created": "2026-10-12",
+   "pushed": "2026-11-02",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 2162,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:mcp-server"
+   ]
+  },
+  "zichuanlan/agent-purge": {
+   "name": "ZiChuanLan/agent-purge",
+   "url": "https://github.com/ZiChuanLan/agent-purge",
+   "description": "One persona, many coding agents. Replace or inject system prompts across codex, claude, opencode, grok, omp, hermes, pi, zcode - with a local web console.",
+   "language": "JavaScript",
+   "license": "MIT",
+   "topics": [
+    "claude-code",
+    "codex",
+    "coding-agent",
+    "deepseek-harness",
+    "harness",
+    "magpie-plugin",
+    "omp",
+    "opencode",
+    "pi",
+    "system-prompt"
+   ],
+   "stars": 1628,
+   "created": "2026-10-25",
+   "pushed": "2026-11-09",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 1626,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:topic:coding-agent"
+   ]
+  },
+  "zortos293/lichii": {
+   "name": "zortos293/Lichii",
+   "url": "https://github.com/zortos293/Lichii",
+   "description": "VERY experimental Nintendo Switch 2 emulator",
+   "language": "C++",
+   "license": "GPL-3.0",
+   "topics": [],
+   "stars": 8493,
+   "created": "2026-10-31",
+   "pushed": "2026-11-11",
+   "archived": false,
+   "fork": false,
+   "first_seen": "2026-11-11",
+   "stars_first_seen": 8477,
+   "last_seen": "2026-11-11",
+   "seen_in": [
+    "github-search:new-this-month"
+   ]
+  }
+ }
+}

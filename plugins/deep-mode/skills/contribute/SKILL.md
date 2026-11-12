@@ -115,7 +115,7 @@ Released by @<login>: <one-line reason>
    - Push the branch (to your fork when you forked; `gh pr create` then targets the project).
    - The body fills the repo's `.github/PULL_REQUEST_TEMPLATE.md` when one exists; otherwise use the playbook's headings.
    - The body must include `Closes #N`, the verification evidence from step 7, the overlap result from step 8 (the command and "no overlap", or what overlaps and how you coordinated), and a note that a self-review ran with its `review:` result line.
-   - The repo's `pr-overlap.yml` workflow, if installed, will comment on the PR with its own overlap check; read that comment and act on it.
+   - If the repo has `scripts/pr-overlap.py`, run `python scripts/pr-overlap.py comment --repo OWNER/REPO --pr <N>` once the PR exists, so the overlap comment is on it; act on what it reports. There is no CI bot doing this.
    - Post the PR URL to the human.
 
 10. **Close the loop.**

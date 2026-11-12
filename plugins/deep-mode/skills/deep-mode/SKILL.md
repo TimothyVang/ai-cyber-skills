@@ -1,6 +1,6 @@
 ---
 name: deep-mode
-description: "Rigorous engineering mode distilled from pstack (poteto-mode) plus Lauren Tan's later guidance: restate the goal, route to a playbook, apply named principles, prove behavior on the real app, and report with evidence. Invoked by /poteto, or when the user asks for deep-mode, poteto-mode, pstack, or rigor on large or risky work."
+description: "Rigorous engineering mode: restate the goal, route to a playbook, apply named principles, prove behavior on the real app, and report with evidence. Invoked by /deep, or when the user asks for deep mode or rigor on large or risky work."
 disable-model-invocation: true
 hooks:
   PreToolUse:
@@ -12,13 +12,15 @@ hooks:
 
 # Deep mode
 
-Adapted from pstack's `poteto-mode` (MIT, Lauren Tan / Cursor; see `LICENSE`), updated with her later posts and articles. Written for omp; it also runs in Claude Code and Codex. Tool names below are omp's; `references/harnesses/README.md` maps each to Claude Code and Codex. Paths below are relative to this skill (`skill://deep-mode/...` in omp).
+Paths below are relative to this skill (`skill://deep-mode/...`).
+
+**Any harness.** The skill runs in omp (the user's preferred harness), Claude Code, Codex, Cursor, or any agent that loads skills. It names omp's tools; use your harness's equivalent. `task` subagents (`agent: "scout"`, `reviewer`) → Claude Code's `Agent` or your harness's subagents, or `acpx <agent> exec` when it has none. `todo` → `TodoWrite` or a plan list. `ask` → `AskUserQuestion` or one question in the reply. `skill://deep-mode/<path>` → this skill's folder. `.omp/skills/` → your harness's skills folder (`.claude/skills/` in Claude Code). `references/harnesses/README.md` maps every tool and path to Claude Code and Codex with cited, dated facts.
 
 The thesis: if you want to go fast, go deep first. Verification is the limiting step. Write less code, prove more of it.
 
 ## Route (do this first)
 
-`/poteto <anything>` is the only command a user needs. Before anything else, decide **what** they want and **how big** it is, then go. Never ask which skill, playbook, or mode to use.
+`/deep <anything>` is the only command a user needs. Before anything else, decide **what** they want and **how big** it is, then go. Never ask which skill, playbook, or mode to use.
 
 **1. Look around (seconds, read-only).** `git rev-parse --show-toplevel`, `gh repo view --json nameWithOwner,viewerPermission,isEmpty`, `gh api user -q .login`, and whether `docs/PROJECT_BRIEF.md`, `STACK.md`, and a verify skill (`.omp/skills/verify-*`, `.claude/skills/verify-*`, or `.agents/skills/verify-*`) exist. Note which harness you run in (omp, Claude Code, Codex). Outside a repo or in an empty one, treat it as a new project and make its named repo first (Contain the work).
 
@@ -27,19 +29,44 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 | The request or repo looks like | Route |
 |---|---|
 | A PR number, a PR URL, or "review" a PR | **pr-review** in PR mode (`references/techniques/pr-review.md`) |
-| "land / finish / merge this PR on your own", "bots talk it out in the PR", "no human approval" | **pr-conversation** technique (`references/techniques/pr-conversation.md`) |
+| "review since <ref>", "review my branch against the spec / coding standards" | **pr-review** in local mode (`references/techniques/pr-review.md`) |
+| "land / finish / merge this PR on your own", "bots talk it out in the PR", "no human approval", or your own PR once it is open | **pr-conversation** technique (`references/techniques/pr-conversation.md`) |
+| "have the bots plan / discuss / implement this issue", "@deep-mode implement" | **issue-conversation** technique (`references/techniques/issue-conversation.md`) |
+| "install deep-mode on my repos", "run the bots on their own", "AI review on my own subscription", or start, stop, or opt a repo out of the bots | **github-app** technique (`references/techniques/github-app.md`) |
 | "check on / babysit / get green" a PR | Babysit playbook |
 | "help on / contribute to / what can I work on" a project, or a repo the user can't push to that has a brief | `skill://contribute` |
 | "set up / publish this project for contributors", "make issues for helpers" | `skill://project-brief` |
 | "run the factory / work the issue queue / turn issues into PRs / set up a software factory" | Factory playbook |
 | "drive the board / work the backlog / run this project autonomously / keep going on the roadmap" | Board playbook |
+| "set up deep-mode here", "configure the tracker / labels", "add a glossary and ADRs", or the first use of spec, tickets, or triage in a repo (Setup then resumes the requested playbook) | Setup playbook |
+| "triage the issues", "what needs my attention", "is #42 ready for an agent", "move #42 to agent-ready" | Triage playbook |
+| "write the spec", "turn this into a spec", "spec it up" | Spec playbook |
+| "break this into tickets", "split the spec into issues", "make tickets for this" | Tickets playbook |
+| "implement the spec", "build spec #N", "build all the tickets on one branch" | Implement spec playbook |
+| "grill with docs", "record the decisions", or "grill me" in a repo with `GLOSSARY.md` or `docs/adr/` | **grill** technique, With docs mode (`references/techniques/grill.md`) |
 | "grill me / grill this plan / stress-test this idea" | **grill** technique (`references/techniques/grill.md`) |
+| "what do we call this", "add this to the glossary", "write an ADR" | **domain-model** technique (`references/techniques/domain-model.md`) |
+| "research X and write it up", "gather the docs on Y" (the answer should stay in the repo) | **research** technique (`references/techniques/research.md`) |
+| "which flow fits", "what's the process for X", "explain the deep-mode workflow" | `references/flows.md`, explained to the user |
+| "TDD", "test-first", "red-green-refactor", "write integration tests", or building a feature test-first | **tdd** technique, build mode (`references/techniques/tdd.md`) |
+| "review the architecture", "where should we refactor", "find deepening opportunities", "make the codebase easier for agents" | **architecture-review** technique (`references/techniques/architecture-review.md`) |
+| "retro", "retrospective", "what should we change after this session" | **retro** technique (`references/techniques/retro.md`) |
+| Steps only a human can do (dashboards, API keys, CI secrets, OAuth approval, a one-off cutover), "make me a setup script", "walk me through setting up X" | **wizard** technique (`references/techniques/wizard.md`) |
+| Learning a topic over several sessions: "teach me X over the next month", "make me a course", or a folder with `MISSION.md` | **course** technique (`references/techniques/course.md`) |
+| A decision needs knowledge only one other person has: "write questions for the client", "make a questionnaire" | **questionnaire** technique (`references/techniques/questionnaire.md`) |
+| "wait, what?", "I'm lost", "say that again simply", "too dense" about your last message | **re-explain** technique (`references/techniques/re-explain.md`) |
+| "hand this off", "write a handoff", "continue in a new session", "start a background agent on the rest" | Handoff playbook |
+| Writing or editing a skill | Authoring a skill playbook (its first step reads the **writing-for-agents** technique) |
+| Writing or editing `AGENTS.md`, `CLAUDE.md`, a rule file, or a subagent brief | **writing-for-agents** technique (`references/techniques/writing-for-agents.md`) |
+| "block dangerous git commands", "add git safety hooks", "stop the agent from force-pushing" | **git-guardrails** technique (`references/techniques/git-guardrails.md`) |
+| "add pre-commit hooks", "set up husky / lint-staged / lefthook / pre-commit", "format and typecheck on commit" | **pre-commit** technique (`references/techniques/pre-commit.md`) |
+| "be my chief of staff", "own this goal long-term", "keep pushing this goal forward across sessions" | Orchestrate playbook |
 | "scrape / pull / archive" a page, video, channel, or playlist, or "get his diagram" | **scrape** technique (`references/techniques/scrape.md`) |
 | An effort too big for one session with a foggy route: "wayfinder", "chart the way to X", "plan this migration before anyone builds it" | Wayfinder playbook |
-| "security-audit PRs / audit every PR / add a security gate to CI", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`) |
+| "security-audit PRs / audit every PR / add a security gate", or a security audit of a change | **security-audit** technique (`references/techniques/security-audit.md`), run by your own agent, no CI |
 | "run pr-agent / describe, review, improve this PR with PR-Agent" | **pr-agent** technique (`references/techniques/pr-agent.md`) |
 | "is there a library / project / example for X", "find something we can fork or copy" | **prior-art** technique (`references/techniques/prior-art.md`) |
-| A new app, an empty repo, "start / build me <app>", "what stack" | `skill://rasmic-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
+| A new app, an empty repo, "start / build me <app>", "what stack" | **prior-art** first (newest repos to copy or learn from), then `skill://deep-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
 | "write / improve your own prompt, skill, goal, or loop", "make yourself able to X", a workflow done the same way twice | Self-authoring playbook |
 | Anything else | The Playbooks table below |
 
@@ -82,27 +109,31 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 
 - **Restate first.** Your first message on a task states, in your own words, the user's goal, the problem they are solving, and, if the task ships a change, the smallest change you expect to meet it. Don't wait for confirmation. If the evidence rules out the requested change, show it and stop. Restate the goal in every subagent brief and at the top of every final report, except after a fully specified one-line edit.
 - **Name your principles, in plain words.** For size M and L, add one short "Why I chose this" line naming each principle that changed a decision and the choice it changed, phrased so a non-expert follows ("I fixed the comparison where stock is checked, not the caller, because that's where it goes wrong"). Cite only principles whose file you read this session in `references/principles/`. Skip it for size S.
-- **Prove it on the real artifact.** Before calling anything done, run the real app, CLI, or service path and capture evidence. If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it. If not and the task changes user-visible behavior: when the user pre-authorized it (the `/poteto` command does), run `skill://create-verification-skill` first; otherwise offer `/skill:create-verification-skill` once and prove the change by hand. Tests passing and "it compiles" are not proof.
+- **Prove it on the real artifact.** Before calling anything done, run the real app, CLI, or service path and capture evidence. If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it. If not and the task changes user-visible behavior: when the user pre-authorized it (the `/deep` command does), run `skill://create-verification-skill` first; otherwise offer `/skill:create-verification-skill` once and prove the change by hand. Tests passing and "it compiles" are not proof.
 - **Decide; don't ask.** About to `ask` "which approach" or "what should this do"? Settle it yourself, by kind. A fact → look it up. An observable fork (behavior, timing, layout, output, perf, whether an eval separates) → run the Prototype playbook and let the result decide. A product, design, or preference call → make it (Autonomy). In a read-only Investigation, answer from evidence instead of building a sketch.
-- **Before building anything new** (a feature, tool, integration, or project) → **prior-art** (`references/techniques/prior-art.md`): search GitHub, the package registries, and official docs for code to depend on, copy, fork, or clone, and check its license first.
+- **Before building anything new** (a feature, tool, integration, or project) → **prior-art** (`references/techniques/prior-art.md`): start from the trending catalog (`references/trending/README.md`, refreshed by `scripts/trending.py find` when over a day old) so newer projects can beat the idea you already know, then search GitHub, the package registries, and official docs for code to depend on, copy, fork, or clone, and check its license first.
 - **Secrets, logins, tokens, or auth in play** (API keys, `.env`, passwords, usernames, MFA, OAuth or MCP auth, CI credentials, a suspected leak) → read `references/credentials/README.md` first, then the file it routes to. Never print, paste, or commit a secret value; run commands through an injector; give each agent its own scoped, short-lived identity; rotate anything that may have leaked.
 - **Name the data shape before any code**, and choose its organizing structure per `references/principles/model-the-domain.md`. Name it with the project's glossary terms; a new domain, data model, database, repo layout, or service boundary also reads `references/architecture/README.md`.
 - **A new or changed module or public interface with two or more viable shapes** → the **architect** technique before implementing. A small edit that merely crosses a function boundary doesn't need it.
 - **Nontrivial change, architecture decision, or "are we sure?"** → the **how** technique. Motivation questions → **why**.
 - **Parallel fan-out** → **swarm** for coverage matrices, races, fuzzing a change, partitions. **arena** for design or code bakeoffs with base selection and grafting.
-- **Contested design only** → **interrogate**, keeping only findings a run proves. She now considers broad adversarial review mostly wasted tokens; spend them on empirical and formal verification instead.
+- **Contested design only** → **interrogate**, keeping only findings a run proves. Broad adversarial review mostly wastes tokens; spend them on empirical and formal verification instead.
 - **A plan, design, or idea to stress-test before work** → **grill** (`references/techniques/grill.md`); you answer its questions unless the user asks to answer live.
 - **A number you measured** (speedup, regression, latency, eval score) → **benchmark-checklist** before you report or act on it.
 - **Prose** (reply, docs, PR body, commit message) → **unslop**; docs and PR/commit text also → **technical-writing**.
 - **Before review** → **no-comments** on your diff. For a diff under ~20 lines, apply its keep-list yourself instead of spawning.
 - **Repeated correction** (yours or the user's) → **correct**. Fix it at the highest rung that works: architecture or data structures, then a lint rule or test, then a skill or rule, and human review last. When the answer is a prompt, skill, goal, or loop, write it with the Self-authoring playbook.
 - **Long, autonomous, or step-away work** → keep a decision trail with **show-me-your-work**.
+- **Words or lasting decisions change** → **domain-model** (`references/techniques/domain-model.md`): terms into `GLOSSARY.md`, hard-to-reverse decisions into `docs/adr/`.
+- **Reading that should outlive the chat** → **research** (`references/techniques/research.md`): a cited file in `docs/research/`.
+- **Any flow that reads or writes issues** uses the **tracker** technique (`references/techniques/tracker.md`) for the commands and label roles.
 - **PR-status requests** ("check on PR X", "get it green") → Babysit playbook. **Land a green stack** → Shipping playbook. Green is not safe.
-- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it. A repo with the PR security gate (**security-audit**, `references/techniques/security-audit.md`) also needs that check green; its findings are review findings.
+- **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it, and the repo's own checks locally; your own PR then lands through **pr-conversation**.
+- **Deep-mode is the gate layer**: no GitHub Actions and no hosted review service. When the repo opted into the security gate or the change touches auth, permissions, input parsing, or secrets, run **security-audit** (`references/techniques/security-audit.md`) on the head that will merge; its blocking findings are P0 review findings.
 - **Fuzzy request?** → **in-your-own-words** before work. Prompt worth deepening before sending → **sharpen**.
-- **Learning a subsystem or a change** → **teach**. **Resuming a topic from past sessions** → **recall**. **"What could this break?"** → **blast-radius**. **User says "reflect"** → **reflect**.
+- **Learning a subsystem or a change** → **teach**. **Course over several sessions** → **course**. **Last message didn't land** → **re-explain**. **Resuming a topic from past sessions** → **recall**. **"What could this break?"** → **blast-radius**. **User says "reflect"** → **reflect**. **Session retrospective** → **retro**.
 
-Each technique is one file, `references/techniques/<name>.md`. Read only the ones you apply. Technique and playbook names mean deep-mode's files, not same-named global skills (`skill://tdd`, `skill://prototype`, `skill://teach`).
+Each technique is one file, `references/techniques/<name>.md`. Read only the ones you apply. Technique and playbook names mean deep-mode's files, not same-named global skills (`skill://tdd`, `skill://prototype`, `skill://teach`, `skill://wizard`, `skill://retro`, `skill://handoff`).
 
 ## Principles
 
@@ -117,11 +148,12 @@ One file per principle in `references/principles/<name>.md`. Read the file befor
 ## Autonomy
 
 - **Just do it.** Work proceeds without asking, including commits, pushes, PRs, issues, board cards, and merges.
+- **Your own PRs land on their own.** Once every review finding is fixed or dismissed, linked issues are answered, the panel passes, and required checks are green, the **pr-conversation** technique merges the user's own PR. No separate ask.
 - **Done means a panel pass.** No task is done and nothing merges until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. Then merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
 - **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself: pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal. Log each one as a show-me-your-work trail row (choice, why, evidence, how to reverse), and list them in the final reply under "Decisions I made" so the user can override any. Where a playbook or technique says to ask the user before deciding, committing, pushing, opening a PR, or merging, this rule wins.
 - **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has; writes outside the project root (Contain the work). A request that already asks for one of these is its yes.
-- **One standing yes:** a repo whose base branch has `.deep-mode.json` `{"autonomousMerge": true}` lets the **pr-conversation** technique admin-merge your own PRs past a required review, never past a failing check.
-- **Your subscription, not an API.** Every model call runs on the session's model: subagents, or a headless run from scripts (`omp -p`, `claude -p`, `codex exec`), so it draws on the user's Claude or ChatGPT subscription. Never set up an API key or wait on a hosted review bot. A set `ANTHROPIC_API_KEY` makes `claude -p` bill the API, and a set `OPENAI_API_KEY` or `CODEX_API_KEY` does the same for `codex exec`; unset them in the child's environment.
+- **Standing yes for your own PRs.** `~/.config/deep-mode/bot.json` `"autonomousMerge": true` (the default), or a base-branch `.deep-mode.json` `{"autonomousMerge": true}`, lets **pr-conversation** admin-merge your own PRs past a required review, never past a failing check. A base-branch `"autonomousMerge": false` overrides both.
+- **Your subscription, not an API.** Every model call runs on a subscription the user is logged in with: the session's own model and its subagents (or a headless run from scripts: `omp -p`, `claude -p`, `codex exec`), and the bots, which are any ACP (Agent Client Protocol) agents driven through `acpx`, omp by default, each harness on its own subscription login. Never set up an API key or wait on a hosted review bot. A set `ANTHROPIC_API_KEY` makes `claude -p` bill the API, and a set `OPENAI_API_KEY` or `CODEX_API_KEY` does the same for `codex exec`; unset them in the child's environment.
 - **Session overrides.** "Don't stop", "going to bed", "run until done" mean keep going until the work is done or only hard stops remain, and report every decision at the end.
 - **No is an acceptable answer.** When asked whether to do something or shown an approach, give your real judgment. Push back or say "this doesn't earn its place" when true. Candor over agreement.
 
@@ -178,39 +210,45 @@ If you have `todo`, open a list whose first items are the matched playbook's ste
 | Babysit | `babysit` | Drive a PR or stack to merge-ready: conflicts, review threads, CI. |
 | Shipping | `shipping` | Verify a green stack, then land the contiguous verified run bottom-up, each PR on a panel pass. |
 | Autonomous run | `autonomous-run` | One long task driven to a completion predicate without stopping. |
-| Orchestrate | `orchestrate` | A multi-day program: many PRs, many delegates, one coordinator. |
+| Orchestrate | `orchestrate` | A multi-day program or long-running goal: many PRs, many delegates, one coordinator with a wiki. |
 | Board | `board` | Run a project on its own: a kanban board of issues, one PR per task, a panel per PR, merge, repeat. |
 | Autopilot | `autopilot` | A queue of independent PRs built and verified with full autonomy; `merge` or `stack-only` mode. A queue of labeled issues in a repo with `factory.json` is Factory. |
 | Factory | `factory` | Labeled issues to merged PRs through the `factory` CLI: set it up, run it, clear escalations, turn recurring failures into checks. |
+| Setup | `setup` | One-time repo setup: tracker kind and labels (`docs/deep-mode/tracker.md`), `GLOSSARY.md`, `docs/adr/`, `CODING_STANDARDS.md`, a pointer in AGENTS.md. |
+| Spec | `spec` | Turn a settled conversation into `docs/specs/<slug>.md` plus a `spec` issue. No interview. |
+| Tickets | `tickets` | Split a spec or plan into tracer-bullet tickets with blocking edges, published to the tracker. |
+| Implement spec | `implement-spec` | Build every ticket of a spec onto one integration branch, then land it as one reviewed PR. |
+| Triage | `triage` | Move incoming issues and outside PRs through triage states: verify, shape, brief, label, or decline. |
 | Session pickup | `session-pickup` | Resume or take over a prior agent's in-flight work. |
 | Pause safely | `pause-safely` | Suspend in-flight work so it can be resumed later. |
+| Handoff | `handoff` | Compact the session into a document another agent, harness, or colleague can act on; optionally launch a background agent with it. |
 | Worktree cleanup | `worktree-cleanup` | Reclaim disk by pruning merged or abandoned worktrees, safety-gated. |
 | Opening a PR | `opening-a-pr` | Run at the end of any playbook that ships code. |
 
 A large or cross-cutting effort with no clean fit, or work the user steps away from and wants to trust later, routes to the **figure-it-out** technique, which designs a bespoke rigorous playbook. A standing multi-day program routes to Orchestrate instead.
 
-**Stack, UI design, and factory tooling** come from `skill://rasmic-stack` (Ras Mic's picks and philosophy); its "With deep-mode" section sets the split. Greenfield web, SaaS, or AI-app framework, backend, auth, payments, or deploy choice → its `references/stack.md`. Any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling), or "build the stack for me" → its `references/any-app-stack.md`, which writes a cited `STACK.md`. Designing a UI with an agent → its `references/design-workflow.md`; rebuilding to the standard of a named reference app → the Reference rebuild playbook. Recording UI proof with no `verify-<app>` skill → its `references/evidence-driven-testing/`. Your gates and playbooks still govern.
+**Stack, UI design, and factory tooling** come from `skill://deep-stack` (stack picks and the decision rules behind them); its "With deep-mode" section sets the split. Greenfield web, SaaS, or AI-app framework, backend, auth, payments, or deploy choice → its `references/stack.md`. Any other kind of app (CLI, desktop, mobile, agent, data/ML, security tooling), or "build the stack for me" → its `references/any-app-stack.md`, which writes a cited `STACK.md`. Designing a UI with an agent → its `references/design-workflow.md`; rebuilding to the standard of a named reference app → the Reference rebuild playbook. Recording UI proof with no `verify-<app>` skill → its `references/prove.md`. Your gates and playbooks still govern.
 
 **Harnesses, protocols, and AI-native tooling** (using, configuring, or scripting omp, Claude Code, or Codex; MCP, ACP, A2A, WebMCP; skills, plugins, `AGENTS.md`, hooks, sandboxes, headless runs) → read `references/harnesses/README.md`, then only the file the task touches. Those files carry the cited, dated facts (paths, flags, tool names) and the traps for deep-mode in each harness.
 
 **Credentials and agent authentication** (sharing secrets and `.env` safely, password managers, logins and MFA for agents, credential brokers, protecting MCP servers and agent APIs, OAuth delegation, CI OIDC, secret scanning, leak response) → `references/credentials/README.md`. It holds the free-first picks, the rules, and the cited research, checked 2026-11-11.
 
-**Architecture: monorepos, ontology, databases, backend infrastructure** (repo layout and workspace tooling, domain vocabulary and typed models, knowledge graphs and semantic layers, choosing, organizing, or migrating a database, multi-tenancy, queues and durable workflows, API style, reliability, observability, deployment, IaC) → `references/architecture/README.md`, then only the file it routes to. Cited and dated 2026-11-11; it builds on `references/cloudxberry/backend-system-design.md` and the model-the-domain principle rather than repeating them.
+**Architecture: monorepos, ontology, databases, backend infrastructure** (repo layout and workspace tooling, domain vocabulary and typed models, knowledge graphs and semantic layers, choosing, organizing, or migrating a database, multi-tenancy, queues and durable workflows, API style, reliability, observability, deployment, IaC) → `references/architecture/README.md`, then only the file it routes to. Cited and dated 2026-11-11; it builds on `references/domain-rules/backend-system-design.md` and the model-the-domain principle rather than repeating them.
 
 **Agent tooling** (browser automation, agent sandboxes, coding-agent harnesses or multi-agent orchestrators, autoresearch loops) → read the cited landscape in `research/README.md` of a local checkout of `TimothyVang/automation-tools` before picking a tool. No checkout: `gh repo clone TimothyVang/automation-tools .scratch/refs/automation-tools` from the project root (private; skip if you can't access it). It is a 2026-11-11 snapshot tuned for omp + Orca on Windows, so recheck release dates and licenses of the tool you pick.
 
-**Engineering domain rules** come from `references/cloudxberry/` (Cloud X Berry's videos; its `README.md` lists sources). Read only the file the task touches, before designing or reviewing in that area:
+**Engineering domain rules** come from `references/domain-rules/` (its `README.md` lists sources). Read only the file the task touches, before designing or reviewing in that area:
 
-- AI agent, agent harness, multi-agent system, MCP or WebMCP, or an agent instruction file (CLAUDE.md, AGENTS.md, a skill) → `references/cloudxberry/agent-engineering.md`. Audit agents against all seven of its laws.
-- LLM fundamentals, RAG or retrieval, fine-tuning, inference cost or hardware, local models, or model choice → `references/cloudxberry/ai-concepts.md`.
-- AWS, VPC, cloud connectivity failure, IAM, or cloud cost → `references/cloudxberry/aws-networking.md`. A "can't connect" bug starts with its four-step packet check and flow-log table.
-- Backend code, API, database, cache, queue, scaling, resilience, observability, security, or language choice → `references/cloudxberry/backend-system-design.md`; a specific language's runtime, tooling, or traps → `references/cloudxberry/language-ecosystems.md`.
-- Linux, shell tools, git, containers, Kubernetes, Terraform, CI/CD, deploy strategy, secrets, or a bug rooted in data structures, complexity, memory, floats, concurrency, or network protocols → `references/cloudxberry/devops-and-fundamentals.md`.
-- Unfamiliar codebase, stuck on an error, slowness, memory, or race debugging, legacy code, PR or commit text, production incident, estimates, or pushing back on scope → `references/cloudxberry/engineering-practice.md`.
+- AI agent, agent harness, multi-agent system, MCP or WebMCP, or an agent instruction file (CLAUDE.md, AGENTS.md, a skill) → `references/domain-rules/agent-engineering.md`. Audit agents against all seven of its laws.
+- LLM fundamentals, RAG or retrieval, fine-tuning, inference cost or hardware, local models, or model choice → `references/domain-rules/ai-concepts.md`.
+- AWS, VPC, cloud connectivity failure, IAM, or cloud cost → `references/domain-rules/aws-networking.md`. A "can't connect" bug starts with its four-step packet check and flow-log table.
+- Backend code, API, database, cache, queue, scaling, resilience, observability, security, or language choice → `references/domain-rules/backend-system-design.md`; a specific language's runtime, tooling, or traps → `references/domain-rules/language-ecosystems.md`.
+- Linux, shell tools, git, containers, Kubernetes, Terraform, CI/CD, deploy strategy, secrets, or a bug rooted in data structures, complexity, memory, floats, concurrency, or network protocols → `references/domain-rules/devops-and-fundamentals.md`.
+- Unfamiliar codebase, stuck on an error, slowness, memory, or race debugging, legacy code, PR or commit text, production incident, estimates, or pushing back on scope → `references/domain-rules/engineering-practice.md`.
 
-**Frontend UI/UX** (building, restyling, or reviewing UI; motion; color; accessibility; chat or agent UI) → before writing UI code, read `AGENTS.md` in a local checkout of `TimothyVang/frontend`, then the `PLAYBOOK.md` section it routes to. Its `reference/` holds the cited evidence (articles, talks, clips, live demos) and its `.claude/skills/` the vendored design skills. No checkout: `gh repo clone TimothyVang/frontend .scratch/refs/frontend` from the project root (private; skip if you can't access it). It adds component, motion, color, and agent-UI rules on top of rasmic-stack's design workflow.
+**Frontend UI/UX** (building, restyling, or reviewing UI; components; motion and animation; motion graphics or rendered video; color; accessibility; chat or agent UI) → before writing UI code, read `references/frontend/README.md` (always-apply rules, routing, section index), then the `references/frontend/playbook/` section it routes to. `references/frontend/patterns/` holds what the reference images and clips taught, as text: shipped-app layouts, popular pins, 193 animation techniques, the motion-graphics stack. These files are bundled, so they work anywhere deep-mode is installed. Evidence and media live in the private `TimothyVang/frontend`; when you need them, shallow-clone it to `.scratch/refs/frontend` and never commit from it.
 
-**Cloud security and DevSecOps rules** come from `references/cloud-devsecops/` (cited reports in `TimothyVang/cloud-devsecops`; its `README.md` lists them). They cover securing and wiring up a cloud, where `cloudxberry/aws-networking.md` covers how AWS networking works. Read the file the task touches before designing, reviewing, or changing cloud access, policy, or pipelines:
+**Cloud security and DevSecOps rules** come from `references/cloud-devsecops/` (cited reports in `TimothyVang/cloud-devsecops`; its `README.md` lists them). They cover securing and wiring up a cloud, where `domain-rules/aws-networking.md` covers how AWS networking works. Read the file the task touches before designing, reviewing, or changing cloud access, policy, or pipelines:
 
 - AWS accounts, Organizations, SCP/RCP, IAM, GuardDuty or Security Hub, KMS, or CI access to AWS → `references/cloud-devsecops/aws.md`.
 - Azure subscriptions, management groups, Entra ID, RBAC, Azure Policy, Defender for Cloud, Key Vault, Private Endpoints, AKS, or CI access to Azure → `references/cloud-devsecops/azure.md`.
@@ -221,7 +259,7 @@ A large or cross-cutting effort with no clean fit, or work the user steps away f
 
 ## Habits worth keeping
 
-- Restate-in-your-own-words is her most-used prompt. Use it on any thread, report, or fuzzy ask before acting.
+- Restate-in-your-own-words is the most useful single prompt. Use it on any thread, report, or fuzzy ask before acting.
 - Prototypes beat abstract plans. Abstract plans give the illusion of progress; reviewing them adversarially invents risks that never happen.
 - Your codebase is the memory. Every nit an agent repeats should become a constraint (type, lint, test, structure), or agents will keep copying it.
 - Artifacts beat explanations. Show the failing and passing test, the before/after screenshot or transcript, the trace.

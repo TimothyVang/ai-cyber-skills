@@ -4,7 +4,7 @@ Use when: creating or modifying a skill (`SKILL.md` plus references). You own th
 
 ## Steps
 
-1. Read the omp `writing-for-agents` skill (`skill://writing-for-agents`) before writing.
+1. Read the **writing-for-agents** technique (`references/techniques/writing-for-agents.md`) before writing.
 2. Before adding prose, check the ladder: can architecture/data structures prevent the mistake? Then a lint rule or test? Only then a skill/rule; human review last (`references/principles/encode-lessons-in-structure.md`).
 3. Write or edit the skill:
    - When in doubt, delete. Keep only prose that changes a decision.

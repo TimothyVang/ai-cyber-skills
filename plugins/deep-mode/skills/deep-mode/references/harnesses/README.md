@@ -19,7 +19,7 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 | deep-mode needs | omp | Claude Code | Codex |
 |---|---|---|---|
 | Install deep-mode | `omp plugin marketplace add TimothyVang/deep-mode`, then `omp plugin install deep-mode@deep-mode` | `/plugin marketplace add TimothyVang/deep-mode`, then `/plugin install deep-mode@deep-mode` | `codex plugin marketplace add TimothyVang/deep-mode`, then `codex plugin add deep-mode@deep-mode` |
-| Start deep-mode | `/deep-mode:poteto <task>` | `/deep-mode:poteto <task>` | `$deep-mode:deep-mode <task>` (plugin `commands/` don't load) |
+| Start deep-mode | `/deep-mode:deep <task>` | `/deep-mode:deep <task>` | `$deep-mode:deep-mode <task>` (plugin `commands/` don't load) |
 | Read a skill file | `skill://<name>/<path>` | `${CLAUDE_PLUGIN_ROOT}/skills/<name>/<path>`, or relative to the skill folder | Real path from the skill list Codex shows |
 | Invoke a skill | `/skill:<name>` | `/<name>`; plugin skills `/deep-mode:<name>` | `$<name>`; plugin skills `$deep-mode:<name>` |
 | Context file | `AGENTS.md`/`CLAUDE.md` walking up to the repo root, `.omp/AGENTS.md`; subagents get only `.omp/RULES.md` | `CLAUDE.md`, `.claude/rules/*.md`; `AGENTS.md` only when no `CLAUDE.md` exists | `AGENTS.md` (and `AGENTS.override.md`) from repo root down to cwd, 32 KiB cap; no `CLAUDE.md` |

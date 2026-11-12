@@ -1,6 +1,6 @@
 # teach
 
-**Use when:** "teach me this", "help me really understand X", explain a change or subsystem. Goal is understanding, not changes.
+**Use when:** "teach me this", "help me really understand X", explain a change or subsystem. Goal is understanding, not changes. Learning a topic over several sessions (a course, lessons, quizzes, a learning workspace) is the **course** technique (`references/techniques/course.md`) instead.
 
 1. Decide the few things they should walk away understanding, chosen from why they're asking (changing, reviewing, debugging, new) and what they know — read from the conversation, not quizzed. Depth goes where their question is.
 2. Orient yourself in the code, then run **how** and **why** in parallel; don't redo their work. Size to the question. Keep **why** narrow by default (scoped question, git plus a source or two) so it records skipped categories; widen only when reasons are the point.

@@ -60,7 +60,7 @@ Run:
 {{RUN_COMMANDS}}
 ```
 
-Test and check (CI runs the same):
+Test and check (run these before every PR; there is no CI):
 
 ```bash
 {{TEST_COMMANDS}}

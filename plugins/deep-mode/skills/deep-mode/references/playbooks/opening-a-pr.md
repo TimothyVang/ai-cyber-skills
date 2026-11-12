@@ -23,13 +23,14 @@ Use when: ending any playbook that lands code. Opening the PR is part of the wor
 10. Prefer five narrow PRs to one large one. Stack = base-branch chain: root targets trunk; each child rebases onto its parent's exact tip and targets the parent (`gh pr create --base <parent-branch>`, retarget with `gh pr edit <pr> --base <parent-branch>`). When a parent merges, rebase its child onto trunk and retarget. Branch from trunk only for independent work; rebase on trunk before substantial stack work.
 11. Open every PR ready, never draft (omit `--draft`; if it opens as draft, `gh pr ready <n>`). Run `gh pr view <n>` before referring to PR status.
 12. Run the **pr-agent** technique (`references/techniques/pr-agent.md`) on the PR: describe, review, improve, with each finding triaged. Repeat it after each later push.
-13. Post the URL and keep building; report the pr-review line from step 5 for the pushed head.
+13. Hand the PR to the **pr-conversation** technique (`references/techniques/pr-conversation.md`), which reviews, fixes, verifies, and lands it with no ask. When the deep-mode bot (`references/techniques/github-app.md`) watches the repo, it picks the PR up on its next poll; don't run a second conversation in the session. A stack is the exception: finish it, then land it through `references/playbooks/shipping.md`.
+14. Post the URL and keep building; report the pr-review line from step 5 for the pushed head.
 
 ## Gates
 
-- Commits, pushes, and PRs need no ask; merges need a panel pass (`references/techniques/panel.md`) and go through `references/playbooks/shipping.md`.
-- Do not babysit (watch checks, answer review) per PR. Finish the phase or stack first; then run a babysit pass (`gh pr checks --watch`, `gh pr view --json reviews,comments`, and the **pr-review** technique steps 5-7 in PR mode on the current head) once the whole stack exists. Push back when feedback drifts from intent.
-- A subagent that opens a PR posts the URL and its review line and returns without babysitting, unless its brief assigns the babysit loop.
+- Commits, pushes, and PRs need no ask. Merges need a panel pass (`references/techniques/panel.md`): your own single PR lands through pr-conversation, and a stack through `references/playbooks/shipping.md`.
+- Do not babysit (watch checks, answer review) each PR of a stack. Finish the phase or stack first; then run a babysit pass (`gh pr checks --watch`, `gh pr view --json reviews,comments`, and the **pr-review** technique steps 5-7 in PR mode on the current head) once the whole stack exists. Push back when feedback drifts from intent.
+- A subagent that opens a PR posts the URL and its review line and returns without babysitting or landing, unless its brief assigns that loop.
 - pr-review is evidence, not a gate: a clean review never waives the Verification section's real runs. Never report a review for a stale head SHA; a new push needs a new round.
 
 ## Evidence
@@ -38,3 +39,4 @@ Use when: ending any playbook that lands code. Opening the PR is part of the wor
 - Ready (not draft) status confirmed via `gh pr view`.
 - Verification section contents.
 - Per PR, the pr-review technique's review line (`review: <ready|changes needed|needs discussion> at <short sha>, ...`) and the local-mode findings with their triage.
+- Per PR handed on, the pr-conversation line (`conversation: <merged|blocked> at <short sha>, ...`), or that the deep-mode bot took it.

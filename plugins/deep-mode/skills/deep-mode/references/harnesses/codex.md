@@ -48,7 +48,7 @@ Checked 2026-11-11 against codex-cli 0.163.0 (local `--help`), learn.chatgpt.com
 - Installed copies go to `~/.codex/plugins/cache/<marketplace>/<plugin>/<version>/`; enablement in config as `[plugins."<plugin>@<marketplace>"] enabled = true` ([build plugins](https://developers.openai.com/plugins/build/plugins)).
 - Verified for this repo (codex 0.163.0, throwaway `CODEX_HOME`): `codex plugin marketplace add <deep-mode checkout>` registers marketplace `deep-mode` from `.claude-plugin/marketplace.json`; `codex plugin add deep-mode@deep-mode` installs 0.3.0 and all six skills load as `deep-mode:<skill>`.
 - GitHub form, same flow: `codex plugin marketplace add TimothyVang/deep-mode` then `codex plugin add deep-mode@deep-mode` [inference: shorthand documented, not run against GitHub].
-- Claude `commands/*.md` inside the plugin (e.g. `/deep-mode:poteto`) are copied but are not surfaced as Codex slash commands [inference: no Codex doc maps plugin `commands/`; not seen in prompt input]. Use `$deep-mode:deep-mode` instead.
+- Claude `commands/*.md` inside the plugin (e.g. `/deep-mode:deep`) are copied but are not surfaced as Codex slash commands [inference: no Codex doc maps plugin `commands/`; not seen in prompt input]. Use `$deep-mode:deep-mode` instead.
 - Plugin hooks get `PLUGIN_ROOT`, `PLUGIN_DATA`, plus `CLAUDE_PLUGIN_ROOT`, `CLAUDE_PLUGIN_DATA`; they must be trusted before they run ([build plugins](https://developers.openai.com/plugins/build/plugins)).
 
 ## 5. Agent tools
@@ -140,7 +140,7 @@ Checked 2026-11-11 against codex-cli 0.163.0 (local `--help`), learn.chatgpt.com
 - `task` with `agent: "scout"` / `reviewer`: no such tool. Say in prose "spawn an explorer subagent" (built-in `explorer`) or define `.codex/agents/reviewer.toml`. Read-only is instruction-only; sandbox is inherited, so a "read-only scout" can still write.
 - `todo`: use the plan tool / `/plan`. `ask`: `request_user_input` exists only in Plan mode; in Default mode end the turn with the question. In `codex exec` nobody answers: decide and record the assumption.
 - `skill://deep-mode/...` paths do not resolve. Read files by real path relative to the skill folder; Codex shows each skill's file path in its skill list.
-- `/skill:<name>` and `/deep-mode:poteto` do not exist. Use `$deep-mode:deep-mode` (plugin install) or `$deep-mode` (folder in `.agents/skills`).
+- `/skill:<name>` and `/deep-mode:deep` do not exist. Use `$deep-mode:deep-mode` (plugin install) or `$deep-mode` (folder in `.agents/skills`).
 - `.omp/skills/verify-<app>/` is not discovered. Put project verify skills in `.agents/skills/verify-<app>/`. Note `.agents` is read-only to the sandbox, so creating one needs approval.
 - `.omp/RULES.md` is never loaded. Put subagent rules in AGENTS.md and restate them in each spawn prompt.
 - `omp -p` scripted calls: use `codex exec -s read-only --ephemeral -o out.txt "..."` on the saved ChatGPT login. Never set `OPENAI_API_KEY`/`CODEX_API_KEY` (switches to API billing).
