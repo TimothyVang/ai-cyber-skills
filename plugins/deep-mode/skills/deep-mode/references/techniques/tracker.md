@@ -56,8 +56,9 @@ A ticket is **unblocked** when every issue it lists under Blocked by is closed a
 **Local numbers.** Two sessions on different branches or worktrees must never both take one number, so a local Create reserves it before writing the file.
 - Fetch first when there is a remote: `git fetch origin '+refs/deep-mode/issues/*:refs/deep-mode/issues/*'` and the branches.
 - In use: every `NNNN` of a file in `docs/deep-mode/issues/` in the working tree or on any ref (`git ls-tree --name-only <ref> docs/deep-mode/issues/` for each ref `git for-each-ref --format='%(refname)' refs/heads refs/remotes` lists), and every `refs/deep-mode/issues/NNNN` ref.
-- Reserve the next number above all of them: `git update-ref refs/deep-mode/issues/NNNN HEAD ''`. It fails when the ref exists, and every worktree of a clone shares it, so of two racing sessions only one wins. The loser takes the next number.
-- With a remote, also `git push --force-with-lease=refs/deep-mode/issues/NNNN: origin refs/deep-mode/issues/NNNN`. A rejection means another clone holds it; take the next number.
+- Make a token only this session can make, a blob with no history: `o=$(printf 'issue NNNN %s %s\n' "$(date +%s%N)" "$RANDOM$RANDOM$RANDOM" | git hash-object -w --stdin)`. Never point the ref at `HEAD`: two clones at one commit would make the same object, and pushing it would publish local-only commits.
+- Reserve the next number above every one in use: `git update-ref refs/deep-mode/issues/NNNN "$o" ''`. It fails when the ref exists, and every worktree of a clone shares it, so of two racing sessions only one wins. The loser takes the next number.
+- With a remote, also `git push --force-with-lease=refs/deep-mode/issues/NNNN: origin refs/deep-mode/issues/NNNN`, then `git ls-remote origin refs/deep-mode/issues/NNNN`. The number is yours only when that prints `$o`; a rejection or another object means another clone holds it, so take the next number.
 - A reserved number is never reused, even when its file is never written.
 
 ## Local issue format
