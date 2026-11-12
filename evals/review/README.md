@@ -21,12 +21,15 @@ python evals/review/run.py score "$RUN" "$ADJ"
 
 `diff-only` is the neutral baseline: it applies the production sealed reviewer prompt to the source patch without repository context. `enriched` uses the same prompt and patch plus that case's pinned bounded source packet.
 
-The run artifact points to raw model output and every failed case. `--mode enriched` uses a separately pinned git-object packet for each case, never one unrelated context for the whole corpus:
+The run artifact points to raw model output and every failed case.
 The run manifest exists before any case starts and is atomically checkpointed before and after each case.
 Completed results survive interruption. A started case without a completion checkpoint remains `interrupted`;
 unstarted selected cases remain `pending`. Raw process output streams directly to case-local files.
 Scoring retains all selected cases, including interrupted and pending cases, in its conservative denominator.
 Use a fresh output path for another attempt; never overwrite the incomplete record.
+Malformed finding field types, including array or object severities, fail the individual case without aborting the batch.
+
+`--mode enriched` uses a separately pinned git-object packet for each case, never one unrelated context for the whole corpus:
 
 ```bash
 python evals/review/run.py run --model openai-codex/gpt-6-astra --mode enriched --split calibration --context-repos-dir .scratch/review-context --out .scratch/review-runs/enriched.json

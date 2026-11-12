@@ -195,7 +195,9 @@ def parse_findings(response):
     for finding in obj["findings"]:
         if not isinstance(finding, dict) or not all(k in finding for k in ("id", "file", "line", "severity", "claim", "evidence")):
             raise ValueError("finding is missing required fields")
-        if not isinstance(finding["line"], int) or finding["severity"] not in {"P0", "P1", "P2"}:
+        if (not isinstance(finding["line"], int)
+                or not isinstance(finding["severity"], str)
+                or finding["severity"] not in {"P0", "P1", "P2"}):
             raise ValueError("invalid finding line or severity")
         if not all(isinstance(finding[k], str) for k in ("id", "file", "claim", "evidence")):
             raise ValueError("finding fields must be strings")

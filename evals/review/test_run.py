@@ -146,6 +146,11 @@ class ScoringBehaviorTests(unittest.TestCase):
             review_eval.parse_findings("not json")
         with self.assertRaises(ValueError):
             review_eval.parse_findings('{"findings":[{"file":"a.py"}]}')
+        for severity in ([], {}, None, 1):
+            with self.subTest(severity=severity), self.assertRaises(ValueError):
+                review_eval.parse_findings(json.dumps({"findings": [
+                    {**finding("invalid"), "severity": severity},
+                ]}))
 
 class InterruptedRunTests(unittest.TestCase):
     def test_interruption_retains_completed_started_and_pending_cases(self):
