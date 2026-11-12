@@ -15,7 +15,7 @@ Observed on 2026-11-12 from the primary GitHub APIs:
 
 Scope includes every `SKILL.md` under either pinned source, every pstack poteto-mode playbook, both pstack agents and the Benny pack. Guide chapters, reference pages and source-maintenance GitHub Actions are not additional agent workflows. Generated harness copies outside `pstack/` are not counted twice. Cursor built-ins and companion-plugin integrations mentioned by pstack are dependencies, not skills shipped under that directory.
 
-The mappings use the local [route table](../../plugins/deep-mode/skills/deep-mode/SKILL.md) and [flow map](../../plugins/deep-mode/skills/deep-mode/references/flows.md). They are a reviewed interpretation of overlapping purposes, not a text-equivalence assertion. Upstream names and inventory metadata are attributed to Lauren Tan/pstack and Matt Pocock. Both sources are MIT-licensed; their notices are retained in [LICENSE.upstream.txt](LICENSE.upstream.txt). No upstream skill prose or executable source was copied into these journeys.
+The mappings use the local [route table](../../plugins/deepmodebot/skills/deepmodebot/SKILL.md) and [flow map](../../plugins/deepmodebot/skills/deepmodebot/references/flows.md). They are a reviewed interpretation of overlapping purposes, not a text-equivalence assertion. Upstream names and inventory metadata are attributed to Lauren Tan/pstack and Matt Pocock. Both sources are MIT-licensed; their notices are retained in [LICENSE.upstream.txt](LICENSE.upstream.txt). No upstream skill prose or executable source was copied into these journeys.
 
 ## State and evidence
 
@@ -42,7 +42,7 @@ Tests use synthetic processes only to exercise the collector and validator. Thei
 
 | Journey | Candidate work | Required artifacts | Independent assessment |
 | --- | --- | --- | --- |
-| `planning` | Reservation spec and vertical tickets using the configured local tracker | `docs/specs/*.md`, `docs/deep-mode/issues/*.md` | Scope, overlap/concurrency contract, parent/blocker graph, acceptance examples, no remote mutations |
+| `planning` | Reservation spec and vertical tickets using the configured local tracker | `docs/specs/*.md`, `docs/deepmodebot/issues/*.md` | Scope, overlap/concurrency contract, parent/blocker graph, acceptance examples, no remote mutations |
 | `review` | Read-only review of a reservation change against requirements | `review.md` | Supported findings and reproductions, precision, preservation of both implementations |
 | `architecture` | Source-linked module-boundary analysis | `architecture.md` | Actual data flow and drift, a useful public boundary, migration/tests, concurrency limits |
 | `handoff` | Pause first, then finish cancellation in a fresh session | `handoff.md`, `resume.md`, `test_reservations.py` in the root or a test directory | Handoff fidelity, fresh-session pickup, dictionary-based cancellation behavior, preservation of the user's unrelated edit |
@@ -129,7 +129,7 @@ Use `--task billsplit` and a fresh `--run-id` for bugfix. For optional model-ass
 - No replacement for Cursor IDE/custom-mode UX, Origin stack integration, Bugbot, native `/loop`, Cursor Automations, or separately installed `control-ui`/`control-cli` tooling. Benny's Slack ingestion, hosted triggers, setup and UI reproduction are blocked as an integration, even where local triage/bugfix concepts overlap.
 - No dedicated formal-verification authoring/maintenance, checked TLA+ statechart rendering, subtitled catch-up video, Grok Bot webhook/Tailscale UI or pstack per-role setup writer.
 - Matt's TypeScript deep-module setup, Shoehorn migration, exercise scaffolding and three in-progress narrative-writing workflows have no dedicated local counterpart. In-progress and unlisted skills are counted but not presented as plugin-shipped.
-- Interview-heavy Matt flows and deep-mode's autonomous reversible decisions differ deliberately. Generic architecture/TypeScript advice is not full upstream behavior parity. Multi-day chief-of-staff, persistent shared wiki, external factory triggers and remote merge workflows remain unmeasured here.
+- Interview-heavy Matt flows and deepmodebot's autonomous reversible decisions differ deliberately. Generic architecture/TypeScript advice is not full upstream behavior parity. Multi-day chief-of-staff, persistent shared wiki, external factory triggers and remote merge workflows remain unmeasured here.
 - Ordinary filesystem/process execution is not a security sandbox. Candidate tools may still reach parent directories, hidden answers, other runs, global configuration or the network. Record any such access as failed/contaminated assessment evidence. The wrapper's path and hash checks protect its own files, not all agent tool actions. Timeout kills the immediate process; inspect possible descendants before starting another attempt.
 - Preserve `.scratch/workflows/` evidence referenced by a result. Do not clean it up while making execution claims. For durable publication, retain or export the entire evidence tree and update all relative references and digests together. A result cannot remain asserted executed after its raw evidence has been deleted.
 

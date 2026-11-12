@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Outcome eval: one organic task, with deep-mode installed and without, scored by hidden checks and blinded judges.
+"""Outcome eval: one organic task, with deepmodebot installed and without, scored by hidden checks and blinded judges.
 
   python evals/outcome/run.py setup [--task billsplit] [--run-id ID] [--ref HEAD] [--compare-ref REF] [--per-variant 2]
   python evals/outcome/run.py run [--task billsplit] [--run-id ID] --model ID [--max-cost 3]
@@ -35,10 +35,10 @@ from types import SimpleNamespace
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 SCRATCH = ROOT / ".scratch"
-sys.path.insert(0, str(ROOT / "plugins/deep-mode/skills/deep-mode/assets/pr-agent"))
+sys.path.insert(0, str(ROOT / "plugins/deepmodebot/skills/deepmodebot/assets/pr-agent"))
 import pr_agent_local
 SKIP_DIRS = {".git", ".omp", ".scratch", ".worktrees", "node_modules"}
-# Words in replies and action logs that would tell a judge which candidates had deep-mode installed.
+# Words in replies and action logs that would tell a judge which candidates had deepmodebot installed.
 SCRUB = [(r"light[ -]?panel[ -]?", ""), (r"deep[ -]?mode", "the workflow"), (r"\bplaybook(s?)\b", r"checklist\1")]
 CHECK_TIMEOUT = 600
 
@@ -71,11 +71,16 @@ def child_env(folder):
 
 def skill_snapshot(ref):
     sha = git("rev-parse", "--verify", f"{ref}^{{commit}}", cwd=ROOT)
-    archive = subprocess.run(["git", "archive", f"{sha}:plugins/deep-mode/skills"],
+    brand = json.loads(git("show", f"{sha}:brand/brand.json", cwd=ROOT))
+    if any(not isinstance(brand.get(key), str) or not re.fullmatch(r"[a-z][a-z0-9-]*", brand[key])
+           for key in ("slug", "commandName")):
+        raise ValueError("snapshot brand must name a safe plugin and command")
+    plugin = f"plugins/{brand['slug']}"
+    archive = subprocess.run(["git", "archive", f"{sha}:{plugin}/skills"],
                              cwd=ROOT, check=True, capture_output=True).stdout
     with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
         skills = sorted(m.name.split("/")[0] for m in tar.getmembers() if re.fullmatch(r"[^/]+/SKILL\.md", m.name))
-    command = git("show", f"{sha}:plugins/deep-mode/commands/deep.md", cwd=ROOT)
+    command = git("show", f"{sha}:{plugin}/commands/{brand['commandName']}.md", cwd=ROOT)
     return {"ref": sha, "archive": archive, "skills": skills,
             "body": re.sub(r"^---\n.*?\n---\n", "", command, flags=re.S).strip()}
 
@@ -86,7 +91,7 @@ def setup(args):
         raise ValueError("per-variant must be positive")
     if t.key.exists():
         sys.exit(f"{t.key.relative_to(ROOT)} exists; choose a new --run-id to preserve its evidence")
-    snapshots = {"deep-mode": skill_snapshot(args.ref)}
+    snapshots = {"deepmodebot": skill_snapshot(args.ref)}
     if args.compare_ref:
         snapshots["previous"] = skill_snapshot(args.compare_ref)
     request = (t.home / "prompt.txt").read_text(encoding="utf-8").strip()
@@ -727,7 +732,7 @@ def main():
         p.add_argument("--task", default="billsplit", help="folder under evals/outcome/tasks/")
         p.add_argument("--run-id", help="unique project slug; keeps earlier runs and their evidence untouched")
         if step == "setup":
-            p.add_argument("--ref", default="HEAD", help="commit whose deep-mode skill and /deep command are installed")
+            p.add_argument("--ref", default="HEAD", help="commit whose deepmodebot skill and /deep command are installed")
             p.add_argument("--compare-ref", help="also run the previous skill revision beside the new revision and plain")
             p.add_argument("--per-variant", type=int, default=2)
             p.add_argument("--seed", type=int, default=7)

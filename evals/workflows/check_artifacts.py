@@ -27,7 +27,7 @@ print(json.dumps(checks))
 
 
 def planning_checks(project):
-    issues = sorted((project / 'docs' / 'deep-mode' / 'issues').glob('*.md'))
+    issues = sorted((project / 'docs' / 'deepmodebot' / 'issues').glob('*.md'))
     records, valid_ids = {}, True
     for path in issues:
         match = re.match(r'^(\d{4})-', path.name)

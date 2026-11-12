@@ -11,7 +11,7 @@ Subcommands (all take --repo owner/name):
           from `gh api user`); another person's claim on N is still listed.
           Exit 0 = no overlap, 3 = overlap, 2 = usage or gh error.
   comment --pr N
-          Post or update one overlap comment on PR N (marker <!-- deep-mode:overlap -->).
+          Post or update one overlap comment on PR N (marker <!-- deepmodebot:overlap -->).
           The PR author's own claims are left out; everyone else's count.
   claims  [--json]
           List active claims (claim comments and issue assignees). An issue with
@@ -24,14 +24,14 @@ Overlap rule: two path sets overlap if any path is equal, or one is a directory
 prefix ("dir/") of the other. Paths are repo-relative with forward slashes.
 
 Claim comment format (posted on an issue):
-  <!-- deep-mode:claim -->
+  <!-- deepmodebot:claim -->
   Claimed by @<login> via /contribute
   Plan: <one line>
   Files: <comma-separated repo paths; trailing "/" = whole directory>
   Expires: <YYYY-MM-DD>
 Claim rule: each author's newest claim comment on an open issue is their claim.
 It is active while its Expires date is today (UTC) or later and that author has
-posted no comment containing <!-- deep-mode:unclaim --> after it. Every active
+posted no comment containing <!-- deepmodebot:unclaim --> after it. Every active
 claim counts, so one person's claim, expiry or withdrawal never changes another
 person's claim. An issue assignee also counts as a claim with unknown files: it
 never overlaps by file, only by issue. An assignee who posted a claim comment on
@@ -53,9 +53,9 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
-CLAIM_MARKER = "<!-- deep-mode:claim -->"
-UNCLAIM_MARKER = "<!-- deep-mode:unclaim -->"
-OVERLAP_MARKER = "<!-- deep-mode:overlap -->"
+CLAIM_MARKER = "<!-- deepmodebot:claim -->"
+UNCLAIM_MARKER = "<!-- deepmodebot:unclaim -->"
+OVERLAP_MARKER = "<!-- deepmodebot:overlap -->"
 
 EXIT_OK = 0
 EXIT_ERROR = 2

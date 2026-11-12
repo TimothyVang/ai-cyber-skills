@@ -33,8 +33,8 @@ Read the case's `note` before changing either.
 
 ## Outcome
 
-Measures whether installing deep-mode changes how well an agent does a real coding task.
-It follows the Eval playbook (`plugins/deep-mode/skills/deep-mode/references/playbooks/eval.md`) and its blinding gates.
+Measures whether installing deepmodebot changes how well an agent does a real coding task.
+It follows the Eval playbook (`plugins/deepmodebot/skills/deepmodebot/references/playbooks/eval.md`) and its blinding gates.
 Each task in `outcome/tasks/` is a small project, a request in a user's words, a rubric, and hidden checks the candidates never see.
 `billsplit` is a one-file bug fix. `kitty` is a medium feature with rounding and integration traps.
 Hidden checks are the primary score. Two explicitly selected, blinded judges add a second view. Record whether they come from different model families; two models from one family are not cross-family validation.

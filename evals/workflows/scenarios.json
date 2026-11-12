@@ -6,8 +6,8 @@
       "runner": "local",
       "seed": "planning",
       "prompts": ["Our community tool library needs a reservation feature. Members can reserve one available tool for a date range, cancel their own booking, and see availability. Overlapping active bookings must be refused, including simultaneous attempts. We do not need payments, notifications or an admin dashboard. Please settle a small design, record a spec, and split it into implementable vertical tickets in our configured local tracker. Include acceptance examples and dependencies. Do not implement the feature yet. I will review the plan locally."],
-      "artifacts": ["docs/specs/*.md", "docs/deep-mode/issues/*.md"],
-      "immutable": ["docs/deep-mode/tracker.md"],
+      "artifacts": ["docs/specs/*.md", "docs/deepmodebot/issues/*.md"],
+      "immutable": ["docs/deepmodebot/tracker.md"],
       "checks": [
         {"id": "scope", "requirement": "Spec includes reservation, cancellation, availability, overlap and concurrency behavior without adding excluded product scope."},
         {"id": "tickets", "requirement": "Local spec issue and at least two vertical implementation tickets have acceptance examples, parent references and resolvable blocking edges; graph is acyclic."},

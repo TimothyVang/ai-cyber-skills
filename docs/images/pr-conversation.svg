@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="940" viewBox="0 0 1200 940" role="img" aria-labelledby="t d">
-<title id="t">The deep-mode PR conversation</title>
+<title id="t">The deepmodebot PR conversation</title>
 <desc id="d">Sequence: the coordinator posts a kickoff, the author agent merges the base on conflicts, the reviewer agent returns findings, the author fixes or dismisses each, they loop until no P0 or P1 is open, three verifiers vote, and a code-enforced merge gate squash-merges at the voted head. Every turn is mirrored to the PR thread.</desc>
 <defs>
 <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9fb0c8"/></marker>
@@ -7,7 +7,7 @@
 <marker id="ahV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker>
 <marker id="ahS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#38bdf8"/></marker>
 </defs>
-<rect x="1" y="1" width="1198" height="938" rx="24" fill="#0b1220" stroke="#22304d" stroke-width="2"/>
+<rect x="1" y="1" width="1198" height="938" rx="24" fill="#0b1220" stroke="#232e43" stroke-width="2"/>
 <text x="40" y="58" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#e6edf3" text-anchor="start">A PR, talked out by bots</text>
 <text x="40" y="86" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#9fb0c8" text-anchor="start">Agents talk over ACP. The coordinator mirrors every turn to the PR thread. It merges only when every gate holds.</text>
 <line x1="120" y1="172" x2="120" y2="900" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="3 7" opacity="0.55"/>

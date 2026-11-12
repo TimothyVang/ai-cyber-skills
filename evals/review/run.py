@@ -22,8 +22,8 @@ SETTINGS = ("--no-tools", "--no-rules", "--no-context-files", "--no-skills", "--
 
 def load_reviewer():
     import importlib.util
-    source = ROOT / "plugins/deep-mode/skills/deep-mode/assets/github-app/bot.py"
-    spec = importlib.util.spec_from_file_location("deep_mode_review_prompt", source)
+    source = ROOT / "plugins/deepmodebot/skills/deepmodebot/assets/github-app/bot.py"
+    spec = importlib.util.spec_from_file_location("deepmodebot_review_prompt", source)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
@@ -94,7 +94,7 @@ def parse_events(stdout):
 
 def build_context(repo, base, head):
     import importlib.util
-    source = ROOT / "plugins/deep-mode/skills/deep-mode/assets/github-app/review_context.py"
+    source = ROOT / "plugins/deepmodebot/skills/deepmodebot/assets/github-app/review_context.py"
     spec = importlib.util.spec_from_file_location("review_context", source)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -103,7 +103,7 @@ def build_context(repo, base, head):
 
 def load_seal():
     import importlib.util
-    source = ROOT / "plugins/deep-mode/skills/deep-mode/assets/pr-agent/pr_agent_local.py"
+    source = ROOT / "plugins/deepmodebot/skills/deepmodebot/assets/pr-agent/pr_agent_local.py"
     spec = importlib.util.spec_from_file_location("pr_agent_local", source)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)

@@ -207,7 +207,7 @@ class EvidenceProtocolTests(unittest.TestCase):
 
     def planning_fixture(self):
         folder = self.fixture_run('planning') / 'project'
-        issues = folder / 'docs' / 'deep-mode' / 'issues'
+        issues = folder / 'docs' / 'deepmodebot' / 'issues'
         issues.mkdir()
         for identifier, labels, parent, blockers in [('0001', 'spec', 'none', 'none'),
                                                       ('0002', 'ticket', '0001', 'none'),

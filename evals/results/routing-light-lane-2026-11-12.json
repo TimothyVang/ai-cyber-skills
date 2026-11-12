@@ -1,6 +1,6 @@
 {
   "date": "2026-11-12",
-  "skill": "plugins/deep-mode/skills/deep-mode/SKILL.md",
+  "skill": "plugins/deepmodebot/skills/deepmodebot/SKILL.md",
   "skill_sha256": "da4c08e7521a271f1fda34615c4da5e596496e1098613ef93582b7484428d242",
   "cases_file": "evals/routing/cases.json",
   "model_requested": null,

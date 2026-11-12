@@ -17,7 +17,6 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 RUNS = ROOT / '.scratch' / 'workflows'
-SKILLS = 'plugins/deep-mode/skills/'
 API_KEYS = ('ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'CODEX_API_KEY')
 
 
@@ -169,7 +168,12 @@ def prepare(args):
     if folder.exists():
         raise ValueError('run already exists; choose a new ID (evidence is never overwritten)')
     commit = subprocess.check_output(['git', 'rev-parse', '--verify', args.ref + '^{commit}'], cwd=ROOT, text=True).strip()
-    archive = subprocess.check_output(['git', 'archive', commit, SKILLS], cwd=ROOT)
+    brand = json.loads(subprocess.check_output(['git', 'show', commit + ':brand/brand.json'], cwd=ROOT, text=True))
+    if any(not isinstance(brand.get(key), str) or not re.fullmatch('[a-z][a-z0-9-]*', brand[key])
+           for key in ('slug', 'mainSkillName')):
+        raise ValueError('snapshot brand must name a safe plugin and main skill')
+    skills = f"plugins/{brand['slug']}/skills/"
+    archive = subprocess.check_output(['git', 'archive', commit, skills], cwd=ROOT)
     seed = load(HERE / 'seeds' / (scenario['seed'] + '.json'))
     folder.mkdir(parents=True)
     project = folder / 'project'
@@ -185,15 +189,15 @@ def prepare(args):
         for member in bundle:
             if member.isdir():
                 continue
-            if not member.isfile() or not member.name.startswith(SKILLS):
+            if not member.isfile() or not member.name.startswith(skills):
                 raise ValueError('skill archive contains unsupported member')
-            name = member.name[len(SKILLS):]
+            name = member.name[len(skills):]
             path = inside(project / '.omp' / 'skills', name)
             data = bundle.extractfile(member).read()
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_bytes(data)
             skill_hashes[name] = digest(data)
-    safety = ('Use the project-local .omp/skills/deep-mode/SKILL.md instructions. '
+    safety = (f"Use the project-local .omp/skills/{brand['mainSkillName']}/SKILL.md instructions. "
               'This directory is your project root. Keep all writes and temporary files inside it. '
               'No external issue comments, pushes, deployments, purchases, credentials, global configuration changes or installs. '
               'Do not read parent directories or other projects. Do not commit or reset user work.\n\n')

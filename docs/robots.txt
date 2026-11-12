@@ -28,4 +28,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://timothyvang.github.io/deep-mode/sitemap.xml
+Sitemap: https://timothyvang.github.io/deepmodebot/sitemap.xml

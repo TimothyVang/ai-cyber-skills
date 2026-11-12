@@ -1,12 +1,12 @@
-# deep-mode: project brief
+# deepmodebot: project brief
 
-Start here if you're new to this repo, human or agent. `/deep-mode:contribute` reads this file first.
+Start here if you're new to this repo, human or agent. `/deepmodebot:contribute` reads this file first.
 
 Last refreshed: 2026-11-12. The manifest and live issue board are authoritative for the current version and available work.
 
 ## What and why
 
-deep-mode is an MIT plugin for coding agents. Its skills take a task from an idea through a spec, tickets, implementation, review and recorded proof. Its local GitHub App bot runs ACP agents on the user's subscriptions to discuss issues, fix and review the owner's PRs, and merge them through a verifier panel and a code-enforced gate.
+deepmodebot is an MIT plugin for coding agents. Its skills take a task from an idea through a spec, tickets, implementation, review and recorded proof. Its local GitHub App bot runs ACP agents on the user's subscriptions to discuss issues, fix and review the owner's PRs, and merge them through a verifier panel and a code-enforced gate.
 
 The product is the agent's behavior, not only its Python scripts. A wording change can change that behavior and needs proof on a real task.
 
@@ -20,7 +20,7 @@ The workflow that must never break is installing the plugin, running `/deep <tas
 
 ## Status
 
-Read `plugins/deep-mode/.claude-plugin/plugin.json` for the release version. Both marketplace manifests must agree with it. Do not copy a version number into this brief.
+Read `plugins/deepmodebot/.claude-plugin/plugin.json` for the release version. Both marketplace manifests must agree with it. Do not copy a version number into this brief.
 
 Run evidence lives in `evals/results/` and merged PR threads. A reseller must obtain its own deployment evidence. Contributor PRs receive review comments only; their code is not run by write-enabled agents, and a maintainer decides whether to merge.
 
@@ -40,16 +40,16 @@ Known gaps reserved for contributors:
 
 | Path | Responsibility | Entry point |
 |---|---|---|
-| `plugins/deep-mode/skills/deep-mode/` | Main routing, autonomy and engineering workflows | `SKILL.md` |
+| `plugins/deepmodebot/skills/deepmodebot/` | Main routing, autonomy and engineering workflows | `SKILL.md` |
 | `references/playbooks/`, `references/techniques/`, `references/principles/` under the main skill | Task flows, reusable operations and decision rules | The path selected by `SKILL.md` |
-| `plugins/deep-mode/skills/agent-harnesses/`, `software-architecture/`, `secrets-and-auth/`, `cloud-devsecops/`, `domain-rules/`, `frontend-ui/` | Cited domain references | Each skill's `SKILL.md` |
-| `plugins/deep-mode/skills/deep-mode/assets/github-app/` | App identity, polling, ACP conversations, verification and merge gates | `bot.py`, `ghapp.py`, `install.py` |
-| `plugins/deep-mode/skills/deep-mode/assets/pr-conversation/` | Text and 8-bit displays of real PR and issue threads | `show_thread.py`, `arena.py` |
+| `plugins/deepmodebot/skills/agent-harnesses/`, `software-architecture/`, `secrets-and-auth/`, `cloud-devsecops/`, `domain-rules/`, `frontend-ui/` | Cited domain references | Each skill's `SKILL.md` |
+| `plugins/deepmodebot/skills/deepmodebot/assets/github-app/` | App identity, polling, ACP conversations, verification and merge gates | `bot.py`, `ghapp.py`, `install.py` |
+| `plugins/deepmodebot/skills/deepmodebot/assets/pr-conversation/` | Text and 8-bit displays of real PR and issue threads | `show_thread.py`, `arena.py` |
 | Other main-skill `assets/` folders | Containment, git guards, goal loops, wizards, security checks and media helpers | The script named by the technique |
-| `plugins/deep-mode/skills/deep-mode/scripts/` | Skill validation and trending discovery | `check_skill.py`, `trending.py` |
-| `plugins/deep-mode/skills/project-brief/`, `contribute/` | Maintainer and contributor workflows | `SKILL.md`, `assets/` |
-| `plugins/deep-mode/skills/deep-stack/` and the verification skills | Stack choices and reusable app verification | `SKILL.md` |
-| `plugins/deep-mode/commands/` | `deep`, `review-pr`, `land-pr`, `pr-thread`, `contribute`, `project-brief` | The corresponding command file |
+| `plugins/deepmodebot/skills/deepmodebot/scripts/` | Skill validation and trending discovery | `check_skill.py`, `trending.py` |
+| `plugins/deepmodebot/skills/project-brief/`, `contribute/` | Maintainer and contributor workflows | `SKILL.md`, `assets/` |
+| `plugins/deepmodebot/skills/deep-stack/` and the verification skills | Stack choices and reusable app verification | `SKILL.md` |
+| `plugins/deepmodebot/commands/` | `deep`, `review-pr`, `land-pr`, `pr-thread`, `contribute`, `project-brief` | The corresponding command file |
 | `brand/`, `scripts/whitelabel.py`, `scripts/media/` | Brand inputs, distribution builds and rendered media | `brand/brand.json`, `scripts/whitelabel.py` |
 | `scripts/` | Repository gate, overlap checks, claim tests and roadmap generation | `check.py`, `pr-overlap.py`, `sync-roadmap.py` |
 | `evals/` | Routing and outcome evaluations with committed results | `evals/README.md` |
@@ -66,18 +66,18 @@ Markdown holds the skills. Runtime scripts use the Python standard library; medi
 Clone the repo, then keep all commands at its root:
 
 ```bash
-gh repo clone TimothyVang/deep-mode
-cd deep-mode
+gh repo clone TimothyVang/deepmodebot
+cd deepmodebot
 py -3 scripts/check.py
 py -3 scripts/test_claims.py
-py -3 scripts/pr-overlap.py claims --repo TimothyVang/deep-mode
-py -3 scripts/sync-roadmap.py --repo TimothyVang/deep-mode --check
-py -3 plugins/deep-mode/skills/deep-mode/assets/github-app/bot.py --help
+py -3 scripts/pr-overlap.py claims --repo TimothyVang/deepmodebot
+py -3 scripts/sync-roadmap.py --repo TimothyVang/deepmodebot --check
+py -3 plugins/deepmodebot/skills/deepmodebot/assets/github-app/bot.py --help
 ```
 
 Use `python3` instead of `py -3` on macOS and Linux. `check.py` runs the repository's checks and test directories. The individual claim test is useful while changing the contributor tools. The roadmap command checks the committed snapshot against live issues and may legitimately report drift.
 
-Use [.omp/skills/verify-deep-mode/SKILL.md](../.omp/skills/verify-deep-mode/SKILL.md) for the evaluation CLIs. Run its doctor, read the matching feature map, and capture the real agent path in a disposable project under `.scratch/`. Follow [CONTRIBUTING.md](../CONTRIBUTING.md) and include actual outcomes in the PR. Structural checks and collector tests do not replace live execution.
+Use [.omp/skills/verify-deepmodebot/SKILL.md](../.omp/skills/verify-deepmodebot/SKILL.md) for the evaluation CLIs. Run its doctor, read the matching feature map, and capture the real agent path in a disposable project under `.scratch/`. Follow [CONTRIBUTING.md](../CONTRIBUTING.md) and include actual outcomes in the PR. Structural checks and collector tests do not replace live execution.
 
 For bot changes, preview a read-only cycle with `bot.py once --repo <owner/repo> --dry-run`. Do not use a live cycle to test an untrusted contributor's code.
 
@@ -104,8 +104,8 @@ For bot changes, preview a read-only cycle with `bot.py once --repo <owner/repo>
 - Tracker support: #43.
 - Tooling and regression coverage: #44 and #45. Read their latest scope before starting; parts may already exist.
 
-The live lists are [help wanted](https://github.com/TimothyVang/deep-mode/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) and [good first issue](https://github.com/TimothyVang/deep-mode/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
+The live lists are [help wanted](https://github.com/TimothyVang/deepmodebot/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22) and [good first issue](https://github.com/TimothyVang/deepmodebot/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 ## How to contribute
 
-Install deep-mode and run `/deep-mode:contribute` in a clone. The agent reads this brief, finds unclaimed work, checks overlap, requests permission to claim and publish, builds the change, proves it and opens a PR. You can follow the same steps by hand. [CONTRIBUTING.md](../CONTRIBUTING.md) has the full claim and review rules.
+Install deepmodebot and run `/deepmodebot:contribute` in a clone. The agent reads this brief, finds unclaimed work, checks overlap, requests permission to claim and publish, builds the change, proves it and opens a PR. You can follow the same steps by hand. [CONTRIBUTING.md](../CONTRIBUTING.md) has the full claim and review rules.

@@ -17,7 +17,7 @@ CASES = [
     ("read", {"path": "../../evals/outcome/tasks/kitty/hidden/kitty.checks.mjs"}, True),
     ("read", {"path": "C:/work/.scratch/kitty-1/src/x.js"}, False),
     ("read", {"path": "/c/work/.scratch/kitty-2/src/x.js"}, True),
-    ("read", {"path": "skill://deep-mode/references/playbooks/feature.md"}, False),
+    ("read", {"path": "skill://deepmodebot/references/playbooks/feature.md"}, False),
     ("grep", {"pattern": "x", "path": "src;../kitty-runs"}, True),
     ("edit", {"input": "[src/a.js#1A2B]\nPUT 1.=1:\n+x\n[../kitty-2/b.js#3C4D]\nCUT 1.=1"}, True),
     ("bash", {"command": "node --test spec/*.spec.js 2>/dev/null && git status"}, False),
