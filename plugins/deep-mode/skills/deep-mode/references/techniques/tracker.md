@@ -54,8 +54,8 @@ GitHub commands assume `R=<owner>/<repo>` and that every body is a file you wrot
 A ticket is **unblocked** when every issue it lists under Blocked by is closed as completed.
 
 **Local numbers.** Two sessions on different branches or worktrees must never both take one number, so a local Create reserves it before writing the file.
-- The remote `<r>` is the one the default branch tracks (`git config branch.<default>.remote`), else the repo's only remote (`git remote`). Several remotes and none tracked → stop and ask which one holds the tracker. No remote → skip every `<r>` step.
-- Fetch first: `git fetch <r> '+refs/deep-mode/issues/*:refs/deep-mode/issues/*'`, then `git fetch <r>` for the branches.
+- The remote `<r>` is the one the default branch tracks (`git config branch.<default>.remote`), else the repo's only remote (`git remote`). A tracked value of `.` is a local branch, not a remote: ignore it. Several remotes and none tracked → stop and ask which one holds the tracker. No remote → skip every `<r>` step.
+- Fetch first: `git fetch <r> '+refs/deep-mode/issues/*:refs/deep-mode/issues/*' '+refs/heads/*:refs/remotes/<r>/*'`. The explicit branch refspec fetches every branch on `<r>`, even in a clone whose config fetches only one.
 - In use: every `NNNN` of a file in `docs/deep-mode/issues/` in the working tree or on any ref (`git ls-tree --name-only <ref> docs/deep-mode/issues/` for each ref `git for-each-ref --format='%(refname)' refs/heads refs/remotes` lists), and every `refs/deep-mode/issues/NNNN` ref.
 - Make a token only this session can make, a blob with no history: `o=$(printf 'issue NNNN %s %s\n' "$(date +%s%N)" "$RANDOM$RANDOM$RANDOM" | git hash-object -w --stdin)`. Never point the ref at `HEAD`: two clones at one commit would make the same object, and pushing it would publish local-only commits.
 - Reserve the next number above every one in use: `git update-ref refs/deep-mode/issues/NNNN "$o" ''`. It fails when the ref exists, and every worktree of a clone shares it, so of two racing sessions only one wins. The loser takes the next number.
