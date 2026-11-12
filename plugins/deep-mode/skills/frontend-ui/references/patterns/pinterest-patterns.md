@@ -1,6 +1,6 @@
 # Patterns from popular Pinterest UI pins
 
-What 341 top pins across 14 searches (2026-11-11) teach, as text. Mostly Dribbble/Behance concept shots: take a pattern only if it passes `references/frontend/playbook/03-ai-tells.md`. Images and clips: `TimothyVang/frontend:reference/screens/pinterest/`.
+What 341 top pins across 14 searches (2026-11-11) teach, as text. Mostly Dribbble/Behance concept shots: take a pattern only if it passes `references/playbook/03-ai-tells.md`. Images and clips: `TimothyVang/frontend:reference/screens/pinterest/`.
 
 ## ui-ux-design
 

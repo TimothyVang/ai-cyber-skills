@@ -13,7 +13,8 @@ from pathlib import Path
 
 REF = re.compile(r"(?<![\w/])((?:references|scripts)/[\w./-]+\.(?:md|py|sh|json|txt))")
 LINK = re.compile(r"skill://([\w-]+(?:/[\w-]+)?)(?![\w<-])")
-EXPORTED = ("references/frontend/",)  # exported from another repo; a scripts/ path there names that repo's file
+FILE_LINK = re.compile(r"skill://([\w-]+)/([\w./-]+\.(?:md|py|sh|json|txt|ts|cjs))")
+EXPORTED = {"frontend-ui"}  # skills exported from another repo; a scripts/ path there names that repo's file
 
 
 def installed_skills(skill_dir: Path) -> dict[str, Path]:
@@ -46,6 +47,9 @@ def check(skill_dir: Path, skills: dict[str, Path]) -> list[str]:
             for link in links:
                 if link.split("/")[0] not in skills:
                     problems.append(f"{doc.relative_to(skill_dir)}:{n}: skill://{link} is not installed")
+            for name, rel in FILE_LINK.findall(line):
+                if name in skills and skills[name] != Path() and not (skills[name] / rel).exists():
+                    problems.append(f"{doc.relative_to(skill_dir)}:{n}: skill://{name}/{rel} does not exist")
             for ref in REF.findall(line):
                 # A path resolves from the skill root, the citing file's folder, or a skill named on the line.
                 roots = [skill_dir, doc.parent] + [skills[l.split("/")[0]] for l in links if l.split("/")[0] in skills]
@@ -54,7 +58,7 @@ def check(skill_dir: Path, skills: dict[str, Path]) -> list[str]:
                 # scripts/<name> may be where a skill copies a shipped asset into the user's repo.
                 if ref.startswith("scripts/") and any(skill_dir.parent.rglob(Path(ref).name)):
                     continue
-                if ref.startswith("scripts/") and doc.relative_to(skill_dir).as_posix().startswith(EXPORTED):
+                if ref.startswith("scripts/") and skill_dir.name in EXPORTED:
                     continue
                 problems.append(f"{doc.relative_to(skill_dir)}:{n}: {ref} does not exist")
     return problems

@@ -6,14 +6,14 @@
   },
   "metadata": {
     "description": "deep-mode: rigorous agent engineering for omp, Claude Code, and Codex",
-    "version": "0.6.0"
+    "version": "0.7.0"
   },
   "plugins": [
     {
       "name": "deep-mode",
       "source": "./plugins/deep-mode",
       "description": "Rigorous agent engineering mode for omp, Claude Code, and Codex: /deep routes any task to a playbook, applies named principles, keeps every write inside the project, proves behavior on the real app, and runs the deep-mode PR review loop.",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "license": "MIT",
       "category": "development",
       "tags": [

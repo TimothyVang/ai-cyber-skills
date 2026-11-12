@@ -1,3 +1,10 @@
+---
+name: secrets-and-auth
+description: "Rules and free-first tool picks for secrets and agent authentication: .env and secret sharing, password managers, logins and MFA for agents, OAuth delegation, MCP server auth, CI OIDC, secret scanning, and leak response. Use when a task touches secrets, credentials, tokens, logins, or auth."
+metadata:
+  as-of: "2026-11-11"
+---
+
 # Credentials, secrets, logins, and agent authentication
 
 Read before any task that touches API keys, tokens, `.env` files, passwords, usernames, logins, MFA, OAuth, MCP auth, CI credentials, or a suspected leak. Researched 2026-11-11 against primary sources (vendor docs and pricing pages, GitHub repos and releases, RFCs and IETF drafts, the MCP spec, OWASP). Every claim in the files below carries its link; `[inference]` and `[unverified]` mean what they say. Free tiers and licenses change: recheck the one you pick.
@@ -25,7 +32,7 @@ Read before any task that touches API keys, tokens, `.env` files, passwords, use
 
 ## What deep-mode enforces
 
-Nothing on reads. deep-mode's guard (`assets/contain/claude_guard.py`, `assets/contain/omp-contain.ts`) only keeps writes inside the project root; agents can read `.env`, keys, credential files, and saved sessions. The rules above are what keep values out of output and commits. To block reads, apply the optional settings below.
+Nothing on reads. deep-mode's guard (`skill://deep-mode/assets/contain/claude_guard.py`, `skill://deep-mode/assets/contain/omp-contain.ts`) only keeps writes inside the project root; agents can read `.env`, keys, credential files, and saved sessions. The rules above are what keep values out of output and commits. To block reads, apply the optional settings below.
 
 ## Optional harness settings (user-level, the user applies them)
 
@@ -33,7 +40,7 @@ Nothing on reads. deep-mode's guard (`assets/contain/claude_guard.py`, `assets/c
 |---|---|---|
 | Claude Code | `permissions.deny` for `Read(.env.keys)`, `Read(~/.ssh/**)`, `Read(~/.aws/**)`; `sandbox.enabled` with `allowUnsandboxedCommands: false`, `failIfUnavailable: true`, a strict network allowlist, and `sandbox.credentials` deny or `mask` entries; `CLAUDE_CODE_SUBPROCESS_ENV_SCRUB=1` | Deny rules miss `grep -r` and scripts; only the sandbox blocks at the OS level. The sandbox is off by default, inherits env, and does not run on native Windows (use WSL2) |
 | Codex | `[shell_environment_policy] inherit = "core"`, `ignore_default_excludes = false`; keep `workspace-write` with network off | By default Codex passes variables named `*KEY*`, `*SECRET*`, `*TOKEN*` to every command |
-| omp | `secrets.enabled: true` in `config.yml`; install `assets/contain/omp-contain.ts`; `bash.patterns` deny rules if needed | Secret obfuscation is off by default; it swaps secret-looking values for placeholders before provider calls |
+| omp | `secrets.enabled: true` in `config.yml`; install `skill://deep-mode/assets/contain/omp-contain.ts`; `bash.patterns` deny rules if needed | Secret obfuscation is off by default; it swaps secret-looking values for placeholders before provider calls |
 
 ## Free stack for a solo dev or small team
 

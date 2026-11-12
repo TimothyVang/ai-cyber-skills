@@ -1,6 +1,13 @@
+---
+name: agent-harnesses
+description: "Cited, dated facts for using and scripting omp, Claude Code and Codex: config paths, flags, hooks, skills and plugins, headless runs, sandboxes, subagent model and effort choice, and the MCP, ACP, A2A and WebMCP protocols. Use when configuring, scripting, or comparing an agent harness or protocol."
+metadata:
+  as-of: "2026-11-11"
+---
+
 # Harnesses, protocols, and AI-native tooling
 
-Read when deep-mode runs outside omp, when a task uses, configures, or scripts omp, Claude Code, or Codex, or when it touches MCP, ACP, A2A, WebMCP, skills, plugins, `AGENTS.md`, hooks, or sandboxes. deep-mode's text names omp tools; this folder translates them and carries the cited facts.
+Read when deep-mode runs outside omp, when a task uses, configures, or scripts omp, Claude Code, or Codex, or when it touches MCP, ACP, A2A, WebMCP, skills, plugins, `AGENTS.md`, hooks, or sandboxes. deep-mode's text names omp tools; this skill translates them and carries the cited facts.
 
 Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claude Code 2.1.322, and codex-cli 0.163.0. Every cell below is cited in the file for that harness. Versions move fast: recheck a flag or path before you build on it. `[inference]` and `[unverified]` marks in the files mean what they say.
 
@@ -30,7 +37,7 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 | Todo list | `todo` (main session only) | `TaskCreate`/`TaskUpdate`, or `TodoWrite`; may be off on current models | Plan tool, `/plan` |
 | Ask the user | `ask` (interactive only) | `AskUserQuestion` (not in `-p`) | `request_user_input` (Plan mode only) |
 | Headless run on the subscription | `omp -p --mode json`; never `--api-key` | `claude -p --output-format json`; unset `ANTHROPIC_API_KEY`, no `--bare` | `codex exec --json`; unset `OPENAI_API_KEY` and `CODEX_API_KEY` |
-| Fence writes to the root | No sandbox; deep-mode's `assets/contain/omp-contain.ts` hook | deep-mode's plugin `hooks/hooks.json` plus skill hook; `permissions.blockWritesOutsideWorkingDirectories`; sandbox off on native Windows | `-s workspace-write` plus `[sandbox_workspace_write] exclude_tmpdir_env_var = true`, `exclude_slash_tmp = true` |
+| Fence writes to the root | No sandbox; deep-mode's `skill://deep-mode/assets/contain/omp-contain.ts` hook | deep-mode's plugin `hooks/hooks.json` plus skill hook; `permissions.blockWritesOutsideWorkingDirectories`; sandbox off on native Windows | `-s workspace-write` plus `[sandbox_workspace_write] exclude_tmpdir_env_var = true`, `exclude_slash_tmp = true` |
 | Hook that blocks a tool call | `.omp/hooks/pre/*.ts`, `tool_call` returns `{ block: true, reason }` | `PreToolUse` in settings, plugin `hooks/hooks.json`, or skill frontmatter; `permissionDecision: "deny"` | `PreToolUse` in `.codex/hooks.json` after the user trusts it; path is inside `tool_input.command` |
 | MCP servers | `.omp/mcp.json`, `~/.omp/agent/mcp.json`; imports Claude, Codex, Cursor, VS Code configs; `/mcp` | `.mcp.json` (project), `claude mcp add -s local\|project\|user` | `[mcp_servers.<name>]` in `config.toml`; `codex mcp add` |
 | ACP | Native: `omp acp` | Adapter `agentclientprotocol/claude-agent-acp` | Adapter `agentclientprotocol/codex-acp` |
@@ -42,5 +49,5 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 - deep-mode's **Contain the work** section (SKILL.md) wins over any harness default: scratch in `<root>/.scratch/`, worktrees in `<root>/.worktrees/`, never system temp. Codex and Claude Code both make temp dirs writable by default.
 - Subagents in every harness start without your conversation. Put the goal, root, files, rules, and acceptance check in the brief.
 - Model calls use the user's subscription. An API key in the environment silently switches `claude -p` and `codex exec` to API billing.
-- Secrets and logins follow `references/credentials/README.md` in every harness: never read or print a value, inject at run time, one scoped identity per agent. It lists the per-harness settings (Claude Code sandbox and deny rules, Codex `shell_environment_policy`, omp `secrets.enabled`).
+- Secrets and logins follow `skill://secrets-and-auth` in every harness: never read or print a value, inject at run time, one scoped identity per agent. It lists the per-harness settings (Claude Code sandbox and deny rules, Codex `shell_environment_policy`, omp `secrets.enabled`).
 - Translate, don't skip: when a step names an omp tool your harness lacks, use the mapped tool above; when nothing maps, do the step by hand and say so.

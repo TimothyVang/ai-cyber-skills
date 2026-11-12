@@ -1,6 +1,6 @@
 # Motion graphics: engines, stack and lessons
 
-Detail behind `references/frontend/playbook/05a-motion-graphics.md`, from 16 repos and tools plus two creators' channels. Per-repo notes and demo clips: `TimothyVang/frontend:reference/github/motion-graphics/`; channel transcripts: `TimothyVang/frontend:reference/youtube/channels/`.
+Detail behind `references/playbook/05a-motion-graphics.md`, from 16 repos and tools plus two creators' channels. Per-repo notes and demo clips: `TimothyVang/frontend:reference/github/motion-graphics/`; channel transcripts: `TimothyVang/frontend:reference/youtube/channels/`.
 
 ## Headline findings
 

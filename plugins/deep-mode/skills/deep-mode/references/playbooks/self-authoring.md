@@ -1,6 +1,6 @@
 # Self-authoring
 
-Use when: deep-mode should write or improve its own reusable prompt, skill, goal, or loop. That covers a workflow repeated twice, a correction that **correct** (`references/techniques/correct.md`) says belongs in an instruction rather than a check, a long task that needs a durable objective, or the user asking deep-mode to extend itself. You own the artifact from draft to proof. Per-harness paths, formats, and reload rules are cited in `references/harnesses/self-authoring.md`.
+Use when: deep-mode should write or improve its own reusable prompt, skill, goal, or loop. That covers a workflow repeated twice, a correction that **correct** (`references/techniques/correct.md`) says belongs in an instruction rather than a check, a long task that needs a durable objective, or the user asking deep-mode to extend itself. You own the artifact from draft to proof. Per-harness paths, formats, and reload rules are cited in `skill://agent-harnesses/references/self-authoring.md`.
 
 ## Steps
 

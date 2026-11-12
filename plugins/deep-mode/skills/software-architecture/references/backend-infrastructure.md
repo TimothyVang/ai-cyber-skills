@@ -7,7 +7,7 @@ Strongest recommendations, checked 2026-11-11:
 - Instrument with OpenTelemetry from day one (traces and logs stable); define 1-3 SLOs and spend the error budget deliberately ([Google SRE book](https://sre.google/sre-book/service-level-objectives/)).
 - Deploy containers to a PaaS (Fly.io, Railway, Render) or one VPS with Kamal/Coolify; skip Kubernetes until a team operates it; use OpenTofu (MPL-2.0) not Terraform (BSL) for new IaC.
 
-Scope: this file adds primary-source, decision-ready infrastructure guidance. It builds on, and does not repeat, `references/domain-rules/backend-system-design.md` (API naming, indexing, cache-aside basics, queue basics), the `model-the-domain` principle, `references/cloud-devsecops/` (cloud security, CI/CD, IaC scanning, local emulators) and `references/credentials/` (secrets, auth). Prices and free tiers change monthly; re-check the cited page before committing a user to one.
+Scope: this file adds primary-source, decision-ready infrastructure guidance. It builds on, and does not repeat, `skill://domain-rules/references/backend-system-design.md` (API naming, indexing, cache-aside basics, queue basics), the `model-the-domain` principle, `skill://cloud-devsecops` (cloud security, CI/CD, IaC scanning, local emulators) and `skill://secrets-and-auth` (secrets, auth). Prices and free tiers change monthly; re-check the cited page before committing a user to one.
 
 ## 1. Architecture shape
 

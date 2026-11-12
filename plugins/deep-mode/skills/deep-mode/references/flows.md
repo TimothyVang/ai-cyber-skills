@@ -29,9 +29,9 @@ Skip phases the work doesn't need. One PR of settled work starts at phase 5 with
 | A queue of labeled issues and the `factory` CLI | Work a queue with the factory source (`references/playbooks/work-a-queue.md`) |
 | A multi-day program with many owners | Run a goal at program scale (`references/playbooks/run-a-goal.md`) |
 | A workflow done the same way twice, or a goal to run unattended until a check passes | Self-authoring (`references/playbooks/self-authoring.md`), to write and prove a prompt, skill, goal, or loop |
-| Choosing a repo layout, data model, database, or backend shape | `references/architecture/README.md` |
-| Secrets, logins, or agent authentication | `references/credentials/README.md` |
-| Running in or scripting omp, Claude Code, or Codex; MCP or ACP | `references/harnesses/README.md` |
+| Choosing a repo layout, data model, database, or backend shape | `skill://software-architecture` |
+| Secrets, logins, or agent authentication | `skill://secrets-and-auth` |
+| Running in or scripting omp, Claude Code, or Codex; MCP or ACP | `skill://agent-harnesses` |
 
 ## Between phases
 

@@ -30,12 +30,12 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | Verification skills | `create-verification-skill` builds a per-repo `verify-<app>` skill (a control CLI plus a feature map) so agents can drive your app and capture proof. `maintain-verification-skill` keeps it accurate as the app changes. |
 | `project-brief` and `contribute` | A maintainer publishes a newcomer brief, claimable tasks as issues, a roadmap and templates. A contributor's agent finds an unclaimed task that doesn't overlap open PRs, claims it, builds it through deep-mode, and opens a PR. |
 | Trending catalog | `plugins/deep-mode/skills/deep-mode/scripts/trending.py` keeps a digest of new and trending repos that deep-mode searches before building anything. |
-| Harness references | Cited, dated guides (checked 2026-11-11) for using omp, Claude Code, and Codex, the MCP, ACP, A2A, and WebMCP protocols, and portable AI-native conventions (`AGENTS.md`, Agent Skills, plugin marketplaces). A cross-harness map translates every omp tool and path deep-mode names into Claude Code and Codex. In `plugins/deep-mode/skills/deep-mode/references/harnesses/`. |
+| Harness references | Cited, dated guides (checked 2026-11-11) for using omp, Claude Code, and Codex, the MCP, ACP, A2A, and WebMCP protocols, and portable AI-native conventions (`AGENTS.md`, Agent Skills, plugin marketplaces). A cross-harness map translates every omp tool and path deep-mode names into Claude Code and Codex. In `plugins/deep-mode/skills/agent-harnesses/`. |
 | Contained work | The agent works only inside the project's repo. Scratch and temp files go in `.scratch/`, worktrees in `.worktrees/` (both git-ignored), never system temp or folders outside the repo. With no repo it creates a named one first. A guard enforces this in Claude Code and omp; Codex's sandbox does it natively. |
-| Credentials and auth | Cited, free-first guidance (checked 2026-11-11) for sharing API keys and `.env` safely, passwords and usernames, logins and MFA for agents, credential brokers, protecting MCP servers and agent APIs, CI OIDC, secret scanning, and leak response. In `plugins/deep-mode/skills/deep-mode/references/credentials/`. |
-| Architecture | Cited, decision-ready guidance (checked 2026-11-11) for organizing monorepos, naming the domain (glossary, typed models, LinkML, RDF and SHACL, graph databases, Palantir-style ontology for agent actions), choosing and migrating databases with agents working safely against them, and backend infrastructure and system design (reliability, queues and durable workflows, APIs, OpenTelemetry, deployment, IaC). Each file ends with the default stack for a solo dev or small team. In `plugins/deep-mode/skills/deep-mode/references/architecture/`. |
+| Credentials and auth | Cited, free-first guidance (checked 2026-11-11) for sharing API keys and `.env` safely, passwords and usernames, logins and MFA for agents, credential brokers, protecting MCP servers and agent APIs, CI OIDC, secret scanning, and leak response. In `plugins/deep-mode/skills/secrets-and-auth/`. |
+| Architecture | Cited, decision-ready guidance (checked 2026-11-11) for organizing monorepos, naming the domain (glossary, typed models, LinkML, RDF and SHACL, graph databases, Palantir-style ontology for agent actions), choosing and migrating databases with agents working safely against them, and backend infrastructure and system design (reliability, queues and durable workflows, APIs, OpenTelemetry, deployment, IaC). Each file ends with the default stack for a solo dev or small team. In `plugins/deep-mode/skills/software-architecture/`. |
 | Self-authoring | deep-mode writes, validates, and proves its own prompts, skills, goals, and loops: project-local first, a deep-mode PR next, user-level only with your yes. `assets/loop/loop.py` runs a goal file headless in omp, Claude Code, or Codex until its check command passes, with an iteration cap, cost cap, stall stop, and a stop if the agent edits its own goal or the files its check runs, or the harness fails. Interactive sessions use each harness's native `/goal`. |
-| Efficient delegation | When a subagent pays for itself, which model tier and reasoning effort fits each task (search, mechanical edits, features, hard design, review, long runs, summaries) in omp, Claude Code, and Codex, how subscription limits are metered, and how to cut token use. In `plugins/deep-mode/skills/deep-mode/references/harnesses/delegation-efficiency.md`, checked 2026-11-11. |
+| Efficient delegation | When a subagent pays for itself, which model tier and reasoning effort fits each task (search, mechanical edits, features, hard design, review, long runs, summaries) in omp, Claude Code, and Codex, how subscription limits are metered, and how to cut token use. In `plugins/deep-mode/skills/agent-harnesses/references/delegation-efficiency.md`, checked 2026-11-11. |
 
 The agent works on its own: it makes product and design calls, commits, pushes, opens PRs, keeps a board, and merges. A task is done, and a PR merges, only when a panel of three skeptical verifier agents runs it and at least two agree, with evidence the agent has checked. It still asks you before deploys, deleting things it didn't create, rewriting shared history, messaging people outside the repo, spending money, using secrets only you have, or writing anywhere outside the project.
 
@@ -102,7 +102,7 @@ Optional: append `agents-snippet.md` to `~/.omp/agent/AGENTS.md`. It routes larg
 
 Once any `/deep-mode:` command runs in a session, the plugin's hook denies `Write`, `Edit`, and `NotebookEdit` outside the project for the rest of that session. Your other sessions are untouched. It needs Python 3.8 or newer (`python3` or `python`) on `PATH`: without it the guard cannot check paths, so it denies those three tools in a deep-mode session until Python is installed.
 
-The skills name omp tools (`task`, `todo`, `ask`). `plugins/deep-mode/skills/deep-mode/references/harnesses/README.md` maps them: `Agent`, `TaskCreate` or `TodoWrite`, and `AskUserQuestion`.
+The skills name omp tools (`task`, `todo`, `ask`). `plugins/deep-mode/skills/agent-harnesses/SKILL.md` maps them: `Agent`, `TaskCreate` or `TodoWrite`, and `AskUserQuestion`.
 
 ### Codex
 
@@ -125,12 +125,14 @@ Copy every folder in `plugins/deep-mode/skills/` to `~/.omp/agent/skills/` (or `
 
 ### Turn on the guard in omp
 
-omp has no sandbox, so add deep-mode's hook. It blocks `write`, `edit`, and `ast_edit` outside the project in every session:
+omp has no sandbox, so add deep-mode's hook. It blocks `write`, `edit`, and `ast_edit` outside the project in every session. With the plugin installed, copy the link file once; it loads the guard from the installed plugin, so upgrades never leave a stale copy:
 
 ```bash
 mkdir -p ~/.omp/agent/hooks/pre
-cp plugins/deep-mode/skills/deep-mode/assets/contain/omp-contain.ts ~/.omp/agent/hooks/pre/
+cp plugins/deep-mode/skills/deep-mode/assets/contain/omp-contain-link.ts ~/.omp/agent/hooks/pre/
 ```
+
+With a manual install, copy `omp-contain.ts` itself to the same folder instead.
 
 For one run only, pass `--hook <path to omp-contain.ts>` instead. To let the agent write to a folder outside the project you named, list it in the project's `.deep-mode.json` as `{"extraWriteRoots": ["~/some/folder"]}`. The guards don't parse shell commands, so the skill's rule still binds `bash`.
 
@@ -212,7 +214,13 @@ Contributor, after installing the plugin:
 
 ## Trending catalog
 
-`plugins/deep-mode/skills/deep-mode/scripts/trending.py` keeps `references/trending/` current with no scheduler: `find <terms>` runs `update` first when the catalog is over a day old (about a minute; uses `GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`), and `find --no-refresh` skips that. `catalog.json` keeps every repo seen in the last 120 days with first-seen date and star growth; `README.md` is the digest agents read. Commit a refreshed catalog when you want the repo copy current for other installs. To add a source, write a `source_*` function in `trending.py` and list it in `SOURCES`; to watch another GitHub topic, add it to `WATCH_TOPICS`.
+`plugins/deep-mode/skills/deep-mode/scripts/trending.py` keeps the catalog current with no scheduler. The published copy lives in this repo's `trending/`, outside the plugin, so a daily refresh never changes what installs ship.
+
+`find <terms>` keeps a copy in the user's project at `.scratch/trending/`: a missing or day-old copy is replaced by the published one, or rebuilt with `update` when that is old too (about a minute; uses `GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`). `find --no-refresh` skips that.
+
+`catalog.json` keeps every repo seen in the last 120 days with first-seen date and star growth; `README.md` is the digest agents read. Refresh the published copy with `python plugins/deep-mode/skills/deep-mode/scripts/trending.py update --out trending` and commit it.
+
+To add a source, write a `source_*` function in `trending.py` and list it in `SOURCES`; to watch another GitHub topic, add it to `WATCH_TOPICS`.
 
 ## Make it your own
 

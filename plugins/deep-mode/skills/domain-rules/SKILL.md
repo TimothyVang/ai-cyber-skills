@@ -1,3 +1,10 @@
+---
+name: domain-rules
+description: "Engineering rules by domain: AI agents and LLMs, AWS networking, backend system design, language ecosystems and their traps, DevOps and computer-science fundamentals, and engineering practice (debugging, legacy code, incidents, estimates). Use when designing or reviewing work in one of those areas."
+metadata:
+  as-of: "2026-11-11"
+---
+
 # Engineering domain rules
 
 Rules distilled from 161 public engineering explainer videos published in 2026, current as of 2026-11-11. Rules are paraphrased; transcripts are not shipped. Each rule carries a source key from the table below. Upload dates are approximate and may be off by a few days.

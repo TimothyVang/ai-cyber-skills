@@ -1,6 +1,6 @@
 # Self-authoring research: prompts, skills, goals, loops (omp, Claude Code, Codex)
 
-Read when writing a prompt, command, skill, goal, or loop from inside a session, or choosing between native goal and loop modes and `assets/loop/loop.py`. The steps are in `references/playbooks/self-authoring.md`; this file holds the cited per-harness facts.
+Read when writing a prompt, command, skill, goal, or loop from inside a session, or choosing between native goal and loop modes and `skill://deep-mode/assets/loop/loop.py`. The steps are in `skill://deep-mode/references/playbooks/self-authoring.md`; this file holds the cited per-harness facts.
 
 Date: 2026-11-11. Versions probed: omp 18.18.9, claude 2.1.322, codex 0.163.0.
 Exit codes are the reliable loop gate in headless runs: omp `--max-cost` exits 3; nonzero on terminal turn failures (omp://cli-reference.md).

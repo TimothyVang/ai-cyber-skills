@@ -15,7 +15,7 @@ hooks:
 Paths below are relative to this skill (`skill://deep-mode/...`).
 
 **Any harness.** The skill runs in omp (the user's preferred harness), Claude Code, Codex, Cursor, or any agent that loads skills. It names omp's tools; use your harness's equivalent.
-`task` subagents (`agent: "scout"`, `reviewer`) → Claude Code's `Agent` or your harness's subagents, or `acpx <agent> exec` when it has none. `todo` → `TodoWrite` or a plan list. `ask` → `AskUserQuestion` or one question in the reply. `skill://deep-mode/<path>` → this skill's folder. `.omp/skills/` → your harness's skills folder (`.claude/skills/` in Claude Code). `references/harnesses/README.md` maps every tool and path to Claude Code and Codex with cited, dated facts.
+`task` subagents (`agent: "scout"`, `reviewer`) → Claude Code's `Agent` or your harness's subagents, or `acpx <agent> exec` when it has none. `todo` → `TodoWrite` or a plan list. `ask` → `AskUserQuestion` or one question in the reply. `skill://deep-mode/<path>` → this skill's folder. `.omp/skills/` → your harness's skills folder (`.claude/skills/` in Claude Code). `skill://agent-harnesses` maps every tool and path to Claude Code and Codex with cited, dated facts.
 
 The thesis: if you want to go fast, go deep first. Verification is the limiting step. Write less code, prove more of it.
 
@@ -62,7 +62,7 @@ Every task has one project root, and every file you create or change lives insid
 - **deep-mode's own outside writes are the only others.** Transient files a tool or a deep-mode helper script creates and deletes within one run: `assets/pr-agent/pr_agent_local.py` and `assets/security-audit/audit-pr.sh` run the model from an empty outside folder so the repo's own agent config can't load. And the GitHub App bot the user installed, which keeps its config in `~/.config/deep-mode/` and its clones in `~/.cache/deep-mode/`.
 - **Durable notes stay in the repo.** Resume notes, trails, and anything a later session needs go under `.scratch/`, or `$(git rev-parse --git-common-dir)/omp-resume/` where the harness can write `.git` (Codex's sandbox cannot), never only in a session store.
 - **Delegates inherit the fence.** Every brief names the absolute root and says: write only inside it, scratch in `.scratch/`, worktrees in `.worktrees/`.
-- **Guards back the rule; none covers shell commands.** Claude Code: the plugin's hook and this skill's frontmatter hook deny `Write`, `Edit`, and `NotebookEdit` outside the root. omp: `assets/contain/omp-contain.ts`, once installed. Codex: its `workspace-write` sandbox. The rule still binds `bash`. A denial means move the file into the root; never route around the guard. Setup per harness: `references/harnesses/README.md`.
+- **Guards back the rule; none covers shell commands.** Claude Code: the plugin's hook and this skill's frontmatter hook deny `Write`, `Edit`, and `NotebookEdit` outside the root. omp: `assets/contain/omp-contain.ts`, once installed. Codex: its `workspace-write` sandbox. The rule still binds `bash`. A denial means move the file into the root; never route around the guard. Setup per harness: `skill://agent-harnesses`.
 - **Before reporting done,** `git status --porcelain` lists only intended changes, `.scratch/tmp/` is emptied, and evidence the report links sits inside the root: `.scratch/evidence/`, or the folder the repo's verify skill names.
 
 ## Non-negotiables
@@ -73,8 +73,8 @@ For size **S**, only the one-line restate, proving it on the real artifact, and 
 - **Name your principles, in plain words.** For size M and L, add one short "Why I chose this" line naming each principle that changed a decision and the choice it changed, phrased so a non-expert follows ("I fixed the comparison where stock is checked, not the caller, because that's where it goes wrong"). Cite only principles whose file you read this session in `references/principles/`. Skip it for size S.
 - **Prove it on the real artifact.** Before calling anything done, run the real app, CLI, or service path and capture evidence. If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it. If not and the task changes user-visible behavior: when the user pre-authorized it (the `/deep` command does), run `skill://create-verification-skill` first; otherwise offer `/skill:create-verification-skill` once and prove the change by hand. Tests passing and "it compiles" are not proof.
 - **Decide; don't ask.** About to `ask` "which approach" or "what should this do"? Settle it yourself, by kind. A fact → look it up. An observable fork (behavior, timing, layout, output, perf, whether an eval separates) → run the Prototype playbook and let the result decide. A product, design, or preference call → make it (Autonomy). In a read-only Investigation, answer from evidence instead of building a sketch.
-- **Secrets, logins, tokens, or auth in play** (API keys, `.env`, passwords, usernames, MFA, OAuth or MCP auth, CI credentials, a suspected leak) → read `references/credentials/README.md` first, then the file it routes to. Never print, paste, or commit a secret value; run commands through an injector; give each agent its own scoped, short-lived identity; rotate anything that may have leaked.
-- **Name the data shape before any code**, and choose its organizing structure per `references/principles/model-the-domain.md`. Name it with the project's glossary terms; a new domain, data model, database, repo layout, or service boundary also reads `references/architecture/README.md`.
+- **Secrets, logins, tokens, or auth in play** (API keys, `.env`, passwords, usernames, MFA, OAuth or MCP auth, CI credentials, a suspected leak) → read `skill://secrets-and-auth` first, then the file it routes to. Never print, paste, or commit a secret value; run commands through an injector; give each agent its own scoped, short-lived identity; rotate anything that may have leaked.
+- **Name the data shape before any code**, and choose its organizing structure per `references/principles/model-the-domain.md`. Name it with the project's glossary terms; a new domain, data model, database, repo layout, or service boundary also reads `skill://software-architecture`.
 - **Long, autonomous, or step-away work** → keep a decision trail with **show-me-your-work**.
 - **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`).
   - Before opening one, self-review your branch in local mode and fix, dismiss, or escalate each finding. Maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof.
@@ -105,7 +105,7 @@ For size **S**, only the one-line restate, proving it on the real artifact, and 
 - Every brief restates the user's goal, names the absolute project root, the exact files, and the acceptance check, says to write only inside the root (scratch in `.scratch/`), and tells code-writing delegates which `skill://deep-mode/references/principles/<name>.md` files apply. omp subagents do not receive AGENTS.md, so put anything they must follow in the brief.
 - Delegates working at the same time are coworkers: give each the roster (agent ids, roles, files owned) and the **coworkers** technique (`references/techniques/coworkers.md`), so they ask, hand off, and push back on each other directly instead of through you. Panel verifiers are the exception: they vote before they talk.
 - **Delegate only when it pays.** A child re-pays the system prompt and a cold cache, and multi-agent work costs about 15x a chat. Delegate wide searches, log or transcript digests, fresh-eyes review, and truly independent slices. Keep one-file tasks, tightly coupled work, and the hard reasoning in the main session. Message a finished child instead of spawning a new one.
-- **Match model and effort to the task.** Search and mechanical edits take the small tier; routine features the mid tier at medium effort; hard design, debugging, and review the strongest model at high effort. A judge or second opinion uses a different model family when one is available. Cap unattended runs (omp `--max-cost`, Claude Code `--max-budget-usd`). Per-harness names and settings: `references/harnesses/delegation-efficiency.md`.
+- **Match model and effort to the task.** Search and mechanical edits take the small tier; routine features the mid tier at medium effort; hard design, debugging, and review the strongest model at high effort. A judge or second opinion uses a different model family when one is available. Cap unattended runs (omp `--max-cost`, Claude Code `--max-budget-usd`). Per-harness names and settings: `skill://agent-harnesses/references/delegation-efficiency.md`.
 - You own every delegate's work. Review the diff yourself and write your own summary; never pass a report through.
 - Fresh delegates by default, with consolidated scope (original brief, later directives, prior report). Reuse a running delegate only when the work needs state that lives in it.
 
@@ -194,7 +194,7 @@ Pick the row that matches what the user has or wants.
 
 These apply when a rule would change the work; skip them for size **S**.
 
-- **Before building anything new** (a feature, tool, integration, or project) → **prior-art** (`references/techniques/prior-art.md`): start from the trending catalog (`references/trending/README.md`, refreshed by `scripts/trending.py find` when over a day old) so newer projects can beat the idea you already know, then search GitHub, the package registries, and official docs for code to depend on, copy, fork, or clone, and check its license first.
+- **Before building anything new** (a feature, tool, integration, or project) → **prior-art** (`references/techniques/prior-art.md`): start from the trending catalog (`python scripts/trending.py find <terms>`, which keeps a fresh copy in `.scratch/trending/`) so newer projects can beat the idea you already know, then search GitHub, the package registries, and official docs for code to depend on, copy, fork, or clone, and check its license first.
 - **A new or changed module or public interface with two or more viable shapes** → the **architect** technique before implementing. A small edit that merely crosses a function boundary doesn't need it.
 - **Nontrivial change, architecture decision, or "are we sure?"** → the **how** technique. Motivation questions → **why**.
 - **Parallel fan-out** → **swarm** for coverage matrices, races, fuzzing a change, partitions. **arena** for design or code bakeoffs with base selection and grafting.
@@ -268,13 +268,13 @@ Read the entry file before designing, building, or reviewing in that area, then 
 
 | The task touches | Read first |
 |---|---|
-| UI code of any kind: components, motion, color, accessibility, chat or agent UI | `references/frontend/README.md` |
+| UI code of any kind: components, motion, color, accessibility, chat or agent UI | `skill://frontend-ui` |
 | Stack choice, an agent-driven UI design workflow, recording UI proof without a verify skill | `skill://deep-stack` |
-| Using, configuring, or scripting omp, Claude Code, or Codex; MCP, ACP, skills, plugins, hooks; which model and effort to delegate to | `references/harnesses/README.md` |
-| Secrets, `.env`, passwords, logins, MFA, OAuth, agent authentication, a suspected leak | `references/credentials/README.md` |
-| Repo layout, domain vocabulary and data model, database, backend infrastructure | `references/architecture/README.md` |
-| Agents and LLMs, AWS networking, backend code, a language's traps, DevOps, debugging practice | `references/domain-rules/README.md` |
-| Cloud accounts, IAM, policy, pipelines, IaC, local cloud emulators | `references/cloud-devsecops/README.md` |
+| Using, configuring, or scripting omp, Claude Code, or Codex; MCP, ACP, skills, plugins, hooks; which model and effort to delegate to | `skill://agent-harnesses` |
+| Secrets, `.env`, passwords, logins, MFA, OAuth, agent authentication, a suspected leak | `skill://secrets-and-auth` |
+| Repo layout, domain vocabulary and data model, database, backend infrastructure | `skill://software-architecture` |
+| Agents and LLMs, AWS networking, backend code, a language's traps, DevOps, debugging practice | `skill://domain-rules` |
+| Cloud accounts, IAM, policy, pipelines, IaC, local cloud emulators | `skill://cloud-devsecops` |
 | Picking browser automation, sandboxes, harnesses, or orchestrators | `references/README.md` |
 
 ## Habits worth keeping
