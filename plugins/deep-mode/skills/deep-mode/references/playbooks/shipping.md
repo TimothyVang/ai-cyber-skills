@@ -27,7 +27,7 @@ Use when: a PR or stack is ready to land: the user asks to merge, land, or ship,
 - No panel pass at the current head → that PR and everything above it waits.
 - The latest pr-review round isn't on the head being landed, or a P0/P1 is open, or any P2 stands neither fixed nor dismissed with a reason → that PR waits.
 - Never give an approval. Never bypass a branch protection the forge enforces, except a required review on the user's own PR under the **pr-conversation** technique's Authorization (`references/techniques/pr-conversation.md`).
-- Ceiling reached → stop.
+- Ceiling reached → stop landing; panel the next PR. Each unlanded PR stays a ledger item.
 
 ## Evidence
 
