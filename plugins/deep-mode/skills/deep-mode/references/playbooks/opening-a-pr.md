@@ -6,6 +6,15 @@ Use when: ending any playbook that lands code. Opening the PR is part of the wor
 
 A size S change takes a shorter lane to merge. The diff decides the size, not the author's opinion.
 
+A **local S fix** never takes this lane. It is an S change for a repo with no remote, or one the user said they will review.
+"Open a PR, I'll review it" is not one: a PR means a push, so it takes this lane.
+Restate it in one line, fix it, add a test that fails without the fix when the change has behavior, and prove it once on the real artifact.
+It lands on no branch. Leave it uncommitted, or commit it on a fresh non-default branch, which still lands nowhere. Never commit it to the default branch, push it, or merge it, so it needs no panel.
+It reads no other reference file, spawns no subagent, keeps no decision log, and creates no verify skill.
+Done when the test fails on the old code and passes on the fix (or the change has no behavior to test), and the reply shows one real run's command and output.
+
+Committing an S change to the default branch, pushing it, or merging it takes the lane below and its light panel.
+
 Rules:
 
 - A change is size S when it has at most 30 changed lines (added plus deleted) in at most 2 files.
