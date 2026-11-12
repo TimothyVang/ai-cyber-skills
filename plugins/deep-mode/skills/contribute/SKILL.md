@@ -98,7 +98,7 @@ Released by @<login>: <one-line reason>
 
 7. **Build it the deep-mode way.**
    - Branch `<issue#>-<slug>` from the latest main: `git fetch origin && git switch -c N-<slug> origin/main` (from `upstream/main` on a fork; from the parent PR branch when stacking).
-   - Route to the matching deep-mode playbook and follow it step by step: new behavior → `skill://deep-mode/references/playbooks/feature.md`; broken behavior → `skill://deep-mode/references/playbooks/bug-fix.md`; same behavior, better structure → `skill://deep-mode/references/playbooks/refactoring.md`. Say which one and why.
+   - Route to the matching deep-mode playbook and follow it step by step: new behavior → `skill://deep-mode/references/playbooks/feature.md`; broken behavior → `skill://deep-mode/references/playbooks/bug-fix.md`; same behavior, better structure → `skill://deep-mode/references/playbooks/refactoring.md`. Say which one and why. Stop before that playbook's commit, PR, and landing steps: this is someone else's project, so shipping waits for the end-of-work yes below, and the maintainer lands it.
    - Follow the repo's own rules from step 2 over generic habits (formatter, test command, commit style).
    - Prove it on the real app with the verify skill or by hand, and keep the evidence (commands and output, screenshots, video).
    - Need a file outside the plan → stop, tell the human, and post an updated claim comment with the new `Files` (on their yes) before you touch it.

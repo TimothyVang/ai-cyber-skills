@@ -5,7 +5,8 @@ Modes (first argument):
   (none)               PreToolUse: always enforce. Used by the deep-mode skill's frontmatter hook.
   if-active <data-dir> PreToolUse: enforce only in sessions marked active. Used by the plugin's hooks.json.
   activate <data-dir>  UserPromptSubmit: mark the session active when the prompt runs a /deep-mode: command.
-  end <data-dir>       SessionEnd: drop the session's mark.
+                       The mark outlives the process, so a resumed session (same session id) stays guarded;
+                       marks older than 30 days are pruned here.
 
 The allowed roots are the worktree holding the session's cwd and its main checkout (they differ in a linked
 worktree, e.g. one under <root>/.worktrees/ or an Orca workspace), or the cwd itself outside git. Also allowed:
@@ -18,6 +19,9 @@ import os
 import re
 import subprocess
 import sys
+import time
+
+MARK_MAX_AGE_SECONDS = 30 * 24 * 3600
 
 
 def real(path):
@@ -79,12 +83,13 @@ def main():
     mark = session_mark(sys.argv[2] if len(sys.argv) > 2 else "", event)
     if mode == "activate":
         if mark and re.match(r"\s*/deep-mode:", str(event.get("prompt") or "")):
-            os.makedirs(os.path.dirname(mark), exist_ok=True)
+            folder = os.path.dirname(mark)
+            os.makedirs(folder, exist_ok=True)
+            for name in os.listdir(folder):
+                stale = os.path.join(folder, name)
+                if time.time() - os.path.getmtime(stale) > MARK_MAX_AGE_SECONDS:
+                    os.remove(stale)
             open(mark, "w").close()
-        return 0
-    if mode == "end":
-        if mark and os.path.exists(mark):
-            os.remove(mark)
         return 0
     if mode == "if-active" and not (mark and os.path.exists(mark)):
         return 0

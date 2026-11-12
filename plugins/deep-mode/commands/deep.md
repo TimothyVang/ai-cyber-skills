@@ -3,7 +3,7 @@ description: "One command for everything: fix, build, review a PR, contribute to
 argument-hint: "<anything: a task, a PR number, 'what can I work on', 'start a new app that ...', 'drive the board', 'grill me on ...'>"
 ---
 
-Read `skill://deep-mode` and follow its **Route** section first: look around, pick the route, size the work, then do it. Don't ask me which skill, playbook, or approach to use, and answer anything you can observe by running it. In Claude Code, `skill://<name>/<path>` means `${CLAUDE_PLUGIN_ROOT}/skills/<name>/<path>`.
+Read `skill://deep-mode` and follow its **Route** section first: look around, pick the route, size the work, then do it. Don't ask me which skill, playbook, or approach to use, and answer anything you can observe by running it. In Claude Code, `skill://<name>/<path>` means `<path>` in that skill's folder: `${CLAUDE_PLUGIN_ROOT}/skills/<name>/` for a plugin install, `~/.claude/skills/<name>/` for a manual one.
 
 Keep every write inside the project root, per deep-mode's **Contain the work** section: scratch and temp files in `.scratch/`, worktrees in `.worktrees/`, never system temp or folders outside the repo. No repo yet → create a named one first.
 

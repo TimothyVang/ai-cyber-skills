@@ -1810,7 +1810,7 @@ def main() -> None:
     sub = parser.add_subparsers(dest="command", required=True)
     once = sub.add_parser("once", help="run one polling cycle")
     once.add_argument("--repo", help="owner/repo (default: every repo the app is installed on)")
-    once.add_argument("--item", help="pr:N or issue:N; run it even without a new trigger")
+    once.add_argument("--item", help="pr:N or issue:N in --repo; run it even without a new trigger")
     once.add_argument("--backlog", action="store_true", help="also handle events from before the first run")
     once.add_argument("--dry-run", action="store_true", help="post, push and merge nothing; save no state")
     once.set_defaults(func=cmd_once)
@@ -1824,6 +1824,9 @@ def main() -> None:
     args = parser.parse_args()
     if getattr(args, "item", None) and not re.fullmatch(r"(pr|issue):\d+", args.item):
         parser.error("--item must be pr:N or issue:N")
+    if getattr(args, "item", None) and not args.repo:
+        # A bare number names a different PR or issue in each repo; forcing it everywhere could land the wrong one.
+        parser.error("--item needs --repo owner/name")
     args.func(args)
 
 

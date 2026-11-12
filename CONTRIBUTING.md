@@ -16,15 +16,19 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 - Every `references/...md` link resolves to a real file. No `#anchor` links (omp can't read them).
 - No line longer than 760 bytes (omp's `read` cuts long lines).
 - Marketplace and plugin manifests, and `plugins/*/hooks/hooks.json`, are valid JSON and point at real folders.
+- No upstream project or author names outside `LICENSE*` and `NOTICE*` files. The list is `BANNED` in `scripts/check.py`; attribution lives in `NOTICE.md`.
+- The README's playbook, principle, and technique counts match the folders, and `docs/llms-full.txt` matches the files it embeds (`python scripts/check.py --fix` rewrites it).
+- In deep-mode's `SKILL.md`, the rules above `## Routes` fit in 20,000 bytes (about 5,000 tokens), which is what Claude Code keeps of a skill after it compacts a long session. Put lookup tables below that heading and long detail in `references/`.
+- Every Python file parses, and every `test_*.py` folder passes (`assets/contain`, `assets/loop`, `assets/github-app`). The tests need `git` and `bash`; the omp hook cases also need `bun` and are skipped without it. The check takes about half a minute.
 
 ## Testing a behavior change
 
 A wording change can change what agents do. Before a PR that changes a playbook or technique, run the change on a throwaway repo with a small planted bug:
 
 ```bash
-omp -p "/deep <task that exercises your change>"
+omp -p --plugin-dir plugins/deep-mode "/deep-mode:deep <task that exercises your change>"
 claude -p "/deep-mode:deep <task>" --plugin-dir plugins/deep-mode
-codex exec "\$deep-mode:deep-mode <task>"   # after `codex plugin marketplace add <this checkout>`
+codex exec "\$deep-mode:deep-mode <task>"   # after `codex plugin marketplace add <this checkout>` and `codex plugin add deep-mode@deep-mode`
 ```
 
 Report what the agent did before and after in the PR. For bigger changes, follow the Eval playbook (`plugins/deep-mode/skills/deep-mode/references/playbooks/eval.md`).

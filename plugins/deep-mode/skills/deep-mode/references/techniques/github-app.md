@@ -37,7 +37,7 @@ The app asks for contents, pull requests and issues (write), and checks, statuse
 
 ```bash
 py -3 assets/github-app/bot.py once --repo <owner/repo> --dry-run   # preview one cycle, post nothing
-py -3 assets/github-app/bot.py once --item pr:<n>                   # one item now
+py -3 assets/github-app/bot.py once --repo <owner>/<name> --item pr:<n>   # one item now; --item needs --repo
 py -3 assets/github-app/bot.py watch                                # poll every interval
 py -3 assets/github-app/bot.py install-autostart                    # start watch on its own
 py -3 assets/github-app/bot.py status

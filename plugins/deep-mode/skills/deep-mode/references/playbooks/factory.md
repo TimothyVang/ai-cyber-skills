@@ -6,7 +6,7 @@ The factory is the `factory` CLI (source: `github.com/TimothyVang/softwarefactor
 
 ## Steps
 
-1. Install check: `factory --help` runs. Missing → `pip install git+https://github.com/TimothyVang/softwarefactory`; if that repo is unreachable (not yet published), find the user's local checkout (a folder whose `pyproject.toml` names `software-factory`) and `pip install -e <path>`. Done when `--help` prints.
+1. Install check: `factory --help` runs. Missing → install it into a project virtualenv (`python -m venv .venv`, then that venv's `pip install git+https://github.com/TimothyVang/softwarefactory`); a global install is a hard stop (SKILL.md Contain the work); if that repo is unreachable (not yet published), find the user's local checkout (a folder whose `pyproject.toml` names `software-factory`) and `pip install -e <path>`. Done when `--help` prints.
 2. Set it up. With no `factory.json`:
    - Find the repo's real test, lint, typecheck and build commands (CI config, package scripts, AGENTS.md) and the command that runs a test folder.
    - `factory init --checks "<commands>" --holdout-command "<runs factory_holdout/>"`. It refuses when the checks fail on the base: fix or report that, never weaken the checks to pass.

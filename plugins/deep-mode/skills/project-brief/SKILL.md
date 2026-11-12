@@ -10,7 +10,7 @@ Run this once per project as the maintainer, then again whenever the project dri
 
 Paths below are relative to this skill (`skill://project-brief/...`). In omp bash, `skill://project-brief` resolves to this skill's directory. In Claude Code, use the "Base directory for this skill" path shown when the skill loads. Claude Code tool names: `ask` → `AskUserQuestion`, `task` → `Agent`, `todo` → `TodoWrite`.
 
-Deep-mode rules apply throughout (`skill://deep-mode`): restate first, answer observable questions by running them, prove claims with evidence, and pause for every shared-state action.
+Deep-mode rules apply throughout (`skill://deep-mode`): restate first, answer observable questions by running them, prove claims with evidence, and follow its Autonomy section for shared-state actions: in the user's own repo it decides and acts, so the asks below apply only where the user asked to be consulted or the repo is someone else's.
 
 ## Assets
 

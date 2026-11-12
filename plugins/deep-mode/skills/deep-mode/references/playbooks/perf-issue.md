@@ -12,11 +12,11 @@ Use when: something is slow or heavy and needs a one-off fix tied to a measureme
    5. Do it when they're not looking.
    6. Do it concurrently.
    7. Do it cheaper.
-3. Plan the fix from the trace. Crosses a function boundary → the **architect** technique (`references/techniques/architect.md`) first. Size L → delegate implementation to a default `task` agent (exclusive file ownership, reasoning level per job) and review the diff. Size M → make the change yourself, then run the **pr-review** self-review (`references/techniques/pr-review.md`, local mode).
+3. Plan the fix from the trace. Changes a module or public interface with two or more viable shapes → the **architect** technique (`references/techniques/architect.md`) first. Size L → delegate implementation to a default `task` agent (exclusive file ownership, reasoning level per job) and review the diff. Size M → make the change yourself, then run the **pr-review** self-review (`references/techniques/pr-review.md`, local mode).
 4. Verify each attempt before trying the next (`references/principles/sequence-verifiable-units.md`). Capture a post-fix trace.
 5. Parse and compare artifacts (JSON → sqlite, diff).
 6. Cite the measurement in the hand-off (and the commit and PR description).
-7. Commit, run **Opening a PR** (`references/playbooks/opening-a-pr.md`), and land it through `references/playbooks/shipping.md` on a panel pass.
+7. Commit, run **Opening a PR** (`references/playbooks/opening-a-pr.md`), which lands a single PR through **pr-conversation** on a panel pass; a stack lands through `references/playbooks/shipping.md`.
 
 ## Gates
 - Every fix tied to a measurement; no perf ceiling claimed without running it.

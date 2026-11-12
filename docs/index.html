@@ -208,7 +208,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <p>In omp:</p>
 <pre><code>omp plugin marketplace add TimothyVang/deep-mode
 omp plugin install deep-mode@deep-mode</code></pre>
-<p>In Claude Code, run <code>/plugin marketplace add TimothyVang/deep-mode</code> and <code>/plugin install deep-mode@deep-mode</code>. Codex, Cursor and other harnesses that load <code>SKILL.md</code> skills take the folders in <code>plugins/deep-mode/skills/</code>. Then, in any repo, run <code>/deep-mode:deep &lt;your task&gt;</code>.</p>
+<p>In Claude Code, run <code>/plugin marketplace add TimothyVang/deep-mode</code> and <code>/plugin install deep-mode@deep-mode</code>. In Codex, run <code>codex plugin marketplace add TimothyVang/deep-mode</code> and <code>codex plugin add deep-mode@deep-mode</code>. Cursor and other harnesses that load <code>SKILL.md</code> skills take the folders in <code>plugins/deep-mode/skills/</code>. Then, in any repo, run <code>/deep-mode:deep &lt;your task&gt;</code> in omp or Claude Code, or <code>$deep-mode:deep-mode &lt;your task&gt;</code> in Codex, which loads the skills but not the slash commands.</p>
 <h3>The bots</h3>
 <p>You need git, <code>gh</code> logged in, openssl (Git for Windows ships one), Node and npm, Python 3.10 or newer, and at least one ACP agent CLI on its subscription login. Then run three commands:</p>
 <pre><code>git clone https://github.com/TimothyVang/deep-mode
