@@ -1,8 +1,10 @@
-"""Tests for bot.py's pure decisions: JSON parsing, triggers, PR ownership, the merge gate.
+"""Tests for bot.py's decisions (JSON parsing, triggers, PR ownership, the merge gate) and its worktree handling.
 
     python test_bot.py
 """
 import json
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -658,6 +660,139 @@ class SealedIssueTest(unittest.TestCase):
         self.assertEqual(status, "not-discussed")
         c.it.ask.assert_not_called()
         c.it.ask_sealed.assert_not_called()
+
+
+def sh(cwd, *args) -> str:
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+
+@unittest.skipIf(shutil.which("git") is None, "needs git")
+class WorktreeBranchTest(unittest.TestCase):
+    """worktree_at with -B on a branch another worktree holds (issue #27): bot-owned holders are detached."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.work = self.tmp / "cache"
+        self.clone = self.work / "repos" / "r"
+        self.clone.mkdir(parents=True)
+        sh(self.clone, "init", "-q")
+        sh(self.clone, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "c0")
+        for patch in (mock.patch.object(bot, "WORK", self.work), mock.patch.object(bot, "log")):
+            patch.start()
+            self.addCleanup(patch.stop)
+        self.trees = self.work / "worktrees" / "r"
+
+    def holders(self):
+        return [bot.norm_path(p) for p in bot.worktree_holders(self.clone, "b")]
+
+    def held_impl(self, dirty=True):
+        impl = bot.worktree_at(self.clone, self.trees / "issue5-impl", "HEAD", branch="b")
+        if dirty:
+            (impl / "wip.txt").write_text("uncommitted", encoding="utf-8")
+        return impl
+
+    def assert_detached_keeping_work(self, tree):
+        self.assertEqual(sh(tree, "rev-parse", "--abbrev-ref", "HEAD"), "HEAD")
+        self.assertEqual((tree / "wip.txt").read_text(encoding="utf-8"), "uncommitted")
+
+    def test_new_destination_takes_branch_from_bot_tree(self):
+        impl = self.held_impl()
+        author = bot.worktree_at(self.clone, self.trees / "pr6-author", "HEAD", branch="b")
+        self.assertEqual(self.holders(), [bot.norm_path(author)])
+        self.assert_detached_keeping_work(impl)
+
+    def test_existing_destination_takes_branch_from_bot_tree(self):
+        author = bot.worktree_at(self.clone, self.trees / "pr6-author", "HEAD")  # exists, so checkout -B runs
+        impl = self.held_impl()
+        bot.worktree_at(self.clone, author, "HEAD", branch="b")
+        self.assertEqual(self.holders(), [bot.norm_path(author)])
+        self.assert_detached_keeping_work(impl)
+
+    def test_holder_outside_bot_worktrees_is_left_alone(self):
+        for outside in (self.tmp / "user-tree", self.work / "worktrees2" / "r" / "x"):
+            with self.subTest(outside.name):
+                sh(self.clone, "worktree", "add", "-q", "-B", "b", str(outside), "HEAD")
+                with self.assertRaises(RuntimeError) as err:
+                    bot.worktree_at(self.clone, self.trees / "pr6-author", "HEAD", branch="b")
+                self.assertIn(str(outside), str(err.exception))
+                self.assertEqual(self.holders(), [bot.norm_path(outside)])
+                sh(self.clone, "worktree", "remove", "--force", str(outside))
+
+    def test_failed_detach_raises_naming_holder(self):
+        impl = self.held_impl(dirty=False)
+        real = bot.run
+
+        def run(cmd, *a, **kw):
+            if list(cmd[1:3]) == ["checkout", "--detach"]:
+                return subprocess.CompletedProcess(cmd, 1, "", "locked")
+            return real(cmd, *a, **kw)
+
+        with mock.patch.object(bot, "run", run), self.assertRaises(RuntimeError) as err:
+            bot.worktree_at(self.clone, self.trees / "pr6-author", "HEAD", branch="b")
+        self.assertIn(str(impl), str(err.exception))
+        self.assertIn("locked", str(err.exception))
+        self.assertEqual(self.holders(), [bot.norm_path(impl)])
+
+
+class SessionCloseTest(unittest.TestCase):
+    def test_close_uses_each_sessions_agent_model_and_cwd(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bot, "WORK", Path(tmp)), \
+                mock.patch.object(bot, "log") as log, mock.patch.object(bot.shutil, "which", return_value="acpx"), \
+                mock.patch.object(bot, "known_agents", return_value={"a", "c"}), \
+                mock.patch.object(bot, "run", return_value=subprocess.CompletedProcess([], 0, "ok", "")) as run:
+            it = bot.Item(mock.Mock(), "o/r", "issue", 5)
+            it.ask({"agent": "a", "model": "m"}, "p", Path("t1"), "--approve-all", "s1")
+            it.ask({"agent": "c"}, "p", Path("t2"), "--approve-reads", "s2")
+            it.ask({"agent": "a"}, "p", Path("t3"), "--approve-reads", "kept")
+            run.reset_mock()
+            run.side_effect = [subprocess.CompletedProcess([], 0, "", ""), RuntimeError("boom")]
+            it.close_sessions(["s1", "s2"])  # a failed close is logged, never raised
+        self.assertEqual([[str(c) for c in call.args[0]] for call in run.call_args_list],
+                         [["acpx", "--cwd", "t1", "--model", "m", "a", "sessions", "close", "s1"],
+                          ["acpx", "--cwd", "t2", "c", "sessions", "close", "s2"]])
+        self.assertIn("boom", log.call_args.args[0])
+
+
+class ImplementReleaseTest(unittest.TestCase):
+    SESSIONS = ("t-build-x-author", "t-build-x-reviewer", "t-build-x-implement")
+
+    def implement(self, commits="1", close=None):
+        c = object.__new__(bot.IssueConversation)
+        c.repo, c.n, c.default, c.item = "o/r", 5, "main", {}
+        c.clone, c.tree, c.author, c.reviewer = Path("clone"), Path("w/issue5"), {"agent": "a"}, {"agent": "a"}
+        c.issue = {"title": "t", "body": "b", "author": {"login": OWNER}}
+        c.bot, c.it = mock.Mock(), mock.Mock()
+        c.it.ask.return_value = "done"
+        if close:
+            c.it.close_sessions.side_effect = close
+        git_out = {"rev-parse": "abc", "rev-list": commits}
+        with mock.patch.object(bot, "gh_json", return_value=[]), mock.patch.object(bot, "log"), \
+                mock.patch.object(bot, "worktree_at", return_value=Path("w/issue5-impl")), \
+                mock.patch.object(bot, "gh", return_value="https://github.com/o/r/pull/6"), \
+                mock.patch.object(bot, "git", side_effect=lambda cwd, *a, **kw: git_out.get(a[0], "")), \
+                mock.patch.object(bot, "run", side_effect=lambda cmd, **kw: subprocess.CompletedProcess(
+                    cmd, 1 if "--verify" in cmd else 0, "", "")) as run:
+            status = c.implement("plan", self.SESSIONS)
+        detaches = [call.kwargs.get("cwd") for call in run.call_args_list if call.args[0][1:3] == ["checkout", "--detach"]]
+        return status, c.it.close_sessions, detaches
+
+    def test_opened_pr_closes_build_sessions_then_detaches_impl_tree(self):
+        status, close, detaches = self.implement()
+        self.assertEqual(status, "implemented")
+        close.assert_called_once_with(self.SESSIONS)
+        self.assertEqual(detaches, [Path("w/issue5-impl")])
+
+    def test_blocked_build_keeps_sessions_and_tree(self):
+        status, close, detaches = self.implement(commits="0")
+        self.assertEqual(status, "blocked")
+        close.assert_not_called()
+        self.assertEqual(detaches, [])
+
+    def test_failed_close_still_implemented_and_detaches(self):
+        status, _, detaches = self.implement(close=RuntimeError("boom"))
+        self.assertEqual((status, detaches), ("implemented", [Path("w/issue5-impl")]))
 
 
 class TextTest(unittest.TestCase):
