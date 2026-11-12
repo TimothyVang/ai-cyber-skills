@@ -1,0 +1,110 @@
+<!-- Template from the deepmodebot project-brief skill. Replace every {{...}} and delete this comment. -->
+
+# Contributing to {{PROJECT_NAME}}
+
+Thanks for helping. Many people and their agents work on this repo at once, so the rules below exist to keep two people from building the same thing and to make every PR easy to trust.
+
+Read [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) first: what the project is, how to run it, and what not to do.
+
+## 1. Install deepmodebot
+
+deepmodebot is an agent plugin that restates the goal, plans, proves changes on the real app, and reports with evidence.
+
+**omp**
+
+```bash
+omp plugin marketplace add TimothyVang/deepmodebot
+omp plugin install deepmodebot@deepmodebot
+```
+
+**Claude Code**
+
+```text
+/plugin marketplace add TimothyVang/deepmodebot
+/plugin install deepmodebot@deepmodebot
+```
+
+You also need the GitHub CLI, signed in (`gh auth status`), and Python 3.10+.
+
+## 2. Run `/deepmodebot:contribute`
+
+In your clone of `{{OWNER/REPO}}`:
+
+```text
+/deepmodebot:contribute
+/deepmodebot:contribute #42
+/deepmodebot:contribute something small in the docs
+```
+
+Your agent reads the brief, lists open `help wanted` issues that nobody has claimed and that don't overlap open PRs or other claims, and recommends one. Nothing public happens without your yes: the agent asks before it claims, comments, commits, pushes, or opens a PR.
+
+## 3. Claim before you start
+
+One issue = one branch = one PR. Claim the issue before writing code by posting this comment on it (your agent drafts it for you):
+
+```text
+<!-- deepmodebot:claim -->
+Claimed by @<your-login> via /contribute
+Plan: <one line>
+Files: <comma-separated repo paths; a trailing "/" means a whole directory>
+Expires: <YYYY-MM-DD, 7 days after posting>
+```
+
+- **Files** lists every path you expect to change. Use `dir/` for a whole directory. Be specific: other contributors' agents avoid these paths.
+- A claim is active until its `Expires` date. Still working? Post a fresh claim comment with a new date.
+- An issue with an assignee counts as claimed too, unless that assignee posted a claim comment on it: then only the comment counts.
+- Giving up? Comment on the issue with `<!-- deepmodebot:unclaim -->` on its own line plus a short note, so someone else can pick it up. It releases only your own claim.
+- Expired claims are released. The scripts stop counting a claim the day after `Expires`, even when the claimant is still assigned, and the maintainer comments that the issue is open again.
+- Don't claim more than you can finish in a week. Split big tasks first.
+
+## 4. Check for overlap, twice
+
+Two path sets overlap when a path is equal or one is a directory (`dir/`) containing the other. Check before you start and again before you open the PR:
+
+```bash
+python scripts/pr-overlap.py check --repo {{OWNER/REPO}} --files src/a.py,docs/ --exclude-issue N
+```
+
+After claiming, pass `--exclude-issue <your issue>` so your own claim isn't reported. Someone else's claim on the same issue still is. Exit code `0` means no overlap. `3` means an open PR or an active claim touches the same paths; the output lists them. Coordinate on that issue or PR, or pick another task. `2` means a usage or `gh` error. To list active claims: `python scripts/pr-overlap.py claims --repo {{OWNER/REPO}}`.
+
+## 5. Build and prove it
+
+Follow [docs/PROJECT_BRIEF.md](docs/PROJECT_BRIEF.md) for setup, conventions, and constraints. Before calling a change done, run it on the real app and capture what you saw:
+
+```bash
+{{TEST_COMMANDS}}
+```
+
+{{VERIFY_PATH}}
+
+Passing tests alone are not proof. Show the behavior.
+
+## 6. Open the PR
+
+Use the PR template. Every PR must have:
+
+- `Closes #N` for the issue you claimed (one issue per PR).
+- **Evidence:** the exact commands you ran and their output, or screenshots, showing the change works on the real app.
+- **Overlap check:** the result of `scripts/pr-overlap.py check` against your changed files.
+- **deepmodebot report:** if an agent did the work, paste its final report (goal restated, what changed, how it was proven).
+- Only the files your claim named. Touching more? Update your claim first and re-run the overlap check.
+
+## 7. Review
+
+- **Checks** must pass, run locally before you open the PR and again after each fix: {{CI_CHECKS}}. Paste the output in the PR. There is no CI.
+- **Overlap check:** your agent runs `python scripts/pr-overlap.py comment --repo {{OWNER/REPO}} --pr <N>` after opening the PR, and the maintainer's agent re-runs it on open PRs. It posts one comment when your PR touches the same files as another open PR or an active claim. Resolve the overlap with the other author before merge.
+- **Review:** before opening a PR, your agent self-reviews its branch with deepmodebot's pr-review technique (local mode) and fixes or dismisses each finding. Maintainers review PRs with `/deepmodebot:review-pr`; address or reply to each finding.
+- A maintainer reviews and merges. Push follow-up commits to the same branch; don't open a second PR for the same issue.
+
+## Without an agent
+
+Everything above works by hand: post the claim comment, run the overlap check, fill in the PR template with your evidence.
+
+## Roadmap
+
+[ROADMAP.md](ROADMAP.md) is a snapshot of the task board, generated from GitHub Issues by `scripts/sync-roadmap.py`. Edit issues, not that file.
+
+- It goes stale between syncs. The live board is the open `help wanted` issues plus `python scripts/pr-overlap.py claims --repo {{OWNER/REPO}}`. `/deepmodebot:contribute` reads those, not the file.
+- The maintainer's agent refreshes it on every `/deepmodebot:project-brief` re-run with `python scripts/sync-roadmap.py --repo {{OWNER/REPO}}` and ships the changed file in that run's PR.
+- To see whether it is current: `python scripts/sync-roadmap.py --repo {{OWNER/REPO}} --check`. Exit `1` means out of date.
+- Leave it out of task PRs. A regenerated roadmap in every PR would overlap all the others.

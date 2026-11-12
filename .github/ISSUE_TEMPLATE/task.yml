@@ -1,5 +1,5 @@
 name: Task
-description: A claimable unit of work. Contributors pick these up with /deep-mode:contribute.
+description: A claimable unit of work. Contributors pick these up with /deepmodebot:contribute.
 title: "[Task]: "
 labels: ["help wanted", "discussion-only"]
 body:
@@ -7,7 +7,7 @@ body:
     attributes:
       value: |
         One task = one branch = one PR. Keep it small enough to finish in a week; split anything bigger.
-        To work on it, post a claim comment (see CONTRIBUTING.md) or run `/deep-mode:contribute`.
+        To work on it, post a claim comment (see CONTRIBUTING.md) or run `/deepmodebot:contribute`.
         The `discussion-only` label keeps this repo's bots from building the task, so it stays open for contributors.
   - type: textarea
     id: goal

@@ -17,13 +17,13 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SKILL = ROOT / "plugins/deep-mode/skills/deep-mode/SKILL.md"
+DEFAULT_SKILL = ROOT / "plugins/deepmodebot/skills/deepmodebot/SKILL.md"
 DEFAULT_CASES = ROOT / "evals/routing/cases.json"
 SCRATCH = ROOT / ".scratch/routing-runs"
 API_KEYS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "CODEX_API_KEY")
 SIZES = {"S", "M", "L", "none"}
 
-PROMPT = """You are routing a request with the deep-mode skill below. Do not do the work.
+PROMPT = """You are routing a request with the deepmodebot skill below. Do not do the work.
 Answer which route the skill picks and what size it gives the work.
 
 <skill file="SKILL.md">

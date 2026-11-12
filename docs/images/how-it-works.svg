@@ -1,58 +1,58 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="650" viewBox="0 0 1200 650" role="img" aria-labelledby="t d">
-<title id="t">How the deep-mode bots work</title>
-<desc id="d">A private GitHub App named deep-mode-&lt;login&gt; posts to PR and issue threads. On your machine, bot.py polls the installed repos, runs ACP agents through acpx (omp by default, or Claude Code, Codex and others) on your subscription logins, and pushes and merges with your own gh and git.</desc>
+<title id="t">How the deepmodebot bots work</title>
+<desc id="d">A private GitHub App named deepmodebot-&lt;login&gt; posts to PR and issue threads. On your machine, bot.py polls the installed repos, runs ACP agents through acpx (omp by default, or Claude Code, Codex and others) on your subscription logins, and pushes and merges with your own gh and git.</desc>
 <defs>
 <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#9fb0c8"/></marker>
 <marker id="ahA" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#fbbf24"/></marker>
 <marker id="ahV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#a78bfa"/></marker>
 <marker id="ahS" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#38bdf8"/></marker>
 </defs>
-<rect x="1" y="1" width="1198" height="648" rx="24" fill="#0b1220" stroke="#22304d" stroke-width="2"/>
+<rect x="1" y="1" width="1198" height="648" rx="24" fill="#0b1220" stroke="#232e43" stroke-width="2"/>
 <text x="40" y="58" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="26" font-weight="700" fill="#e6edf3" text-anchor="start">How the bots work</text>
 <text x="40" y="86" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="15" font-weight="400" fill="#9fb0c8" text-anchor="start">A private GitHub App gives them a name. A poller on your machine does the work. Any ACP agent, on your own subscription logins.</text>
 <rect x="30" y="130" width="360" height="440" rx="18" fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.8"/><rect x="50" y="117" width="76" height="26" rx="13" fill="#0b1220"/><text x="62" y="135" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#a78bfa" text-anchor="start" letter-spacing="1.2">GITHUB</text>
-<rect x="50" y="160" width="320" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="50" y="160" width="320" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="50" y="174" width="4" height="72" rx="2" fill="#a78bfa"/>
 <text x="70" y="192" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Your private GitHub App</text>
-<text x="70" y="218" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#a78bfa" text-anchor="start">deep-mode-&lt;login&gt;</text>
+<text x="70" y="218" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#a78bfa" text-anchor="start">deepmodebot-&lt;login&gt;</text>
 <text x="70" y="242" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">installing it on a repo is the opt-in</text>
-<rect x="50" y="296" width="320" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="50" y="296" width="320" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="50" y="310" width="4" height="72" rx="2" fill="#a78bfa"/>
 <text x="70" y="328" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">PR and issue threads</text>
-<text x="70" y="354" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#a78bfa" text-anchor="start">deep-mode-&lt;login&gt;[bot]</text>
+<text x="70" y="354" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#a78bfa" text-anchor="start">deepmodebot-&lt;login&gt;[bot]</text>
 <text x="70" y="378" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">every agent turn, signed by its role</text>
-<rect x="50" y="432" width="320" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="50" y="432" width="320" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="50" y="446" width="4" height="72" rx="2" fill="#a78bfa"/>
 <text x="70" y="464" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Branches, checks, merges</text>
 <text x="70" y="490" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#a78bfa" text-anchor="start">gh pr merge --match-head-commit</text>
 <text x="70" y="514" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">your own PRs only, checks green</text>
 <rect x="500" y="130" width="670" height="440" rx="18" fill="none" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="6 6" opacity="0.8"/><rect x="520" y="117" width="127" height="26" rx="13" fill="#0b1220"/><text x="532" y="135" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#38bdf8" text-anchor="start" letter-spacing="1.2">YOUR MACHINE</text>
-<rect x="520" y="160" width="290" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="520" y="160" width="290" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="520" y="174" width="4" height="72" rx="2" fill="#38bdf8"/>
-<text x="540" y="192" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">~/.config/deep-mode/</text>
+<text x="540" y="192" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">~/.config/deepmodebot/</text>
 <text x="540" y="218" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#38bdf8" text-anchor="start">app key, bot.json, state</text>
 <text x="540" y="242" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">never in prompts, logs or repos</text>
-<rect x="520" y="296" width="290" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="520" y="296" width="290" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="520" y="310" width="4" height="72" rx="2" fill="#38bdf8"/>
 <text x="540" y="328" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">bot.py watch</text>
 <text x="540" y="354" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#38bdf8" text-anchor="start">polls every 120 s</text>
 <text x="540" y="378" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">the coordinator; gates in code</text>
-<rect x="520" y="432" width="290" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="520" y="432" width="290" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="520" y="446" width="4" height="72" rx="2" fill="#38bdf8"/>
 <text x="540" y="464" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Your gh and git</text>
 <text x="540" y="490" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#38bdf8" text-anchor="start">push, open PR, merge</text>
 <text x="540" y="514" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">never rebase or force-push</text>
-<rect x="860" y="160" width="290" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="860" y="160" width="290" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="860" y="174" width="4" height="72" rx="2" fill="#f08a5d"/>
 <text x="880" y="192" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Author agent</text>
 <text x="880" y="218" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#f08a5d" text-anchor="start">omp (default)</text>
 <text x="880" y="242" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">or Claude Code, Codex, Gemini CLI, ...</text>
-<rect x="860" y="296" width="290" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="860" y="296" width="290" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="860" y="310" width="4" height="72" rx="2" fill="#38bdf8"/>
 <text x="880" y="328" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">acpx</text>
 <text x="880" y="354" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#38bdf8" text-anchor="start">Agent Client Protocol</text>
 <text x="880" y="378" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="13.5" font-weight="400" fill="#9fb0c8" text-anchor="start">one session per PR or issue</text>
-<rect x="860" y="432" width="290" height="100" rx="14" fill="#111b2f" stroke="#2a3a5c" stroke-width="1.5"/>
+<rect x="860" y="432" width="290" height="100" rx="14" fill="#111b2f" stroke="#303c51" stroke-width="1.5"/>
 <rect x="860" y="446" width="4" height="72" rx="2" fill="#34d399"/>
 <text x="880" y="464" font-family="ui-sans-serif, -apple-system, 'Segoe UI', Helvetica, Arial, sans-serif" font-size="17" font-weight="600" fill="#e6edf3" text-anchor="start">Reviewer agent</text>
 <text x="880" y="490" font-family="ui-monospace, SFMono-Regular, 'Cascadia Mono', Consolas, Menlo, monospace" font-size="14" font-weight="500" fill="#34d399" text-anchor="start">omp, another model</text>

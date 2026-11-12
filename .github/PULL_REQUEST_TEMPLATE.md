@@ -10,7 +10,7 @@ Closes #
 
 ## Evidence
 
-<!-- Prove it works on the real app, not just in tests. Paste the exact commands and their output, or screenshots. If a deep-mode agent did the work, paste its final report below. -->
+<!-- Prove it works on the real app, not just in tests. Paste the exact commands and their output, or screenshots. If a deepmodebot agent did the work, paste its final report below. -->
 
 ```text
 $ <command>

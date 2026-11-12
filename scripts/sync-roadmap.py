@@ -7,9 +7,9 @@ Sections:
   ## In review      - an open PR body says closes/fixes/resolves #N
 
 Claim rule (shared with pr-overlap.py): each author's newest comment containing
-`<!-- deep-mode:claim -->` on an open issue is their claim. It is active while
+`<!-- deepmodebot:claim -->` on an open issue is their claim. It is active while
 its `Expires:` date is today or later and that author has posted no comment
-containing `<!-- deep-mode:unclaim -->` after it. Every active claim counts.
+containing `<!-- deepmodebot:unclaim -->` after it. Every active claim counts.
 An assignee also counts as a claim (files unknown), unless they posted a claim
 comment on the issue: then only that comment counts, and an expired or released
 one frees the issue.
@@ -36,8 +36,8 @@ from typing import Any
 
 LABEL = "help wanted"
 LIVE_QUERY = "is%3Aissue+is%3Aopen+label%3A%22" + LABEL.replace(" ", "+") + "%22"
-CLAIM_MARKER = "<!-- deep-mode:claim -->"
-UNCLAIM_MARKER = "<!-- deep-mode:unclaim -->"
+CLAIM_MARKER = "<!-- deepmodebot:claim -->"
+UNCLAIM_MARKER = "<!-- deepmodebot:unclaim -->"
 HEADER = "Generated from GitHub Issues by sync-roadmap.py. Edit issues, not this file."
 
 
@@ -204,7 +204,7 @@ def render(repo: str, rows: list[dict[str, Any]]) -> str:
         f"_{HEADER}_",
         "",
         f"Tasks are open issues in `{repo}` labeled `{LABEL}`. "
-        "Claim one with `/deep-mode:contribute` or by commenting on the issue.",
+        "Claim one with `/deepmodebot:contribute` or by commenting on the issue.",
         "",
         "This file is a snapshot from the maintainer's last sync, so a task may have been claimed since. "
         f"The live list: [open `{LABEL}` issues](https://github.com/{repo}/issues?q={LIVE_QUERY}).",
