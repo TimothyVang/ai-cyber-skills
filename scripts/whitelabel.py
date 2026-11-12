@@ -38,6 +38,10 @@ UPSTREAM_ONLY = ("docs/images/pr-19-thread.gif", "scripts/media/pr19_thread.py",
 DEMO_ALT = ("Illustrated walk-through of a PR conversation: kickoff, conflict merge, review, answer, re-review, "
             "a three-verifier panel, and the merge gate.")
 DEMO_CAPTION = "How a PR moves through the bots. Every turn is a comment in the PR thread, and only a panel pass merges it."
+# The build writes this file first and refuses to empty a folder without it, so --out can never wipe a
+# project the build did not write. It names no brand, so it survives a rebrand of a rebrand unchanged.
+BUILD_MARK = "brand/.whitelabel-build"
+BUILD_MARK_TEXT = "Built by scripts/whitelabel.py. A rebuild into this folder replaces everything in it except .git.\n"
 
 
 def is_legal(rel: str) -> bool:
@@ -181,17 +185,19 @@ def source_files(root: Path, out: Path) -> list:
 
 
 def prepare_out(out: Path, root: Path) -> None:
-    """Empty --out for a fresh build, keeping its .git. Refuses folders that would hold or eat the source."""
+    """Empty --out for a fresh build, keeping its .git, and mark it as a build. Refuses folders that would hold
+    or eat the source, and any non-empty folder without the mark: only what an earlier build wrote is deleted."""
     out, root = out.resolve(), root.resolve()
     if out == root or out in root.parents or (root in out.parents and out.relative_to(root).parts[0] != ".scratch"):
         raise BrandError(f"--out {out}: pick a folder outside the source repo (or under its .scratch/)")
     if out.exists():
         entries = [p for p in out.iterdir() if p.name != ".git"]
-        if entries and not (out / "brand/brand.json").is_file():
-            raise BrandError(f"--out {out}: not empty and not an earlier build; pick an empty folder")
+        if entries and not (out / BUILD_MARK).is_file():
+            raise BrandError(f"--out {out}: not empty and not an earlier build (no {BUILD_MARK}); pick an empty folder")
         for p in entries:
             shutil.rmtree(p) if p.is_dir() and not p.is_symlink() else p.unlink()
-    out.mkdir(parents=True, exist_ok=True)
+    (out / BUILD_MARK).parent.mkdir(parents=True, exist_ok=True)
+    (out / BUILD_MARK).write_text(BUILD_MARK_TEXT, encoding="utf-8", newline="\n")
 
 
 def sub(text: str, pattern: str, repl, where: str, count: int = 0, flags=re.M) -> str:
@@ -301,13 +307,12 @@ def update_manifests(out: Path, d: dict) -> None:
         write_json(runtime, data)
 
 
-def write_brand(out: Path, d: dict) -> None:
-    (out / "brand").mkdir(exist_ok=True)
+def write_brand(out: Path, d: dict, assets: dict) -> None:
     write_json(out / "brand/brand.json", brandlib.to_json(d))
     for key, targets in (("logo", ("brand/logo.svg", "docs/images/logo.svg")), ("favicon", ("brand/favicon.svg", "docs/favicon.svg"))):
         for rel in targets:
             if (out / rel).parent.is_dir():
-                shutil.copyfile(d[key + "Path"], out / rel)
+                (out / rel).write_bytes(assets[key])
 
 
 def legal_notes(rb: Rebrand, notice_src: str, year: int) -> tuple:
@@ -343,6 +348,8 @@ def build(brand_file, out, src_root: Path = ROOT, media: bool = True, check: boo
     rb = Rebrand(src, dst)
     out = Path(out)
     files = source_files(src_root, out)
+    # Read before --out is emptied: the brand file may be the built copy's own brand/brand.json.
+    assets = {key: dst[key + "Path"].read_bytes() for key in ("logo", "favicon")}
     prepare_out(out, src_root)
     targets = {}
     for rel in files:
@@ -368,7 +375,7 @@ def build(brand_file, out, src_root: Path = ROOT, media: bool = True, check: boo
         line, notice = legal_notes(rb, (src_root / "NOTICE.md").read_text(encoding="utf-8"), year)
         (out / "LICENSE").write_bytes(append_line((src_root / "LICENSE").read_bytes(), line))
         (out / "NOTICE.md").write_bytes(append_line((src_root / "NOTICE.md").read_bytes(), notice))
-    write_brand(out, dst)
+    write_brand(out, dst, assets)
     update_manifests(out, dst)
     theme_site(out, dst)
     own_run_rewrites(out)

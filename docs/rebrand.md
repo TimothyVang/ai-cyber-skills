@@ -67,7 +67,7 @@ The build:
 4. Re-renders the images with `scripts/media/render.py`.
 5. Verifies. It fails if `deep-mode`, `deep mode`, `DEEP_MODE` or the upstream author's name is left anywhere, in any case and in any path, outside `LICENSE*` and `NOTICE*`. Then it runs the copy's own `scripts/check.py`.
 
-It prints `OK: built ../acme-review, 0 leftovers` on success. `--out` must be outside this repo (or under its `.scratch/`). Each run rebuilds the folder from scratch and keeps its `.git`, so the same inputs give the same copy.
+It prints `OK: built ../acme-review, 0 leftovers` on success. `--out` must be outside this repo (or under its `.scratch/`). Each run rebuilds the folder from scratch and keeps its `.git`, so the same inputs give the same copy. The build marks its output with `brand/.whitelabel-build` and only empties a folder that has that file, so it refuses a non-empty folder it did not build and deletes nothing there. `--brand` can be the built copy's own `brand/brand.json`.
 
 Open `docs/index.html` in the built copy to see your site.
 

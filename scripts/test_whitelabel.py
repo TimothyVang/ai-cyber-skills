@@ -104,8 +104,9 @@ class Build(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def build(self):
-        return whitelabel.build(self.dst_file, self.out, src_root=self.src, media=False, check=False, log=lambda *_: None)
+    def build(self, brand_file=None):
+        return whitelabel.build(brand_file or self.dst_file, self.out, src_root=self.src, media=False, check=False,
+                                log=lambda *_: None)
 
     def test_license_bytes_stay_and_the_copyright_line_is_appended_once(self):
         self.assertEqual(self.build(), [])
@@ -133,6 +134,29 @@ class Build(unittest.TestCase):
         (self.out / "LICENSE-THIRD-PARTY").write_text("deep-mode by TimothyVang\n", encoding="utf-8")
         self.assertEqual(whitelabel.find_leftovers(self.out, pattern),
                          ["README.md:3: 'Deep Mode'", "notes/deep_mode.txt: name in path"])
+
+    def test_a_folder_the_build_did_not_write_is_refused_and_left_alone(self):
+        write_brand(self.out / "brand", SRC)  # another project can hold a brand/brand.json too
+        (self.out / "work.txt").write_text("uncommitted\n", encoding="utf-8")
+        with self.assertRaises(whitelabel.BrandError):
+            self.build()
+        self.assertEqual((self.out / "work.txt").read_text(encoding="utf-8"), "uncommitted\n")
+        self.assertEqual(json.loads((self.out / "brand/brand.json").read_text(encoding="utf-8"))["slug"], SRC["slug"])
+
+    def test_a_failed_build_can_be_rebuilt_into_the_same_folder(self):
+        (self.src / "docs").mkdir()
+        (self.src / "docs/index.html").write_text("<html></html>\n", encoding="utf-8")  # nothing to retheme: the build stops
+        with self.assertRaises(whitelabel.BrandError):
+            self.build()
+        (self.src / "docs/index.html").unlink()
+        self.assertEqual(self.build(), [])
+
+    def test_rebuild_from_the_copys_own_brand_file(self):
+        self.build()
+        logo = (self.out / "brand/logo.svg").read_bytes()
+        self.assertEqual(self.build(self.out / "brand/brand.json"), [])
+        self.assertEqual((self.out / "brand/logo.svg").read_bytes(), logo)
+        self.assertEqual((self.out / "brand/favicon.svg").read_bytes(), logo)
 
 
 if __name__ == "__main__":
