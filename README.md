@@ -43,9 +43,16 @@ It still asks before deploys, deleting things it did not create, rewriting share
 
 ## Measured behavior
 
-[Local delivery experiments](evals/results/local-delivery-2026-11-12.md) show completed work under the same cap that interrupted the earlier workflow. Every feature artifact passed the 19-check CLI suite. Plain-agent runs also passed and remained cheaper on reported usage. This is not a general superiority claim.
+[Local delivery experiments](evals/results/local-delivery-2026-11-12.md) exercised one feature fixture with five repetitions per arm.
+In the second experiment, the revised command finished 5/5 runs and every artifact passed all 19 CLI checks.
+Plain-agent runs also finished 5/5 and passed all 19 checks, with lower median reported usage ($0.9754 versus $1.6271).
+Reported usage is a harness estimate, not a subscription invoice. The small, development-known fixture and same-provider judges do not establish general superiority.
 
 [Review quality](evals/review/README.md) uses historical bugs, clean controls and explicit finding adjudication. [Workflow coverage](evals/workflows/README.md) separates mapped routes from executed journeys and unsupported capabilities. No matched hosted-review comparison or complete feature parity has been demonstrated.
+
+Read the [paired review results and label corrections](evals/results/review-quality-2026-11-12.md)
+and [captured workflow outcomes](evals/results/workflow-coverage-2026-11-12.md).
+The review holdout contains one bug/control pair. The four exercised journeys do not prove the whole mapped inventory.
 
 ## The software factory
 

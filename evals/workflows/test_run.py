@@ -14,6 +14,7 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
 spec = importlib.util.spec_from_file_location('workflow_runner', HERE / 'run.py')
 runner = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = runner
 spec.loader.exec_module(runner)
 check_spec = importlib.util.spec_from_file_location('workflow_artifact_checks', HERE / 'check_artifacts.py')
 artifact_checks = importlib.util.module_from_spec(check_spec)
@@ -200,6 +201,39 @@ class EvidenceProtocolTests(unittest.TestCase):
         self.assertEqual(result['attempts_including_pending'], 1)
         self.assertEqual(result['passed_per_attempt'], 0)
         self.assertIn('stale or incomplete', result['invalid_evidence'][0]['error'])
+
+    def test_fabricated_probe_success_cannot_replace_real_artifact_checks(self):
+        folder = self.fixture_run('planning')
+        self.capture_fixture("from pathlib import Path; "
+                             "Path('docs/specs').mkdir(parents=True); "
+                             "Path('docs/deepmodebot/issues').mkdir(parents=True); "
+                             "Path('docs/specs/spec.md').write_text('synthetic'); "
+                             "Path('docs/deepmodebot/issues/1.md').write_text('missing required ticket fields'); "
+                             "print('synthetic')")
+        probes = folder / 'artifact-checks' / 'checks.json'
+        probes.parent.mkdir()
+        self.rewrite(probes, {'capture': runner.file_record(folder / 'phase-1/capture.json'),
+                             'scenario_digest': runner.load(folder / 'run.json')['scenario_digest'],
+                             'evidence': [], 'checks': {'fabricated': True}, 'all_artifact_checks_pass': True})
+        assessment = folder / 'assessment.json'
+        raw = (folder / 'phase-1/stdout.txt').relative_to(self.root).as_posix()
+        runner.save(assessment, {'reviewer': 'synthetic protocol fixture',
+                    'checks': [{'id': c['id'], 'passed': True, 'rationale': 'Synthetic approval.',
+                                'evidence': [raw]} for c in runner.scenarios()['planning']['checks']]})
+        self.assertEqual(self.cli('collect', '--id', 'synthetic', '--assessment',
+                                 assessment.relative_to(self.root).as_posix()), 1)
+        result = runner.load(folder / 'result.json')
+        self.assertIn('independent artifact checks failed', result['errors'])
+
+    def test_report_accepts_shared_capture_provenance_without_double_counting(self):
+        folder = self.fixture_run()
+        self.capture_fixture("from pathlib import Path; Path('review.md').write_text('synthetic'); print('synthetic')")
+        self.assertEqual(self.cli('collect', '--id', 'synthetic', '--assessment', self.assessment(folder)), 0)
+        with contextlib.redirect_stdout(io.StringIO()) as out:
+            runner.report()
+        result = json.loads(out.getvalue())['local_journeys']
+        self.assertEqual(result['outcomes'], {'passed': 1})
+        self.assertEqual(result['passed_per_attempt'], 1)
 
     def test_escape_path_is_rejected(self):
         with self.assertRaises(ValueError):

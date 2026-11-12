@@ -61,10 +61,14 @@ def planning_checks(project):
             'blockers_resolve_without_cycles': bool(records) and all(acyclic(key) for key in graph)}
 
 
-def main():
+def main(argv=None, runtime=None):
+    workflow = runtime or globals()["workflow"]
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--id', required=True)
-    args = parser.parse_args()
+    parser.add_argument('--output-name', default='artifact-checks')
+    args = parser.parse_args(argv)
+    if not re.fullmatch('[a-z0-9-]+', args.output_name):
+        parser.error('output-name must be a lowercase slug')
     try:
         folder = workflow.run_dir(args.id)
         meta = workflow.load(folder / 'run.json')
@@ -74,7 +78,7 @@ def main():
         source = phase / 'artifacts'
         if workflow.project_files(source) != record['snapshot']:
             raise ValueError('captured artifacts missing or changed')
-        output = folder / 'artifact-checks'
+        output = folder / args.output_name
         if output.exists():
             raise ValueError('artifact checks already exist; preserve the original evidence')
         output.mkdir()

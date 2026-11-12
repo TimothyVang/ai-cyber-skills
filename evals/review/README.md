@@ -35,7 +35,9 @@ Each case has its own working directory and runs sequentially. `--max-cost` boun
 It disables model fallback and tool/MCP discovery through the no-discovery overlay, and supplies `--no-tools --no-rules --no-context-files --no-skills --no-extensions --no-lsp`. Output tripwires reject tool execution and file mentions. Missing `omp`, unavailable OAuth identity, nonzero exit, timeout, unsafe tool/file event, malformed JSON, or requested/observed model mismatch fails that case without fallback.
 Reports retain CLI executable/version/SHA-256, exact settings, corpus/prompt/context digests, requested and observed model, token/cost usage when emitted, raw stdout/stderr, and elapsed time.
 
-The evaluator calls the production `bot.review_prompt` with a minimal sealed conversation and no author reply/comments, so the shipped reviewer wording, untrusted-tag handling, and `@` defanging are used directly. Expected bug IDs never enter model prompts; they appear only in adjudication.
+The evaluator calls production `bot.review_prompt` with a minimal sealed conversation and no author reply/comments.
+It uses production `pr_agent_local.SYSTEM` and the `flatten` user-message envelope, including `@` defanging.
+The system prompt digest is bound to the CLI metadata. Expected bug IDs never enter model prompts.
 
 ## Adjudication and scoring
 
@@ -46,9 +48,19 @@ Precision, expected-bug recall, clean-case false-positive rate, missed bugs and 
 
 ## Corpus provenance and limitations
 
-The fixture split is committed in `cases.json` by project before any run: pytest and Requests are calibration/development data; Django is held out from review-prompt tuning. Hold-out labels are excluded from candidate prompts. This is only a local hold-out from tuning, not an independence-from-training or unseen-industry claim.
+The default corpus is `cases-v2.json`. Pytest and Requests are calibration/development data;
+Django is held out from review-prompt tuning. This is not independence from model training.
+The original `cases.json` remains an immutable record of the first labeling attempt.
 
-There are four distinct bug labels and four matched clean controls across three public licensed projects. Each input is the exact Git diff of the named source file at a pinned repair, with eight context lines. Bug cases reverse that repair to introduce the known regression; clean controls apply it forward. These are constructed regression reviews, not the original bug-introducing PRs. Expected labels never enter the prompt, but repair comments can make these cases easier than ordinary reviews. Full codebases are not vendored or executed.
+Calibration exposed three missing bug labels in that attempt. Two nominal clean controls contained
+additional regressions. The corrected corpus has seven bug labels across six bug inputs and two controls.
+Its revision metadata records the source evidence. Both review arms are rerun after relabeling.
+Historical case IDs ending in `clean` do not override their corrected `kind` and expected labels.
+
+Each input is the exact Git diff of a named source file at a pinned repair, with eight context lines.
+Reverse patches introduce the original regression; forward patches can fix one bug while introducing another.
+These are constructed reviews, not original bug-introducing PRs. Repair comments can make the task easier.
+Expected labels never enter prompts. The evaluator does not execute corpus source.
 
 | Project / source license | Verified behavior and pinned upstream evidence |
 | --- | --- |

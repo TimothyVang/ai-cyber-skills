@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
-CORPUS = HERE / "cases.json"
+CORPUS = HERE / "cases-v2.json"
 SCRATCH = ROOT / ".scratch" / "review-runs"
 SETTINGS = ("--no-tools", "--no-rules", "--no-context-files", "--no-skills", "--no-extensions", "--no-lsp")
 
@@ -154,7 +154,7 @@ def load_corpus(path=CORPUS):
             raise ValueError(f"project {c['project']} crosses calibration and holdout")
         pair = c.get("pair")
         if not isinstance(pair, str) or not pair:
-            raise ValueError(f"case has no clean-control pair: {c['id']}")
+            raise ValueError(f"case has no matched-patch pair: {c['id']}")
         pairs.setdefault(pair, []).append(c)
         context = c.get("context")
         if not isinstance(context, dict) or not all(
@@ -166,16 +166,18 @@ def load_corpus(path=CORPUS):
     projects = {c["project"] for c in corpus["cases"]}
     if bug_count < 4 or len(projects) < 2 or not {"calibration", "holdout"} <= {c["split"] for c in corpus["cases"]}:
         raise ValueError("corpus requires at least four bugs across two projects and project-separated splits")
-    if any(len(members) != 2 or {m["kind"] for m in members} != {"bug", "clean"}
+    if any(len(members) != 2
+           or {m.get("input_direction") for m in members} != {"reverse-repair", "forward-repair"}
            or len({(m["project"], m["split"]) for m in members}) != 1 for members in pairs.values()):
-        raise ValueError("each paired fixture must contain one bug and one clean control from the same project split")
+        raise ValueError("each pair must contain forward and reverse patches from the same project split")
     for pair, members in pairs.items():
-        bug = next(m for m in members if m["kind"] == "bug")
-        clean = next(m for m in members if m["kind"] == "clean")
-        buggy, fixed = bug["context"], clean["context"]
-        if (buggy["repository"] != fixed["repository"] or buggy["base"] != bug["commit"]
-                or fixed["head"] != clean["commit"] or buggy["head"] != fixed["base"]):
-            raise ValueError(f"paired context must use pre-fix source for bug and fixed source for control: {pair}")
+        reverse = next(m for m in members if m["input_direction"] == "reverse-repair")
+        forward = next(m for m in members if m["input_direction"] == "forward-repair")
+        before, after = reverse["context"], forward["context"]
+        if (before["repository"] != after["repository"] or before["base"] != reverse["commit"]
+                or after["head"] != forward["commit"] or before["head"] != after["base"]
+                or reverse["commit"] != forward["commit"]):
+            raise ValueError(f"paired context must match immutable forward and reverse patch heads: {pair}")
     return corpus
 
 
@@ -211,11 +213,12 @@ def run_case(case, mode, packet, model, max_cost, timeout, omp, run_dir, overlay
     case_dir = run_dir / case["id"]
     case_dir.mkdir(parents=True, exist_ok=True)
     context_files, context_omissions = context_coverage(packet) if packet else ([], [])
-    prompt = build_prompt(case, packet, reviewer)
+    prompt = seal.flatten([{"role": "user", "content": build_prompt(case, packet, reviewer)}])
     prompt_path = case_dir / "prompt.txt"
     prompt_path.write_text(prompt, encoding="utf-8")
     cmd = [omp, "-p", "--no-session", "--no-title", "--mode", "json", "--model", model,
-           "--max-cost", str(max_cost), "--config", str(overlay), *SETTINGS, f"@{prompt_path}"]
+           "--max-cost", str(max_cost), "--config", str(overlay), "--system-prompt", seal.SYSTEM,
+           *SETTINGS, f"@{prompt_path}"]
     env = seal.scrubbed_env()
     tmp = run_dir / "tmp"
     tmp.mkdir(exist_ok=True)
@@ -296,6 +299,7 @@ def run(args):
     credentials = seal.omp_oauth_credentials(args.model)
     reviewer = load_reviewer()
     cli["no_discovery_overlay_sha256"] = hashlib.sha256(seal.NO_DISCOVERY.encode()).hexdigest()
+    cli["system_prompt_sha256"] = hashlib.sha256(seal.SYSTEM.encode()).hexdigest()
     overlay = run_dir / "no-discovery.yml"
     overlay.write_text(seal.NO_DISCOVERY, encoding="utf-8")
     records = []

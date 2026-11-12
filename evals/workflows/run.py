@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Pinned workflow inventory and operator-run, disposable agent journeys."""
 import argparse
+import contextlib
 from collections import Counter
 from datetime import datetime, timezone
 import hashlib
@@ -13,6 +14,7 @@ import subprocess
 import sys
 import tarfile
 import time
+import uuid
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
@@ -288,8 +290,9 @@ def verify_result(result):
         ids = [c['id'] for c in result['checks']]
         if canonical(scenario) != result['scenario_digest'] or set(ids) != expected or len(ids) != len(expected):
             raise ValueError('passing result has stale or incomplete scenario checks')
-        captures = [load(inside(ROOT, item['path'])) for item in result['evidence']
-                    if Path(item['path']).name == 'capture.json']
+        capture_paths = {inside(ROOT, item['path']) for item in result['evidence']
+                         if Path(item['path']).name == 'capture.json'}
+        captures = [load(path) for path in capture_paths]
         if sorted(c['phase'] for c in captures) != list(range(1, len(scenario['prompts']) + 1)):
             raise ValueError('passing result lacks every phase capture')
         for record in captures:
@@ -300,6 +303,8 @@ def verify_result(result):
 
 def collect(args):
     folder = run_dir(args.id)
+    if (folder / 'result.json').exists():
+        raise ValueError('result already exists; preserve the original attempt')
     meta = load(folder / 'run.json')
     scenario = scenarios()[meta['scenario']]
     errors, evidence, checks = [], [file_record(folder / 'run.json')], []
@@ -348,7 +353,12 @@ def collect(args):
         matches = [p for p in project.glob(pattern) if p.is_file() and p.stat().st_size]
         if not matches:
             errors.append(f'missing artifact: {pattern}')
-    probe_path = folder / 'artifact-checks' / 'checks.json'
+    import check_artifacts
+    probe_name = 'collected-checks-' + uuid.uuid4().hex
+    if not errors:
+        with contextlib.redirect_stdout(io.StringIO()):
+            check_artifacts.main(['--id', args.id, '--output-name', probe_name], runtime=sys.modules[__name__])
+    probe_path = folder / probe_name / 'checks.json'
     if not probe_path.is_file():
         errors.append('independent artifact checks not supplied')
     else:

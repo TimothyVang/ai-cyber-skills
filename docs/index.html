@@ -86,6 +86,7 @@ nav a{text-decoration:none;color:var(--muted);font-size:15px}
 nav a:hover{color:var(--fg)}
 main{max-width:1100px;margin:0 auto;padding:0 24px 64px}
 section{padding:56px 0 8px}
+#evidence{scroll-margin-top:6rem}
 h1{font-size:clamp(34px,5vw,54px);line-height:1.1;margin:0 0 16px;letter-spacing:-.02em}
 h2{font-size:30px;margin:0 0 12px;letter-spacing:-.01em}
 h3{font-size:19px;margin:24px 0 6px}
@@ -155,13 +156,17 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <table>
 <thead><tr><th scope="col">Area</th><th scope="col">Evidence and limits</th></tr></thead>
 <tbody>
-<tr><th scope="row">Local delivery</th><td>The revised workflow finished all 5 runs and passed all 19 CLI checks in each. Plain-agent runs also passed and used less reported usage. <a href="https://github.com/TimothyVang/deepmodebot/blob/main/evals/results/local-delivery-2026-11-12.md">Read the experiment and corrections</a>.</td></tr>
+<tr><th scope="row">Local delivery</th><td>On one feature fixture, the revised command finished 5/5 runs and every artifact passed all 19 CLI checks.
+Plain-agent runs also finished 5/5 and passed all 19 checks, with lower median reported usage ($0.9754 versus $1.6271).
+<a href="https://github.com/TimothyVang/deepmodebot/blob/main/evals/results/local-delivery-2026-11-12.md">Read the experiment and corrections</a>.</td></tr>
 <tr><th scope="row">Review quality</th><td>Historical bug cases, clean controls and explicit finding adjudication. No matched hosted-review comparison has been demonstrated. <a href="https://github.com/TimothyVang/deepmodebot/tree/main/evals/review">Review protocol</a>.</td></tr>
-<tr><th scope="row">Workflow coverage</th><td>Pinned inventories distinguish related routes, executed journeys and unsupported capabilities. A mapping is not feature-parity proof. <a href="https://github.com/TimothyVang/deepmodebot/tree/main/evals/workflows">Coverage and journey evidence</a>.</td></tr>
+<tr><th scope="row">Workflow coverage</th><td>Pinned inventories distinguish related routes, executed journeys and unsupported capabilities. A mapping is not feature-parity proof. <a href="https://github.com/TimothyVang/deepmodebot/tree/main/evals/workflows">Workflow protocol and coverage limits</a>.</td></tr>
 </tbody>
 </table>
 </div>
-<p>These are development evaluations on limited tasks, not a product leaderboard. Self-hosted orchestration still sends prompts to the configured model provider.</p>
+<p>These small development experiments use a known fixture and same-provider judges, not independent vendor evaluations.
+Reported usage is a harness estimate, not a subscription invoice. No general superiority or complete replacement has been demonstrated.
+Self-hosted orchestration still sends prompts to the configured model provider.</p>
 </section>
 
 <section id="how" aria-labelledby="how-title">

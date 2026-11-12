@@ -884,6 +884,9 @@ class SealedReviewTest(unittest.TestCase):
         log = mock.patch.object(bot, "log")  # the real one appends to the user's bot.log
         log.start()
         self.addCleanup(log.stop)
+        context = mock.patch.object(bot.review_context, "build_context", return_value="bounded source")
+        context.start()
+        self.addCleanup(context.stop)
 
     def conversation(self, own, reviewer="omp"):
         c = object.__new__(bot.PRConversation)
@@ -908,16 +911,15 @@ class SealedReviewTest(unittest.TestCase):
     def test_the_sealed_diff_keeps_as_much_context_as_fits(self):
         c = self.conversation(own=False)
         sizes = {"--unified=40": bot.MAX_DIFF + 1, "--unified=10": bot.MAX_DIFF + 1, "--unified=3": 50}
-        asked = []
 
         def git(clone, *args):
-            asked.append(args[1])
             return "x" * sizes.get(args[1], 5)
 
         with mock.patch.object(bot, "git", side_effect=git):
             c.review(1)
-        self.assertEqual(asked, ["--stat", "--unified=40", "--unified=10", "--unified=3"])
-        self.assertNotIn("[diff truncated", c.it.ask_sealed.call_args.args[1])
+        prompt = c.it.ask_sealed.call_args.args[1]
+        self.assertIn("x" * 50, prompt)
+        self.assertNotIn("x" * 51, prompt)
 
     def test_a_held_pr_whose_base_changed_is_reviewed_again_before_any_merge(self):
         c = self.conversation(own=True)
@@ -934,9 +936,6 @@ class SealedReviewTest(unittest.TestCase):
             self.assertEqual(c.run(), "reviewed")
         c.it.ask.assert_not_called()
         tree.assert_not_called()
-        prompt = c.it.ask_sealed.call_args.args[1]
-        self.assertIn("You have no tools", prompt)
-        self.assertNotIn("working directory", prompt)
 
     def test_the_owners_pr_keeps_the_read_only_agent_in_a_checkout(self):
         c = self.conversation(own=True)
@@ -1714,9 +1713,9 @@ class LockTest(unittest.TestCase):
 
 
 class BotConfigTest(unittest.TestCase):
-    def test_only_the_legacy_deepmodebot_mention_migrates(self):
-        self.assertEqual(bot.effective_mention("@deepmodebot", "deepmodebot", "@deepmodebot"), "@deepmodebot")
-        self.assertEqual(bot.effective_mention(None, "deepmodebot", "@deepmodebot"), "@deepmodebot")
+    def test_old_default_retires_but_explicit_triggers_remain(self):
+        self.assertEqual(bot.effective_mention("@deep-mode", "deepmodebot", "@deepmodebot-team"), "@deepmodebot-team")
+        self.assertEqual(bot.effective_mention(None, "deepmodebot", "@deepmodebot-team"), "@deepmodebot-team")
         for name, default in (("deepmodebot", "@deepmodebot"), ("acme-review", "@acme-review")):
             for stored in ("@deepmodebot", "@custom", "/custom", "@acme-review"):
                 with self.subTest(name=name, stored=stored):

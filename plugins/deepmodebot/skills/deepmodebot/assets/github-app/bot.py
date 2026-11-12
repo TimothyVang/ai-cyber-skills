@@ -594,8 +594,8 @@ def gate_decision(f: dict):
 # ---------------------------------------------------------------- config, state, identity
 
 def effective_mention(stored, name: str, default: str) -> str:
-    """Only the legacy `@deepmodebot` default (from before the deepmodebot rename) is migrated; reseller and explicit triggers stay intact."""
-    return default if stored is None or (name == "deepmodebot" and stored == "@deepmodebot") else stored
+    """Retire the old default that notified an unrelated account; preserve reseller and explicit triggers."""
+    return default if stored is None or (name == "deepmodebot" and stored == "@deep-mode") else stored
 
 
 def load_bot_config(write: bool = True, note=None) -> dict:

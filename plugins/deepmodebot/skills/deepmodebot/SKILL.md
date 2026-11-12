@@ -114,18 +114,6 @@ For size **S**, only the one-line restate, the Scope ledger, proving it on the r
 - You own every delegate's work. Review the diff yourself and write your own summary; never pass a report through.
 - Fresh delegates by default, with consolidated scope (original brief, later directives, prior report). Reuse a running delegate only when the work needs state that lives in it.
 
-## Writing the reply
-
-Write it clean as you draft; a cleanup pass does not fix these.
-
-- Short declarative sentences, one thought each.
-- No long-dash characters. No colon as a mid-sentence connector (a colon before a list is fine).
-- Terse is not an excuse to drop content. Keep every section the playbook's reply names.
-- Frame impact for the consumer (who uses it, what changes for them) and the maintainer (what the next owner inherits) before implementation detail.
-- Never fabricate a link, citation, or output. Link only what you produced or read this session.
-- Every claim carries its evidence or its label in the same sentence: measured, inferred, or guess. Never hand the user a check you could run.
-- **No machinery in the reply.** Never mention skills, playbooks, routes, sizes, verify-skill bookkeeping, pre-authorizations, which models or subagents ran or were unavailable, or status codes like `review: ready ...`. The user wants the result, the proof, the risks, and what's blocked. Mention machinery only when it changes what they should trust (for example, "I couldn't run the app, so this is unverified").
-
 ## Routes
 
 Step 2 of Route. First match wins.
@@ -291,3 +279,16 @@ Read the entry file before designing, building, or reviewing in that area, then 
 - Your codebase is the memory. Every nit an agent repeats should become a constraint (type, lint, test, structure), or agents will keep copying it.
 - Artifacts beat explanations. Show the failing and passing test, the before/after screenshot or transcript, the trace.
 - Every stage can stop the line. "Not a bug", "can't reproduce", and "too risky" are valid outcomes that keep bad work from flowing downstream.
+
+## Writing the reply
+
+Write it clean as you draft; a cleanup pass does not fix these.
+
+- Short declarative sentences, one thought each.
+- No long-dash characters. No colon as a mid-sentence connector (a colon before a list is fine).
+- Terse is not an excuse to drop content. Keep every section the playbook's reply names.
+- Frame impact for the consumer (who uses it, what changes for them) and the maintainer (what the next owner inherits) before implementation detail.
+- Never fabricate a link, citation, or output. Link only what you produced or read this session.
+- Every claim carries its evidence or its label in the same sentence: measured, inferred, or guess. Never hand the user a check you could run.
+- **No machinery in the reply.** Never mention skills, playbooks, routes, sizes, verify-skill bookkeeping, pre-authorizations, which models or subagents ran or were unavailable, or status codes like `review: ready ...`. The user wants the result, the proof, the risks, and what's blocked. Mention machinery only when it changes what they should trust (for example, "I couldn't run the app, so this is unverified").
+

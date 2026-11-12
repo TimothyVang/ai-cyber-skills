@@ -4,6 +4,7 @@ import json
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 SPEC = importlib.util.spec_from_file_location("review_eval", Path(__file__).with_name("run.py"))
 review_eval = importlib.util.module_from_spec(SPEC)
@@ -155,16 +156,15 @@ class BudgetBoundaryTests(unittest.TestCase):
 
 
 class CorpusContextTests(unittest.TestCase):
-    def test_bug_packets_are_pre_fix_and_clean_packets_are_the_matching_fix(self):
+    def test_forward_patch_can_have_bugs_but_cannot_use_unrelated_context(self):
         corpus = review_eval.load_corpus()
-        pairs = {}
-        for case in corpus["cases"]:
-            pairs.setdefault(case["pair"], {})[case["kind"]] = case
-        for pair, cases in pairs.items():
-            bug, clean = cases["bug"], cases["clean"]
-            self.assertEqual(bug["context"]["base"], bug["commit"], pair)
-            self.assertEqual(clean["context"]["head"], clean["commit"], pair)
-            self.assertEqual(bug["context"]["head"], clean["context"]["base"], pair)
+        forward = next(c for c in corpus["cases"]
+                       if c["input_direction"] == "forward-repair" and c["kind"] == "bug")
+        self.assertTrue(forward["expected_bugs"])
+        forward["context"]["head"] = "0" * 40
+        with patch.object(Path, "read_text", return_value=json.dumps(corpus)):
+            with self.assertRaisesRegex(ValueError, "immutable forward and reverse"):
+                review_eval.load_corpus()
 
     def test_context_coverage_exposes_included_files_and_omissions(self):
         packet = ("--- src/module.py (head " + "a" * 40 + ", blob " + "b" * 40

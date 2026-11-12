@@ -1,0 +1,529 @@
+{
+  "schema": 1,
+  "adjudicator": "Session assistant source review; not an independent human or vendor assessment",
+  "runs": [
+    {
+      "split": "calibration",
+      "mode": "diff-only",
+      "run_sha256": "b01352ee62c6c871af2a26355419ff12f622fad1849376264b539099c19e3b69",
+      "adjudication_sha256": "634f0a7d30fd32e232574509e8ae7cfcd7d504f0e4d4a0388d478002ba740570",
+      "corpus_sha256": "3d1e801047842f88310c814c05f9b171b9269364048d7d0d26fc7888ef345cec",
+      "cli_version": "omp/18.19.0",
+      "cli_sha256": "6d5ad734bb6fafef49278670ca74fce838e333fa20fc08ffc65570581f501b0d",
+      "system_prompt_sha256": "d60aa9de387d7d885be81db39175d8c28228d51e5cda646dcb2fccc60b2a52d2",
+      "model_requested": "openai-codex/gpt-6-astra",
+      "model_observed": [
+        "openai-codex/gpt-6-astra"
+      ],
+      "metrics": {
+        "true_positives": 5,
+        "false_positives": 0,
+        "missed_expected_bugs": 1,
+        "precision": 1.0,
+        "bug_recall": 0.8333333333333334,
+        "clean_case_false_positive_rate": 0.0,
+        "expected_bug_denominator_including_failures": 6,
+        "valid_expected_bug_denominator": 6,
+        "valid_true_positives": 5,
+        "clean_case_attempts": 1,
+        "valid_clean_cases": 1,
+        "failed_bug_cases": 0,
+        "failed_clean_cases": 0,
+        "invalid_cases": []
+      },
+      "adjudicated_cases": [
+        {
+          "case_id": "pytest-indirect-fixture-param-regression",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "indirect-overrides-fixture-params"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "952bb1d7cbd1bbc5f153f70e45cdbf611baa3634457f23606938564c530b3220",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/_pytest/fixtures.py",
+                "line": 1911,
+                "claim": "Removing the precedence check causes fixtures with declared params to be parametrized again when a test already parametrizes them indirectly, breaking test-level overrides.",
+                "evidence": "For a fixture value declared with params=[1, 2] and a test marked parametrize('value', [3], indirect=True), the deleted guard previously skipped automatic fixture parametrization. The new loop instead reaches metafunc.parametrize whenever fixturedef.params is not None. This introduces a second parametrization of value; the expected duplicate-parametrization collection error depends on Metafunc.parametrize, whose implementation is not shown."
+              },
+              "maps_to": "indirect-overrides-fixture-params",
+              "adjudication": "true_positive",
+              "rationale": "Matches the deleted marker-precedence guard and the pinned upstream fixture-parametrization regression. The finding identifies the indirect override path rather than direct parametrization."
+            }
+          ]
+        },
+        {
+          "case_id": "pytest-indirect-fixture-param-clean",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [],
+          "findings": []
+        },
+        {
+          "case_id": "requests-empty-body-framing",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "known-empty-body-misframed",
+            "conflicting-transfer-encoding-content-length"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "aa54ceeb12736d32e384fd453caf6eb34f130ed54006a53bd4dfc28c1a2115a3",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/requests/models.py",
+                "line": 578,
+                "claim": "Known empty bodies no longer receive Content-Length: 0, restoring the empty-body framing problem documented in the removed comment.",
+                "evidence": "When body is non-None and super_len(body) returns 0, `if length` skips the assignment, and the body-is-None elif cannot run. The removed comment specifically identifies data={'foo': None} as an affected empty encoding and warns about chunked fallback; that downstream behavior cannot be independently checked from this diff."
+              },
+              "maps_to": "known-empty-body-misframed",
+              "adjudication": "true_positive",
+              "rationale": "Exact reviewed prepare_content_length and super_len functions reproduce omission of Content-Length for an empty non-None body before the repair and Content-Length: 0 after it. Probe receipt review-label-probes.json. Full server behavior is not claimed."
+            },
+            {
+              "finding_sha256": "b7cc161019d120f009b0c6f685b5dc038b177c4387b3f3f330dce5cb8c3e8aff",
+              "finding": {
+                "id": "F2",
+                "severity": "P1",
+                "file": "src/requests/models.py",
+                "line": 581,
+                "claim": "The method now adds Content-Length even when Transfer-Encoding is already present, producing conflicting HTTP framing headers.",
+                "evidence": "The previous condition explicitly required `\"Transfer-Encoding\" not in self.headers`. With that guard removed, any positive super_len(body) unconditionally sets Content-Length without removing an existing Transfer-Encoding header."
+              },
+              "maps_to": "conflicting-transfer-encoding-content-length",
+              "adjudication": "true_positive",
+              "rationale": "Exact source probe reproduces simultaneous Transfer-Encoding: chunked and Content-Length: 3 before the repair; the repair retains only Transfer-Encoding. Probe receipt review-label-probes.json."
+            }
+          ]
+        },
+        {
+          "case_id": "requests-empty-body-framing-clean",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "unknown-length-body-declared-empty"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "a375c6abef28b542d3bada8fc7de0236e35f7150aec88321a781fe5b0f1d3fa9",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/requests/models.py",
+                "line": 578,
+                "claim": "Unknown-length bodies can now receive Content-Length: 0 instead of falling back to chunked framing. Requests' super_len uses 0 for unknown lengths as well as genuinely empty bodies, so checking against None does not distinguish them.",
+                "evidence": "With length == 0 and no Transfer-Encoding header, the changed condition writes Content-Length: 0; the previous condition skipped it. A readable body without length metadata can therefore be advertised as empty despite containing data. The super_len implementation and downstream transport are not supplied here, so that integration behavior cannot be verified from this diff alone."
+              },
+              "maps_to": "unknown-length-body-declared-empty",
+              "adjudication": "true_positive",
+              "rationale": "Exact source probe shows a read-only unknown-length body changes from no Content-Length to Content-Length: 0. prepare_body and _encode_params source retain that object in the non-stream path. Full wire exchange was not run."
+            }
+          ]
+        },
+        {
+          "case_id": "requests-stringio-byte-length",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "stringio-content-length-counts-characters"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "b57a3aeadfa111df91672a075cbc4fef306103cd7ba4590d2a319f15b55b7706",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/requests/utils.py",
+                "line": 191,
+                "claim": "Removing the StringIO special case makes super_len return character counts rather than UTF-8 byte counts, underestimating non-ASCII body lengths.",
+                "evidence": "For io.StringIO('\u00e9') at position 0, seeking to the end makes tell() return 1, so the new code returns 1 instead of the 2 UTF-8 bytes. The removed branch explicitly encoded the remaining text before measuring it to obtain the correct Content-Length."
+              },
+              "maps_to": "stringio-content-length-counts-characters",
+              "adjudication": "true_positive",
+              "rationale": "The removed UTF-8 measurement is replaced by character tell offsets. For StringIO(\u00e9), the reverse patch returns one rather than two UTF-8 bytes; source probe and upstream regression tests support the label."
+            }
+          ]
+        },
+        {
+          "case_id": "requests-stringio-byte-length-clean",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "stringio-legacy-transport-byte-length"
+          ],
+          "findings": []
+        }
+      ]
+    },
+    {
+      "split": "calibration",
+      "mode": "enriched",
+      "run_sha256": "942bc09cde1e039753975a6cc591ab68d01b7aa0be17bc7ff6918214c0b69ba6",
+      "adjudication_sha256": "1c90c533eda96b1e2d3559a72887d95e75129c10f7468821e9d0d15de557ca5e",
+      "corpus_sha256": "3d1e801047842f88310c814c05f9b171b9269364048d7d0d26fc7888ef345cec",
+      "cli_version": "omp/18.19.0",
+      "cli_sha256": "6d5ad734bb6fafef49278670ca74fce838e333fa20fc08ffc65570581f501b0d",
+      "system_prompt_sha256": "d60aa9de387d7d885be81db39175d8c28228d51e5cda646dcb2fccc60b2a52d2",
+      "model_requested": "openai-codex/gpt-6-astra",
+      "model_observed": [
+        "openai-codex/gpt-6-astra"
+      ],
+      "metrics": {
+        "true_positives": 6,
+        "false_positives": 0,
+        "missed_expected_bugs": 0,
+        "precision": 1.0,
+        "bug_recall": 1.0,
+        "clean_case_false_positive_rate": 0.0,
+        "expected_bug_denominator_including_failures": 6,
+        "valid_expected_bug_denominator": 6,
+        "valid_true_positives": 6,
+        "clean_case_attempts": 1,
+        "valid_clean_cases": 1,
+        "failed_bug_cases": 0,
+        "failed_clean_cases": 0,
+        "invalid_cases": []
+      },
+      "adjudicated_cases": [
+        {
+          "case_id": "pytest-indirect-fixture-param-regression",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "indirect-overrides-fixture-params"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "2bca87628c038e6e581c1f752b6c28adba8b14034043eb230f3fcf891de5e240",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/_pytest/fixtures.py",
+                "line": 1912,
+                "claim": "Restore the marker-precedence guard: indirectly parametrizing a fixture that already declares params now parametrizes the same argument twice instead of overriding its defaults, breaking collection.",
+                "evidence": "For a fixture x declared with params=[1, 2] and a test marked pytest.mark.parametrize('x', [3], indirect=True), _get_direct_parametrize_args does not exclude x from fixture discovery. The changed pytest_generate_tests therefore calls metafunc.parametrize('x', [1, 2], indirect=True) despite the test's explicit parametrization. The deleted iter_markers guard previously prevented this. Metafunc's implementation is not supplied, so the exact duplicate-parametrization exception cannot be verified here."
+              },
+              "maps_to": "indirect-overrides-fixture-params",
+              "adjudication": "true_positive",
+              "rationale": "Matches the deleted marker-precedence guard and the pinned upstream fixture-parametrization regression. The finding identifies the indirect override path rather than direct parametrization."
+            }
+          ]
+        },
+        {
+          "case_id": "pytest-indirect-fixture-param-clean",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [],
+          "findings": []
+        },
+        {
+          "case_id": "requests-empty-body-framing",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "known-empty-body-misframed",
+            "conflicting-transfer-encoding-content-length"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "c4926e922acf30d1acb5f09bf2921cf5b707e57746b2c844b92fa63c84ae768a",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/requests/models.py",
+                "line": 578,
+                "claim": "Preserve Content-Length: 0 for non-None empty bodies. A POST with data={'foo': None} now loses its explicit zero-length framing, restoring the chunked fallback that the removed comment identifies as causing server interoperability problems.",
+                "evidence": "_encode_params skips None values and returns an empty string for this nonempty mapping. prepare_body passes that string to prepare_content_length; super_len returns 0, so `if length` skips the header assignment. The body is not None, so the elif cannot supply Content-Length: 0 either. The base condition handled this case. Actual wire behavior depends on transport code not supplied."
+              },
+              "maps_to": "known-empty-body-misframed",
+              "adjudication": "true_positive",
+              "rationale": "Exact reviewed prepare_content_length and super_len functions reproduce omission of Content-Length for an empty non-None body before the repair and Content-Length: 0 after it. Probe receipt review-label-probes.json. Full server behavior is not claimed."
+            },
+            {
+              "finding_sha256": "042806921d617618c53d557829e45f8380f421f07eaf95bf7d2962ca754639a6",
+              "finding": {
+                "id": "F2",
+                "severity": "P1",
+                "file": "src/requests/models.py",
+                "line": 578,
+                "claim": "Restore the Transfer-Encoding guard. Preparing a nonempty non-stream body with an explicit Transfer-Encoding header now produces both Transfer-Encoding and Content-Length, creating conflicting HTTP request framing.",
+                "evidence": "For Request('POST', 'http://example.com/', data=b'x', headers={'Transfer-Encoding': 'chunked'}).prepare(), prepare_headers retains Transfer-Encoding, prepare_body takes the non-stream branch, and super_len returns 1. The new condition adds Content-Length: 1 without removing Transfer-Encoding. The deleted `and \"Transfer-Encoding\" not in self.headers` prevented this."
+              },
+              "maps_to": "conflicting-transfer-encoding-content-length",
+              "adjudication": "true_positive",
+              "rationale": "Exact source probe reproduces simultaneous Transfer-Encoding: chunked and Content-Length: 3 before the repair; the repair retains only Transfer-Encoding. Probe receipt review-label-probes.json."
+            }
+          ]
+        },
+        {
+          "case_id": "requests-empty-body-framing-clean",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "unknown-length-body-declared-empty"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "27469cd59af44fb879dbc82ca2f52e705d93fdf6a85035f3cc39641899ce4909",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/requests/models.py",
+                "line": 578,
+                "claim": "Do not treat every zero returned by super_len as a known empty body. A nonempty file-like object exposing read() but no __iter__, length, or seek/tell now receives Content-Length: 0, incorrectly declaring an empty upload and even overwriting a caller-supplied correct Content-Length.",
+                "evidence": "prepare_body routes such objects through the non-stream branch, and _encode_params returns objects with read() unchanged. In utils.py, super_len converts an unknown total_length to 0 and returns max(0, total_length - current_position). The new `length is not None` condition therefore writes '0'; the previous `if length` skipped it. For example, a wrapper exposing only read() backed by io.BytesIO(b'test') reaches this incorrect assignment. The Transfer-Encoding guard does not help because this path never sets that header. Actual wire behavior depends on transport code omitted from the supplied context."
+              },
+              "maps_to": "unknown-length-body-declared-empty",
+              "adjudication": "true_positive",
+              "rationale": "Exact source probe shows a read-only unknown-length body changes from no Content-Length to Content-Length: 0. prepare_body and _encode_params source retain that object in the non-stream path. Full wire exchange was not run."
+            }
+          ]
+        },
+        {
+          "case_id": "requests-stringio-byte-length",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "stringio-content-length-counts-characters"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "39d183d32dbd56f95478fe28f7be896c9a800e5f1236ee5bca7b1e8622b42222",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/requests/utils.py",
+                "line": 191,
+                "claim": "Removing the StringIO-specific branch makes super_len undercount non-ASCII UTF-8 content, including partially consumed streams. Restore byte-based measurement while preserving the original cursor.",
+                "evidence": "The replacement uses o.tell() at EOF and subtracts the original character position. For io.StringIO('\u00e9'), this returns 1 instead of the previous UTF-8 length 2. For io.StringIO('a\u00e9') positioned at 1, it likewise returns 1 instead of 2 remaining bytes. The removed branch explicitly measured len(o.read().encode('utf-8')) for Content-Length; downstream callers and transport code are not supplied, so wire behavior was not verified."
+              },
+              "maps_to": "stringio-content-length-counts-characters",
+              "adjudication": "true_positive",
+              "rationale": "The removed UTF-8 measurement is replaced by character tell offsets. For StringIO(\u00e9), the reverse patch returns one rather than two UTF-8 bytes; source probe and upstream regression tests support the label."
+            }
+          ]
+        },
+        {
+          "case_id": "requests-stringio-byte-length-clean",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "stringio-legacy-transport-byte-length"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "7376045d9220afc48eac0165354c78b96c00f87b99db295bc74d26a9d10bb287",
+              "finding": {
+                "id": "F1",
+                "severity": "P1",
+                "file": "src/requests/utils.py",
+                "line": 196,
+                "claim": "Unconditional UTF-8 sizing breaks non-ASCII StringIO uploads with urllib3 1.x's Latin-1 transport: Content-Length exceeds the bytes sent, potentially leaving the server waiting. Apply the same version-dependent encoding policy already used for strings.",
+                "evidence": "super_len explicitly guards string UTF-8 conversion with `not is_urllib3_1` and documents the older Latin-1 behavior; __init__.py still accepts urllib3 1.x. The new StringIO branch ignores that distinction: StringIO('\u00e9') now returns 2 rather than the Latin-1 length of 1. The transport implementation is not supplied, so the wire-level consequence relies on the encoding behavior documented in this source."
+              },
+              "maps_to": "stringio-legacy-transport-byte-length",
+              "adjudication": "true_positive",
+              "rationale": "Exact source with is_urllib3_1=True returns two for StringIO(\u00e9) after the repair. Reviewed urllib3 1.26.20 delegates non-chunked request to stdlib; the inherited readable encoder was executed and yielded one byte e9 without a network connection. No full Requests exchange claimed."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "split": "holdout",
+      "mode": "diff-only",
+      "run_sha256": "565b38e1df1c5887d12a7b5f1e93729d7eac86f6ba13ee50412d7a6b1390436b",
+      "adjudication_sha256": "1d99b4a0ff9e065885d18f11c595f48ced68b019c7fc9bebec2e9ca3b11d56ed",
+      "corpus_sha256": "3d1e801047842f88310c814c05f9b171b9269364048d7d0d26fc7888ef345cec",
+      "cli_version": "omp/18.19.0",
+      "cli_sha256": "6d5ad734bb6fafef49278670ca74fce838e333fa20fc08ffc65570581f501b0d",
+      "system_prompt_sha256": "d60aa9de387d7d885be81db39175d8c28228d51e5cda646dcb2fccc60b2a52d2",
+      "model_requested": "openai-codex/gpt-6-astra",
+      "model_observed": [
+        "openai-codex/gpt-6-astra"
+      ],
+      "metrics": {
+        "true_positives": 1,
+        "false_positives": 0,
+        "missed_expected_bugs": 0,
+        "precision": 1.0,
+        "bug_recall": 1.0,
+        "clean_case_false_positive_rate": 0.0,
+        "expected_bug_denominator_including_failures": 1,
+        "valid_expected_bug_denominator": 1,
+        "valid_true_positives": 1,
+        "clean_case_attempts": 1,
+        "valid_clean_cases": 1,
+        "failed_bug_cases": 0,
+        "failed_clean_cases": 0,
+        "invalid_cases": []
+      },
+      "adjudicated_cases": [
+        {
+          "case_id": "django-mysql-alias-hash-sql-injection",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "mysql-hash-comment-alias-injection"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "e6e5598abe981bda6ceec7632767efbcc21cbd981d6574b80dc400c32b68e10f",
+              "finding": {
+                "id": "F1",
+                "severity": "P0",
+                "file": "django/db/models/sql/query.py",
+                "line": 59,
+                "claim": "Removing `#` from alias validation reopens SQL-injection risk on MySQL, where `#` starts a line comment. Retain this prohibition.",
+                "evidence": "The pattern drops `|#|`, so aliases such as `a#` now pass check_alias(), while other comment delimiters remain forbidden. Such aliases can comment out subsequent SQL when emitted unquoted. That downstream emission path is not included in the supplied diff, so exploitability cannot be independently verified here."
+              },
+              "maps_to": "mysql-hash-comment-alias-injection",
+              "adjudication": "true_positive",
+              "rationale": "Matches the pinned Django security repair41b43c7/CVE-2025-59681: removing # from forbidden aliases allows the MySQL comment marker. Source confirms check_alias and filtered-relation propagation. Severity and full exploitability are not independently scored."
+            }
+          ]
+        },
+        {
+          "case_id": "django-mysql-alias-hash-sql-injection-clean",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [],
+          "findings": []
+        }
+      ]
+    },
+    {
+      "split": "holdout",
+      "mode": "enriched",
+      "run_sha256": "ad81fcfd0c5a9722f4113884730b83a642327281458d9880ba9a112d05408dfa",
+      "adjudication_sha256": "5dbbc584bf5f58828546a7f703177f45eea45887a43dbee89f8f0068aae08ab9",
+      "corpus_sha256": "3d1e801047842f88310c814c05f9b171b9269364048d7d0d26fc7888ef345cec",
+      "cli_version": "omp/18.19.0",
+      "cli_sha256": "6d5ad734bb6fafef49278670ca74fce838e333fa20fc08ffc65570581f501b0d",
+      "system_prompt_sha256": "d60aa9de387d7d885be81db39175d8c28228d51e5cda646dcb2fccc60b2a52d2",
+      "model_requested": "openai-codex/gpt-6-astra",
+      "model_observed": [
+        "openai-codex/gpt-6-astra"
+      ],
+      "metrics": {
+        "true_positives": 1,
+        "false_positives": 0,
+        "missed_expected_bugs": 0,
+        "precision": 1.0,
+        "bug_recall": 1.0,
+        "clean_case_false_positive_rate": 0.0,
+        "expected_bug_denominator_including_failures": 1,
+        "valid_expected_bug_denominator": 1,
+        "valid_true_positives": 1,
+        "clean_case_attempts": 1,
+        "valid_clean_cases": 1,
+        "failed_bug_cases": 0,
+        "failed_clean_cases": 0,
+        "invalid_cases": []
+      },
+      "adjudicated_cases": [
+        {
+          "case_id": "django-mysql-alias-hash-sql-injection",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [
+            "mysql-hash-comment-alias-injection"
+          ],
+          "findings": [
+            {
+              "finding_sha256": "1b68a385369d667b1b65d44a02568d6b01d38f4ab78b21144f37f876ff6640a2",
+              "finding": {
+                "id": "F1",
+                "severity": "P0",
+                "file": "django/db/models/sql/query.py",
+                "line": 59,
+                "claim": "Restore rejection of '#', MySQL's line-comment marker. Allowing it through alias validation creates an SQL-injection risk wherever attacker-controlled aliases are rendered unquoted, particularly filtered-relation table aliases.",
+                "evidence": "The diff removes '|#|' from FORBIDDEN_ALIAS_PATTERN, so check_alias('a#') now passes. add_filtered_relation() validates with this check and stores the supplied alias; table_alias() subsequently uses filtered_relation.alias as the table alias. The compiler/join rendering code is not supplied, so the final unquoted SQL sink and an end-to-end exploit cannot be verified here."
+              },
+              "maps_to": "mysql-hash-comment-alias-injection",
+              "adjudication": "true_positive",
+              "rationale": "Matches the pinned Django security repair41b43c7/CVE-2025-59681: removing # from forbidden aliases allows the MySQL comment marker. Source confirms check_alias and filtered-relation propagation. Severity and full exploitability are not independently scored."
+            }
+          ]
+        },
+        {
+          "case_id": "django-mysql-alias-hash-sql-injection-clean",
+          "status": "valid",
+          "error": null,
+          "expected_bugs": [],
+          "findings": []
+        }
+      ]
+    }
+  ],
+  "limits": [
+    "Development calibration labels were corrected after v2 findings, then both arms rerun without prompt changes.",
+    "One historically public heldout Django pair; possible training overlap.",
+    "Single run per case per arm, no statistical superiority claim.",
+    "Source-level adjudication and inherited encoder probes, not full target applications or network exploits."
+  ],
+  "source_probes": {
+    "observations": [
+      {
+        "revision": "da9113c0466850a425e554630a732ec1f7d045fc",
+        "case": "empty",
+        "headers": {}
+      },
+      {
+        "revision": "da9113c0466850a425e554630a732ec1f7d045fc",
+        "case": "transfer-encoding",
+        "headers": {
+          "Transfer-Encoding": "chunked",
+          "Content-Length": "3"
+        }
+      },
+      {
+        "revision": "da9113c0466850a425e554630a732ec1f7d045fc",
+        "case": "unknown-length",
+        "headers": {}
+      },
+      {
+        "revision": "818d92764bd7035a0450d7b4e52ec9fc6d07abb6",
+        "case": "empty",
+        "headers": {
+          "Content-Length": "0"
+        }
+      },
+      {
+        "revision": "818d92764bd7035a0450d7b4e52ec9fc6d07abb6",
+        "case": "transfer-encoding",
+        "headers": {
+          "Transfer-Encoding": "chunked"
+        }
+      },
+      {
+        "revision": "818d92764bd7035a0450d7b4e52ec9fc6d07abb6",
+        "case": "unknown-length",
+        "headers": {
+          "Content-Length": "0"
+        }
+      },
+      {
+        "revision": "0c2bbe73982a70623fb81bf16b2507ea0ca80b99",
+        "case": "StringIO-latin1-transport-branch",
+        "measured_length": 1,
+        "latin1_bytes": 1,
+        "utf8_bytes": 2
+      },
+      {
+        "revision": "0406663e1b802bb839aca40e9f6ea89d0c9255ef",
+        "case": "StringIO-latin1-transport-branch",
+        "measured_length": 2,
+        "latin1_bytes": 1,
+        "utf8_bytes": 2
+      }
+    ],
+    "limits": "Executes only reviewed exact source functions extracted by AST, with explicit stdlib globals. No requests package import, network, full request preparation or wire transport. Unknown-length and Latin-1 discrepancies are source-level findings, not end-to-end HTTP proof."
+  }
+}

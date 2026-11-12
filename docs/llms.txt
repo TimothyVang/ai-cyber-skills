@@ -13,6 +13,7 @@ Key facts:
 - Install the bots: `git clone https://github.com/TimothyVang/deepmodebot`, `cd deepmodebot/plugins/deepmodebot/skills/deepmodebot`, `py -3 assets/github-app/install.py`.
 - Install the skills: `omp plugin marketplace add TimothyVang/deepmodebot` then `omp plugin install deepmodebot@deepmodebot`; in Claude Code, `/plugin marketplace add TimothyVang/deepmodebot` and `/plugin install deepmodebot@deepmodebot`.
 - Local delivery: ordinary small and medium local tasks leave proven, uncommitted changes in the starting tree. Publication adds review and verifier-panel gates.
+- Measured delivery: on one development-known feature fixture, the revised command finished 5/5 runs and passed all 19 CLI checks in each. Plain-agent runs also finished 5/5 and passed all 19 checks, with lower median reported usage ($0.9754 versus $1.6271). These are harness estimates, not subscription invoices. Small samples and same-provider judges do not establish general superiority.
 - Evidence limits: a demonstrated PR merge is not a comparative accuracy benchmark. Workflow mappings are not execution results. Read the evaluation methods and retained results before making equivalence claims.
 - White-label: one `brand.json` and `py -3 scripts/whitelabel.py --brand <file> --out <dir>` rebrand everything: the product name and logo, colors, commands, skills, the bot and its GitHub App, the docs site, the README, images, and the SEO and llms files. LICENSE and NOTICE stay, with your copyright line added. `install.py --brand <name>` is a shortcut that renames only the bots.
 
@@ -27,6 +28,7 @@ Key facts:
 - [SKILL.md](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/SKILL.md): the router, principles, playbooks and techniques of the deepmodebot skill
 - [Rebrand guide](https://github.com/TimothyVang/deepmodebot/blob/main/docs/rebrand.md): ship deepmodebot as your own product with one brand file and one build command
 - [Evaluations](https://github.com/TimothyVang/deepmodebot/tree/main/evals): delivery comparisons, review-quality measurements, workflow inventories and their explicit limits
+- [Local delivery results](https://github.com/TimothyVang/deepmodebot/blob/main/evals/results/local-delivery-2026-11-12.md): measured completion and artifact correctness, the cheaper plain-agent baseline, corrections and limits
 
 ## Code
 

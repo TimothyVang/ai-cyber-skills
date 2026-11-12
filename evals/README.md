@@ -45,10 +45,15 @@ Each run writes a results file in `results/` with notes per candidate, both judg
 
 [review/README.md](review/README.md) defines historical bug cases, clean controls, a split held apart before execution and explicit finding adjudication.
 It compares the diff-only and source-context paths with the same model and settings.
+Both paths use production `pr_agent_local.SYSTEM` and its `flatten` user-message envelope.
+Each run records `system_prompt_sha256`; retain the saved prompts and command metadata to identify the transport actually tested.
+Earlier runs without this envelope are not measurements of the repaired transport.
 Public historical patches may have appeared in training. Results do not establish superiority over another review product without a matched run of that product.
 
 ## Workflow coverage
 
 [workflows/README.md](workflows/README.md) maps pinned upstream inventories to local routes, explicit gaps and captured journeys.
 Representative planning, review, architecture and fresh-session handoff runs produce inspectable artifacts.
+`collect` reruns trusted artifact checks in a fresh `collected-checks-*` directory and binds their evidence to the captured scenario.
+It does not accept previously supplied success flags as proof. A complete, evidence-backed assessment is still required.
 A mapped route is not a passed workflow; a passed example is not complete feature parity.
