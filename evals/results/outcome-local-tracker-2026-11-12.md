@@ -12,7 +12,8 @@ The routing eval reran too: `routing-local-tracker-2026-11-12.json`, 20/20 route
 - Round 2 only: `refs/deep-mode/issues/0003` already exists (another session reserved `0003` and has not committed it), and the user has `TODO.md` staged on `main`.
 - Request, through the `/deep` command body at each ref: write a spec and its tickets for `notes list --json` and `notes add --json <text>`, to be built later on one integration branch; stop once the tickets are published.
 - Skills copied into `.omp/skills/` from each ref, as `run.py setup` does. One `omp -p` per candidate with `--no-rules --no-context-files --no-extensions --skills <every copied skill> --max-cost 6`, API keys removed, default model `anthropic/claude-opus-5-5`.
-- Before: `97ced32` (origin/main). After: `4672da6` in round 1, `693fbb1` in round 2 (this branch).
+- Before: `97ced32` (origin/main). After: `4672da6` in round 1, `693fbb1` in round 2, `77b5f61` in round 3 (this branch).
+- Round 3 uses round 2's setup, except the reservation `refs/deep-mode/issues/0003` points at a blob, as `015cbad` requires. Only the after variant ran.
 - Scoring is the end state of each repo (`git branch`, `git log --name-status`, `git ls-tree` per branch, `git for-each-ref refs/deep-mode`) plus the final reply.
 
 ## Results
@@ -23,9 +24,11 @@ The routing eval reran too: `routing-local-tracker-2026-11-12.json`, 20/20 route
 | round 1 after | `4672da6` | `0003` | `0004`, `0005` | spec file and issue in one commit | one commit on `spec/json-output` | untouched | 0 | $1.57 |
 | round 2 before | `97ced32` | `0002`, collides with `spec/archive-notes` | `0003`, collides with the reservation; `0004` | spec file alone; issue went in with the tickets | one commit with the spec issue | untouched; `TODO.md` still staged | 0 | $1.70 |
 | round 2 after | `693fbb1` | `0004`, skipping `0002` on the other branch and the reserved `0003` | `0005`, `0006` | spec file and issue in one commit | one commit holding only the two tickets, on `spec/json-output` | untouched; `TODO.md` still staged | 0 | $1.09 |
+| round 3 after | `77b5f61` | `0004`, skipping `0002` and the reserved `0003` | `0005`, `0006` | spec file and issue in one commit | one commit holding only the two tickets, on `spec/json-output` | untouched; `TODO.md` still staged | 0 | $1.65 |
 
 Round 2 after reserved `refs/deep-mode/issues/0004` to `0006` before writing each file, so the numbers it took are visible to every worktree.
 No run touched `spec/archive-notes`. Neither round 2 run put `TODO.md` in a commit: both worked in a worktree of the spec branch, so the staged file never sat in their index.
+Round 3 worked in the main checkout itself, switched to `spec/json-output` with `TODO.md` staged, and both commits still held only their named paths. `TODO.md` stayed staged and uncommitted.
 A scratch-repo check covers the commit form the playbooks now name: with `other.txt` staged, `git commit -m spec -- docs/specs/a.md issue.md` committed exactly those two paths and left `other.txt` staged.
 
 ## Recommendation
