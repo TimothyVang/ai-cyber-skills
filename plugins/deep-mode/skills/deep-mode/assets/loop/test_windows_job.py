@@ -7,6 +7,7 @@ import ctypes
 from ctypes import wintypes
 import json
 import os
+import shlex
 from pathlib import Path
 import subprocess
 import sys
@@ -87,6 +88,10 @@ def _fixture(role, mode, root, token):
     if role == "deadline":
         import loop
         argv = [sys.executable, "-B", str(HERE), "--fixture", "parent", "live", str(root), token]
+        if mode == "bash":
+            command = shlex.join([sys.executable.replace("\\", "/"), "-B", HERE.as_posix(),
+                                  "--fixture", "parent", "live", root.as_posix(), token])
+            argv = [loop.find_bash(), "-c", command + " & wait"]
         started = time.monotonic()
         code, output = loop.run_limited(argv, DEADLINE_SECONDS / 60,
                                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
@@ -217,6 +222,19 @@ class WindowsJobCase(unittest.TestCase):
         # Isolate run_limited itself: an unbounded post-kill communicate must fail
         # this test's outer timeout, rather than hanging the unittest process.
         argv = [sys.executable, "-B", str(HERE), "--fixture", "deadline", "live", str(self.root), self.token]
+        process = self.start(argv)
+        self.watch_tree()
+        out, err = process.communicate(timeout=4)
+        self.assertEqual(process.returncode, 0, err)
+        self.assertEqual(err, "")
+        result = json.loads(out)
+        self.assertIsNone(result["code"])
+        self.assertIn("descendant-ready", result["output"])
+        self.assertLess(result["elapsed"], DEADLINE_SECONDS + 1.5)
+        self.assert_tree_stopped()
+
+    def test_bash_deadline_stops_packaged_python_descendants(self):
+        argv = [sys.executable, "-B", str(HERE), "--fixture", "deadline", "bash", str(self.root), self.token]
         process = self.start(argv)
         self.watch_tree()
         out, err = process.communicate(timeout=4)

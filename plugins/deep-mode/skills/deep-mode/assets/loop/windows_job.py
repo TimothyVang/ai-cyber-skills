@@ -1,7 +1,7 @@
-"""Run one command in a Windows 10+ kill-on-close Job Object, without a spawn race.
+"""Run one command in a Windows 10 (1703+) kill-on-close Job Object.
 
-The private supervisor assigns the command at creation, rather than relying on
-job inheritance from its supervisor. Its sole job handle is not
+Assign the command at creation and keep packaged descendants from breaking out
+of its desktop runtime environment. The supervisor's sole job handle is not
 inherited. This is process lifetime management, not a sandbox.
 """
 import base64
@@ -15,6 +15,8 @@ import sys
 JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE = 0x00002000
 JOB_OBJECT_EXTENDED_LIMIT_INFORMATION = 9
 PROC_THREAD_ATTRIBUTE_JOB_LIST = 0x0002000D
+PROC_THREAD_ATTRIBUTE_DESKTOP_APP_POLICY = 0x00020012
+PROCESS_CREATION_DESKTOP_APP_BREAKAWAY_DISABLE_PROCESS_TREE = 0x02
 EXTENDED_STARTUPINFO_PRESENT = 0x00080000
 
 
@@ -139,11 +141,11 @@ def _run_in_job(api, job, argv, shell):
         application = os.environ.get("ComSpec") or os.path.join(os.environ["SystemRoot"], "System32", "cmd.exe")
         command = f'{subprocess.list2cmdline([application])} /c "{command}"'
     size = ctypes.c_size_t()
-    api.InitializeProcThreadAttributeList(None, 1, 0, ctypes.byref(size))
+    api.InitializeProcThreadAttributeList(None, 2, 0, ctypes.byref(size))
     if ctypes.get_last_error() != 122 or not size.value:
         raise ctypes.WinError(ctypes.get_last_error())
     attributes = ctypes.create_string_buffer(size.value)
-    if not api.InitializeProcThreadAttributeList(attributes, 1, 0, ctypes.byref(size)):
+    if not api.InitializeProcThreadAttributeList(attributes, 2, 0, ctypes.byref(size)):
         raise ctypes.WinError(ctypes.get_last_error())
     process = _ProcessInformation()
     try:
@@ -153,6 +155,10 @@ def _run_in_job(api, job, argv, shell):
         # https://learn.microsoft.com/windows/win32/api/processthreadsapi/nf-processthreadsapi-updateprocthreadattribute
         if not api.UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_JOB_LIST,
                                               jobs, ctypes.sizeof(jobs), None, None):
+            raise ctypes.WinError(ctypes.get_last_error())
+        policy = wintypes.DWORD(PROCESS_CREATION_DESKTOP_APP_BREAKAWAY_DISABLE_PROCESS_TREE)
+        if not api.UpdateProcThreadAttribute(attributes, 0, PROC_THREAD_ATTRIBUTE_DESKTOP_APP_POLICY,
+                                              ctypes.byref(policy), ctypes.sizeof(policy), None, None):
             raise ctypes.WinError(ctypes.get_last_error())
         startup = _StartupInfoEx()
         startup.StartupInfo.cb = ctypes.sizeof(startup)

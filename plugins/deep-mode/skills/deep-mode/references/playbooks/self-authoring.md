@@ -34,7 +34,7 @@ Within an approved task, deep-mode may author and revise its own bounded loop wi
        Exit 0 done, 2 iteration cap, 3 stalled (neither check output nor working files changed; body-only edits do not count), 4 edited frontmatter or a `protect` path.
        Exit 5 a harness failure with the check still failing, or a run passed its time limit. A passing acceptance check wins over a nonzero harness exit. `--dry-run` prints the command and prompt without running the check.
        The runner owns the acceptance check; each agent performs one bounded step and returns.
-       Keep `windows_job.py` beside `loop.py`: on Windows 10+ it assigns each check/harness process to a kill-on-close Job Object at creation. Job setup failures are reported rather than silently dropping process ownership.
+       Keep `windows_job.py` beside `loop.py`: on Windows 10 (1703+) it assigns each check/harness process to a kill-on-close Job Object at creation and disables desktop-app child breakaway. Job setup failures are reported rather than silently dropping process ownership.
 4. **Validate the structure.** Skill: `python <this skill>/scripts/check_skill.py <skill dir>` prints `ok` (also `skills-ref validate <dir>` when installed). Goal: `python <this skill>/assets/loop/loop.py check <goal.md>` parses it and runs the check once. Prompt: invoke it once.
    Done when that command exits 0 (or prints `ok`), or the prompt's one run completes.
 5. **Prove the behavior.** Run the artifact on one real task in this project and keep the transcript or loop trail.
