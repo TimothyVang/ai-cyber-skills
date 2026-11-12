@@ -33,7 +33,7 @@ Pick the steps the task needs. Read-only reviews and investigations skip all of 
 3. **Build.** Follow `references/structure.md` when extracting shared operations or choosing boundaries: entry points own the product rules (whether and when), services own the reusable operations (how), with explicit inputs and structured results. Pull fresh dependency source with `npx opensrc <package>` when the library is new or recently changed (`stack.md` §11).
    Done when no operation is duplicated across callers and the repo's typecheck and lint pass.
 4. **Prove.** Follow `references/prove.md`. Capture the failure before the fix and the success after it: screenshots or video for UI, output pairs for CLI and API changes, measurements for performance.
-   Done when every test target has a `passed`/`failed`/`untested` result backed by an artifact under `.artifacts/<task>/`.
+   Done when every test target has a `passed`/`failed`/`untested` result backed by an artifact under `.scratch/evidence/<task>/`.
 5. **Ship.** Open the PR with that evidence as a before and after table. Run every human-facing text through `references/unslop/unslop.md`. Then run deep-mode's **pr-review** technique (`skill://deep-mode/references/techniques/pr-review.md`) on the PR. It reviews with your own subagents, so no third-party review service is needed.
    Done when no P0/P1 finding is open and every P2 is fixed or dismissed with a reason, or the technique hit its 3-round cap or oscillated, and you report its `review:` line with the open findings. Present the PR URL, then merge it on a deep-mode panel pass (`skill://deep-mode/references/techniques/panel.md`).
 

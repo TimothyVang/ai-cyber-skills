@@ -45,6 +45,8 @@ from urllib.parse import quote
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import brand  # noqa: E402
 import ghapp  # noqa: E402
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pr-agent"))
+import pr_agent_local  # noqa: E402  (its sealed `omp -p`: no tools, no files, no project config)
 
 B = brand.BRAND
 NAME = B["name"]
@@ -70,14 +72,33 @@ MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for
 MERGE_SETTLE = 60  # seconds a merge read-back polls for MERGED before calling the merge not done
 # Statuses after which the next cycle runs the item again without a new push or comment.
 AWAITING = {"awaiting-checks": "required checks were pending", "awaiting-issues": "linked issues were waiting",
-             "awaiting-base": "the base moved past the panel's head"}
+            "awaiting-base": "the base moved past the panel's head",
+            "awaiting-hold": "the hold label or the base branch changed"}
+# A PR carrying one of these labels is reviewed, fixed and verified, but never merged by the bots.
+HOLD_LABELS = frozenset({"hold", "do-not-merge", "stack-only"})
+# Check buckets (`gh pr checks`) that satisfy a required check. GitHub counts a skipped required check as passed.
+PASSING = frozenset({"pass", "skipping"})
 # Branch rules an admin merge may pass: the review it replaces, checks the gate verifies, and push-only rules.
 BENIGN_RULES = {"creation", "deletion", "non_fast_forward", "pull_request", "required_status_checks"}
 MAX_DIFF = 150_000
 MAX_COMMENT = 60_000
 PR_FIELDS = ("number,title,body,url,isDraft,author,headRefName,headRefOid,baseRefName,isCrossRepository,"
-             "createdAt,comments")
-ISSUE_FIELDS = "number,title,body,url,author,createdAt,comments,labels"
+             "createdAt,labels")
+ISSUE_FIELDS = "number,title,body,url,author,createdAt,labels"
+# Comments come from GraphQL, not `gh pr/issue list --json comments`: that returns the oldest 100 and names an
+# app `slug` like a person. Here the newest 100 arrive with the author's type.
+COMMENT_FIELDS = "comments(last: 100) { nodes { author { __typename login } body createdAt } }"
+OPEN_COMMENTS_QUERY = """query($owner: String!, $name: String!, $endCursor: String) {
+  repository(owner: $owner, name: $name) {
+    items: KIND(states: OPEN, first: 50, after: $endCursor) {
+      pageInfo { hasNextPage endCursor }
+      nodes { number %s }
+    }
+  }
+}""" % COMMENT_FIELDS
+ISSUE_COMMENTS_QUERY = """query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) { issue(number: $number) { %s } }
+}""" % COMMENT_FIELDS
 NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 UNTRUSTED_NOTE = (
@@ -89,6 +110,8 @@ RULES = ("Follow the repo's AGENTS.md and CONTRIBUTING rules. Never take real-mo
          "Never print or commit secrets.")
 READ_ONLY_NOTE = ("You are read-only: you can read and search files, but you cannot run commands or tests or "
                   "write anything (those requests are denied), so ground every claim in the code you read.")
+SEALED_NOTE = ("You have no tools and no files: everything you can check is in this message. Ground every claim "
+               "in the diff below, and say so when a finding depends on code you cannot see.")
 
 
 class Blocked(Exception):
@@ -313,7 +336,10 @@ def pr_reasons(pr: dict, item: dict, since, owner: str, mention: str, is_ours):
     if head not in known and not pr.get("backlog"):
         reasons.append(f"new head {head[:7]}")
     if item.get("status") in AWAITING and item.get("panelSha") == head:
-        reasons.append(AWAITING[item["status"]])
+        # A held PR runs again only once its hold label or its base branch changed (PRConversation.land).
+        waiting = {"held": is_held(pr.get("labels")), "base": pr.get("baseRefName")}
+        if item["status"] != "awaiting-hold" or waiting != item.get("heldAt"):
+            reasons.append(AWAITING[item["status"]])
     if item.get("status") == "error" and item.get("errors", 0) < MAX_ATTEMPTS:
         reasons.append(f"retry after an error ({item.get('errors', 0)}/{MAX_ATTEMPTS})")
     floor = max(since or "", item.get("lastCommentAt") or "")
@@ -354,8 +380,10 @@ def with_pending(pending: list, comments: list) -> list:
 def wants_implementation(issue: dict, comments: list, item: dict, owner: str, mention: str) -> bool:
     """The owner asked (`<mention> implement`), or opened the issue and didn't mark it discussion-only. An issue
     flagged because a PR's merge waits on it (`answerAll`) is only answered: that PR is its implementation."""
-    command = f"{mention} implement".lower()
-    if any(same(login_of(c), owner) and command in (c.get("body") or "").lower() for c in comments):
+    # The command opens a line, as its own word: "... implementation looks wrong" and a quoted "> ... implement"
+    # are talk about the command, not the command.
+    command = re.compile(rf"^[ \t]*{re.escape(mention)}[ \t]+implement(?![\w-])", re.I | re.M)
+    if any(same(login_of(c), owner) and command.search(c.get("body") or "") for c in comments):
         return True
     if item.get("handled") or item.get("implemented") or item.get("answerAll") or not same(login_of(issue), owner):
         return False
@@ -429,14 +457,20 @@ def gate_decision(f: dict):
         seen = buckets.get(name)
         if not seen:
             reasons.append(f"required check `{name}` never reported")
-        elif any(b != "pass" for b in seen):
-            reasons.append(f"required check `{name}` is {'/'.join(sorted(set(seen)))}")
+        elif failed := sorted(set(seen) - PASSING):
+            reasons.append(f"required check `{name}` is {'/'.join(failed)}")
     for name, apps in sorted(f["pinnedChecks"].items()):  # a check the rules tie to one app: only its runs count
         for app, seen in sorted(apps.items()):
             if not seen:
                 reasons.append(f"required check `{name}` from app {app} never reported")
-            elif any(b != "pass" for b in seen):
-                reasons.append(f"required check `{name}` from app {app} is {'/'.join(sorted(set(seen)))}")
+            elif failed := sorted(set(seen) - PASSING):
+                reasons.append(f"required check `{name}` from app {app} is {'/'.join(failed)}")
+    if f["held"]:
+        reasons.append(f"the PR carries a hold label ({', '.join(sorted(HOLD_LABELS))}); remove it to let the bots "
+                       "merge")
+    if f["stackBase"]:
+        reasons.append(f"the base `{f['stackBase']}` is neither the default branch nor a protected branch: a stack "
+                       "lands bottom-up, so this PR waits until it targets the trunk")
     admin = False
     state = f["mergeStateStatus"]
     if state == "BLOCKED":
@@ -570,47 +604,6 @@ def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
     return path
 
 
-# What an agent CLI loads from the folder it starts in: instructions, settings, hooks, skills, MCP servers, env files.
-# Compared in lower case, since Windows and macOS resolve `.OMP` to `.omp`.
-AGENT_CONFIG_NAMES = frozenset({
-    ".omp", ".pi", ".claude", ".codex", ".agents", ".agent", ".cursor", ".gemini", ".opencode", ".windsurf", ".devin",
-    ".kiro", ".vscode", ".clinerules", ".cursorrules", ".windsurfrules", "agents.md", "agents.override.md",
-    "claude.md", "claude.local.md", "gemini.md", ".mcp.json", "mcp.json", "opencode.json", "opencode.jsonc",
-    ".deep-mode.json"})
-AGENT_CONFIG_GITHUB = ("copilot-instructions.md", "skills", "instructions", "plugin")
-
-
-def is_agent_config(path: str) -> bool:
-    """True for a file or folder, at any depth, that an agent CLI would load. `path` uses forward slashes."""
-    parts = path.lower().split("/")
-    if any(part in AGENT_CONFIG_NAMES for part in parts) or parts[-1].startswith(".env"):
-        return True
-    return any(part == ".github" and nxt in AGENT_CONFIG_GITHUB for part, nxt in zip(parts, parts[1:]))
-
-
-def strip_agent_config(tree: Path) -> None:
-    """Someone else's PR must not configure the agent that reviews it: a hook, MCP server, or env file in the
-    checkout would run on this machine. Delete every agent-config file and folder from `tree`, tracked or not.
-    Nothing is restored from the base branch, since base config can point at files the PR controls (a hook script,
-    a symlink target). The PR's versions still reach the reviewer as diff text."""
-    for folder, dirs, files in os.walk(tree):
-        rel = Path(folder).relative_to(tree).as_posix()
-        for name in [*dirs, *files]:
-            if name == ".git" or not is_agent_config(name if rel == "." else f"{rel}/{name}"):
-                continue
-            target = Path(folder) / name
-            if target.is_dir() and not target.is_symlink():  # includes a submodule's folder
-                shutil.rmtree(target, ignore_errors=True)
-            else:
-                target.unlink(missing_ok=True)
-            if target.exists() or target.is_symlink():
-                raise RuntimeError(f"could not remove agent config {target} from the review checkout")
-            if name in dirs:
-                dirs.remove(name)
-        if ".git" in dirs:
-            dirs.remove(".git")
-
-
 def branch_rules(repo: str, base: str, is_admin: bool):
     """From branch protection plus rulesets: the required status-check names, the ones tied to a GitHub App
     ({name: [app ids]}), the other rules an admin merge would bypass besides the required review (BENIGN_RULES
@@ -701,6 +694,46 @@ def checks_pending(contexts: list, checks: list, required: list, pinned: dict) -
         any(c.get("bucket") == "pending" for c in checks if c["name"] in contexts) or \
         any(name not in names for name in contexts) or \
         any(not seen or "pending" in seen for apps in pinned.values() for seen in apps.values())
+
+
+def checks_running(contexts: list, checks: list, required: list, pinned: dict) -> bool:
+    """A required check that has reported and is still running. One that never reported is pending but not
+    running: the gate waits for it once (CHECK_WAIT), then blocks."""
+    return any(c.get("bucket") == "pending" for c in required) or \
+        any(c.get("bucket") == "pending" for c in checks if c["name"] in contexts) or \
+        any("pending" in seen for apps in pinned.values() for seen in apps.values())
+
+
+def is_held(labels) -> bool:
+    return any((label.get("name") or "").lower() in HOLD_LABELS for label in labels or [])
+
+
+def as_comment(node: dict) -> dict:
+    """A GraphQL comment in the shape the triggers read. GraphQL names an app `slug` and REST `slug[bot]`; the
+    REST form is kept, so a bot's comment is never taken for a human's."""
+    author = node.get("author") or {}
+    login = author.get("login") or ""
+    if author.get("__typename") == "Bot" and not login.endswith("[bot]"):
+        login += "[bot]"
+    return {"author": {"login": login}, "createdAt": node.get("createdAt") or "", "body": node.get("body") or ""}
+
+
+def open_comments(repo: str, kind: str) -> dict:
+    """{number: its newest 100 comments, oldest first} for every open PR (`pullRequests`) or issue (`issues`)."""
+    owner, name = repo.split("/", 1)
+    out = gh("api", "graphql", "--paginate", "-f", "query=" + OPEN_COMMENTS_QUERY.replace("KIND", kind),
+             "-f", f"owner={owner}", "-f", f"name={name}", "--jq", ".data.repository.items.nodes[] | @json")
+    return {node["number"]: [as_comment(c) for c in node["comments"]["nodes"]]
+            for node in map(json.loads, filter(str.strip, out.splitlines()))}
+
+
+def issue_comments(repo: str, number: int) -> list:
+    """One issue's newest 100 comments, oldest first."""
+    owner, name = repo.split("/", 1)
+    data = json.loads(gh("api", "graphql", "-f", "query=" + ISSUE_COMMENTS_QUERY, "-f", f"owner={owner}",
+                         "-f", f"name={name}", "-F", f"number={number}"))
+    issue = data["data"]["repository"]["issue"] or {}
+    return [as_comment(c) for c in (issue.get("comments") or {}).get("nodes") or []]
 
 
 def pr_commits(repo: str, number: int) -> list:
@@ -815,6 +848,24 @@ class Item:
             raise RuntimeError(f"{role_label(role)} turn failed (exit {proc.returncode}): {proc.stderr.strip()[-400:]}")
         return reply
 
+    def ask_sealed(self, role: dict, prompt: str) -> str:
+        """One model reply with no tools, no files and no project config, for a prompt someone else controls. A
+        reviewer with tools could be talked into reading a local file or fetching a URL, and its reply is posted."""
+        if role["agent"] != "omp":
+            raise RuntimeError(f"only an omp agent can run sealed; {role_label(role)} cannot")
+        self.note(f"PROMPT -> {role_label(role)} (sealed: no tools)\n\n{prompt}")
+        log(f"{self.key}: {role_label(role)} turn (sealed: no tools)")
+        try:
+            model = role.get("model") or pr_agent_local.omp_default_model()
+            reply, _ = pr_agent_local.omp_complete([{"role": "user", "content": prompt}], model,
+                                                   pr_agent_local.omp_oauth_credentials(model))
+        except SystemExit as err:  # pr_agent_local reports a setup problem by exiting
+            raise RuntimeError(str(err)) from None
+        self.note(f"REPLY <- {role_label(role)} (sealed)\n\n{reply}")
+        if not reply.strip():
+            raise RuntimeError(f"{role_label(role)} sealed turn returned nothing")
+        return reply.strip()
+
 
 # ---------------------------------------------------------------- prompts
 
@@ -826,7 +877,9 @@ def review_prompt(c, round_no: int, diff: str, author_reply) -> str:
                  f"`{c.head}`. Re-review the whole change; a dismissal stands only if its proof holds.\n\n"
                  f"<author-reply>\n{defang_prompt(author_reply)}\n</author-reply>\n")
     thread = f"\n{untrusted('comments', thread_text(c.comments))}\n" if c.comments and round_no == 1 else ""
-    return f"""You are the {NAME} reviewer of pull request {c.repo}#{c.n}, round {round_no}. Your working directory is a checkout of the PR head `{c.head}`; the base branch is `{c.base}`. Do not edit, commit, push or post anything: the coordinator posts your reply verbatim to the PR thread. {READ_ONLY_NOTE}
+    where = (f"Your working directory is a checkout of the PR head `{c.head}`; the base branch is `{c.base}`."
+             if c.own else f"The PR head is `{c.head}`; the base branch is `{c.base}`.")
+    return f"""You are the {NAME} reviewer of pull request {c.repo}#{c.n}, round {round_no}. {where} Do not edit, commit, push or post anything: the coordinator posts your reply verbatim to the PR thread. {READ_ONLY_NOTE if c.own else SEALED_NOTE}
 
 {UNTRUSTED_NOTE}
 
@@ -966,9 +1019,9 @@ Reply with a short summary, then exactly one fenced ```json block:
 # ---------------------------------------------------------------- PR conversation
 
 class PRConversation:
-    def __init__(self, bot, it: Item, pr: dict, comments: list, clone: Path, item: dict):
+    def __init__(self, bot, it: Item, pr: dict, comments: list, clone: Path, item: dict, default: str):
         self.bot, self.it, self.pr, self.comments, self.clone, self.item = bot, it, pr, comments, clone, item
-        self.cfg, self.repo, self.n = bot.cfg, it.repo, pr["number"]
+        self.cfg, self.repo, self.n, self.default = bot.cfg, it.repo, pr["number"], default
         self.base, self.branch, self.head = pr["baseRefName"], pr["headRefName"], pr["headRefOid"]
         self.heads = {self.head}
         self.own = is_own_pr(pr, bot.ident.owner, bot.trusted(self.repo))
@@ -991,12 +1044,16 @@ class PRConversation:
                 # Still open: the merge hasn't landed (yet). The record stays, so a late merge is still caught,
                 # and a real trigger on the open PR runs the conversation as usual.
             log(f"{self.it.key}: {'own PR' if self.own else 'not own PR: reviewer only, never merged'}")
+            if not self.own and self.reviewer["agent"] != "omp":
+                # Someone else's PR gets a sealed reviewer (no tools), which only omp can run here.
+                log(f"{self.it.key}: not reviewed: reviewer {role_label(self.reviewer)} cannot run sealed")
+                return "not-reviewed"
             if self.bot.dry:
                 return self.dry_run()
             if not self.own:
                 self.review(1)
                 return "reviewed"
-            if self.item.get("status") in ("awaiting-checks", "awaiting-issues") \
+            if self.item.get("status") in ("awaiting-checks", "awaiting-issues", "awaiting-hold") \
                     and self.item.get("panelSha") == self.head \
                     and not self.comments:
                 return self.land(self.item.get("panelTally", "?"))
@@ -1047,16 +1104,21 @@ class PRConversation:
 
     def review(self, round_no: int) -> list:
         self.refresh()
-        worktree_at(self.clone, self.review_tree, self.head)
-        if not self.own:
-            strip_agent_config(self.review_tree)
-        stat = git(self.clone, "diff", "--stat", f"origin/{self.base}...{self.head}")
-        diff = git(self.clone, "diff", f"origin/{self.base}...{self.head}")
+        span = f"origin/{self.base}...{self.head}"
+        stat = git(self.clone, "diff", "--stat", span)
+        if self.own:
+            worktree_at(self.clone, self.review_tree, self.head)
+            diff, cut = git(self.clone, "diff", span), "; read the changed files in the working directory"
+        else:  # someone else's PR: the reviewer is sealed and sees only this text, so the diff carries more context
+            diff, cut = git(self.clone, "diff", "--unified=40", span), ""
         if len(diff) > MAX_DIFF:
-            diff = diff[:MAX_DIFF] + "\n[diff truncated; read the changed files in the working directory]"
-        session = None if self.bot.dry else f"{self.it.tag}-reviewer"
+            diff = diff[:MAX_DIFF] + f"\n[diff truncated{cut}]"
+        session = f"{self.it.tag}-reviewer" if self.own and not self.bot.dry else None
         prompt = review_prompt(self, round_no, f"{stat}\n\n{diff}", self.author_reply)
-        reply = self.it.ask(self.reviewer, prompt, self.review_tree, "--approve-reads", session)
+        if self.own:
+            reply = self.it.ask(self.reviewer, prompt, self.review_tree, "--approve-reads", session)
+        else:
+            reply = self.it.ask_sealed(self.reviewer, prompt)
         findings = parse_findings(reply)
         if findings is None and session:
             reply = self.it.ask(self.reviewer, "Your reply had no parseable findings block. Reply again: the "
@@ -1116,11 +1178,10 @@ class PRConversation:
         refs = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "closingIssuesReferences") or {}
         waiting = []
         for ref in refs.get("closingIssuesReferences") or []:
-            target = [ref["url"]] if ref.get("url") else [str(ref["number"]), "-R", self.repo]
-            comments = (gh_json("issue", "view", *target, "--json", "comments") or {}).get("comments") or []
+            where = re.search(r"github\.com/([^/]+/[^/]+)/issues/\d+", ref.get("url") or "")
+            comments = issue_comments(where.group(1) if where else self.repo, ref["number"])
             if unanswered(comments, self.bot.ident.is_ours):
                 waiting.append(ref.get("url") or f"#{ref['number']}")
-                where = re.search(r"github\.com/([^/]+/[^/]+)/issues/\d+", ref.get("url") or "")
                 key = f"{where.group(1) if where else self.repo}#issue:{ref['number']}"
                 self.bot.state["items"].setdefault(key, {"heads": {}})["answerAll"] = True
         return waiting
@@ -1230,7 +1291,7 @@ class PRConversation:
             contexts, pinned_rules, other, error = branch_rules(self.repo, self.base, is_admin)
             for _ in range(6):  # GitHub computes mergeability lazily
                 view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json",
-                               "headRefOid,mergeStateStatus,mergeable,reviewDecision")
+                               "headRefOid,mergeStateStatus,mergeable,reviewDecision,labels")
                 if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                     break
                 time.sleep(5)
@@ -1243,6 +1304,10 @@ class PRConversation:
             log(f"{self.it.key}: waiting for required checks")
             time.sleep(30)
         head = view["headRefOid"]
+        # A base that is neither the trunk nor a protected branch is a stack parent's branch: merging into it would
+        # land the child before its parent, or into a branch that already merged.
+        stacked = self.base != self.default and gh(
+            "api", f"repos/{self.repo}/branches/{quote(self.base, safe='')}", "--jq", ".protected").strip() != "true"
         # Fetch now, after any check wait: the base's opt-out and the behind count must not come from a stale ref.
         git(self.clone, "fetch", "origin", "--quiet", f"+refs/heads/{self.base}:refs/remotes/origin/{self.base}",
             f"+refs/pull/{self.n}/head:refs/{B['branchPrefix']}/pr/{self.n}", timeout=1800)
@@ -1250,19 +1315,29 @@ class PRConversation:
                 "mergeStateStatus": view["mergeStateStatus"], "reviewDecision": view.get("reviewDecision") or "",
                 "isAdmin": is_admin, "requiredContexts": contexts, "pinnedChecks": pinned, "otherRules": other,
                 "requiredError": error, "checks": checks, "required": required, "pending": pending,
+                "running": checks_running(contexts, checks, required, pinned),
+                "held": is_held(view.get("labels")), "stackBase": self.base if stacked else None,
                 "own": self.ownership(head), "behindBy": behind_by(self.clone, self.base, head),
                 "openIssues": self.open_issues(), "botAutonomous": bool(self.cfg["autonomousMerge"]),
                 "repoAutonomous": base_config(self.clone, self.base).get("autonomousMerge")}
 
     def land(self, tally: str) -> str:
         sha = self.item.get("panelSha")
-        facts = self.gate_facts(sha, wait=True)
+        # One CHECK_WAIT per head: a later cycle looks without waiting, so a slow or missing check never holds up
+        # every other item for half an hour each cycle.
+        facts = self.gate_facts(sha, wait=self.item.get("checksWaited") != sha)
+        if facts["pending"]:
+            self.item["checksWaited"] = sha
         ok, admin, reasons = gate_decision(facts)
         if not ok:
             # Retried by the next cycle (AWAITING) when the head is the panel's and nothing else blocks.
-            rest = gate_decision({**facts, "openIssues": [], "behindBy": 0})[2]
+            rest = gate_decision({**facts, "openIssues": [], "behindBy": 0, "held": False, "stackBase": None})[2]
             if facts["pending"] and facts["head"] == sha:
-                status = "awaiting-checks"
+                # Running checks are looked at again next cycle; one that never reported blocks after the wait.
+                status = "awaiting-checks" if facts["running"] else "blocked"
+            elif not rest and facts["head"] == sha and (facts["held"] or facts["stackBase"]):
+                status = "awaiting-hold"
+                self.item["heldAt"] = {"held": facts["held"], "base": self.base}
             elif not rest and facts["head"] == sha:
                 status = "awaiting-base" if facts["behindBy"] > 0 else "awaiting-issues"
             elif all("autonomousMerge" in r for r in reasons):
@@ -1519,6 +1594,9 @@ class Bot:
                           PR_FIELDS) or []
             if len(prs) >= LIST_LIMIT:
                 log(f"{repo}: {LIST_LIMIT}+ open PRs; the oldest beyond that are not polled")
+            comments = open_comments(repo, "pullRequests") if prs else {}
+            for pr in prs:
+                pr["comments"] = comments.get(pr["number"], [])
             for pr in prs:
                 key = f"pr:{pr['number']}"
                 if want and want != key:
@@ -1557,6 +1635,9 @@ class Bot:
             issues = json.loads(listed.stdout or "[]") if listed.returncode == 0 else []
             if len(issues) >= LIST_LIMIT:
                 log(f"{repo}: {LIST_LIMIT}+ open issues; the oldest beyond that are not polled")
+            comments = open_comments(repo, "issues") if issues else {}
+            for issue in issues:
+                issue["comments"] = comments.get(issue["number"], [])
             for issue in issues:
                 key = f"issue:{issue['number']}"
                 if want and want != key:
@@ -1590,7 +1671,7 @@ class Bot:
         item = self.state["items"].setdefault(it.key, {"heads": {}})
         comments = with_pending(item.get("pendingComments") or [], comments)
         log(f"{it.key}: {'; '.join(reasons)}")
-        conversation = PRConversation(self, it, data, comments, clone, item) if kind == "pr" else \
+        conversation = PRConversation(self, it, data, comments, clone, item, default) if kind == "pr" else \
             IssueConversation(self, it, data, comments, clone, item, default)
         try:
             status = conversation.run()

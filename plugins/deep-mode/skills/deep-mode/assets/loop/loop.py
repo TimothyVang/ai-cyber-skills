@@ -8,7 +8,9 @@ A goal file is Markdown with frontmatter (one `key: value` per line):
     goal: one-line objective
     check: shell command; exit 0 means done
     protect: tests/test_x.py scripts/check.sh  (required: files and folders the check runs, which the agent must not
-                                              change; `none` when the check reads nothing the agent could edit)
+                                              change; a path that doesn't exist yet, such as a root conftest.py,
+                                              must stay absent; `none` when the check reads nothing the agent
+                                              could edit)
     harness: omp | claude | codex            (default omp)
     max_iterations: 10                       (hard cap, required)
     max_cost_usd: 2                          (per iteration; omp --max-cost, claude --max-budget-usd; required for
@@ -47,7 +49,8 @@ PROMPT = (
     "Work toward the goal in {goal_file}. Read it first, then the trail of earlier iterations in {trail} if it exists. "
     "Do the next smallest verifiable step toward the goal, run its check (`{check}`), and commit progress you would keep. "
     "Stop after that one step. Never edit the goal file's frontmatter (goal, check, limits) or the files the check runs "
-    "({protect}): if the goal or the check is wrong, say so and stop. This is iteration {i} of at most {n}."
+    "({protect}), and never create one of those paths that doesn't exist yet: if the goal or the check is wrong, say "
+    "so and stop. This is iteration {i} of at most {n}."
 )
 
 
@@ -93,7 +96,8 @@ def project_root(path):
 
 
 def protected_paths(fields, root, goal_path):
-    """Resolve `protect` to root-relative paths. Each must exist inside the root and not be the root itself."""
+    """Resolve `protect` to root-relative paths inside the root, never the root itself. A path may be absent: then
+    creating it counts as a change (protect_digest records it as missing)."""
     if fields["protect"].strip().lower() == "none":
         return []
     paths = []
@@ -102,8 +106,6 @@ def protected_paths(fields, root, goal_path):
         rel = os.path.relpath(full, root)
         if rel == "." or rel.startswith(".."):
             raise SystemExit(f"{goal_path}: protect path {entry!r} must be inside the project root and not the root")
-        if not os.path.exists(full):
-            raise SystemExit(f"{goal_path}: protect path {entry!r} does not exist")
         paths.append(rel.replace(os.sep, "/"))
     return paths
 
@@ -311,8 +313,11 @@ def main():
     code, output = run_check(fields["check"], root, protect, limits["check_minutes"])
     timed_out = f"the check ran past {limits['check_minutes']} minutes and was stopped"
     if opts.action == "check":
-        print(f"goal ok: {fields['goal']}\nprotected: {protect_text}\n"
-              f"{timed_out if code is None else f'check exit {code}'}{' (already done)' if code == 0 else ''}\n"
+        absent = [path for path in protect if not os.path.lexists(os.path.join(root, path))]
+        print(f"goal ok: {fields['goal']}\nprotected: {protect_text}")
+        if absent:
+            print(f"absent, must stay absent: {' '.join(absent)}")
+        print(f"{timed_out if code is None else f'check exit {code}'}{' (already done)' if code == 0 else ''}\n"
               f"{output.strip()}")
         return 0
     if code is None:

@@ -38,6 +38,8 @@ elif action == "tamper-goal":
 elif action == "tamper-protect":
     with open("check.sh", "a") as handle:
         handle.write("exit 0\\n")
+elif action == "create-conftest":
+    open("conftest.py", "w").close()
 if action == "fail":
     sys.exit(3)
 """
@@ -128,6 +130,14 @@ class LoopCase(unittest.TestCase):
         self.goal()
         run = self.loop("run", "goals/g.md", action="fail")
         self.assertEqual(run.returncode, 5, run.stdout + run.stderr)
+
+    def test_creating_a_protected_path_that_did_not_exist_exits_4(self):
+        self.goal(protect="check.sh conftest.py")
+        check = self.loop("check", "goals/g.md")
+        self.assertIn("absent, must stay absent: conftest.py", check.stdout)
+        run = self.loop("run", "goals/g.md", action="create-conftest")
+        self.assertEqual(run.returncode, 4, run.stdout + run.stderr)
+        self.assertIn("conftest.py", run.stdout)
 
     def test_goal_files_need_protect_and_a_cost_cap(self):
         self.goal(protect=None)
