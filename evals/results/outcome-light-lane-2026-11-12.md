@@ -29,6 +29,11 @@ Both rounds wrote the same core fix: split in whole cents and give the leftover 
 No tool call in any run touched a path outside its folder (`collect`'s scan, 0 hits in all four).
 The four runs cost $4.48 in all.
 
+The trimmed lane is still not as cheap as no skill.
+The plain runs in `outcome-2026-11-12.md` cost $0.18 and $0.22 with 10 and 9 tool calls.
+At $0.60 and $0.61, the trimmed lane costs about 2.7 to 3.4 times a plain run, with one or two more tool calls.
+Most of that gap is loading the skill, below.
+
 ## Where the before runs spent it
 
 From the event logs, scored by `.scratch/breakdown.py` (not committed).
@@ -71,20 +76,28 @@ Neither round restated the goal as its first visible message. The trim did not c
 
 ## What changed in the skill
 
+The skill text was reworded after review, below. The runs above used the wording at `44eb824`. The reworded rules keep the same local lane, so I did not rerun the outcome eval on them.
+
 - `SKILL.md`, Route step 3, the S row now reads:
-  "Restate in one line, fix, add a test that fails without the fix, prove it once on the real artifact. A **local S fix** (no remote, or the user reviews it first) stops there, uncommitted, reading no reference file. To push or merge, take the S lane (`references/playbooks/opening-a-pr.md`) and its light panel. No other subagents, architect, or decision log."
+  "Restate in one line, fix, add a test that fails without the fix when it has behavior, prove it once on the real artifact. A **local S fix** (no remote, or the user said they will review it) reads no reference file and lands on no branch: no commit to the default branch, no push, no merge. Any of those three takes the S lane (`references/playbooks/opening-a-pr.md`) and its light panel. No other subagents, architect, or decision log."
 - `SKILL.md`, Non-negotiables, the S line now reads:
-  "For size **S**, only the one-line restate, the Scope ledger, proving it on the real artifact (no new verify skill), and, if it ships, the S lane apply."
-- `SKILL.md`, Prove it on the real artifact, `create-verification-skill` now runs only when "an M or L task changes user-visible behavior".
+  "For size **S**, only the one-line restate, the Scope ledger, proving it on the real artifact, and, if it lands, the S lane apply."
+- `SKILL.md`, Prove it on the real artifact, `create-verification-skill` now runs only when "an M or L task changes user-visible behavior". The verify-skill paths now point to Route step 1, which lists them.
 - `SKILL.md`, Autonomy, the light panel bullet adds "A local S fix needs none."
   Nothing lands on a default or shared branch without a panel pass, so the rule itself is unchanged.
-- `SKILL.md`, Any PR, the bullet "Size S takes the S lane instead" is removed. The S row and the Non-negotiables S line already say it, and the bytes keep the rules above `## Routes` at 19,987, under 20,000.
-- `opening-a-pr.md`, Size S lane, defines the local S fix and its done-when. An S change that is pushed or merged takes the S lane and the light panel as before.
-- `panel.md` names the local S fix as needing no panel. The light panel's verifier now keeps its break attempt within inputs the code plausibly sees. A failure only past that is a follow-up, not NOT DONE. This part did not run in this eval.
-- `commands/deep.md` adds: "A small fix with no remote to push to, or one I said I'd review, stays an uncommitted local change: fix, a test that fails without the fix, one real run, then report. It needs no panel."
+- `SKILL.md`, Any PR, the bullet "Size S takes the S lane instead" is removed. The S row and the Non-negotiables S line already say it.
+  The rules above `## Routes` are 19,970 bytes, under 20,000.
+- `opening-a-pr.md`, Size S lane, defines the local S fix and its done-when.
+  It may stay uncommitted or sit on a fresh non-default branch, which lands nowhere. "Open a PR, I'll review it" means a push, so it takes the S lane.
+  Committing an S change to the default branch, pushing it, or merging it takes the S lane and the light panel as before.
+- `panel.md` names the local S fix as needing no panel.
+  The light panel's verifier brief adds an input rule. Any value from outside the process (a request, a file, user input, the environment) is in range at every value its type allows. Only a value no caller can produce is out of range, and a failure only there is a follow-up, not NOT DONE.
+  Step 5 now applies to every follow-up a passing light-panel verifier reports, so each reaches the task list or the final reply.
+  This part did not run in this eval. Under it, the billsplit verifiers' trillion-dollar findings stay in range, since the total is user input.
+- `commands/deep.md` says a small fix with no remote, or one the user will review, lands on no branch and needs no panel, and that "Open a PR, I'll review it" takes the panel. Its description and `README.md` add that a small local fix needs no panel.
 
 ## Limits
 
 - Two runs per round on one task. The drop is large and the same in both runs, but the sample is small.
-- The task's repo has no remote, so this eval exercises only the local S fix. The pushed S lane and the light panel's realistic-input brief are unmeasured.
+- The task's repo has no remote, so this eval exercises only the local S fix. The pushed S lane and the light panel's input rule are unmeasured.
 - The deep-mode bot's own light panel brief lives in `bot.py`, which this change does not touch.
