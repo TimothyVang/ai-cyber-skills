@@ -3,6 +3,7 @@
 
 Usage:
   python arena.py <thread-url> [<thread-url> ...] | --repo <owner/repo> [--limit 30] [--ascii]
+  python arena.py ... --frames [--since <comment-id>] [--last N] [--width 80] [--color|--ascii]
   python arena.py ... --out <file.html> [--open]          (a static page instead)
   python arena.py ... --serve [--port 8765] [--open]      (a live page on 127.0.0.1 instead)
 
@@ -13,6 +14,11 @@ while the conversation runs. Keys: Enter/Space/Right next, Left/B/Backspace back
 Esc threads, R refetch, q quit. Colours follow the terminal: truecolor when COLORTERM or Windows
 Terminal says so, 256 colours otherwise, none with NO_COLOR; --ascii draws in plain 7-bit text.
 When stdout isn't a terminal it prints show_thread's text digest instead.
+--frames needs no terminal: it prints one static frame per bot turn (the scene after that turn and a
+dialog box with all of its lines) and exits, for agent chats that show tool output as text. It takes the
+turns newer than --since, or the newest --last N per thread (3 when neither is given), and ends with the
+newest comment id to pass as --since next time. Plain Unicode by default (no escape codes); --color adds
+ANSI colour for a real terminal, --ascii keeps to 7-bit text.
 --repo loads the repo's recently updated PRs and issues that have at least one bot turn, behind a
 thread menu. --out writes one self-contained HTML file. --serve serves that page on 127.0.0.1 with
 a JSON endpoint the page polls every 15 s.
@@ -483,7 +489,16 @@ def main() -> int:
     parser.add_argument("--serve", action="store_true", help="serve the page live on 127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--open", action="store_true", help="open the page in the browser")
-    parser.add_argument("--ascii", action="store_true", help="terminal view in plain 7-bit text, no colour")
+    parser.add_argument("--ascii", action="store_true", help="plain 7-bit text, no colour (terminal view or --frames)")
+    parser.add_argument("--frames", action="store_true",
+                        help="print one static 8-bit frame per bot turn and exit: no TTY needed, for agent chats")
+    parser.add_argument("--since", type=int, default=0, metavar="COMMENT-ID",
+                        help="with --frames, only turns newer than this comment id")
+    parser.add_argument("--last", type=int, metavar="N", help=f"with --frames, only the newest N turns of each "
+                        f"thread (default {tui.FRAMES_LAST} when --since isn't given)")
+    parser.add_argument("--width", type=int, default=80, help=f"with --frames, columns (at least {tui.MIN_W})")
+    parser.add_argument("--color", action="store_true",
+                        help="with --frames, ANSI colour (truecolor or 256) for a real terminal")
     opts = parser.parse_args()
     if bool(opts.urls) == bool(opts.repo):
         parser.error("give thread URLs or --repo, not both" if opts.urls else "give thread URLs or --repo")
@@ -491,12 +506,20 @@ def main() -> int:
         parser.error("--repo takes owner/repo")
     if bad := [u for u in opts.urls if not st.parse_url(u)]:
         parser.error(f"not a GitHub PR or issue URL: {bad[0]}")
+    if not opts.frames and (opts.since or opts.last is not None or opts.color or opts.width != 80):
+        parser.error("--since, --last, --width and --color go with --frames")
+    if opts.frames and (opts.out or opts.serve):
+        parser.error("--frames prints to stdout; it doesn't combine with --out or --serve")
+    if opts.color and opts.ascii:
+        parser.error("--color or --ascii, not both")
+    if opts.width < tui.MIN_W:
+        parser.error(f"--width is at least {tui.MIN_W}")
     browser = bool(opts.out or opts.serve)
     source = Source(opts.urls, opts.repo, max(1, min(opts.limit, 100)))
-    if not browser and interactive():
+    if not browser and not opts.frames and interactive():
         print("arena: loading...", file=sys.stderr, flush=True)
     try:
-        if opts.out and not opts.serve:
+        if (opts.out and not opts.serve) or opts.frames:
             data = payload(*gather(opts.urls, opts.repo, source.limit), live=False)
         else:  # the terminal and --serve keep refetching through the source's cache
             data = source.get()
@@ -504,6 +527,11 @@ def main() -> int:
         sys.exit(f"arena: {err}")
     for err in data["errors"]:
         print(f"arena: {err}", file=sys.stderr)
+    if opts.frames:
+        mode = "ascii" if opts.ascii else tui.colour_mode({k: v for k, v in os.environ.items() if k != "NO_COLOR"}) \
+            if opts.color else "mono"
+        print("\n".join(tui.frames(data["threads"], opts.since, opts.last, opts.width, mode, SPRITES)))
+        return 0
     if not data["threads"] and not opts.serve:
         sys.exit("arena: no thread with a bot turn to show")
     if not browser:

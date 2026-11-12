@@ -462,16 +462,16 @@ def bottom_line(ui: UI, g: dict, width: int, menu: bool) -> tuple[str, int]:
     return hints(g, menu, width - 6), 2
 
 
-def draw_battle(grid: Grid, ui: UI, g: dict, sprites: dict) -> None:
-    W, H = grid.w, grid.h
-    dlg_h = dialog_rows(H)[0]
-    scene = H - dlg_h
+def draw_scene(grid: Grid, g: dict, sprites: dict, t: dict, score: dict, v, final: bool, scene: int) -> None:
+    """The battle scene above the dialog, in rows [0, scene): the thread top right with its status bracket,
+    the speaker `v` (a turn, or None) bottom left with its own. `final`: past the last turn, so a closed
+    thread's state shows."""
+    W = grid.w
     scale = 2 if W >= 110 and scene >= 2 * 16 else 1
     sh, sw = 8 * scale, 16 * scale
     plat = 1 if scene - 2 * sh >= 2 else 0
     pad = (scene - 2 * sh - 2 * plat) // 3
     top_y, bot_y = pad, scene - pad - plat - sh
-    t, score = ui.th, ui.score()
 
     # the thread: sprite on the right, status bracket on the left
     ox = W - sw - max(2, W // 12)
@@ -482,7 +482,7 @@ def draw_battle(grid: Grid, ui: UI, g: dict, sprites: dict) -> None:
     y = top_y + max(0, (sh - 4) // 2)
     grid.text(2, y, cut(fold(t["label"]).upper(), bw))
     state = None
-    if score["merged"] or (ui.shown_turn() >= len(t["turns"]) and t["state"] != "open"):
+    if score["merged"] or (final and t["state"] != "open"):
         state = "MERGED" if score["merged"] else t["state"].upper()
     if state and t["kind"] == "pr":
         grid.right(2 + bw, y, state, 2)
@@ -502,7 +502,6 @@ def draw_battle(grid: Grid, ui: UI, g: dict, sprites: dict) -> None:
     grid.text(0, y + 3, g["bl"] + g["h"] * (bw + 1))
 
     # the speaker: sprite on the left, status bracket on the right
-    v = ui.speaker()
     px = max(2, W // 12)
     if plat:
         grid.platform(px + sw // 2, bot_y + sh, sw // 2 + 2)
@@ -525,7 +524,12 @@ def draw_battle(grid: Grid, ui: UI, g: dict, sprites: dict) -> None:
             grid.text(x2, yy, cut(s, pw - 1), c)
             grid.text(x2 + pw, yy, g["v"])
 
-    # dialog
+
+def draw_battle(grid: Grid, ui: UI, g: dict, sprites: dict) -> None:
+    W, H = grid.w, grid.h
+    t = ui.th
+    draw_scene(grid, g, sprites, t, ui.score(), ui.speaker(), ui.shown_turn() >= len(t["turns"]),
+               H - dialog_rows(H)[0])
     n_turns = len(t["turns"])
     turn = f"TURN {max(0, min(ui.shown_turn() + 1, n_turns))}/{n_turns}"
     if ui.boxes:
@@ -535,6 +539,57 @@ def draw_battle(grid: Grid, ui: UI, g: dict, sprites: dict) -> None:
     else:
         lines, n, more = ("", ""), 0, False
     draw_dialog(grid, g, lines, n, more, turn, top_right(ui, g), *bottom_line(ui, g, W, menu=False))
+
+
+FRAME_SCENE = 18  # two 8-row sprites, each on a one-row platform: the compact scene of a static frame
+
+
+def turn_frame(t: dict, i: int, width: int, mode: str, sprites: dict) -> list[str]:
+    """Turn i of thread t as one static frame `width` columns wide: the scene after that turn, then a dialog
+    box holding every one of its dialog lines, wrapped, in full (the box grows; nothing pages or is cut)."""
+    width = max(MIN_W, width)
+    v, g = t["turns"][i], glyphs(mode)
+    text = [row for line in v["lines"] for row in wrap(line, text_cols(width))]
+    grid = Grid(width, FRAME_SCENE + len(text) + 2)
+    draw_scene(grid, g, sprites, t, v["after"], v, i == len(t["turns"]) - 1, FRAME_SCENE)
+    y = FRAME_SCENE
+    grid.box(0, y, width, len(text) + 2, g, double=True)
+    left = f"TURN {i + 1}/{len(t['turns'])}"
+    grid.text(2, y, f" {left} ")
+    grid.right(width - 2, y, f" {cut(f'{fold(t['label'])} {g['dot']} #{v['id']}', width - len(left) - 10)} ", 2)
+    for k, row in enumerate(text):
+        grid.text(2, y + 1 + k, row)
+    return emit(grid, mode)
+
+
+FRAMES_LAST = 3  # turns per thread when neither since nor last is given
+
+
+def frames(threads: list[dict], since: int = 0, last=None, width: int = 80, mode: str = "mono",
+           sprites=None) -> list[str]:
+    """Static frames for a chat: per thread a header, then a frame for each turn newer than comment
+    `since` (only the newest `last` of them; the newest FRAMES_LAST when neither is given), then one
+    closing line naming the newest comment id, for the next call's since."""
+    if not since and last is None:
+        last = FRAMES_LAST
+    g, out, newest, shown = glyphs(mode), [], since, 0
+    for t in threads:
+        picked = [i for i, v in enumerate(t["turns"]) if v["id"] > since]
+        if last is not None:
+            picked = picked[-last:] if last > 0 else []
+        newest = max([newest, *(v["id"] for v in t["turns"])])
+        if not picked:
+            continue
+        out.append(cut(f"{t['label']} {g['dot']} {t['state']} {g['dot']} {fold(t['title'])}", width))
+        out.append(fold(t["url"]))
+        for i in picked:
+            out.extend(turn_frame(t, i, width, mode, sprites))
+            out.append("")
+            shown += 1
+    if not shown:
+        out.append(f"arena: no bot turns since {since}" if since else "arena: no bot turns yet")
+    out.append(f"arena: newest comment {newest} (next: --since {newest})" if newest else "arena: no comments yet")
+    return out
 
 
 def draw_menu(grid: Grid, ui: UI, g: dict) -> None:

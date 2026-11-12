@@ -35,15 +35,19 @@ Give the reviewer a different model family than the author, by agent or by model
 
 ## Show the user
 
-The user follows the bots from the session, not only on GitHub. In a session, after each post (kickoff, every review and answer, the panel, the merge note), show what the bots said since last time:
+The user follows the bots from the session, not only on GitHub. In a session, after each post (kickoff, every review and answer, the panel, the merge note), show what the bots said since last time as 8-bit frames:
 
 ```
-python <deep-mode skill dir>/assets/pr-conversation/show_thread.py <pr-url> --since <last comment id shown>
+python <deep-mode skill dir>/assets/pr-conversation/arena.py <pr-url> --frames --since <last comment id shown>
 ```
 
-`<deep-mode skill dir>` is this skill's folder on disk (in Claude Code, `${CLAUDE_PLUGIN_ROOT}/skills/deep-mode`), not the PR checkout you run in. It prints one block per bot or PR-Agent comment: time, role, head, and its gist (each P0/P1/P2 finding, each fixed/dismissed answer, a vote or tally, or the first sentence). Relay it as it lands: in omp write it to `out://` so the run keeps going; elsewhere put it in your next message. `--full` prints whole bodies for a user who asks what exactly a bot said. With no `--since` it shows the whole conversation, which is how the user (or `/deep-mode:pr-thread <pr-url>`) reads a thread later.
+`<deep-mode skill dir>` is this skill's folder on disk (in Claude Code, `${CLAUDE_PLUGIN_ROOT}/skills/deep-mode`), not the PR checkout you run in. It needs no terminal, so it works from any agent's shell tool. It prints one fixed-size frame per new bot or PR-Agent turn: the speaker's sprite and status, the PR with its open-findings bar and vote pips, `TURN n/m`, and a dialog box with that turn's lines in full ("REVIEWER appeared!", each finding, "AUTHOR used FIX!", the votes, the merge). Its last line names the newest comment id; pass that as `--since` next time.
 
-The same thread also plays as an 8-bit battle screen right in the user's terminal (PowerShell, Windows Terminal, bash, zsh, macOS Terminal): each bot is a sprite, each turn a dialog box ("REVIEWER appeared!", its findings, "AUTHOR used FIX!", the votes, the merge). It polls the thread on its own, so the user can watch the conversation live. Offer it when the conversation starts; it takes over a terminal, so the user starts it in their own window:
+Relay the output as it lands inside a fenced `text` code block, so the chat keeps the columns: in omp write it to `out://` so the run keeps going; elsewhere put it in your next message. The frames are plain Unicode with no escape codes, 80 columns wide (`--width` changes it; `--ascii` keeps to 7-bit text).
+
+For the words alone, `show_thread.py <pr-url> --since <id>` prints one short block per turn: time, role, head, and its gist (each P0/P1/P2 finding, each fixed/dismissed answer, a vote or tally, or the first sentence). `--full` prints whole bodies for a user who asks what exactly a bot said. With no `--since` it shows the whole conversation, which is how the user (or `/deep-mode:pr-thread <pr-url>`) reads a thread later.
+
+The same scene also plays live, full screen, in the user's own terminal (PowerShell, Windows Terminal, bash, zsh, macOS Terminal), typing each turn into the dialog box and polling the thread on its own. Offer it when the conversation starts; it takes over a terminal, so the user starts it in their own window:
 
 ```
 python <deep-mode skill dir>/assets/pr-conversation/arena.py <pr-or-issue-url>

@@ -32,7 +32,7 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | `deep-mode` skill | 32 playbooks, 24 principles and 43 techniques, listed below. Every task is proven on the real artifact and merges only on a verifier panel pass. |
 | PR and issue bots | Install your own private GitHub App on your repos and a poller on your machine runs the bots: it reviews and lands your own PRs, resolves their merge conflicts, and plans and builds the issues you open. See [GitHub App bots](#github-app-bots). |
 | PR review | `/deep-mode:review-pr <PR number>` reviews a PR with your own agent and parallel reviewer subagents through correctness, security, spec and standards lenses, keeps only findings a code read or run proves, posts one comment-only review, and re-reviews new commits until clean. No outside review service; code stays where the agent runs. |
-| Land a PR | `/deep-mode:land-pr <PR number>` finishes and merges your own PR with no human: a reviewer bot posts findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. It never merges over a failing check. You see each turn in the session as it lands, or watch the whole conversation play as an 8-bit battle screen in your terminal (each bot a sprite, each turn a dialog box); `/deep-mode:pr-thread <PR or issue URL>` shows any bot conversation later. |
+| Land a PR | `/deep-mode:land-pr <PR number>` finishes and merges your own PR with no human: a reviewer bot posts findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. It never merges over a failing check. You see each turn in the session as it lands, drawn as an 8-bit frame right in the chat (each bot a sprite, each turn a dialog box), or watch the whole conversation play live as an 8-bit battle screen in your terminal; `/deep-mode:pr-thread <PR or issue URL>` shows any bot conversation later. |
 | `deep-stack` skill | Stack picks and a ship loop: a default software stack and the decision rules behind it for any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), an agent-driven UI design workflow, and a per-task loop of worktree, build, recorded evidence and reviewed PR. |
 | Verification skills | `create-verification-skill` builds a per-repo `verify-<app>` skill (a control CLI plus a feature map) so agents can drive your app and capture proof. `maintain-verification-skill` keeps it accurate as the app changes. |
 | `project-brief` and `contribute` | A maintainer publishes a newcomer brief, claimable tasks as issues, a roadmap and templates. A contributor's agent finds an unclaimed task that doesn't overlap open PRs, claims it, builds it through deep-mode, and opens a PR. |
@@ -385,15 +385,19 @@ Give the reviewer a different model family than the author, by agent or by model
 
 ## Show the user
 
-The user follows the bots from the session, not only on GitHub. In a session, after each post (kickoff, every review and answer, the panel, the merge note), show what the bots said since last time:
+The user follows the bots from the session, not only on GitHub. In a session, after each post (kickoff, every review and answer, the panel, the merge note), show what the bots said since last time as 8-bit frames:
 
 ```
-python <deep-mode skill dir>/assets/pr-conversation/show_thread.py <pr-url> --since <last comment id shown>
+python <deep-mode skill dir>/assets/pr-conversation/arena.py <pr-url> --frames --since <last comment id shown>
 ```
 
-`<deep-mode skill dir>` is this skill's folder on disk (in Claude Code, `${CLAUDE_PLUGIN_ROOT}/skills/deep-mode`), not the PR checkout you run in. It prints one block per bot or PR-Agent comment: time, role, head, and its gist (each P0/P1/P2 finding, each fixed/dismissed answer, a vote or tally, or the first sentence). Relay it as it lands: in omp write it to `out://` so the run keeps going; elsewhere put it in your next message. `--full` prints whole bodies for a user who asks what exactly a bot said. With no `--since` it shows the whole conversation, which is how the user (or `/deep-mode:pr-thread <pr-url>`) reads a thread later.
+`<deep-mode skill dir>` is this skill's folder on disk (in Claude Code, `${CLAUDE_PLUGIN_ROOT}/skills/deep-mode`), not the PR checkout you run in. It needs no terminal, so it works from any agent's shell tool. It prints one fixed-size frame per new bot or PR-Agent turn: the speaker's sprite and status, the PR with its open-findings bar and vote pips, `TURN n/m`, and a dialog box with that turn's lines in full ("REVIEWER appeared!", each finding, "AUTHOR used FIX!", the votes, the merge). Its last line names the newest comment id; pass that as `--since` next time.
 
-The same thread also plays as an 8-bit battle screen right in the user's terminal (PowerShell, Windows Terminal, bash, zsh, macOS Terminal): each bot is a sprite, each turn a dialog box ("REVIEWER appeared!", its findings, "AUTHOR used FIX!", the votes, the merge). It polls the thread on its own, so the user can watch the conversation live. Offer it when the conversation starts; it takes over a terminal, so the user starts it in their own window:
+Relay the output as it lands inside a fenced `text` code block, so the chat keeps the columns: in omp write it to `out://` so the run keeps going; elsewhere put it in your next message. The frames are plain Unicode with no escape codes, 80 columns wide (`--width` changes it; `--ascii` keeps to 7-bit text).
+
+For the words alone, `show_thread.py <pr-url> --since <id>` prints one short block per turn: time, role, head, and its gist (each P0/P1/P2 finding, each fixed/dismissed answer, a vote or tally, or the first sentence). `--full` prints whole bodies for a user who asks what exactly a bot said. With no `--since` it shows the whole conversation, which is how the user (or `/deep-mode:pr-thread <pr-url>`) reads a thread later.
+
+The same scene also plays live, full screen, in the user's own terminal (PowerShell, Windows Terminal, bash, zsh, macOS Terminal), typing each turn into the dialog box and polling the thread on its own. Offer it when the conversation starts; it takes over a terminal, so the user starts it in their own window:
 
 ```
 python <deep-mode skill dir>/assets/pr-conversation/arena.py <pr-or-issue-url>
@@ -494,7 +498,7 @@ The plan, its critique and the build happen as a conversation of bots on the iss
 
 ## Show the user
 
-As in **pr-conversation**'s Show the user: relay each new turn with `python <deep-mode skill dir>/assets/pr-conversation/show_thread.py <issue-url> --since <id>`, and offer the 8-bit terminal display, `python <deep-mode skill dir>/assets/pr-conversation/arena.py <issue-url>`. Both read issue threads the same way as PR threads; `<deep-mode skill dir>` is this skill's folder on disk, not the checkout.
+As in **pr-conversation**'s Show the user: relay each new turn as 8-bit frames with `python <deep-mode skill dir>/assets/pr-conversation/arena.py <issue-url> --frames --since <id>` inside a fenced `text` code block (its last line names the id for next time), or as text with `show_thread.py <issue-url> --since <id>`, and offer the live terminal display, `python <deep-mode skill dir>/assets/pr-conversation/arena.py <issue-url>`. All three read issue threads the same way as PR threads; `<deep-mode skill dir>` is this skill's folder on disk, not the checkout.
 
 ## Output
 
