@@ -22,7 +22,7 @@ def derive(name: str, overrides: dict | None = None) -> dict:
         "name": name,
         "description": f"{name} bots: review, fix, verify and merge in the PR and issue threads.",
         "homepage": "https://github.com/TimothyVang/deep-mode",
-        "mention": f"@{name}",
+        "mention": f"/{name}",
         "branchPrefix": name,
         "repoConfigFile": f".{name}.json",
         "configDirName": name,

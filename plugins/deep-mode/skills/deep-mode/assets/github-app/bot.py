@@ -6,7 +6,7 @@
     python bot.py install-autostart | uninstall-autostart
     python bot.py status
 
-Names (signature lines, the mention, branch prefix, repo config file, autostart id, config and cache dirs)
+Names (signature lines, the trigger, branch prefix, repo config file, autostart id, config and cache dirs)
 come from brand.py. Each cycle polls the repos the GitHub App is installed on (ghapp.py) and runs a
 conversation for every triggered PR or issue. The agents are the Claude Code and Codex CLIs reached over
 ACP through `acpx`, logged in with the user's subscriptions; they never post to GitHub. This coordinator
@@ -19,7 +19,8 @@ workspace of its own (<cache>/dry-run/<pid>-<id>, removed afterwards) beside a r
 prints what each triggered item would get; with --item it also runs that item's first read-only agent turn (the
 reviewer on a PR, the author's plan on an issue) and prints the reply.
 
-Config: <CONFIG_DIR>/bot.json (defaults for missing keys; never overwritten). A repo opts out with
+Config: <CONFIG_DIR>/bot.json (defaults for missing keys; never overwritten). The trigger is the brand's
+(`/<brand>` at the start of a comment line) unless bot.json sets `mention`. A repo opts out with
 `"bot": false`, and turns merging off with `"autonomousMerge": false`, in the brand's repo config file
 on its base branch.
 """
@@ -59,7 +60,7 @@ TASK_NAME = B["autostartId"]
 LAUNCHD_LABEL = f"dev.{TASK_NAME}"
 DEFAULTS = {"author": {"agent": "omp"}, "reviewer": {"agent": "omp"},
             "verifiers": [{"agent": "omp"}, {"agent": "omp"}, {"agent": "omp"}],
-            "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": B["mention"]}
+            "autonomousMerge": True, "maxRounds": 3, "interval": 120}
 ACPX_CONFIG = Path.home() / ".acpx" / "config.json"
 SIGNATURE = f"**{NAME} "
 SEVERITIES = ("P0", "P1", "P2")
@@ -285,10 +286,22 @@ def thread_text(comments: list) -> str:
 
 # ---------------------------------------------------------------- triggers and gates (pure)
 
+@functools.lru_cache(maxsize=None)
+def trigger_re(mention: str, command: str = "") -> re.Pattern:
+    """Where a comment calls the bots, in any letter case. A slash trigger (`/<brand>`, the default) counts only
+    at the start of a line and must end at whitespace, so a URL, a path or `/<brand>:<command>` never matches
+    and nobody's GitHub account is notified. Any other value (an `@handle` set in bot.json or the brand file)
+    counts anywhere, as a whole token. With `command`, that word must follow it on the same line."""
+    name = re.escape(mention)
+    call = rf"^[ \t]*{name}(?=\s|$)" if mention.startswith("/") else rf"(?<![\w-]){name}(?![\w-])"
+    return re.compile(call + (rf"[ \t]+{re.escape(command)}(?![\w-])" if command else ""), re.I | re.M)
+
+
 def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, anyone: bool = False,
                    owner_only: bool = False) -> list:
-    """Comments after `floor` and after the bot's last turn, by a human, from the owner or mentioning the bot
-    (from any human when `anyone`: a linked issue a PR's merge waits on; only the owner's when `owner_only`)."""
+    """Comments after `floor` and after the bot's last turn, by a human, from the owner or calling the bots
+    (`trigger_re`; from any human when `anyone`: a linked issue a PR's merge waits on; only the owner's when
+    `owner_only`)."""
     last_turn = max((c.get("createdAt", "") for c in comments if is_ours(c)), default="")
     floor = max(floor or "", last_turn)
     picked = []
@@ -296,7 +309,7 @@ def human_triggers(comments: list, floor, owner: str, mention: str, is_ours, any
         login = login_of(c)
         if c.get("createdAt", "") <= floor or is_ours(c) or login.endswith("[bot]"):
             continue
-        if same(login, owner) or (not owner_only and (anyone or mention.lower() in (c.get("body") or "").lower())):
+        if same(login, owner) or (not owner_only and (anyone or trigger_re(mention).search(c.get("body") or ""))):
             picked.append(c)
     return picked
 
@@ -352,10 +365,11 @@ def with_pending(pending: list, comments: list) -> list:
 
 
 def wants_implementation(issue: dict, comments: list, item: dict, owner: str, mention: str) -> bool:
-    """The owner asked (`<mention> implement`), or opened the issue and didn't mark it discussion-only. An issue
-    flagged because a PR's merge waits on it (`answerAll`) is only answered: that PR is its implementation."""
-    command = f"{mention} implement".lower()
-    if any(same(login_of(c), owner) and command in (c.get("body") or "").lower() for c in comments):
+    """The owner asked (`<mention> implement`, see `trigger_re`), or opened the issue and didn't mark it
+    discussion-only. An issue flagged because a PR's merge waits on it (`answerAll`) is only answered: that PR
+    is its implementation."""
+    command = trigger_re(mention, "implement")
+    if any(same(login_of(c), owner) and command.search(c.get("body") or "") for c in comments):
         return True
     if item.get("handled") or item.get("implemented") or item.get("answerAll") or not same(login_of(issue), owner):
         return False
@@ -459,12 +473,25 @@ def gate_decision(f: dict):
 
 # ---------------------------------------------------------------- config, state, identity
 
-def load_bot_config(write: bool = True) -> dict:
-    """bot.json with defaults for missing keys. Written once when absent (if `write`), never overwritten."""
+def effective_mention(stored, name: str, default: str) -> str:
+    """The trigger in force. bot.json's `mention` overrides the brand's, with one exception: `@<brand>`, which
+    every install before the slash trigger wrote there as the default and which notifies whoever owns that
+    GitHub account. It counts as unset; a brand that wants that handle sets `mention` in its brand file."""
+    return default if not stored or stored == f"@{name}" else stored
+
+
+def load_bot_config(write: bool = True, note=None) -> dict:
+    """bot.json with defaults for missing keys. Written once when absent (if `write`), never overwritten, so
+    `note` is told on every load that a stored old-default `mention` is ignored (`effective_mention`)."""
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     if write and not BOT_CONFIG.is_file():
         BOT_CONFIG.write_text(json.dumps(DEFAULTS, indent=2) + "\n", encoding="utf-8")
     cfg = {**DEFAULTS, **(json.loads(BOT_CONFIG.read_text(encoding="utf-8")) if BOT_CONFIG.is_file() else {})}
+    stored = cfg.get("mention")
+    cfg["mention"] = effective_mention(stored, NAME, B["mention"])
+    if note and stored and stored != cfg["mention"]:
+        note(f"{BOT_CONFIG}: \"mention\": \"{stored}\" is the old default and notifies that GitHub account, so it "
+             f"is ignored: the trigger is {cfg['mention']}. Remove the key to drop this line.")
     try:
         cfg["author"], cfg["reviewer"] = as_role(cfg["author"]), as_role(cfg["reviewer"])
         if not isinstance(cfg["verifiers"], list) or not cfg["verifiers"]:
@@ -1429,7 +1456,8 @@ class Bot:
     def __init__(self, args):
         self.args, self.dry = args, bool(args.dry_run)
         self.live_turns = not self.dry or bool(args.item)  # dry-run runs read-only agent turns only for --item
-        self.cfg, self.state, self.ident = load_bot_config(write=not self.dry), load_state(), Identity()
+        self.cfg = load_bot_config(write=not self.dry, note=log)
+        self.state, self.ident = load_state(), Identity()
 
     def save(self) -> None:
         if not self.dry:

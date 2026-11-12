@@ -4,7 +4,7 @@
     python3 install.py                      # interactive; asks before installing anything
     python3 install.py --yes                # accept every default
     python3 install.py --check              # report what is missing, change nothing
-    python3 install.py --brand acme-review  # white-label: app, comments, mention, branches, paths
+    python3 install.py --brand acme-review  # white-label: app, comments, trigger, branches, paths
 
 Steps, each skipped when already done:
 1. Tools: git, gh (logged in), openssl, node/npm, acpx (installed with npm when missing).
@@ -197,7 +197,7 @@ def write_bot_config(agents: list[str], args) -> None:
     config = {"author": role(author, args.author_model), "reviewer": role(reviewer, args.reviewer_model),
               "verifiers": [role(author, args.author_model), role(reviewer, args.reviewer_model),
                             role(author, args.author_model)],
-              "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": brand.BRAND["mention"]}
+              "autonomousMerge": True, "maxRounds": 3, "interval": 120}
     BOT_CONFIG.parent.mkdir(parents=True, exist_ok=True)
     BOT_CONFIG.write_text(json.dumps(config, indent=2), encoding="utf-8")
     say("ok", f"wrote {BOT_CONFIG} (author {author}, reviewer {reviewer})")

@@ -9,9 +9,11 @@ from pathlib import Path
 from unittest import mock
 
 import bot
+import brand
 
 OWNER = "Owner"
 MENTION = bot.B["mention"]
+SLASH = f"/{bot.NAME}"
 
 
 def comment(login, at, body="hi"):
@@ -62,17 +64,35 @@ class ConvergenceTest(unittest.TestCase):
 
 
 class TriggerTest(unittest.TestCase):
-    def test_comments_after_bot_turn_from_owner_or_mention(self):
+    def test_comments_after_bot_turn_from_owner_or_trigger(self):
         comments = [comment("stranger", "2026-01-01T00:00:01Z", f"{MENTION} look"),
                     comment("app-slug", "2026-01-01T00:00:02Z"),
                     comment("stranger", "2026-01-01T00:00:03Z", "unrelated"),
-                    comment("stranger", "2026-01-01T00:00:04Z", f"hey {MENTION.upper()}"),
-                    comment(OWNER.lower(), "2026-01-01T00:00:05Z", "no mention"),
+                    comment("stranger", "2026-01-01T00:00:04Z", f"thanks\r\n{MENTION.upper()} continue"),
+                    comment(OWNER.lower(), "2026-01-01T00:00:05Z", "no trigger"),
                     comment("other[bot]", "2026-01-01T00:00:07Z", MENTION)]
         picked = bot.human_triggers(comments, None, OWNER, MENTION, ours)
         self.assertEqual([c["createdAt"][-3:] for c in picked], ["04Z", "05Z"])
         signed = comment(OWNER, "2026-01-01T00:00:06Z", f"{bot.SIGNATURE}author · x** posted via gh")
         self.assertEqual(bot.human_triggers(comments + [signed], None, OWNER, MENTION, ours), [])
+
+    def picked(self, body, mention, login="stranger"):
+        return bool(bot.human_triggers([comment(login, "2026-01-01T00:00:01Z", body)], None, OWNER, mention, ours))
+
+    def test_a_slash_trigger_counts_only_at_the_start_of_a_line(self):
+        for body in (f"{SLASH} look", f"  {SLASH.upper()} continue", f"first line\n{SLASH}", f"{SLASH}\tplease"):
+            self.assertTrue(self.picked(body, SLASH), body)
+        for body in (f"https://github.com/o{SLASH}/pull/19", f"plugins{SLASH}/skills", f"~/.config{SLASH}/",
+                     f"{SLASH}:land-pr 5", f"> {SLASH} implement", f"see {SLASH}", f"{SLASH}-x go", f"{SLASH}/x",
+                     f"@{bot.NAME} look"):
+            self.assertFalse(self.picked(body, SLASH), body)
+        self.assertTrue(self.picked(f"see {SLASH}", SLASH, login=OWNER))  # the owner needs no trigger
+
+    def test_a_handle_trigger_counts_anywhere_as_a_whole_token(self):
+        for body in ("hey @Acme-Bot, look", "@acme-bot", "(@acme-bot)"):
+            self.assertTrue(self.picked(body, "@acme-bot"), body)
+        for body in ("@acme-bot-x look", "@acme-bots look", "mail me x@acme-bot", "/acme-bot look"):
+            self.assertFalse(self.picked(body, "@acme-bot"), body)
 
     def test_floor(self):
         comments = [comment("stranger", "2026-01-01T00:00:04Z", f"{MENTION} please"),
@@ -179,6 +199,23 @@ class TriggerTest(unittest.TestCase):
         issue = {"author": {"login": "x"}, "body": "do it", "labels": []}
         self.assertTrue(bot.wants_implementation(issue, merged, {"handled": True}, OWNER, MENTION))
 
+    def test_only_the_owners_command_requests_a_build(self):
+        issue = {"author": {"login": "x"}, "body": "do it", "labels": []}  # nothing but the command authorizes it
+
+        def builds(body, mention=SLASH, login=OWNER):
+            return bot.wants_implementation(issue, [comment(login, "t", body)], {"handled": True}, OWNER, mention)
+
+        for body in (f"{SLASH} implement", f"{SLASH} implement: only the docs", f"{SLASH} implement, and keep the API",
+                     f"go ahead\r\n  {SLASH.upper()}  IMPLEMENT."):
+            self.assertTrue(builds(body), body)
+        for body in (f"{SLASH} implementation", f"{SLASH}: implement", f"> {SLASH} implement", f"{SLASH}\nimplement",
+                     f"see https://github.com/o{SLASH}/pull/19 implement", f"@{bot.NAME} implement"):
+            self.assertFalse(builds(body), body)
+        self.assertFalse(builds(f"{SLASH} implement", login="stranger"))
+        self.assertTrue(builds("please @acme-bot implement", mention="@acme-bot"))
+        self.assertFalse(builds("@acme-bot-x implement", mention="@acme-bot"))
+        self.assertFalse(builds(f"{SLASH} implement", mention="@acme-bot"))
+
     def test_a_build_never_reuses_a_discussion_session(self):
         talk = bot.issue_sessions("o-r-issue7", False)
         self.assertEqual(talk, bot.issue_sessions("o-r-issue7", False))  # discussion keeps its context
@@ -200,6 +237,50 @@ class TriggerTest(unittest.TestCase):
 
 def commit(sha, author=OWNER, committer=OWNER, verified=False):
     return {"sha": sha, "author": author, "committer": committer, "verified": verified}
+
+
+class TriggerNameTest(unittest.TestCase):
+    def test_the_default_trigger_is_a_slash_command_and_a_brand_file_overrides_it(self):
+        self.assertEqual(brand.derive("acme")["mention"], "/acme")
+        self.assertEqual(brand.derive("acme", {"mention": "@acme-review"})["mention"], "@acme-review")
+        shipped = json.loads(brand.SHIPPED.read_text(encoding="utf-8"))
+        self.assertEqual(brand.derive(shipped["name"], shipped)["mention"], f"/{shipped['name']}")
+
+    def test_the_old_default_stored_in_bot_json_counts_as_unset(self):
+        for stored, default, want in ((None, "/acme", "/acme"), ("@acme", "/acme", "/acme"),
+                                      ("@acme", "@acme-review", "@acme-review"), ("@acme", "@acme", "@acme"),
+                                      ("@other", "/acme", "@other"), ("/custom", "/acme", "/custom")):
+            self.assertEqual(bot.effective_mention(stored, "acme", default), want, (stored, default))
+
+    def load(self, stored=None, default=SLASH):
+        notes = []
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "bot.json"
+            if stored is not None:
+                path.write_text(json.dumps(stored), encoding="utf-8")
+            with mock.patch.object(bot, "CONFIG_DIR", Path(tmp)), mock.patch.object(bot, "BOT_CONFIG", path), \
+                    mock.patch.dict(bot.B, {"mention": default}):
+                cfg = bot.load_bot_config(note=notes.append)
+            return cfg, notes, json.loads(path.read_text(encoding="utf-8"))
+
+    def test_an_existing_install_moves_off_the_old_default_and_says_so(self):
+        old = {"interval": 60, "mention": f"@{bot.NAME}"}
+        cfg, notes, on_disk = self.load(old)
+        self.assertEqual((cfg["mention"], cfg["interval"]), (SLASH, 60))
+        self.assertEqual(len(notes), 1)
+        self.assertIn(SLASH, notes[0])
+        self.assertEqual(on_disk, old)  # never rewritten
+
+    def test_a_configured_trigger_wins_without_a_note(self):
+        cfg, notes, _ = self.load({"mention": "@acme-review"})
+        self.assertEqual((cfg["mention"], notes), ("@acme-review", []))
+        cfg, notes, _ = self.load({"mention": f"@{bot.NAME}"}, default=f"@{bot.NAME}")  # the brand file asked for it
+        self.assertEqual((cfg["mention"], notes), (f"@{bot.NAME}", []))
+
+    def test_a_generated_bot_json_stores_no_trigger(self):
+        cfg, notes, on_disk = self.load()
+        self.assertEqual((cfg["mention"], notes), (SLASH, []))
+        self.assertNotIn("mention", on_disk)
 
 
 class OwnPrTest(unittest.TestCase):
