@@ -43,6 +43,7 @@ DEMO_CAPTION = "How a PR moves through the bots. Every turn is a comment in the 
 BUILD_MARK = "brand/.whitelabel-build"
 BUILD_MARK_TEXT = "Built by scripts/whitelabel.py. A rebuild into this folder replaces everything in it except .git.\n"
 INSTALL_CAST = "docs/images/install.cast"
+LD_JSON = re.compile(r'(<script type="application/ld\+json">.*?</script>)', re.S)
 
 
 def is_legal(rel: str) -> bool:
@@ -128,12 +129,35 @@ class Rebrand:
 
     def file_text(self, rel: str, text: str) -> str:
         suffix = Path(rel).suffix.lower()
-        escape = None
-        if suffix in (".html", ".svg"):
-            escape = lambda x: html.escape(x, quote=False)  # noqa: E731
-        elif suffix == ".json":
-            escape = lambda x: json.dumps(x)[1:-1]  # noqa: E731
-        return self.text(text, prose=suffix in PROSE, escape=escape)
+        prose = suffix in PROSE
+        if suffix == ".json":
+            return self.text(text, prose, json_text)
+        if suffix not in (".html", ".svg"):
+            return self.text(text, prose)
+        # Markup escapes quotes too, since a name can land in an attribute value. A JSON-LD script is JSON:
+        # the browser does not decode entities there, and an unescaped quote ends the string.
+        parts = LD_JSON.split(text)
+        return "".join(self.text(part, prose, json_text if i % 2 else html.escape) for i, part in enumerate(parts))
+
+
+def ld_json(value) -> str:
+    """JSON that is safe inside a <script> element: `<` is escaped, so no value can close the script."""
+    return json.dumps(value).replace("<", "\\u003c")
+
+
+def json_text(value: str) -> str:
+    """A string as the inside of a JSON string literal."""
+    return ld_json(value)[1:-1]
+
+
+def check_json_ld(out: Path) -> None:
+    """Every JSON-LD block of the built site must parse; a search engine drops one that does not."""
+    page = out / "docs/index.html"
+    for block in LD_JSON.findall(page.read_text(encoding="utf-8")) if page.is_file() else ():
+        try:
+            json.loads(block[block.index(">") + 1:block.rindex("<")])
+        except ValueError as err:
+            raise BrandError(f"docs/index.html: a JSON-LD block does not parse ({err}); update scripts/whitelabel.py") from err
 
 
 def leftover_regex(src: dict) -> re.Pattern:
@@ -284,12 +308,12 @@ def theme_site(out: Path, d: dict) -> None:
                         ('property="og:image:alt"', title + "."), ('name="twitter:title"', title),
                         ('name="twitter:description"', d["description"]), ('name="twitter:image:alt"', title + ".")]:
         t = sub(t, rf'(<meta {re.escape(prop)} content=")[^"]*(">)', lambda m, v=value: m.group(1) + a(v) + m.group(2), rel, 1)
-    app = sub(t, r'("@type": "SoftwareApplication",\n  "name": )"[^"\n]*"',
-              lambda m: m.group(1) + json.dumps(d["name"]), rel, 1)
-    app = sub(app, r'(  "@type": "SoftwareApplication",(?:\n[^\n]*)*?\n  "description": )"[^"\n]*"',
-              lambda m: m.group(1) + json.dumps(d["description"]), rel, 1)
+    app = sub(t, r'("@type": "SoftwareApplication",\n  "name": )"(?:[^"\\\n]|\\.)*"',
+              lambda m: m.group(1) + ld_json(d["name"]), rel, 1)
+    app = sub(app, r'(  "@type": "SoftwareApplication",(?:\n[^\n]*)*?\n  "description": )"(?:[^"\\\n]|\\.)*"',
+              lambda m: m.group(1) + ld_json(d["description"]), rel, 1)
     t = sub(app, r'"author": \{[^}\n]*\}',
-            lambda m: '"author": ' + json.dumps({"@type": "Organization", "name": d["author"]["name"], "url": d["author"]["url"]}), rel, 1)
+            lambda m: '"author": ' + ld_json({"@type": "Organization", "name": d["author"]["name"], "url": d["author"]["url"]}), rel, 1)
     t = sub(t, r":root\{--brand-primary:[^}]*\}",
             f":root{{--brand-primary:{c['primary']};--brand-accent:{c['accent']};--brand-bg:{c['background']};"
             f"--brand-surface:{c['surface']};--brand-text:{c['text']};--brand-muted:{c['muted']}}}", rel, 1)
@@ -404,6 +428,7 @@ def build(brand_file, out, src_root: Path = ROOT, media: bool = True, check: boo
     update_manifests(out, dst)
     theme_site(out, dst)
     own_run_rewrites(out, dst)
+    check_json_ld(out)
     if (out / "README.md").is_file() and (out / "docs").is_dir():
         import llms_full
         llms_full.build(out, dst)

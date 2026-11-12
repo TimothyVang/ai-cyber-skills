@@ -78,6 +78,30 @@ class PathRenames(unittest.TestCase):
         self.assertEqual(self.rb.path("docs/images/how-it-works.svg"), "docs/images/how-it-works.svg")
 
 
+class Escaping(unittest.TestCase):
+    """A name is plain text; each file type gets it in that type's own escaping."""
+    rb = whitelabel.Rebrand(normalized(SRC), normalized(dict(DST, name='Zeta "Review" & <Co>')))
+
+    def test_a_name_with_quotes_stays_valid_in_json_ld_and_in_markup(self):
+        page = ('<script type="application/ld+json">\n{"name": "What is deep-mode?"}\n</script>\n'
+                '<img alt="How deep-mode works">\n<p>deep-mode is a plugin.</p>\n')
+        script, markup = self.rb.file_text("docs/index.html", page).split("</script>\n")
+        self.assertEqual(json.loads(script.split(">", 1)[1]), {"name": 'What is Zeta "Review" & <Co>?'})
+        self.assertNotIn("<Co>", script)  # nothing in a JSON-LD value may read as markup and end the script
+        self.assertEqual(markup, '<img alt="How Zeta &quot;Review&quot; &amp; &lt;Co&gt; works">\n'
+                                 "<p>Zeta &quot;Review&quot; &amp; &lt;Co&gt; is a plugin.</p>\n")
+
+    def test_json_ld_that_does_not_parse_stops_the_build(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            (Path(tmp) / "docs").mkdir()
+            page = Path(tmp) / "docs/index.html"
+            page.write_text('<script type="application/ld+json">{"name": "Zeta "Review""}</script>\n', encoding="utf-8")
+            with self.assertRaises(whitelabel.BrandError):
+                whitelabel.check_json_ld(Path(tmp))
+            page.write_text('<script type="application/ld+json">{"name": "Zeta"}</script>\n', encoding="utf-8")
+            whitelabel.check_json_ld(Path(tmp))
+
+
 class Build(unittest.TestCase):
     """A small source tree, built for real without the images or the copy's check.py."""
 
