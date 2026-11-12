@@ -51,6 +51,8 @@ Start from `brand/brand.json` (deep-mode's own brand) or `brand/examples/acme.js
 
 A logo that should read on light and dark pages can switch its wordmark color with `@media (prefers-color-scheme:dark)` inside the SVG, as both example logos do.
 
+Names have length limits, in UTF-8 bytes (one per ASCII letter): 60 for `name` and `displayName`, 23 for `slug`, 64 for `commandName`, `mainSkillName` and `stackSkillName`, 40 for `envPrefix` and `botTrigger`, 200 for `homepage`, `supportUrl` and the author's `url`, 100 for the author's `name`, and GitHub's own 39 and 100 for the two halves of `repo`. The build writes these names into the docs, and agents read those docs with a tool that cuts a line off past 760 bytes, so the limits keep every line whole. A brand file past a limit is refused before anything is built. One within them never fails the build on line length.
+
 ## Build
 
 You need Python 3.10 or newer, Pillow (`py -3 -m pip install pillow`), and [agg](https://github.com/asciinema/agg) and [gifski](https://gif.ski) on your PATH for the images. It runs on Windows, macOS and Linux.

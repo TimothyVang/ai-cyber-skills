@@ -243,7 +243,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: branch, edit, run `python
 
 **Has it merged a real PR on its own?** Yes. [PR #19](https://github.com/TimothyVang/deep-mode/pull/19) went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot.
 
-**Can I white-label an AI code review GitHub App?** Yes. deep-mode is MIT licensed and ships a brand kit, so you can sell it as your own product. Write one `brand.json` with your name, slug, command and skill names, bot trigger, colors, logo and URLs, then run `py -3 scripts/whitelabel.py --brand <file> --out <dir>`. It builds a full copy under your brand: the product name and logo, the site colors, the commands and skills, the bot and its GitHub App, the docs site, the README, the images, and the SEO and llms files. A last check fails the build if any old name is left. LICENSE and NOTICE stay as they are, with your copyright line added. `install.py --brand <name>` is a shortcut that renames only the bots. See [the rebrand guide](docs/rebrand.md).
+**Can I white-label an AI code review GitHub App?** Yes. deep-mode is MIT licensed and ships a brand kit, so you can sell it as your own product. Write one `brand.json` with your name, slug, command and skill names, bot trigger, colors, logo and URLs, then run `py -3 scripts/whitelabel.py --brand <file> --out <dir>`. It builds a full copy under your brand: the product name and logo, the site colors, the commands and skills, the bot and its GitHub App, the docs site, the README, the images, and the SEO and llms files.
+A last check fails the build if any old name is left. LICENSE and NOTICE stay as they are, with your copyright line added. `install.py --brand <name>` is a shortcut that renames only the bots. See [the rebrand guide](docs/rebrand.md).
 
 ## License
 

@@ -8,7 +8,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "scripts"))
 import whitelabel  # noqa: E402
-from brandlib import load, to_json  # noqa: E402
+from brandlib import MAX_BYTES, load, to_json  # noqa: E402
 
 SRC = to_json(load(ROOT / "brand/brand.json"))  # the names the build replaces; the literals below spell them out
 # The main skill differs from the slug here, so a path that mixes them shows which rule fired.
@@ -16,6 +16,7 @@ DST = dict(SRC, name="Zeta Review", displayName="Zeta Review", slug="zeta-review
            stackSkillName="zeta-stack", envPrefix="ZETA", botTrigger="/zeta-bot", description="Zeta Review bots.",
            author={"name": "Zeta Inc.", "url": "https://zeta.example"}, homepage="https://zeta.example/",
            repo="zeta-co/zeta-review", supportUrl="https://zeta.example/help")
+LINE_LIMIT = 760  # MAX_LINE_BYTES in scripts/check.py, which the built copy has to pass
 
 
 def normalized(data: dict) -> dict:
@@ -28,6 +29,19 @@ def write_brand(folder: Path, data: dict) -> Path:
         (folder / name).write_text(f'<svg xmlns="http://www.w3.org/2000/svg"><title>{data["name"]}</title></svg>\n', encoding="utf-8")
     (folder / "brand.json").write_text(json.dumps(data), encoding="utf-8")
     return folder / "brand.json"
+
+
+def longest_brand() -> dict:
+    """Every name at its limit. The names start with a vowel, so an "a" before them grows to "an" as well."""
+    def run(head, letter, size):
+        return head + letter * (size - len(head))
+    return dict(DST, name=run("A", "n", MAX_BYTES["name"]), displayName=run("A", "d", MAX_BYTES["displayName"]),
+                slug=run("a", "s", 23), commandName="c" * MAX_BYTES["commandName"], mainSkillName="m" * MAX_BYTES["mainSkillName"],
+                stackSkillName="k" * MAX_BYTES["stackSkillName"], envPrefix="E" * MAX_BYTES["envPrefix"],
+                botTrigger=run("/", "t", MAX_BYTES["botTrigger"]),
+                repo="o" * MAX_BYTES["repo owner"] + "/" + "r" * MAX_BYTES["repo name"],
+                homepage=run("https://", "h", MAX_BYTES["homepage"]), supportUrl=run("https://", "u", MAX_BYTES["supportUrl"]),
+                author={"name": "U" * MAX_BYTES["author name"], "url": run("https://", "w", MAX_BYTES["author url"])})
 
 
 class TokenOrder(unittest.TestCase):
@@ -62,8 +76,10 @@ class TokenOrder(unittest.TestCase):
                          "a Zeta Review PR")
 
     def test_frontmatter_name_follows_its_folder(self):
-        self.assertEqual(self.rb.text("---\nname: deep-mode\n---\n"), "---\nname: zeta\n---\n")
-        self.assertEqual(self.rb.text("---\nname: deep-stack\n---\n"), "---\nname: zeta-stack\n---\n")
+        # From SRC, not spelled out: in a copy whose main skill is not named after its slug, a literal here
+        # would be rewritten to the slug, which is not a skill's name.
+        self.assertEqual(self.rb.text(f"---\nname: {SRC['mainSkillName']}\n---\n"), "---\nname: zeta\n---\n")
+        self.assertEqual(self.rb.text(f"---\nname: {SRC['stackSkillName']}\n---\n"), "---\nname: zeta-stack\n---\n")
 
 
 class PathRenames(unittest.TestCase):
@@ -222,6 +238,32 @@ class Build(unittest.TestCase):
         built = json.loads((self.out / "plugins/zeta-review/skills/zeta/assets/github-app/brand.json").read_text(encoding="utf-8"))
         self.assertEqual((built["name"], built["description"], built["homepage"]),
                          ("zeta-review", "Zeta Review bots.", "https://zeta.example/"))
+
+
+class Limits(unittest.TestCase):
+    """A brand file that loads must not fail the build on line length. A Markdown line that names the product
+    grows with the brand, so the names have limits and this repo keeps room for them."""
+
+    @unittest.skipIf((ROOT / whitelabel.BUILD_MARK).is_file(),
+                     "a built copy: its own names also stand where the upstream wrote them as examples, so only the upstream is measured")
+    def test_the_longest_valid_brand_builds_this_repo_within_the_line_limit(self):
+        # A failure names the lines to split: ones added here without room for the longest names.
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "out"
+            brand = write_brand(Path(tmp) / "brand", longest_brand())
+            self.assertEqual(whitelabel.build(brand, out, media=False, check=False, log=lambda *_: None), [])
+            too_long = [f"{path.relative_to(out).as_posix()}:{number}: {len(line.encode('utf-8'))} bytes"
+                        for path in sorted(out.rglob("*.md"))
+                        for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1)
+                        if len(line.encode("utf-8")) > LINE_LIMIT]
+            self.assertEqual(too_long, [])
+            load(out / "brand/brand.json")  # the brand file the build wrote is within the limits too
+
+    def test_a_name_past_its_limit_is_refused_when_the_brand_file_loads(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            brand = write_brand(Path(tmp), dict(longest_brand(), name="A" * (MAX_BYTES["name"] + 1)))
+            with self.assertRaisesRegex(whitelabel.BrandError, f"name .*at most {MAX_BYTES['name']} bytes"):
+                load(brand)
 
 
 if __name__ == "__main__":

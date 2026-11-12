@@ -25,6 +25,8 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 
 Resellers ship this repo under their own brand with `scripts/whitelabel.py` (see `docs/rebrand.md`). When you add a name, a page section, an image or a manifest field, run `python scripts/test_whitelabel.py` and build the example brand into a folder outside the repo: `python scripts/whitelabel.py --brand brand/examples/acme.json --out ../acme-review`. It must print `OK` with 0 leftovers.
 
+A line that names the product grows when a reseller's names are longer. `test_whitelabel.py` builds this repo with the longest names a brand file may carry (`MAX_BYTES` in `scripts/media/brandlib.py`) and fails on any Markdown line that would pass 760 bytes. Split a line it reports.
+
 ## Testing a behavior change
 
 A wording change can change what agents do. Before a PR that changes a playbook or technique, run the change on a throwaway repo with a small planted bug:

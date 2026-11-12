@@ -16,6 +16,12 @@ COLOR_FIELDS = ("primary", "accent", "background", "surface", "text", "muted")
 SLUG_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,22}$")  # brand.py's limit: room for "-<login>" in a 34-char app name
 NAME_RE = re.compile(r"^[a-z0-9][a-z0-9-]*$")
 HEX_RE = re.compile(r"^#[0-9a-fA-F]{6}$")
+# The longest each name may be, in UTF-8 bytes. The build writes these names into the docs, and every Markdown
+# line must still fit the 760 bytes scripts/check.py allows; scripts/test_whitelabel.py builds this repo with
+# every name at its limit to hold that. The slug's limit is SLUG_RE's; the repo's two are GitHub's own.
+MAX_BYTES = {"name": 60, "displayName": 60, "commandName": 64, "mainSkillName": 64, "stackSkillName": 64,
+             "envPrefix": 40, "botTrigger": 40, "homepage": 200, "supportUrl": 200, "author name": 100,
+             "author url": 200, "repo owner": 39, "repo name": 100}
 
 # Role colors in the diagrams and GIFs. They mean the same thing in every brand: author, reviewer, panel.
 SKY, AUTHOR, REVIEWER, AMBER, ROSE, MERGED = "#38bdf8", "#f08a5d", "#34d399", "#fbbf24", "#fb7185", "#8957e5"
@@ -54,6 +60,13 @@ def load(path) -> dict:
     for key in COLOR_FIELDS:
         if not HEX_RE.match(str(data["colors"].get(key, ""))):
             raise BrandError(f"colors.{key}: a #rrggbb color")
+    owner, repo_name = data["repo"].split("/")
+    sized = dict(data, homepage=data["homepage"].rstrip("/"), **{  # as the docs get them: no trailing slash
+        "author name": data["author"]["name"], "author url": data["author"]["url"].rstrip("/"),
+        "repo owner": owner, "repo name": repo_name})
+    for key, limit in MAX_BYTES.items():
+        if len(sized[key].encode("utf-8")) > limit:
+            raise BrandError(f"{key} {sized[key]!r}: at most {limit} bytes, so the docs that name it keep their line limit")
     brand = {k: data[k] for k in FIELDS}
     brand["homepage"] = data["homepage"].rstrip("/") + "/"
     brand["author"] = {"name": data["author"]["name"], "url": data["author"]["url"].rstrip("/")}
