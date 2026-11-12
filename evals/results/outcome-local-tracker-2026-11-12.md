@@ -1,7 +1,7 @@
 # Outcome eval, local tracker, 2026-11-12
 
 PR #33 (issue #29) changes how Spec, Tickets and Phased build use a local tracker: what each commit holds, which branch holds the tickets, and how a local issue number is picked.
-The `billsplit` and `kitty` tasks never reach Spec, Tickets or a local tracker, so this run uses a task that does.
+The `billsplit` and `kitty` tasks never reach Spec, Tickets or a local tracker, so this run uses a task that does. Their standard rerun at `015cbad`, with hidden checks and both judges, is `outcome-pr33-2026-11-12.md`.
 The routing eval reran too: `routing-local-tracker-2026-11-12.json`, 20/20 route and 20/20 size, $6.66. `SKILL.md` is unchanged by the PR (same SHA-256 `da4c08e7…` as `routing-light-lane-2026-11-12.json`).
 
 ## Setup
@@ -31,4 +31,5 @@ A scratch-repo check covers the commit form the playbooks now name: with `other.
 ## Recommendation
 
 Ship. The after runs give every new issue a number no other branch or session holds, commit the spec issue with its spec file, and commit the tickets alone on the integration branch, at a lower cost than the before runs.
-Unproven here: two sessions racing for one number at the same moment. `git update-ref <ref> HEAD ''` failing with "reference already exists" from a second worktree, and `git push --force-with-lease=<ref>: origin <ref>` rejected as "stale info" from a second clone, were checked by hand in scratch repos.
+Unproven here: two sessions racing for one number at the same moment. Checked by hand in scratch repos instead: a second `git update-ref <ref> <object> ''` from another worktree fails with "reference already exists", and a second clone's `git push --force-with-lease=<ref>: origin <ref>` is rejected as "stale info".
+Round 2 reserved with a ref pointing at `HEAD`. Two clones at one commit then both "won", because the second push reported "Everything up-to-date", so `015cbad` points the ref at a per-session blob and confirms it with `git ls-remote`. In scratch repos with that form, the second clone lost the number and no local-only commit reached the remote.
