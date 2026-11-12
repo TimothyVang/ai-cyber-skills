@@ -43,13 +43,13 @@ python assets/pr-conversation/show_thread.py <pr-url> --since <last comment id s
 
 It prints one block per bot or PR-Agent comment: time, role, head, and its gist (each P0/P1/P2 finding, each fixed/dismissed answer, a vote or tally, or the first sentence). Relay it as it lands: in omp write it to `out://` so the run keeps going; elsewhere put it in your next message. `--full` prints whole bodies for a user who asks what exactly a bot said. With no `--since` it shows the whole conversation, which is how the user (or `/deep-mode:pr-thread <pr-url>`) reads a thread later.
 
-The same thread also plays as an 8-bit battle screen: each bot is a sprite, each turn a dialog box ("REVIEWER appeared!", its findings, "AUTHOR used FIX!", the votes, the merge). Start it once when the conversation starts, so the user can watch it live; it polls the thread on its own:
+The same thread also plays as an 8-bit battle screen right in the user's terminal (PowerShell, Windows Terminal, bash, zsh, macOS Terminal): each bot is a sprite, each turn a dialog box ("REVIEWER appeared!", its findings, "AUTHOR used FIX!", the votes, the merge). It polls the thread on its own, so the user can watch the conversation live. Offer it when the conversation starts; it takes over a terminal, so the user starts it in their own window:
 
 ```
-python assets/pr-conversation/arena.py <pr-or-issue-url> --serve --open
+python assets/pr-conversation/arena.py <pr-or-issue-url>
 ```
 
-`--repo <owner/repo>` loads every recent PR and issue with bot turns behind a menu; `--out <file.html>` writes a static page instead. It works for every conversation the bots mirror to GitHub: this technique's PR threads and **issue-conversation**'s issue threads.
+`--repo <owner/repo>` loads every recent PR and issue with bot turns behind a menu. `--out <file.html>` writes a static browser page instead, and `--serve` serves it live on 127.0.0.1. It works for every conversation the bots mirror to GitHub: this technique's PR threads and **issue-conversation**'s issue threads.
 
 ## ACP sessions
 

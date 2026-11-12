@@ -1,16 +1,21 @@
 #!/usr/bin/env python3
-"""Play a bot conversation on a PR or issue as an 8-bit battle screen.
+"""Play a bot conversation on a PR or issue as an 8-bit battle screen, in the terminal.
 
 Usage:
-  python arena.py <thread-url> [<thread-url> ...] --out <file.html> [--open]
-  python arena.py --repo <owner/repo> [--limit 30] --out <file.html> [--open]
-  python arena.py <thread-url> | --repo <owner/repo>  --serve [--port 8765] [--open]
+  python arena.py <thread-url> [<thread-url> ...] | --repo <owner/repo> [--limit 30] [--ascii]
+  python arena.py ... --out <file.html> [--open]          (a static page instead)
+  python arena.py ... --serve [--port 8765] [--open]      (a live page on 127.0.0.1 instead)
 
 Each bot voice show_thread.py finds (author, reviewer, verifier 1-3, panel, coordinator, PR-Agent)
-becomes a sprite and its turn a few dialog boxes built from its gist, next to a plain transcript.
+becomes a sprite and its turn a few dialog boxes built from its gist. By default it plays full-screen
+in the terminal (any shell: PowerShell, cmd, bash, zsh), refetching every 15 s so new turns appear
+while the conversation runs. Keys: Enter/Space/Right next, Left/B/Backspace back, A auto, L latest,
+Esc threads, R refetch, q quit. Colours follow the terminal: truecolor when COLORTERM or Windows
+Terminal says so, 256 colours otherwise, none with NO_COLOR; --ascii draws in plain 7-bit text.
+When stdout isn't a terminal it prints show_thread's text digest instead.
 --repo loads the repo's recently updated PRs and issues that have at least one bot turn, behind a
-thread menu. --out writes one self-contained HTML file. --serve serves the page on 127.0.0.1
-with a JSON endpoint the page polls every 15 s, so new turns appear while the conversation runs.
+thread menu. --out writes one self-contained HTML file. --serve serves that page on 127.0.0.1 with
+a JSON endpoint the page polls every 15 s.
 """
 
 import argparse
@@ -24,7 +29,6 @@ import re
 import sys
 import threading
 import time
-import unicodedata
 import webbrowser
 from collections import Counter
 from pathlib import Path
@@ -32,6 +36,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import show_thread as st  # noqa: E402
+import arena_tui as tui  # noqa: E402
+from arena_tui import fold  # noqa: E402  (one folding table for the canvas font and the terminal)
 
 TEMPLATE = HERE / "arena.html"
 FONT = HERE / "font8x8_basic.hex"  # font8x8_basic by Daniel Hepper, public domain (NOTICE.md); 128 glyphs x 8 rows
@@ -42,9 +48,6 @@ ANSWER = re.compile(r"^(fixed|dismissed)\b\s*(.*?)(?:\s+in ([0-9a-f]{7,40}))?\s*
 VOTE = re.compile(r"^vote:\s*(\S+)(?:\s*—\s*(.*))?$", re.I)
 DONE = re.compile(r"^VERDICT:\s*((?:NOT )?DONE)", re.I)
 TALLY = re.compile(r"(\d+)/(\d+)\s*(PASS|DONE)?", re.I)
-FOLD = {"—": "-", "–": "-", "‑": "-", "·": "-", "•": "*", "×": "x", "→": "->", "←": "<-", "⇒": "=>",
-        "…": "...", "‘": "'", "’": "'", "“": '"', "”": '"', "≥": ">=", "≤": "<=", "≠": "!=",
-        "✓": "v", "✔": "v", "✗": "x", "✘": "x", "°": "o", "\u00a0": " "}
 
 # 16x16 sprites, one per voice plus the thread itself: "." is clear, 0-3 the palette, lightest to darkest.
 SPRITES = {
@@ -193,21 +196,6 @@ SPRITES = {
         "................",
     ],
 }
-
-
-def fold(text: str) -> str:
-    """ASCII for the 8x8 font: common typography mapped, accents stripped, markdown ticks dropped."""
-    out = []
-    for ch in text.replace("`", ""):
-        if ch in "\r\n\t":
-            out.append(" ")
-        elif ord(ch) < 128:
-            out.append(ch)
-        elif ch in FOLD:
-            out.append(FOLD[ch])
-        else:
-            out.append(unicodedata.normalize("NFKD", ch).encode("ascii", "ignore").decode())
-    return re.sub(r" {2,}", " ", "".join(out)).strip()
 
 
 def thread_label(kind: str, number: int) -> str:
@@ -388,9 +376,9 @@ class Source:
         self.lock = threading.Lock()
         self.data, self.at = None, 0.0
 
-    def get(self) -> dict:
+    def get(self, force: bool = False) -> dict:
         with self.lock:
-            if self.data is None or time.monotonic() - self.at >= CACHE_SECONDS:
+            if force or self.data is None or time.monotonic() - self.at >= CACHE_SECONDS:
                 try:
                     threads, errors = gather(self.urls, self.repo, self.limit)
                     self.data = payload(threads, errors, live=True)
@@ -446,6 +434,18 @@ def serve(source: Source, port: int, open_browser: bool) -> None:
         server.server_close()
 
 
+def print_digest(threads: list[dict]) -> None:
+    for t in threads:
+        print(f"{t['label']} · {t['state']} · {t['title']}\n{t['url']}")
+        for line in st.digest(t["turns"]):
+            print(line)
+        print()
+
+
+def interactive() -> bool:
+    return sys.stdin.isatty() and sys.stdout.isatty() and os.environ.get("TERM") != "dumb"
+
+
 def main() -> int:
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # thread titles can leave the code page
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -456,6 +456,7 @@ def main() -> int:
     parser.add_argument("--serve", action="store_true", help="serve the page live on 127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--open", action="store_true", help="open the page in the browser")
+    parser.add_argument("--ascii", action="store_true", help="terminal view in plain 7-bit text, no colour")
     opts = parser.parse_args()
     if bool(opts.urls) == bool(opts.repo):
         parser.error("give thread URLs or --repo, not both" if opts.urls else "give thread URLs or --repo")
@@ -463,17 +464,33 @@ def main() -> int:
         parser.error("--repo takes owner/repo")
     if bad := [u for u in opts.urls if not st.parse_url(u)]:
         parser.error(f"not a GitHub PR or issue URL: {bad[0]}")
-    if not (opts.out or opts.serve):
-        parser.error("give --out <file.html>, --serve, or both")
+    browser = bool(opts.out or opts.serve)
     source = Source(opts.urls, opts.repo, max(1, min(opts.limit, 100)))
+    if not browser and interactive():
+        print("arena: loading...", file=sys.stderr, flush=True)
     try:
-        data = source.get() if opts.serve else payload(*gather(opts.urls, opts.repo, source.limit), live=False)
+        if opts.out and not opts.serve:
+            data = payload(*gather(opts.urls, opts.repo, source.limit), live=False)
+        else:  # the terminal and --serve keep refetching through the source's cache
+            data = source.get()
     except st.GhError as err:
         sys.exit(f"arena: {err}")
     for err in data["errors"]:
         print(f"arena: {err}", file=sys.stderr)
     if not data["threads"] and not opts.serve:
         sys.exit("arena: no thread with a bot turn to show")
+    if not browser:
+        if not interactive():
+            print_digest(data["threads"])
+            return 0
+        try:
+            tui.run(source, data, tui.colour_mode(os.environ, opts.ascii), SPRITES)
+        except KeyboardInterrupt:
+            return 130
+        except OSError as err:  # no VT on this console: the text digest instead
+            print(f"arena: {err}; printing the thread instead", file=sys.stderr)
+            print_digest(data["threads"])
+        return 0
     if opts.out:
         out = Path(opts.out)
         out.parent.mkdir(parents=True, exist_ok=True)

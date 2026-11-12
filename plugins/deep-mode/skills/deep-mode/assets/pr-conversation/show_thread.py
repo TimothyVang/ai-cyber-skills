@@ -208,6 +208,15 @@ def voices(url: str, limit=140) -> list[dict]:
     return [v for c in comments(repo, number) if (v := voice(c, limit))]
 
 
+def digest(found: list[dict], full: bool = False) -> list[str]:
+    """The text blocks the CLI prints: time, voice, head and id, then the gist (or the body with full=True)."""
+    out = []
+    for v in found:
+        out.append(f"\n{v['time'][11:16]}  {v['voice']}" + (f"  @ {v['head']}" if v["head"] else "") + f"  (#{v['id']})")
+        out.extend(f"    {line}" for line in (v["body"].strip().splitlines()[1:] if full else v["gist"]))
+    return out
+
+
 def main() -> int:
     # A pipe on Windows defaults to the locale code page; thread text carries emoji and arrows.
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -222,14 +231,9 @@ def main() -> int:
         found = voices(opts.url)
     except GhError as err:
         sys.exit(f"show_thread: {err}")
-    shown = 0
-    for v in found:
-        if v["id"] <= opts.since:
-            continue
-        shown += 1
-        print(f"\n{v['time'][11:16]}  {v['voice']}" + (f"  @ {v['head']}" if v["head"] else "") + f"  (#{v['id']})")
-        for line in (v["body"].strip().splitlines()[1:] if opts.full else v["gist"]):
-            print(f"    {line}")
+    shown = [v for v in found if v["id"] > opts.since]
+    for line in digest(shown, opts.full):
+        print(line)
     if not shown:
         print("show_thread: no bot or PR-Agent comments" + (" since that id" if opts.since else ""))
     return 0

@@ -8,6 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import arena  # noqa: E402
+import arena_tui as tui  # noqa: E402
 import show_thread as st  # noqa: E402
 
 
@@ -225,6 +226,151 @@ class Battle(unittest.TestCase):
         self.assertNotIn("</script><!--", html)
         self.assertNotIn("__ARENA_DATA__", html)
         self.assertNotIn("__FONT_HEX__", html)
+
+
+class TerminalStatus(unittest.TestCase):
+    def test_live_time_on_the_dialog_border_and_the_error_below(self):
+        ui = tui.UI(two_threads(), live=True)
+        ui.status, ui.error = tui.status_of({"generated": "2026-11-11T21:56:00+00:00", "errors": []}, tui.glyphs("mono"))
+        lines = plain(screen(ui, 80, 24, "mono"))
+        self.assertIn("live · updated", lines[-4])
+        self.assertIn("q quit", lines[-1])
+        live, ui.error = tui.status_of({"generated": "x", "errors": ["gh api failed: HTTP 502"]}, tui.glyphs("mono"))
+        lines = plain(screen(ui, 60, 20, "mono"))
+        self.assertIn("error: gh api failed: HTTP 502", lines[-1])
+        self.assertIn("live · updated", lines[-4])  # the last good time stays
+
+
+def two_threads():
+    sig = "**deep-mode {}** · head `{}`\n\n"
+    review = turn(sig.format("reviewer · omp (openai/gpt-x)", "aaaaaaa") + fenced({"findings": [
+        {"severity": "P1", "file": "src/very/long/path/to/a/module/file_name.py", "line": 12,
+         "claim": "the bar drops “too early” when \x1b[31mred\x1b[0m text arrives"}]}), 1)
+    fix = turn(sig.format("author · omp", "bbbbbbb") + fenced({"responses": [
+        {"id": "F1", "action": "fixed", "sha": "bbbbbbb", "reason": "done"}]}), 2)
+    pr = arena.battle({"url": "https://github.com/o/r/pull/12345", "repo": "o/r", "number": 12345, "kind": "pr",
+                       "title": "A pull request", "state": "merged"}, [review, fix])
+    issue = arena.battle({"url": "https://github.com/o/r/issues/7", "repo": "o/r", "number": 7, "kind": "issue",
+                          "title": "An issue", "state": "open"}, [turn(sig.format("author · omp", "ccccccc") + "Plan: x.", 3)])
+    return [pr, issue]
+
+
+def screen(ui, w, h, mode="truecolor"):
+    ui.layout(tui.text_cols(w))
+    return tui.frame(ui, w, h, mode, arena.SPRITES)
+
+
+def plain(lines):
+    return [tui.ANSI.sub("", line) for line in lines]
+
+
+class TerminalFrame(unittest.TestCase):
+    SIZES = [(60, 20), (80, 24), (100, 30), (120, 40), (200, 60)]
+
+    def battle_ui(self):
+        ui = tui.UI(two_threads(), live=True)
+        ui.key("enter")
+        return ui
+
+    def test_every_line_fits_the_width_in_every_mode(self):
+        for mode in ("truecolor", "256", "mono", "ascii"):
+            for w, h in self.SIZES:
+                for ui in (tui.UI(two_threads()), self.battle_ui()):
+                    for _ in range(6):
+                        lines = screen(ui, w, h, mode)
+                        self.assertEqual(len(lines), h)
+                        for line in plain(lines):
+                            self.assertEqual(len(line), w, (mode, w, h, ui.mode, line))
+                        ui.key("enter")
+                        ui.tick(ui.now + 10)
+
+    def test_dialog_text_is_shown_and_typed(self):
+        ui = self.battle_ui()
+        lines = plain(screen(ui, 80, 24))
+        self.assertFalse(any("wants to merge" in line for line in lines))  # nothing typed yet
+        ui.tick(5.0)
+        lines = plain(screen(ui, 80, 24))
+        self.assertTrue(any("PR #12345 wants to merge!" in line for line in lines))
+        self.assertTrue(any("TURN 0/2" in line for line in lines))
+
+    def test_finding_reaches_the_dialog_without_escape_codes_from_the_comment(self):
+        ui = self.battle_ui()
+        ui.key("l")  # latest turn is the author's; step back into the review
+        ui.key("home")
+        text = []
+        for _ in range(12):
+            ui.tick(ui.now + 10)
+            text += plain(screen(ui, 80, 24, "mono"))
+            ui.key("enter")
+        joined = "\n".join(text)
+        self.assertIn("It found a P1:", joined)
+        self.assertIn("It's super effective!", joined)
+        self.assertNotIn("\x1b", joined)
+
+    def test_menu_cursor_marks_the_selected_thread(self):
+        ui = tui.UI(two_threads())
+        ui.key("down")
+        lines = plain(screen(ui, 80, 24, "mono"))
+        cursor = [line for line in lines if "►" in line]
+        self.assertEqual(len(cursor), 1)
+        self.assertIn("ISSUE #7", cursor[0])
+        ui.key("up")
+        self.assertIn("PR #12345", next(line for line in plain(screen(ui, 80, 24, "mono")) if "►" in line))
+
+    def test_ascii_and_mono_have_no_escape_codes(self):
+        for mode in ("ascii", "mono"):
+            for ui in (tui.UI(two_threads()), self.battle_ui()):
+                ui.tick(10)
+                for line in screen(ui, 80, 24, mode):
+                    self.assertNotIn("\x1b", line)
+                    if mode == "ascii":
+                        self.assertTrue(all(" " <= ch < "\x7f" for ch in line), line)
+
+    def test_too_small(self):
+        lines = screen(self.battle_ui(), 59, 20)
+        self.assertIn("make the window larger", lines[0])
+        self.assertTrue(all(len(line) == 59 for line in lines))
+
+    def test_resize_keeps_the_reader_on_the_same_turn(self):
+        ui = self.battle_ui()
+        screen(ui, 120, 40)
+        ui.key("l")
+        turn_before = ui.shown_turn()
+        screen(ui, 60, 20)
+        self.assertEqual(ui.shown_turn(), turn_before)
+
+    def test_live_turn_moves_a_reader_waiting_at_the_end(self):
+        threads = two_threads()
+        pr = threads[0]
+        ui = tui.UI([{**pr, "outro": ["The conversation goes on..."]}])
+        screen(ui, 80, 24)
+        ui.go(len(ui.boxes) - 1, full=True)
+        grown = {**pr, "turns": pr["turns"] + [{**pr["turns"][-1], "id": 99, "lines": ["AUTHOR returns!"]}],
+                 "outro": ["The conversation goes on..."]}
+        ui.apply([grown])
+        self.assertEqual(ui.shown_turn(), 2)
+        self.assertEqual(ui.boxes[ui.bi]["lines"][0], "AUTHOR returns!")
+
+    def test_keys_and_colour_modes(self):
+        self.assertEqual(tui.parse_posix("\x1b[A\x1b[B\x1b[C\x1b[D\r \x7f\x1bq"),
+                         ["up", "down", "right", "left", "enter", "space", "backspace", "esc", "q"])
+        self.assertEqual(tui.parse_windows(["\xe0", "H", "\x00", "P", "\xe0", "M", "\r", "\x08", "\x1b", "a"]),
+                         ["up", "down", "right", "enter", "backspace", "esc", "a"])
+        self.assertEqual(tui.colour_mode({"COLORTERM": "truecolor"}), "truecolor")
+        self.assertEqual(tui.colour_mode({"WT_SESSION": "x"}), "truecolor")
+        self.assertEqual(tui.colour_mode({}), "256")
+        self.assertEqual(tui.colour_mode({"NO_COLOR": "1", "WT_SESSION": "x"}), "mono")
+        self.assertEqual(tui.colour_mode({"COLORTERM": "truecolor"}, ascii_flag=True), "ascii")
+        self.assertEqual(tui.fold("a\x1b[31mb\x07c"), "a [31mb c")
+
+    def test_quit_keys(self):
+        ui = tui.UI(two_threads())
+        self.assertEqual(ui.key("esc"), "quit")  # Esc on the menu quits
+        ui.key("enter")
+        self.assertIsNone(ui.key("esc"))         # Esc in a battle goes back to the menu
+        self.assertEqual(ui.mode, "menu")
+        ui.key("enter")
+        self.assertEqual(ui.key("q"), "quit")
 
 
 if __name__ == "__main__":
