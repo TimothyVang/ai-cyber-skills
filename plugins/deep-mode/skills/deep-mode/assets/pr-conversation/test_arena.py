@@ -302,6 +302,16 @@ class TerminalStatus(unittest.TestCase):
         self.assertIn("error: gh api failed: HTTP 502", lines[-1])
         self.assertIn("live · updated", lines[-4])  # the last good time stays
 
+    def test_partial_refetch_moves_the_time_and_a_failed_one_keeps_it(self):
+        ui, g = tui.UI(two_threads(), live=True), tui.glyphs("mono")
+        ui.status = "refreshing..."
+        tui.took(ui, {"threads": [], "generated": "2026-11-11T21:56:00+00:00", "errors": ["o/r#3: HTTP 502"]}, g)
+        self.assertIn("updated", ui.status)
+        self.assertIn("HTTP 502", ui.error)
+        kept = ui.status
+        tui.took(ui, {"errors": ["gh not found"]}, g)
+        self.assertEqual((ui.status, ui.error), (kept, "error: gh not found"))
+
 
 def two_threads():
     sig = "**deep-mode {}** · head `{}`\n\n"

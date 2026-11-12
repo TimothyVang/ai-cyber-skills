@@ -404,6 +404,13 @@ def status_of(data: dict, g: dict) -> tuple[str, str]:
     return (f"live {g['dot']} updated {when}" if when else ""), error
 
 
+def took(ui, got: dict, g: dict) -> None:
+    """A refetch result: threads (with or without per-thread errors) set the time; only a failed fetch keeps the old one."""
+    live, ui.error = status_of(got, g)
+    if got.get("threads") is not None:
+        ui.status = live
+
+
 def dialog_rows(height: int) -> tuple[int, tuple[int, int]]:
     """The dialog's height and its two text rows (offsets inside it)."""
     if height < 26:
@@ -728,11 +735,6 @@ def run(source, data: dict, mode: str, sprites: dict) -> None:
     ui = UI(data["threads"], live=True, now=time.monotonic())
     ui.status, ui.error = status_of(data, glyphs(mode))
 
-    def took(got: dict) -> None:
-        live, ui.error = status_of(got, glyphs(mode))
-        if not ui.error:  # a failed fetch keeps the time of the last good one
-            ui.status = live
-
     updates, wake, stop = queue.Queue(), threading.Event(), threading.Event()
 
     def refetch():
@@ -762,7 +764,7 @@ def run(source, data: dict, mode: str, sprites: dict) -> None:
                         got = updates.get_nowait()
                         if got.get("threads") is not None:
                             ui.apply(got["threads"])
-                        took(got)
+                        took(ui, got, glyphs(mode))
                 except queue.Empty:
                     pass
                 w, h = term.size()
