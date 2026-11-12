@@ -39,7 +39,7 @@ GitHub commands assume `R=<owner>/<repo>` and that every body is a file you wrot
 
 | Operation | github | local |
 |---|---|---|
-| Create | `gh issue create -R "$R" --title "<t>" --body-file <f> --label <a>,<b>` prints the URL; the number ends it. | Next free four-digit number `NNNN` in `docs/deep-mode/issues/`; write `NNNN-<slug>.md` in the local format below. |
+| Create | `gh issue create -R "$R" --title "<t>" --body-file <f> --label <a>,<b>` prints the URL; the number ends it. | Next four-digit number `NNNN` above every issue file in `docs/deep-mode/issues/` on any branch: the working tree, plus `git ls-tree --name-only <ref> docs/deep-mode/issues/` for each ref `git for-each-ref --format='%(refname)' refs/heads refs/remotes` lists (fetch first when there is a remote). Write `NNNN-<slug>.md` in the local format below. |
 | Read | `gh issue view <n> -R "$R" --json number,title,body,labels,author,comments,state` | Read the file. |
 | Comment | `gh issue comment <n> -R "$R" --body-file <f>` | Append under `## Comments` as `### <date> <author>` then the text. |
 | Set labels | `gh issue edit <n> -R "$R" --add-label <a> --remove-label <b>` | Rewrite the `Labels:` line. |

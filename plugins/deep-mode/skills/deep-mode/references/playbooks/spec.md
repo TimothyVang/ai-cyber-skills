@@ -17,7 +17,7 @@ The spec is the contract a build is judged against: the **pr-review** technique'
    - Local tracker → check out the branch this step commits on (`spec/<slug>` or the docs PR's branch) and run step 6 there first. Then make this one commit hold both the spec file and its issue file, staging only those two paths (`git add -- <spec file> <issue file>`). The issue then lands wherever the spec lands, before any docs PR opens or merges.
    Done when `git log -1 spec/<slug>` shows the commit (pushed when a remote exists), or the docs PR is open.
 6. **Publish** per the **tracker** technique (`references/techniques/tracker.md`): one issue, title `Spec: <name>`, labels `spec`, the category role, and `triage:agent-ready`. Body: a link to the file on its branch (no remote: its path and branch name), then the file's full text.
-   - Local tracker → this runs before step 5's commit, in the checkout of that commit's branch, so the next free issue number is counted on that branch.
+   - Local tracker → this runs before step 5's commit, in the checkout of that commit's branch, so the issue file is written on that branch. Its number comes from the tracker Create operation, which counts every branch.
    Done when the issue exists with those labels and the full text.
 7. **Next.** Hand off to the Tickets playbook (`references/playbooks/tickets.md`) unless the spec fits one PR, in which case the spec issue is itself the ticket.
    Done when the Tickets playbook has started, or the spec issue is named as the ticket in your report.

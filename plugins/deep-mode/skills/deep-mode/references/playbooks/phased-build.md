@@ -94,7 +94,7 @@ You coordinate; ticket owners write the code. The tickets are a graph, not a lis
 ### Steps
 
 1. **Load the graph.** Read the spec (issue and `docs/specs/<slug>.md`) and every ticket with its Blocked by lines, per the **tracker** technique (`references/techniques/tracker.md`). Record the graph, the integration branch, and each ticket's owner and state in one notes file a cold start can find, as Run a goal, Program scale step 1 describes (`references/playbooks/run-a-goal.md`).
-   - Local tracker → take the integration branch from the Tickets evidence or the spec issue body, never a guess. Read the spec and every issue file from that branch's tip (`git show <branch>:<path>`), not from the working tree.
+   - Local tracker → take the integration branch from the Tickets evidence (Tickets step 5 picks it), never a guess or the spec issue body. Read the spec and every issue file from that branch's tip (`git show <branch>:<path>`), not from the working tree.
    - Required at that tip: every ticket file, plus `docs/specs/<slug>.md` and the spec issue file when the input was a spec. A missing file, or output from `git status --porcelain -- <those paths>` in your checkout → stop, name the paths, and send the fix back to Spec step 5 or Tickets step 5. Never copy issue files across branches or rewrite them. Record the checked SHA in the notes file.
    Done when the notes file lists the integration branch and every ticket with its blockers, owner, and state (local tracker: and the checked SHA).
 2. **Explore once** (optional). Tickets that share unknown code → one `scout` pass that returns file pointers, conventions, and test commands. Save its report beside the notes file and give owners the path, not a pasted copy.

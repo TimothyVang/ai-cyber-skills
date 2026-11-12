@@ -18,13 +18,15 @@ A ticket is a **tracer bullet**: a thin path through every layer the feature tou
    Done when every slice has a title, at least one Done when item, and a Blocked by list.
 4. **Check the cut.** For each ticket: does it change behavior someone can observe, or is it a prefactor or migrate batch that keeps everything green? Is any ticket two features (split it) or half of one (merge it)? Any cycle in Blocked by? Fix, then show the user the list as a table (number, title, blocked by, what it delivers) and carry on; the user overrides by saying so (SKILL.md Autonomy).
 5. **Publish** per the **tracker** technique (`references/techniques/tracker.md`), blockers first so every Blocked by line can name a real issue. Each ticket: labels `ticket`, its category role, and `triage:agent-ready`; a Parent link to the spec issue when there is one; Blocked by links. Use the body below. Never edit or close the spec issue.
-   - Local tracker → write every ticket in a checkout of the integration branch, so the next free number is counted there. After the last one, commit all ticket files in one commit, staging only them (`git add -- <ticket files>`), and push when there is a remote. A ticket worktree cut later sees only committed files.
-   - Integration branch for a spec committed on `spec/<slug>` (the branch its issue body names) → that branch. Its tip must hold `docs/specs/<slug>.md` and the spec issue file (`git ls-tree -r --name-only spec/<slug> -- <paths>`); else stop and report.
-   - Integration branch for a spec sent to trunk through a docs PR, a plan, or a conversation → `spec/<slug>` off the default branch tip. An unmerged docs PR → stop: the user asked for the spec on trunk first.
-   - A `spec/<slug>` you didn't just create and that isn't the spec's own branch is reused only when the default branch already contains it (`git merge-base --is-ancestor spec/<slug> <default>`); fast-forward it to the default tip. Otherwise stop and report; never build on its history.
-   Done when every ticket is an issue with its labels and Blocked by links, and the spec issue is unchanged. Local tracker: one commit on the integration branch holds every ticket file.
+   - Local tracker → pick step 6's route before writing any ticket. Number each one with the tracker Create operation, which counts the issue files on every branch.
+   - Local tracker, Phased build route → write every ticket in a checkout of the integration branch. After the last one, commit all ticket files in one commit, staging only them (`git add -- <ticket files>`), and push when there is a remote. A ticket worktree cut later sees only committed files.
+   - Its integration branch, when the default branch tip holds `docs/specs/<slug>.md` (the spec reached trunk) or the source is a plan or a conversation → `spec/<slug>` off the default branch tip, whatever branch the spec issue body names.
+   - Its integration branch otherwise → the branch the spec issue body names. Its tip must hold `docs/specs/<slug>.md` and the spec issue file (`git ls-tree -r --name-only <branch> -- <paths>`); else stop and report. An open docs PR from it (`gh pr list --head <branch> --state open`) → stop: the user asked for the spec on trunk first.
+   - An existing `spec/<slug>` that the trunk case would reuse is kept only when the default branch already contains it (`git merge-base --is-ancestor spec/<slug> <default>`); fast-forward it to the default tip. Otherwise stop and report; never build on its history.
+   - Local tracker, board route → the spec file and its issue file must already be on the default branch; else stop and send the spec back to Spec step 5's docs PR. Write every ticket on a `tickets/<slug>` branch off the default tip, commit them in one commit, and land it through Opening a PR (`references/playbooks/opening-a-pr.md`; no remote: a local merge after a panel pass) before the board starts, so task worktrees cut from trunk see them.
+   Done when every ticket is an issue with its labels and Blocked by links, and the spec issue is unchanged. Local tracker: one commit holds every ticket file, on the integration branch (board route: on the default branch).
 6. **Next.** One integration branch, one final PR → Phased build (`references/playbooks/phased-build.md`). One merged PR per ticket on trunk → Work a queue (`references/playbooks/work-a-queue.md`) from board tasks. Labeled issues for an installed factory → Work a queue with the `factory` CLI.
-   - Local tracker → Phased build only. Its Build mode reads these ticket files from the integration branch tip and checks the commit above; Work a queue's sources don't.
+   - Local tracker → Phased build, or Work a queue's board source once the tickets commit is on the default branch; the board source runs on the local kind. The factory source names no local kind, so it is not a route here.
    Done when the chosen playbook has started, named in your report.
 
 ## Ticket body
@@ -55,4 +57,4 @@ No file paths or line numbers in a ticket. A short prototype snippet that pins a
 - The ticket table with links, blockers, and the first unblocked frontier.
 - Prefactors found, and any wide change split into Expand, Migrate, Contract.
 - Decisions about granularity, each with how to reverse it.
-- Local tracker: the integration branch and the SHA of the commit holding the tickets.
+- Local tracker: the route, the branch holding the tickets (integration or default), and the SHA of the commit holding them.
