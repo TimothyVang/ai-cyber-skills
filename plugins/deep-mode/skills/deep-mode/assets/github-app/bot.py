@@ -73,7 +73,9 @@ DEFAULTS = {"author": {"agent": "omp"}, "reviewer": {"agent": "omp"},
             "autoUpdate": True, "updateMinutes": 60}
 UPDATE_PATH = CONFIG_DIR / "update.json"  # its own file: `bot.py update` may write it while a watcher runs
 UPDATE_TIMEOUT = 600  # seconds for each omp command of an upgrade
-LOCK_WAIT = 60  # seconds a starting watcher waits for the lock (the watcher it replaces is exiting)
+LOCK_WAIT = 60  # seconds a starting watcher waits for the lock (the watcher it replaces is letting go)
+HANDOVER_WAIT = 60  # seconds a restarting watcher waits for the new one to confirm it holds the lock
+HANDOVER_ENV = "BOT_HANDOVER_TOKEN"  # the token a restarted watcher writes to update.json once it holds the lock
 BOT_CODE = ("github-app", "pr-agent", "loop")  # the asset folders bot.py imports from
 ACPX_CONFIG = Path.home() / ".acpx" / "config.json"
 SIGNATURE = f"**{NAME} "
@@ -856,6 +858,36 @@ def is_held(labels) -> bool:
     return any((label.get("name") or "").lower() in HOLD_LABELS for label in labels or [])
 
 
+# Words a shell runs itself. The pre-check leaves them to the run (in bash, `command -v` knows them anyway).
+SHELL_WORDS = frozenset({"!", ".", ":", "[", "[[", "{", "(", "alias", "builtin", "call", "case", "cd", "command",
+                         "echo", "eval", "exec", "export", "false", "for", "function", "if", "pushd", "set", "source",
+                         "test", "true", "type", "ulimit", "umask", "unset", "until", "while"})
+
+
+def missing_command(command: str, env: dict, cwd: Path, bash) -> str:
+    """The check command's first word when the check's shell can't find it in `env`'s PATH, else "". Resolved the
+    way the check runs: bash's `command -v`, or shutil.which without bash. A builtin, a path, or a command that
+    doesn't parse is left to the run, where a nonzero exit is the code's failure."""
+    try:
+        words = shlex.split(command)
+    except ValueError:
+        return ""
+    while words and re.fullmatch(r"[A-Za-z_]\w*=.*", words[0], re.S):  # leading `NAME=value` assignments
+        words.pop(0)
+    word = words[0] if words else ""
+    if not re.fullmatch(r"[\w.+-]+", word) or word in SHELL_WORDS:
+        return ""
+    if not bash:
+        return "" if shutil.which(word, path=env.get("PATH")) else word
+    try:
+        proc = unlocked(subprocess.run, [bash, "-c", 'command -v -- "$1" >/dev/null', "check", word], cwd=cwd,
+                        env=env, stdin=subprocess.DEVNULL, capture_output=True, timeout=60, creationflags=NO_WINDOW)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""  # no answer: the run itself decides
+    return "" if proc.returncode == 0 else word
+
+
+
 def as_comment(node: dict) -> dict:
     """A GraphQL comment in the shape the triggers read. GraphQL names an app `slug` and REST `slug[bot]`; the
     REST form is kept, so a bot's comment is never taken for a human's."""
@@ -1352,30 +1384,31 @@ class PRConversation:
         tmp.mkdir(parents=True, exist_ok=True)
         env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
         env.update(TMPDIR=str(tmp), TMP=str(tmp), TEMP=str(tmp), PYTHONDONTWRITEBYTECODE="1")
-        # The bot may run under pythonw from a logon task, whose bash child finds no `python`. Its own interpreter's
-        # folder (python.exe sits beside pythonw.exe) goes first, so `python` in the check is the bot's Python.
-        env["PATH"] = os.pathsep.join(filter(None, [str(Path(sys.executable).parent), env.get("PATH")]))
+        if os.name == "nt":
+            # Under pythonw from a logon task the bash child finds no `python`. The bot's interpreter folder
+            # (python.exe sits beside pythonw.exe) goes first, so `python` in the check is the bot's Python.
+            env["PATH"] = os.pathsep.join(filter(None, [str(Path(sys.executable).parent), env.get("PATH")]))
         bash = goal_loop.find_bash()
+        missing = missing_command(command, env, tree, bash)
+        if missing:
+            self.cannot_start(sha, command, missing)
         log(f"{self.it.key}: repo check `{command}` at {sha[:7]}")
         code, output = unlocked(goal_loop.run_limited, [bash, "-c", command] if bash else command,
                                 REPO_CHECK_MINUTES, shell=not bash, cwd=tree, env=env, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
         self.item["repoCheck"] = {"sha": sha, "code": code, "command": command}
-        output = output.strip()[-3000:]
-        if code == 127:
-            self.cannot_start(sha, command, output)
-        return command, code, output
+        return command, code, output.strip()[-3000:]
 
-    def cannot_start(self, sha: str, command: str, output: str) -> None:
-        """Exit 127 is the shell's command not found: the bot's environment, not the PR. The author gets no
-        finding and nothing merges; one note per head and command, and the item errors so the next cycle retries."""
+    def cannot_start(self, sha: str, command: str, missing: str) -> None:
+        """The check's first command is not on the bot's PATH: the bot's setup, not the PR. No finding, no merge,
+        no revert; one note per head and command, and the item errors so the next cycle retries."""
         if self.item.get("checkCannotStart") != {"sha": sha, "command": command}:
             self.item["checkCannotStart"] = {"sha": sha, "command": command}
-            self.it.say("coordinator", "bot.py", sha, f"The repo check `{command}` could not start at `{sha[:7]}` "
-                        "(exit 127, command not found). That is the bot's setup, not this PR: no finding goes to "
-                        f"the author and nothing merges until it runs. The next cycle tries again.\n\n```text\n"
-                        f"{output}\n```")
-        raise CheckCannotStart(f"the repo check `{command}` could not start (exit 127, command not found)")
+            self.it.say("coordinator", "bot.py", sha, f"The repo check `{command}` could not start at `{sha[:7]}`. "
+                        f"`{missing}` is not on the bot's PATH. That is the bot's setup, not this PR, so no finding "
+                        "goes to the author, and nothing merges or reverts until the check runs. The next cycle "
+                        "tries again.")
+        raise CheckCannotStart(f"the repo check `{command}` could not start: `{missing}` is not on the bot's PATH")
 
     def check_findings(self) -> list:
         """The repo check at the current head as a P1 finding for the author when it fails, else nothing."""
@@ -1669,7 +1702,7 @@ class PRConversation:
                 return "merged"
             step.update(confirmed=True, commit=view["mergeCommit"]["oid"])
             self.bot.save()
-        if same(self.repo, B["repo"]):
+        if B.get("repo") and same(self.repo, B["repo"]):
             self.bot.merged_self = True  # the bot's own source moved: the watcher checks for an update now
         if not step.get("noted"):
             self.it.say("coordinator", "bot.py", sha, f"Merged `{sha[:7]}` ({step.get('method') or 'merged'}). "
@@ -1686,7 +1719,15 @@ class PRConversation:
         Red opens a revert PR, which the next cycle runs this conversation on."""
         git(self.clone, "fetch", "origin", "--quiet", f"+refs/heads/{self.base}:refs/remotes/origin/{self.base}",
             timeout=1800)
-        result = self.repo_check(merged)
+        step = self.item.get("afterMerge") or {}
+        step.pop("checkCannotStart", None)
+        try:
+            result = self.repo_check(merged)
+        except CheckCannotStart:
+            # No verdict, so nothing reverts. The record stays and repo_cycle keeps retrying it past MAX_ATTEMPTS:
+            # the retry costs no model call, and the trunk check must still run once the check can start.
+            step["checkCannotStart"] = True
+            raise
         if result is not None:
             command, code, output = result
             if code is None:  # no verdict is not a red trunk: say so, revert nothing
@@ -1970,7 +2011,8 @@ class Bot:
             scheduled = {data["number"] for kind, data, *_ in todo}
             for key, item in list(self.state["items"].items()):  # merges whose post-merge steps didn't finish
                 step = item.get("afterMerge")
-                if not key.startswith(f"{repo}#pr:") or not step or item.get("errors", 0) >= MAX_ATTEMPTS:
+                if not key.startswith(f"{repo}#pr:") or not step or \
+                        (item.get("errors", 0) >= MAX_ATTEMPTS and not step.get("checkCannotStart")):
                     continue
                 if step["pr"]["number"] in scheduled or (want and want != f"pr:{step['pr']['number']}"):
                     continue  # an open PR already listed above runs finish_merge first anyway
@@ -2060,17 +2102,21 @@ class Bot:
 
 class Lock:
     """One bot process at a time; the OS releases the lock if the process dies. With `wait`, a held lock is tried
-    again each second for that many seconds (a restarting watcher's new process waits for the old one to exit)."""
+    again each second for that many seconds (a restarting watcher's new process waits for the old one to let go)."""
 
     path = WORK / "bot.lock"
 
     def __init__(self, wait: float = 0):
-        self.wait = wait
+        self.wait, self.fh = wait, None
 
     def __enter__(self):
+        self.acquire(self.wait)
+        return self
+
+    def acquire(self, wait: float = 0) -> None:
         WORK.mkdir(parents=True, exist_ok=True)
         self.fh = open(self.path, "a+")
-        deadline = time.monotonic() + self.wait
+        deadline = time.monotonic() + wait
         while True:
             try:
                 if os.name == "nt":
@@ -2080,15 +2126,20 @@ class Lock:
                 else:
                     import fcntl
                     fcntl.flock(self.fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                return self
+                return
             except OSError:
                 if time.monotonic() >= deadline:
-                    self.fh.close()
+                    self.release()
                     raise SystemExit(f"another {NAME} bot is running (lock {self.path})") from None
                 time.sleep(1)
 
+    def release(self) -> None:
+        if self.fh is not None:
+            self.fh.close()
+            self.fh = None
+
     def __exit__(self, *exc):
-        self.fh.close()
+        self.release()
 
 
 def cmd_once(args) -> None:
@@ -2125,7 +2176,11 @@ def remove_tree(path: Path) -> None:
 
 def cmd_watch(args) -> None:
     updates = AutoUpdate()
-    with Lock(wait=LOCK_WAIT):
+    with Lock(wait=LOCK_WAIT) as lock:
+        token = os.environ.pop(HANDOVER_ENV, None)
+        if token:  # started by a restart: tell the old watcher this one holds the lock, so it can exit
+            save_update_record({**load_update_record(), "watcher": {"token": token, "pid": os.getpid(),
+                                                                     "at": now_iso()}})
         while True:
             bot = None
             try:
@@ -2134,9 +2189,9 @@ def cmd_watch(args) -> None:
             except (Exception, SystemExit) as err:  # a bad cycle (network, config) must not end the watcher
                 log(f"cycle failed: {err}")
             # Only here, between cycles: every repo worker has finished and no item is running.
-            code = updates.after_cycle(bot)
+            code = updates.after_cycle(bot, lock)
             if code is not None:
-                raise SystemExit(code)  # leaving the `with` releases the lock for the new watcher
+                raise SystemExit(code)
             time.sleep(args.interval or (bot.cfg["interval"] if bot else DEFAULTS["interval"]))
 
 
@@ -2233,21 +2288,48 @@ def minutes_since(stamp) -> float:
     return (dt.datetime.now(dt.timezone.utc) - then).total_seconds() / 60
 
 
-def restart_watcher(script: Path) -> int:
-    """Start this watcher's command line from the updated code as a detached process, and return the exit code for
-    this one. The new process waits for the lock (LOCK_WAIT) that this one releases as it exits. Under systemd
-    (INVOCATION_ID) a child dies with the unit, so the watcher exits 75 and the unit's Restart=on-failure starts it."""
-    if os.environ.get("INVOCATION_ID"):
+def restart_watcher(script: Path, lock: Lock):
+    """Hand the watch over to a new process running the updated code, and return this process's exit code, or
+    None when the handover failed and this watcher goes on with the old code. Under systemd (INVOCATION_ID and the
+    bot's unit) a child would die with the unit, so the watcher exits 75 and the unit's Restart=on-failure starts it.
+    Otherwise it lets go of the lock, starts the same command line detached, and waits HANDOVER_WAIT seconds for the
+    child to record its token in update.json after taking the lock. Without that, the child is stopped and this
+    watcher takes the lock back; its output is in LOGS/restart-<pid>.log."""
+    if os.environ.get("INVOCATION_ID") and systemd_unit().is_file():
         return 75
-    command = [sys.executable, str(script), *sys.argv[1:]]
+    token, command = uuid.uuid4().hex, [sys.executable, str(script), *sys.argv[1:]]
     if os.name == "nt":
         spawn = {"creationflags": subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | NO_WINDOW}
     else:
         spawn = {"start_new_session": True}
-    subprocess.Popen(command, cwd=Path.home(), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
-                     stderr=subprocess.DEVNULL, close_fds=True, **spawn)
-    log(f"restarting: started `{subprocess.list2cmdline(command)}`; this watcher exits")
-    return 0
+    LOGS.mkdir(parents=True, exist_ok=True)
+    child_log, child, problem = LOGS / f"restart-{os.getpid()}.log", None, "it did not take the lock"
+    lock.release()
+    try:
+        with open(child_log, "a", encoding="utf-8") as out:
+            child = subprocess.Popen(command, cwd=Path.home(), env={**os.environ, HANDOVER_ENV: token},
+                                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=out, close_fds=True,
+                                     **spawn)
+        deadline = time.monotonic() + HANDOVER_WAIT
+        while True:
+            if (load_update_record().get("watcher") or {}).get("token") == token:
+                log(f"restarted: `{subprocess.list2cmdline(command)}` holds the lock; this watcher exits")
+                return 0
+            if child.poll() is not None:
+                problem = f"it exited {child.returncode}"
+                break
+            if time.monotonic() >= deadline:
+                problem = f"it did not take the lock within {HANDOVER_WAIT} s"
+                break
+            time.sleep(0.5)
+    except Exception as err:
+        problem = f"it could not start ({err})"
+    if child is not None and child.poll() is None:
+        child.kill()  # never two watchers
+    lock.acquire(LOCK_WAIT)
+    log(f"restart failed: {problem} (its output: {child_log}); this watcher goes on with the old code and the next "
+        "update check tries again")
+    return None
 
 
 class AutoUpdate:
@@ -2257,6 +2339,9 @@ class AutoUpdate:
 
     def __init__(self):
         self.install, self.started, self.off = omp_install(), None, None
+        if not B.get("repo"):
+            self.install, self.off = None, "the brand names no repo to update from"
+            return
         if not self.install:
             self.off = f"{Path(__file__).resolve()} is not an omp plugin install (update a git checkout with git pull)"
             return
@@ -2265,7 +2350,7 @@ class AutoUpdate:
         except OSError as err:
             self.off = f"the bot's code can't be read ({err})"
 
-    def after_cycle(self, bot):
+    def after_cycle(self, bot, lock: Lock):
         """None to keep watching, else the exit code for this process (a new watcher took over). Never raises."""
         if bot is None or not bot.cfg["autoUpdate"]:
             return None
@@ -2286,7 +2371,7 @@ class AutoUpdate:
                     f" (was {(result['recorded'] or 'unrecorded')[:10]})")
             if code_hash(self.install["assets"]) == self.started:
                 return None
-            return restart_watcher(self.install["script"])
+            return restart_watcher(self.install["script"], lock)
         except Exception as err:  # never stops the bot: the next check retries
             log(f"update failed: {err}; the next check in {bot.cfg['updateMinutes']} minutes retries")
             return None
@@ -2297,6 +2382,8 @@ def cmd_update(args) -> None:
     itself at its next update check when the bot's code changed."""
     install = omp_install(anywhere=True)
     here = Path(__file__).resolve()
+    if not B.get("repo"):
+        raise SystemExit("auto-update is off: the brand names no repo to update from")
     if not install:
         raise SystemExit(f"no omp install of this plugin found; {here} updates with git pull")
     print(f"omp install: {install['marketplace']}/{install['plugin']} at {install['link']} -> "

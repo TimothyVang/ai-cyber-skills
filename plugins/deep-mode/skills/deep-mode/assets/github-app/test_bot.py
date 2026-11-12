@@ -373,7 +373,7 @@ class TrunkCheckTest(unittest.TestCase):
     def check(self, reply, revert=None):
         c = object.__new__(bot.PRConversation)
         with tempfile.TemporaryDirectory() as tmp:
-            c.repo, c.n, c.base, c.cfg = "o/r", 7, "main", {"verifiers": [{"agent": "v"}]}
+            c.repo, c.n, c.base, c.cfg, c.item = "o/r", 7, "main", {"verifiers": [{"agent": "v"}]}, {}
             c.clone, c.verifier_trees = Path(tmp), [Path(tmp) / "v0"]
             c.it = FakeItem(reply)
             c.open_revert = revert or mock.Mock(return_value="https://github.com/o/r/pull/8")
@@ -904,6 +904,13 @@ class RepoCheckTest(unittest.TestCase):
         self.assertEqual(c.it.asked, [])  # no agent: the command decided
         self.assertIn("exited 1", c.revert_red.call_args.args[1])
 
+    def trunk(self, c):
+        c.verifier_trees, c.cfg = [self.tmp / "v1"], {"verifiers": [{"agent": "v"}]}
+        c.revert_red = mock.Mock(return_value="merged-reverting")
+        return mock.patch.object(bot, "git", side_effect=lambda *a, **kw: "" if "fetch" in a else bot.run(
+            ["git", *a[1:]], cwd=a[0]).stdout.strip())
+
+    @unittest.skipUnless(os.name == "nt", "the interpreter folder goes on PATH on Windows only")
     def test_python_in_the_check_is_the_bots_own_interpreter(self):
         # Under pythonw from a logon task, the check's bash found no `python` (PR #52 got exit 127 as a finding).
         fake = self.tmp / "interpreter"
@@ -916,11 +923,12 @@ class RepoCheckTest(unittest.TestCase):
         self.assertEqual((code, output), (0, "bot-python --version"))
 
     def test_a_check_that_cannot_start_is_no_finding_and_blocks_the_merge(self):
-        c, sha = self.conversation("ok", check="no-such-command-for-the-bot-test")
+        c, sha = self.conversation("ok", check="FOO=1 no-such-command-for-the-bot-test --all")
         with self.assertRaises(bot.CheckCannotStart):  # an item error: the next cycle retries it
             c.check_findings()
+        self.assertNotIn("repoCheck", c.item)  # nothing ran
         self.assertEqual(len(c.it.posts), 1)
-        self.assertIn("could not start", c.it.posts[0][1])
+        self.assertIn("`no-such-command-for-the-bot-test` is not on the bot's PATH", c.it.posts[0][1])
         self.assertIn("no finding goes to the author", c.it.posts[0][1])
         with self.assertRaises(bot.CheckCannotStart):  # the retry says nothing new on the thread
             c.check_findings()
@@ -930,6 +938,71 @@ class RepoCheckTest(unittest.TestCase):
         with mock.patch.object(bot, "merge_pr") as merge, self.assertRaises(bot.CheckCannotStart):
             c.land("3/3")
         merge.assert_not_called()
+
+    def test_a_found_command_that_exits_127_is_the_codes_failure(self):
+        c, _ = self.conversation("ok", check="test -n x && exit 127")
+        findings = c.check_findings()
+        self.assertEqual([(f["id"], f["severity"]) for f in findings], [("C1", "P1")])
+        self.assertIn("exited 127", findings[0]["claim"])
+
+    def test_a_trunk_check_that_cannot_start_reverts_nothing_and_keeps_the_merge_record(self):
+        c, sha = self.conversation("ok", check="no-such-command-for-the-bot-test")
+        c.item = {"afterMerge": {"pr": {"number": 7}}}
+        with self.trunk(c), self.assertRaises(bot.CheckCannotStart):
+            c.trunk_check(sha)
+        c.revert_red.assert_not_called()
+        self.assertTrue(c.item["afterMerge"]["checkCannotStart"])
+
+    def test_a_red_trunk_from_exit_127_still_reverts(self):
+        c, sha = self.conversation("ok", check="test -n x && exit 127")
+        with self.trunk(c):
+            self.assertEqual(c.trunk_check(sha), "merged-reverting")
+        self.assertIn("exited 127", c.revert_red.call_args.args[1])
+
+    def test_a_builtin_or_unparsable_check_is_left_to_the_run(self):
+        for command in ('test "$(cat flag.txt)" = ok', 'echo "unclosed', "./scripts/check.sh", "$CHECK"):
+            with self.subTest(command):
+                self.assertEqual(bot.missing_command(command, dict(os.environ), self.tmp, bot.goal_loop.find_bash()),
+                                 "")
+
+
+class AfterMergeRetryTest(unittest.TestCase):
+    def test_a_trunk_check_that_cannot_start_is_retried_past_the_attempt_limit(self):
+        for cannot_start, scheduled in ((True, True), (False, False)):
+            with self.subTest(cannot_start=cannot_start):
+                step = {"pr": {"number": 7, "merged": True}, **({"checkCannotStart": True} if cannot_start else {})}
+                b = object.__new__(bot.Bot)
+                b.args = mock.Mock(item=None, backlog=False)
+                b.cfg, b.ident = {"mention": MENTION}, mock.Mock(owner=OWNER, is_ours=ours)
+                b.state = {"items": {"o/r#pr:7": {"errors": bot.MAX_ATTEMPTS, "afterMerge": step}},
+                           "repoSince": {"o/r": "2026-01-01T00:00:00Z"}, "lastCycle": "2026-01-02T00:00:00Z"}
+                b.handle = mock.Mock()
+                listed = mock.Mock(returncode=0, stdout="[]", stderr="")
+                with mock.patch.object(bot, "gh_json", side_effect=lambda *a: [] if a[:2] == ("pr", "list") else
+                                       {"defaultBranchRef": {"name": "main"}}), \
+                        mock.patch.object(bot, "run", return_value=listed), mock.patch.object(bot, "log"), \
+                        mock.patch.object(bot, "ensure_clone", return_value=Path("clone")), \
+                        mock.patch.object(bot, "base_config", return_value={}):
+                    b.repo_cycle("o/r", "2026-01-01T00:00:00Z")
+                self.assertEqual(b.handle.called, scheduled)
+
+
+class OwnRepoMergeTest(unittest.TestCase):
+    def finish(self, repo):
+        c = object.__new__(bot.PRConversation)
+        c.repo, c.bot = repo, mock.Mock(merged_self=False)
+        c.item = {"afterMerge": {"pr": {"headRefOid": "s" * 40}, "confirmed": True, "noted": True, "commit": "m"}}
+        c.trunk_check = mock.Mock(return_value="merged")
+        return c.finish_merge(settle=False), c.bot.merged_self
+
+    def test_a_merge_into_the_bots_own_repo_asks_for_an_update_check(self):
+        self.assertEqual(self.finish(bot.B["repo"]), ("merged", True))
+        self.assertEqual(self.finish("o/other"), ("merged", False))
+
+    def test_a_brand_without_a_repo_still_finishes_the_merge(self):
+        with mock.patch.dict(bot.B):
+            del bot.B["repo"]
+            self.assertEqual(self.finish("o/r"), ("merged", False))
 
 
 class LightPanelTest(unittest.TestCase):
@@ -1046,7 +1119,18 @@ class AutoUpdateTest(unittest.TestCase):
             patcher = mock.patch.object(target, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
-        self.ran = []
+        for name, value in (("LOGS", self.tmp / "logs"), ("HANDOVER_WAIT", 1)):
+            patcher = mock.patch.object(bot, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        env = mock.patch.dict(os.environ)
+        env.start()
+        self.addCleanup(env.stop)
+        os.environ.pop("INVOCATION_ID", None)
+        self.lock = bot.Lock()
+        self.lock.acquire()
+        self.addCleanup(self.lock.release)
+        self.ran, self.started = [], []
         self.new_code = True
 
     def upgrade(self, command, **kw):
@@ -1054,6 +1138,23 @@ class AutoUpdateTest(unittest.TestCase):
         self.ran.append((command, kw))
         if command[2] == "upgrade" and self.new_code:
             (self.assets / "github-app/bot.py").write_text("v2", encoding="utf-8")
+
+    def child(self, confirms=True, exits=None, events=None):
+        """Popen for the new watcher: it finds the lock free and, when `confirms`, records its token."""
+        def popen(command, **kw):
+            free = bot.Lock()
+            free.acquire()  # the old watcher let go of the lock before starting it
+            free.release()
+            if events is not None:
+                events.append("restart")
+            if confirms:
+                record = bot.load_update_record()
+                bot.save_update_record({**record, "watcher": {"token": kw["env"][bot.HANDOVER_ENV]}})
+            proc = mock.Mock(returncode=exits)
+            proc.poll.return_value = exits
+            self.started.append((command, kw, proc))
+            return proc
+        return mock.patch.object(bot.subprocess, "Popen", side_effect=popen)
 
     def watcher(self, **cfg):
         updates = bot.AutoUpdate()
@@ -1079,24 +1180,48 @@ class AutoUpdateTest(unittest.TestCase):
         self.assertTrue(result["upgraded"] and result["codeChanged"])
         self.assertEqual(bot.load_update_record()["sha"], self.NEW)
 
-    def test_new_bot_code_restarts_the_watcher_with_its_command_line(self):
+    def test_new_bot_code_hands_over_to_a_new_watcher_once_it_holds_the_lock(self):
         updates, b = self.watcher()
-        with mock.patch.object(bot, "run", side_effect=self.upgrade), \
-                mock.patch.object(bot.subprocess, "Popen") as popen, \
-                mock.patch.object(bot.sys, "argv", ["bot.py", "watch", "--interval", "30"]), \
-                mock.patch.dict(os.environ, {}, clear=False) as env:
-            env.pop("INVOCATION_ID", None)
-            self.assertEqual(updates.after_cycle(b), 0)
-        self.assertEqual(popen.call_args.args[0],
-                         [bot.sys.executable, str(self.install["script"]), "watch", "--interval", "30"])
-        detached = popen.call_args.kwargs
-        self.assertTrue(detached.get("start_new_session") or detached["creationflags"] & 0x8)  # DETACHED_PROCESS
+        with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child(), \
+                mock.patch.object(bot.sys, "argv", ["bot.py", "watch", "--interval", "30"]):
+            self.assertEqual(updates.after_cycle(b, self.lock), 0)
+        command, kw, _ = self.started[0]
+        self.assertEqual(command, [bot.sys.executable, str(self.install["script"]), "watch", "--interval", "30"])
+        self.assertTrue(kw.get("start_new_session") or kw["creationflags"] & 0x8)  # DETACHED_PROCESS
+        self.assertIsNone(self.lock.fh)  # this watcher no longer holds the lock
+
+    def test_a_new_watcher_that_never_confirms_is_stopped_and_the_next_check_tries_again(self):
+        updates, b = self.watcher()
+        for attempt, (exits, why) in enumerate(((None, "did not take the lock within 1 s"), (1, "it exited 1"))):
+            with self.subTest(why):
+                with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child(False, exits):
+                    self.assertIsNone(updates.after_cycle(b, self.lock))
+                self.assertEqual(len(self.started), attempt + 1)
+                self.assertEqual(self.started[-1][2].kill.call_count, 1 if exits is None else 0)  # never two
+                self.assertIsNotNone(self.lock.fh)  # the lock is back with the old watcher
+                with self.assertRaises(SystemExit):
+                    bot.Lock().acquire()
+                failure = [line for line in self.logs if "restart failed" in line][-1]
+                self.assertIn(why, failure)
+                self.assertIn(f"restart-{os.getpid()}.log", failure)
+                bot.save_update_record({**bot.load_update_record(), "checkedAt": "2000-01-01T00:00:00Z"})
+
+    def test_systemd_restarts_only_its_own_unit(self):
+        unit = self.tmp / "deep-mode-bot.service"
+        os.environ["INVOCATION_ID"] = "x"
+        with mock.patch.object(bot, "systemd_unit", return_value=unit), self.child() as popen:
+            self.assertIsNotNone(bot.restart_watcher(self.install["script"], self.lock))  # no unit: hand over
+            self.assertEqual(popen.call_count, 1)
+            self.lock.acquire()
+            unit.write_text("", encoding="utf-8")
+            self.assertEqual(bot.restart_watcher(self.install["script"], self.lock), 75)
+            self.assertEqual(popen.call_count, 1)
 
     def test_an_upgrade_that_leaves_the_bot_code_alone_keeps_watching(self):
         self.new_code = False
         updates, b = self.watcher()
-        with mock.patch.object(bot, "run", side_effect=self.upgrade), mock.patch.object(bot.subprocess, "Popen") as popen:
-            self.assertIsNone(updates.after_cycle(b))
+        with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child() as popen:
+            self.assertIsNone(updates.after_cycle(b, self.lock))
         self.assertEqual(len(self.ran), 2)
         popen.assert_not_called()
 
@@ -1104,39 +1229,53 @@ class AutoUpdateTest(unittest.TestCase):
         bot.save_update_record({"sha": self.OLD})
         updates, b = self.watcher()
         with mock.patch.object(bot, "run", side_effect=RuntimeError("omp exited 1")):
-            self.assertIsNone(updates.after_cycle(b))
+            self.assertIsNone(updates.after_cycle(b, self.lock))
         self.assertTrue(any("update failed: omp exited 1" in line for line in self.logs))
         record = bot.load_update_record()
         self.assertEqual(record["sha"], self.OLD)  # not recorded: the next check upgrades again
         record["checkedAt"] = "2000-01-01T00:00:00Z"  # an interval later
         bot.save_update_record(record)
-        with mock.patch.object(bot, "run", side_effect=self.upgrade), mock.patch.object(bot.subprocess, "Popen"):
-            updates.after_cycle(b)
+        with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child():
+            updates.after_cycle(b, self.lock)
         self.assertEqual(bot.load_update_record()["sha"], self.NEW)
 
     def test_checks_wait_for_the_interval_unless_the_bot_merged_into_its_own_repo(self):
         bot.save_update_record({"sha": self.NEW, "checkedAt": bot.now_iso()})
         updates, b = self.watcher()
-        self.assertIsNone(updates.after_cycle(b))
+        self.assertIsNone(updates.after_cycle(b, self.lock))
         bot.remote_main.assert_not_called()
         b.merged_self = True
-        self.assertIsNone(updates.after_cycle(b))
+        self.assertIsNone(updates.after_cycle(b, self.lock))
         bot.remote_main.assert_called_once()
 
     def test_auto_update_false_skips_the_check(self):
         updates, b = self.watcher(autoUpdate=False)
-        self.assertIsNone(updates.after_cycle(b))
+        self.assertIsNone(updates.after_cycle(b, self.lock))
         bot.remote_main.assert_not_called()
 
     def test_a_git_checkout_never_updates_and_says_so_once(self):
         with mock.patch.object(bot, "omp_install", return_value=None):
             updates, b = self.watcher()
-        self.assertIsNone(updates.after_cycle(b))
-        self.assertIsNone(updates.after_cycle(b))
+        self.assertIsNone(updates.after_cycle(b, self.lock))
+        self.assertIsNone(updates.after_cycle(b, self.lock))
         bot.remote_main.assert_not_called()
         self.assertEqual(len([line for line in self.logs if "auto-update off" in line]), 1)
 
+    def test_a_brand_without_a_repo_never_updates(self):
+        with mock.patch.dict(bot.B):
+            del bot.B["repo"]
+            updates, b = self.watcher()
+            self.assertIsNone(updates.after_cycle(b, self.lock))
+            self.assertIsNone(updates.after_cycle(b, self.lock))
+            with self.assertRaises(SystemExit) as stop:
+                bot.cmd_update(mock.Mock(dry_run=True))
+        bot.remote_main.assert_not_called()
+        self.assertEqual([line for line in self.logs if "auto-update off" in line],
+                         ["auto-update off: the brand names no repo to update from"])
+        self.assertIn("no repo", str(stop.exception.code))
+
     def test_the_restart_waits_for_the_running_item_and_hands_over_the_lock(self):
+        self.lock.release()  # cmd_watch takes it itself
         events = []
 
         class OneCycle:
@@ -1152,16 +1291,30 @@ class AutoUpdateTest(unittest.TestCase):
             events.append(command[2])
             self.upgrade(command, **kw)
 
-        args = mock.Mock(interval=1)
         with mock.patch.object(bot, "Bot", OneCycle), mock.patch.object(bot, "run", side_effect=upgrade), \
-                mock.patch.object(bot.subprocess, "Popen", side_effect=lambda *a, **kw: events.append("restart")), \
-                mock.patch.dict(os.environ, {}, clear=False) as env, self.assertRaises(SystemExit) as stop:
-            env.pop("INVOCATION_ID", None)
-            bot.cmd_watch(args)
+                self.child(events=events), self.assertRaises(SystemExit) as stop:
+            bot.cmd_watch(mock.Mock(interval=1))
         self.assertEqual(stop.exception.code, 0)
         self.assertEqual(events, ["item starts", "item ends", "marketplace", "upgrade", "restart"])
-        with bot.Lock():  # released for the new watcher
+        with bot.Lock():  # free for the new watcher
             pass
+
+    def test_a_restarted_watcher_confirms_once_it_holds_the_lock(self):
+        self.lock.release()
+        os.environ[bot.HANDOVER_ENV] = "t0k3n"
+
+        class Stop(BaseException):
+            pass
+
+        def first_cycle(args):
+            self.assertEqual(bot.load_update_record()["watcher"]["token"], "t0k3n")
+            with self.assertRaises(SystemExit):
+                bot.Lock().acquire()  # recorded while holding the lock
+            raise Stop()
+
+        with mock.patch.object(bot, "Bot", side_effect=first_cycle), self.assertRaises(Stop):
+            bot.cmd_watch(mock.Mock(interval=1))
+        self.assertNotIn(bot.HANDOVER_ENV, os.environ)  # never passed on to the agents it starts
 
 
 class LockTest(unittest.TestCase):

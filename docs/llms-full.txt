@@ -398,16 +398,20 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 ```
 
 A repo names its own gate in its base-branch `.deep-mode.json`: `{"check": "npm test"}`.
-- On the owner's PRs the bot runs it in a clean worktree at the head, before the panel and again at the exact head it merges. A nonzero exit goes to the author as a P1 finding, and the merge waits for a pass. The limit is 30 minutes. The check's `PATH` starts with the bot's own Python folder (so `python` works under `pythonw`), and an exit of 127 (command not found) gets one coordinator note, no finding, no merge, and a retry on the next cycle.
-- After a merge it is the trunk check: red opens the revert PR, with no agent involved. Without a `check`, a verifier agent runs the repo's documented checks.
+- On the owner's PRs the bot runs it in a clean worktree at the head, before the panel and again at the exact head it merges. A nonzero exit, 127 included, goes to the author as a P1 finding, and the merge waits for a pass. The limit is 30 minutes.
+- Before running it, the bot looks up the command's first word on the check's `PATH` (bash's `command -v`). On Windows that `PATH` starts with the bot's own Python folder, so `python` works under `pythonw`. A builtin, a path, or a command that doesn't parse is left to the run.
+- A first word the bot can't find is the bot's setup, not the PR. The bot posts one coordinator note, sends no finding, blocks the merge, and retries on the next cycle.
+- After a merge it is the trunk check: red opens the revert PR, with no agent involved. Without a `check`, a verifier agent runs the repo's documented checks. A trunk check that can't start reverts nothing; the bot keeps the merge record and retries each cycle until the check runs.
 
 ## Updates
 
-- A `watch` bot running from the omp plugin install keeps that install up to date. Run from a git checkout, it never updates; it logs that once.
+- A `watch` bot running from the omp plugin install keeps that install up to date. Run from a git checkout, or with a brand that names no repo, it never updates; it logs that once.
 - It checks between cycles only, never during an item. It checks at most every `updateMinutes` (default 60), and right after it merges a PR into its own repo.
 - The check compares `gh api repos/TimothyVang/deep-mode/commits/main` with the commit recorded at the last update in `~/.config/deep-mode/update.json`.
 - When they differ it runs `omp plugin marketplace update deep-mode`, then `omp plugin upgrade deep-mode`, with API-key variables removed. The first command matters. `omp plugin upgrade` alone reinstalls from omp's local copy of the repo and fetches nothing.
-- When the bot's own code changed, it starts the same `watch` command from the updated files and exits. The new process waits for the lock. Under systemd it exits 75 and the unit restarts it.
+- When the bot's own code changed, it hands over to a new watcher. It lets go of the lock, starts the same `watch` command from the updated files, and waits up to 60 seconds for the new process to record that it holds the lock. Then the old one exits.
+- If the new watcher doesn't confirm, the old one stops it, takes the lock back, and goes on with the old code. The new process's errors are in `~/.cache/deep-mode/bot/logs/restart-<pid>.log`, and the next check tries again.
+- Under systemd, when the bot's own unit runs it, the watcher exits 75 instead and the unit restarts it.
 - A failed upgrade is logged, and the next check tries again. It never stops the bot.
 - Turn it off with `"autoUpdate": false` in `bot.json`.
 - Update by hand with `bot.py update` (`--dry-run` prints the commits and the commands), or `omp plugin marketplace update deep-mode` then `omp plugin upgrade deep-mode`. A running bot restarts on the new code at its next check.
