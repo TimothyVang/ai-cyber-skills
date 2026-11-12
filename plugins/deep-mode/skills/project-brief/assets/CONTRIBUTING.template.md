@@ -65,7 +65,7 @@ Two path sets overlap when a path is equal or one is a directory (`dir/`) contai
 python scripts/pr-overlap.py check --repo {{OWNER/REPO}} --files src/a.py,docs/ --exclude-issue N
 ```
 
-After claiming, pass `--exclude-issue <your issue>` so your own claim isn't reported. Exit code `0` means no overlap. `3` means an open PR or an active claim touches the same paths; the output lists them. Coordinate on that issue or PR, or pick another task. `2` means a usage or `gh` error. To list active claims: `python scripts/pr-overlap.py claims --repo {{OWNER/REPO}}`.
+After claiming, pass `--exclude-issue <your issue>` so your own claim isn't reported. Someone else's claim on the same issue still is. Exit code `0` means no overlap. `3` means an open PR or an active claim touches the same paths; the output lists them. Coordinate on that issue or PR, or pick another task. `2` means a usage or `gh` error. To list active claims: `python scripts/pr-overlap.py claims --repo {{OWNER/REPO}}`.
 
 ## 5. Build and prove it
 

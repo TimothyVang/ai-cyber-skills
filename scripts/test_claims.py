@@ -2,8 +2,11 @@
 
 Both scripts read the same fake GitHub data here. No network and no gh calls.
 """
+import contextlib
 import datetime as dt
 import importlib.util
+import io
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -35,13 +38,13 @@ def unclaim(login):
     return login, f"{overlap.UNCLAIM_MARKER}\nReleased by @{login}: no time"
 
 
-def serve(board):
-    """Point both scripts at a fake board: issue number -> (assignees, [(login, comment body), ...])."""
+def serve(board, me=""):
+    """Point both scripts at a fake board: issue number -> (assignees, [(login, comment body), ...]). `me` is the gh login."""
     def gh(path):
         if "/comments" in path:
             number = int(path.split("/issues/")[1].split("/")[0])
             return [{"id": i, "created_at": f"2026-10-{i + 1:02d}T00:00:00Z", "user": {"login": login}, "body": body}
-                    for i, (login, body) in enumerate(board[number][1])]
+                    for i, (login, body) in enumerate(board.get(number, ((), ()))[1])]
         if "/pulls" in path:
             return []
         return [{"number": n, "title": f"task {n}", "html_url": f"https://example.test/{n}",
@@ -51,6 +54,15 @@ def serve(board):
 
     overlap.gh_api_list, overlap._today, roadmap.gh_api = gh, lambda: TODAY, gh
     overlap.open_prs = lambda repo, exclude_pr=None: []
+    overlap.viewer_login = lambda: me
+
+
+def run_overlap(*args):
+    """Run pr-overlap.py's command line. Returns (exit code, stdout)."""
+    out = io.StringIO()
+    with contextlib.redirect_stdout(out):
+        code = overlap.main(list(args))
+    return code, out.getvalue()
 
 
 def holders(board):
@@ -101,6 +113,37 @@ class Claims(unittest.TestCase):
 
     def test_active_claim_keeps_an_assignee_who_never_posted_a_claim(self):
         self.assert_holders({7: (["max"], [claim("ann", FUTURE)])}, {7: ["ann", "max"]})
+
+
+class OwnWork(unittest.TestCase):
+    """The documented checks hide the caller's own claim and nothing else."""
+
+    def check(self, issue):
+        code, out = run_overlap("check", "--repo", REPO, "--files", "src/a.py", "--exclude-issue", str(issue), "--json")
+        return code, [(o["number"], o["author"]) for o in json.loads(out)]
+
+    def test_excluding_my_issue_hides_my_own_claim(self):
+        serve({7: ([], [claim("bob", FUTURE, "src/a.py")])}, me="bob")
+        self.assertEqual(self.check(7), (overlap.EXIT_OK, []))
+
+    def test_excluding_my_issue_still_reports_another_persons_claim_on_it(self):
+        serve({7: ([], [claim("ann", FUTURE, "src/"), claim("bob", FUTURE, "src/a.py")])}, me="bob")
+        self.assertEqual(self.check(7), (overlap.EXIT_OVERLAP, [(7, "ann")]))
+
+    def test_excluding_my_issue_still_reports_my_claim_on_a_different_issue(self):
+        serve({7: ([], [claim("bob", FUTURE, "src/a.py")]), 8: ([], [claim("bob", FUTURE, "src/")])}, me="bob")
+        self.assertEqual(self.check(7), (overlap.EXIT_OVERLAP, [(8, "bob")]))
+
+    def test_overlap_comment_reports_another_persons_claim_on_the_issue_the_pr_closes(self):
+        serve({7: ([], [claim("ann", FUTURE, "src/"), claim("bob", FUTURE, "src/a.py")])})
+        posted = []
+        overlap.run_gh = lambda args: json.dumps({"user": {"login": "bob"}, "title": "Add a", "body": "Closes #7"})
+        overlap.pr_files = lambda repo, number: ["src/a.py"]
+        overlap.gh_api_write = lambda method, path, body: posted.append(body) or {}
+        run_overlap("comment", "--repo", REPO, "--pr", "20")
+        self.assertEqual(len(posted), 1)
+        self.assertIn("@ann", posted[0])
+        self.assertNotIn("@bob", posted[0])
 
 
 if __name__ == "__main__":

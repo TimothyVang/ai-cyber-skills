@@ -7,9 +7,12 @@ installed and authenticated (or have GH_TOKEN set).
 Subcommands (all take --repo owner/name):
   check   --files a,b,dir/ [--exclude-pr N] [--exclude-issue N] [--json]
           List open PRs and active claims whose paths overlap the given files.
+          --exclude-issue N hides your own claim on issue N (your login comes
+          from `gh api user`); another person's claim on N is still listed.
           Exit 0 = no overlap, 3 = overlap, 2 = usage or gh error.
   comment --pr N
           Post or update one overlap comment on PR N (marker <!-- deep-mode:overlap -->).
+          The PR author's own claims are left out; everyone else's count.
   claims  [--json]
           List active claims (claim comments and issue assignees). An issue with
           several holders gets one entry per claim comment and one for its assignees.
@@ -58,9 +61,6 @@ EXIT_OK = 0
 EXIT_ERROR = 2
 EXIT_OVERLAP = 3
 
-LINK_RE = re.compile(
-    r"\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s*:?\s+(?:[\w.-]+/[\w.-]+)?#(\d+)\b", re.IGNORECASE
-)
 FIELD_RE = re.compile(r"^\s*(plan|files|expires)\s*:\s*(.*?)\s*$", re.IGNORECASE)
 REPO_RE = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
 
@@ -400,19 +400,31 @@ def open_prs(repo: str, exclude_pr: int | None = None) -> list[dict]:
     return prs
 
 
-def linked_issues(text: str) -> set[int]:
-    return {int(n) for n in LINK_RE.findall(text or "")}
+def viewer_login() -> str:
+    """Login of the account gh is signed in as."""
+    try:
+        login = _login(json.loads(run_gh(["api", "user"])))
+    except json.JSONDecodeError:
+        login = ""
+    if not login:
+        raise GhError("could not read your GitHub login from `gh api user`; "
+                      "--exclude-issue needs it to tell your claim from other people's")
+    return login
 
 
 def find_overlaps(
     repo: str,
     files: list[str],
     exclude_pr: int | None = None,
-    exclude_issues: set[int] | None = None,
-    exclude_claim_authors: set[str] | None = None,
+    own_login: str = "",
+    own_issue: int | None = None,
 ) -> list[dict]:
-    exclude_issues = exclude_issues or set()
-    excl_authors = {a.lower() for a in (exclude_claim_authors or set())}
+    """Open PRs and active claims that touch `files`.
+
+    A claim by `own_login` is the caller's own work, not overlap: it is left out on
+    `own_issue`, or on every issue when `own_issue` is None. Nobody else's claim is.
+    """
+    own_login = own_login.lower()
     results: list[dict] = []
     for pr in open_prs(repo, exclude_pr=exclude_pr):
         hits = overlapping(files, pr["files"])
@@ -426,9 +438,9 @@ def find_overlaps(
                 "overlapping": hits,
             })
     for c in fetch_active_claims(repo):
-        if c.issue in exclude_issues or c.kind != "comment":
+        if c.kind != "comment":
             continue  # assignee-only claims have unknown files: never overlap by file
-        if c.author.lower() in excl_authors:
+        if own_login and c.author.lower() == own_login and own_issue in (None, c.issue):
             continue
         hits = overlapping(files, c.files)
         if hits:
@@ -499,8 +511,8 @@ def cmd_check(args: argparse.Namespace) -> int:
     if not files:
         print("error: --files is empty", file=sys.stderr)
         return EXIT_ERROR
-    excl = {args.exclude_issue} if args.exclude_issue is not None else set()
-    overlaps = find_overlaps(args.repo, files, exclude_pr=args.exclude_pr, exclude_issues=excl)
+    own = {"own_login": viewer_login(), "own_issue": args.exclude_issue} if args.exclude_issue is not None else {}
+    overlaps = find_overlaps(args.repo, files, exclude_pr=args.exclude_pr, **own)
     if args.json:
         print(json.dumps(overlaps, indent=2, ensure_ascii=False))
     elif not overlaps:
@@ -520,12 +532,9 @@ def cmd_comment(args: argparse.Namespace) -> int:
     pr = json.loads(run_gh(["api", f"repos/{repo}/pulls/{number}"]))
     files = pr_files(repo, number)
     author = _login(pr.get("user"))
-    # The PR's own linked issues and its author's claims are the same work, not overlap.
-    own_issues = linked_issues(pr.get("body") or "") | linked_issues(pr.get("title") or "")
-    overlaps = find_overlaps(
-        repo, files, exclude_pr=number, exclude_issues=own_issues,
-        exclude_claim_authors={author} if author else set(),
-    ) if files else []
+    # The author's own claims are the same work as the PR, not overlap. Anyone else's claim counts,
+    # also on the issue the PR closes.
+    overlaps = find_overlaps(repo, files, exclude_pr=number, own_login=author) if files else []
 
     existing = None
     for c in gh_api_list(f"repos/{repo}/issues/{number}/comments"):
@@ -603,7 +612,7 @@ def build_parser() -> argparse.ArgumentParser:
                    help='comma-separated repo paths; a trailing "/" means a whole directory')
     p.add_argument("--exclude-pr", type=_positive_int, metavar="N", help="ignore this PR")
     p.add_argument("--exclude-issue", type=_positive_int, metavar="N",
-                   help="ignore the claim on this issue")
+                   help="ignore your own claim on this issue; other people's claims on it still count")
     p.add_argument("--json", action="store_true", help="print a JSON array instead of a table")
     p.set_defaults(func=cmd_check)
 
