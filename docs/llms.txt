@@ -1,17 +1,19 @@
 # deep-mode
 
-> deep-mode is an open-source (MIT) plugin for coding agents with two halves. (1) PR and issue bots on your own private GitHub App: a poller on your machine runs any ACP agent through acpx (omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others) on your own subscription login, with no API keys, webhooks or server. The bots review PRs in the thread, fix their own findings, vote on a three-agent verifier panel, and merge your own PRs behind a gate in code; they plan and build the issues you open. (2) A software-factory skill set: one `/deep` command routes any task to a playbook, and the main line goes setup, grill, prototype, spec, tickets, implement with TDD, review and land.
+> deep-mode is an open-source MIT plugin combining a self-hosted GitHub review bot with coding-agent workflows. Owner-controlled bot roles use ACP agents through acpx and existing subscription logins. Outside-contributor reviews use a separate tool-free omp process. The skill set routes planning, implementation, review and delivery through one `/deep` command.
 
 Key facts:
 
 - Real run: the bots took PR #19 (https://github.com/TimothyVang/deep-mode/pull/19) through 5 cycles. Two failed panels caught real bugs; the third passed 2/3 and the bot squash-merged it.
 - Self-hosted: `bot.py watch` polls the repos where your app is installed every 120 seconds. Installing the app on a repo is the opt-in.
-- Subscriptions, not API keys: each agent CLI uses its own subscription login, such as Claude Code with Claude.ai or Codex with ChatGPT.
-- Agent agnostic: each role in `~/.config/deep-mode/bot.json` is `{"agent": "omp", "model": "<optional>"}`, so one harness can seat an author and a reviewer on different model families.
-- Merge gate in code: only your own PRs merge, at the head the panel voted on, with every required check green, no conflict, and `autonomousMerge` allowed. Others' PRs get review comments only.
+- Subscriptions, not model API keys: supported agent CLIs use existing subscription logins. Prompts and source context can reach the configured model provider; self-hosted does not mean offline.
+- Harness choice: owner-controlled bot roles are configurable ACP agents. Outside-contributor review currently requires omp. Portable skill instructions do not establish equal results across every harness.
+- Merge gate in code: only your own PRs merge, at the head the panel voted on, with required checks green, no conflict, and `autonomousMerge` allowed. Outside PRs receive comments based on their diff and bounded, omission-labelled Git source context, never PR code execution.
 - Conflicts are resolved by merging the base into the head. Never rebase or force-push.
 - Install the bots: `git clone https://github.com/TimothyVang/deep-mode`, `cd deep-mode/plugins/deep-mode/skills/deep-mode`, `py -3 assets/github-app/install.py`.
 - Install the skills: `omp plugin marketplace add TimothyVang/deep-mode` then `omp plugin install deep-mode@deep-mode`; in Claude Code, `/plugin marketplace add TimothyVang/deep-mode` and `/plugin install deep-mode@deep-mode`.
+- Local delivery: ordinary small and medium local tasks leave proven, uncommitted changes in the starting tree. Publication adds review and verifier-panel gates.
+- Evidence limits: a demonstrated PR merge is not a comparative accuracy benchmark. Workflow mappings are not execution results. Read the evaluation methods and retained results before making equivalence claims.
 - White-label: one `brand.json` and `py -3 scripts/whitelabel.py --brand <file> --out <dir>` rebrand everything: the product name and logo, colors, commands, skills, the bot and its GitHub App, the docs site, the README, images, and the SEO and llms files. LICENSE and NOTICE stay, with your copyright line added. `install.py --brand <name>` is a shortcut that renames only the bots.
 
 ## Docs
@@ -24,6 +26,7 @@ Key facts:
 - [issue-conversation technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/issue-conversation.md): plan, critique and answer in the issue thread, then build on the owner's issues
 - [SKILL.md](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/SKILL.md): the router, principles, playbooks and techniques of the deep-mode skill
 - [Rebrand guide](https://github.com/TimothyVang/deep-mode/blob/main/docs/rebrand.md): ship deep-mode as your own product with one brand file and one build command
+- [Evaluations](https://github.com/TimothyVang/deep-mode/tree/main/evals): delivery comparisons, review-quality measurements, workflow inventories and their explicit limits
 
 ## Code
 

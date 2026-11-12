@@ -32,14 +32,14 @@
   "name": "deep-mode",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Windows, macOS, Linux",
-  "description": "Open-source MIT plugin for coding agents. PR and issue bots on your own private GitHub App run any ACP agent (omp by default) on your own subscription login; they review, fix, verify on a three-agent panel, and merge your own PRs behind a gate in code, and they plan and build your issues. A software-factory skill set takes work from idea to spec, tickets, code and a merged PR.",
+  "description": "Open-source MIT plugin combining a self-hosted GitHub review bot with coding-agent workflows. Owner-controlled roles use ACP agents and subscription logins. Outside-contributor reviews use a tool-free omp process. Published changes pass review and a verifier gate; ordinary local changes stay available for human review.",
   "url": "https://timothyvang.github.io/deep-mode/",
   "downloadUrl": "https://github.com/TimothyVang/deep-mode",
   "codeRepository": "https://github.com/TimothyVang/deep-mode",
   "license": "https://opensource.org/licenses/MIT",
   "image": "https://timothyvang.github.io/deep-mode/images/og.png",
   "screenshot": "https://timothyvang.github.io/deep-mode/images/pr-19-thread.gif",
-  "dateModified": "2026-11-11",
+  "dateModified": "2026-11-12",
   "author": {"@type": "Person", "name": "TimothyVang", "url": "https://github.com/TimothyVang"},
   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
   "keywords": "AI code review, GitHub App, PR bots, autonomous merge, verifier panel, ACP, acpx, omp, Claude Code, Codex, software factory, spec, tickets, TDD, agent skills, self-hosted"
@@ -49,16 +49,16 @@
 {
   "@context": "https://schema.org",
   "@type": "FAQPage",
-  "dateModified": "2026-11-11",
+  "dateModified": "2026-11-12",
   "mainEntity": [
     {"@type": "Question", "name": "What is deep-mode?",
-     "acceptedAnswer": {"@type": "Answer", "text": "deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel."}},
+     "acceptedAnswer": {"@type": "Answer", "text": "deep-mode is an open-source MIT plugin combining a self-hosted PR and issue bot with workflows for planning, implementation, review and delivery. Local work requires runtime proof; published changes also pass the verifier gate."}},
     {"@type": "Question", "name": "How do the deep-mode PR bots work?",
      "acceptedAnswer": {"@type": "Answer", "text": "A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote (one, who must pass it, for a small change), and a gate in code merges your own PR at the voted head."}},
     {"@type": "Question", "name": "Does deep-mode need an API key?",
-     "acceptedAnswer": {"@type": "Answer", "text": "No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage."}},
+     "acceptedAnswer": {"@type": "Answer", "text": "No. Supported agent CLIs use existing subscription logins, and calls count against their usage. This is not offline inference: prompts and source context can reach the configured model provider."}},
     {"@type": "Question", "name": "Which agents and harnesses does deep-mode work with?",
-     "acceptedAnswer": {"@type": "Answer", "text": "The bots use any agent acpx reaches over ACP: omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each role can pick its own model, so one harness can seat an author and a reviewer on different model families. The skill runs in omp, Claude Code, Codex, Cursor and other harnesses."}},
+     "acceptedAnswer": {"@type": "Answer", "text": "Owner-controlled bot roles use ACP agents supported by acpx. Outside-contributor reviews currently require omp. The portable skill instructions target omp, Claude Code, Codex, Cursor and other skill-loading harnesses; not every combination has been tested."}},
     {"@type": "Question", "name": "Will deep-mode merge other people's PRs?",
      "acceptedAnswer": {"@type": "Answer", "text": "No. Only your own PRs merge: your account opened them from your repo, not a fork, and their commits pass the ownership checks in code. Everyone else's PRs get review comments only."}},
     {"@type": "Question", "name": "What is the deep-mode software factory?",
@@ -122,6 +122,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <nav aria-label="Main">
 <a class="brand" href="#top"><img src="images/logo.svg" alt="deep-mode" height="32"></a>
 <a href="#how">How it works</a>
+<a href="#evidence">Evidence</a>
 <a href="#factory">Software factory</a>
 <a href="#install">Install</a>
 <a href="#safety">Safety</a>
@@ -133,9 +134,9 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 
 <section class="hero" aria-labelledby="hero-title">
 <h1 id="hero-title">Bots that review, fix, verify and merge your PRs. Skills that take work from idea to merged code.</h1>
-<p class="lead">deep-mode is an open-source MIT plugin for coding agents. Its PR and issue bots run on your own private GitHub App with any ACP agent (omp by default, or Claude Code, Codex and others) on your own subscription login. They review each PR in the thread, fix their own findings, vote on a three-agent panel, and merge your own PRs behind a gate in code. Its skill set takes an idea through a grill, a spec, tickets, TDD and review to a merged PR. No API keys, no webhooks, no server.</p>
+<p class="lead">deep-mode combines a self-hosted GitHub review bot with workflows for planning, implementation and delivery. Owner-controlled bots use ACP agents and your subscription login. They discuss findings in the PR thread, verify fixes and merge your own PRs through a gate in code. Ordinary local work stays in your starting tree for review. No model API key or public webhook server is required.</p>
 <ul class="pills" aria-label="Key facts">
-<li>MIT licensed</li><li>Runs on your machine</li><li>Subscription logins, no API keys</li><li>Any ACP agent via acpx</li><li>3-agent verifier panel</li><li>Spec to tickets to merged PR</li>
+<li>MIT licensed</li><li>Runs on your machine</li><li>Subscription logins</li><li>ACP owner roles</li><li>Verifier-gated merges</li><li>Local or published delivery</li>
 </ul>
 <div class="cta">
 <a class="btn primary" href="#install">Install</a>
@@ -148,9 +149,24 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 </figure>
 </section>
 
+<section id="evidence" aria-labelledby="evidence-title">
+<h2 id="evidence-title">Measured behavior, not replacement claims</h2>
+<div class="table-wrap">
+<table>
+<thead><tr><th scope="col">Area</th><th scope="col">Evidence and limits</th></tr></thead>
+<tbody>
+<tr><th scope="row">Local delivery</th><td>The revised workflow finished all 5 runs and passed all 19 CLI checks in each. Plain-agent runs also passed and used less reported usage. <a href="https://github.com/TimothyVang/deepmodebot/blob/main/evals/results/local-delivery-2026-11-12.md">Read the experiment and corrections</a>.</td></tr>
+<tr><th scope="row">Review quality</th><td>Historical bug cases, clean controls and explicit finding adjudication. No matched hosted-review comparison has been demonstrated. <a href="https://github.com/TimothyVang/deepmodebot/tree/main/evals/review">Review protocol</a>.</td></tr>
+<tr><th scope="row">Workflow coverage</th><td>Pinned inventories distinguish related routes, executed journeys and unsupported capabilities. A mapping is not feature-parity proof. <a href="https://github.com/TimothyVang/deepmodebot/tree/main/evals/workflows">Coverage and journey evidence</a>.</td></tr>
+</tbody>
+</table>
+</div>
+<p>These are development evaluations on limited tasks, not a product leaderboard. Self-hosted orchestration still sends prompts to the configured model provider.</p>
+</section>
+
 <section id="how" aria-labelledby="how-title">
 <h2 id="how-title">How the bots work</h2>
-<p>Three parts. A private GitHub App gives the bots a name in your threads. A poller, <code>bot.py watch</code>, runs on your machine and checks the repos the app is installed on every 120 seconds. The agents run through <a href="https://github.com/openclaw/acpx">acpx</a>, a client for the Agent Client Protocol, so any ACP agent can take a seat, each on its own subscription login. The agents only return text. The poller posts it as the app, and it pushes and merges with your own <code>gh</code> and git.</p>
+<p>A private GitHub App gives the bots a name in your threads. A poller, <code>bot.py watch</code>, runs on your machine. Owner-controlled roles use <a href="https://github.com/openclaw/acpx">acpx</a> and their own subscription logins. Outside-contributor reviews instead run in a separate, tool-free omp process. The poller posts comments as your app and uses your authenticated git and <code>gh</code> for publication.</p>
 <figure>
 <img src="images/how-it-works.svg" width="1200" height="650" alt="Diagram: on GitHub, your private app deep-mode-login, PR and issue threads, and branches and checks. On your machine, the config directory, bot.py watch, your gh and git, and acpx connecting an author agent and a reviewer agent, omp by default.">
 </figure>
@@ -160,6 +176,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <img src="images/pr-conversation.svg" width="1200" height="940" alt="Sequence diagram of the PR conversation: kickoff, conflict merge, review and answer rounds over ACP mirrored to the thread, a three-verifier panel, and the merge gate checks before a squash merge.">
 </figure>
 <p>The merge gate is code, not a prompt. It merges only your own PR, at the same head the panel voted on, with every required check reported and green, with no conflict, and with merges allowed by <code>autonomousMerge</code>. Anyone else's PR gets review comments only.</p>
+<p>Outside-contributor reviews receive the diff and a bounded packet of changed source files and direct local imports read from Git objects. Omitted files and limits are explicit. This is not whole-repository analysis, and it never executes the contributor's code.</p>
 <h3>The issue conversation</h3>
 <p>On a new issue, the author agent plans, the reviewer critiques, and the author answers, all read-only and all in the issue thread. When you opened the issue, or you comment <code>@deepmodebot implement</code>, the author builds it on <code>deep-mode/issue-&lt;n&gt;</code> and opens a PR that closes the issue. The PR conversation then lands it.</p>
 <figure>
@@ -234,20 +251,20 @@ py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre
 <div class="card"><h3>A gate in code</h3><p>Same head as the panel, every required check green, no conflict, merge authorized. The opt-out file is read from the base branch, so a PR cannot grant itself a merge.</p></div>
 <div class="card"><h3>Thread text is data</h3><p>PR and issue text is wrapped as untrusted input, and <code>@path</code> mentions are defanged. A request in it to merge, push or post elsewhere is reported as a finding.</p></div>
 <div class="card"><h3>History stays intact</h3><p>Conflicts are fixed by merging the base into the head. No rebase, no force-push, no branch deletion.</p></div>
-<div class="card"><h3>Secrets stay local</h3><p>The app's private key and one-hour installation tokens stay in <code>~/.config/deep-mode/</code>. They never go into prompts, logs or repos.</p></div>
+<div class="card"><h3>Separate credentials from prompts</h3><p>The app key stays in local configuration. Child processes use a scrubbed environment. Source context and prompts still reach your configured model provider; self-hosted does not mean offline.</p></div>
 </div>
 </section>
 
 <section id="faq" aria-labelledby="faq-title">
 <h2 id="faq-title">FAQ</h2>
 <h3>What is deep-mode?</h3>
-<p>deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel.</p>
+<p>deep-mode is an open-source MIT plugin combining a self-hosted PR and issue bot with workflows for planning, implementation, review and delivery. Local work requires runtime proof; published changes also pass the verifier gate.</p>
 <h3>How do the deep-mode PR bots work?</h3>
 <p>A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. The repo's check command runs, verifiers vote (three, or one for a small change), and a gate in code merges your own PR at the voted head.</p>
 <h3>Does deep-mode need an API key?</h3>
-<p>No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage.</p>
+<p>No. Supported agent CLIs use existing subscription logins, and calls count against their usage. This is not offline inference: prompts and source context can reach the configured model provider.</p>
 <h3>Which agents and harnesses does deep-mode work with?</h3>
-<p>The bots use any agent acpx reaches over ACP: omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each role can pick its own model, so one harness can seat an author and a reviewer on different model families. The skill runs in omp, Claude Code, Codex, Cursor and other harnesses.</p>
+<p>Owner-controlled bot roles use ACP agents supported by acpx. Outside-contributor reviews currently require omp. The portable skill instructions target omp, Claude Code, Codex, Cursor and other skill-loading harnesses; not every combination has been tested.</p>
 <h3>Will deep-mode merge other people's PRs?</h3>
 <p>No. Only your own PRs merge: your account opened them from your repo, not a fork, and their commits pass the ownership checks in code. Everyone else's PRs get review comments only.</p>
 <h3>What is the deep-mode software factory?</h3>

@@ -1,0 +1,5 @@
+{
+  "store.py": "bookings = []\n\ndef all_bookings():\n    return list(bookings)\n\ndef save(booking):\n    bookings.append(booking)\n",
+  "cli.py": "from store import all_bookings, save\n\ndef reserve(tool, start, end):\n    for b in all_bookings():\n        if b[\"tool\"] == tool and start < b[\"end\"] and end > b[\"start\"]:\n            return False\n    save({\"tool\": tool, \"start\": start, \"end\": end})\n    return True\n",
+  "web.py": "from store import all_bookings, save\n\ndef reserve(request):\n    tool, start, end = request[\"tool\"], request[\"start\"], request[\"end\"]\n    for b in all_bookings():\n        if b[\"tool\"] == tool and b[\"start\"] <= start < b[\"end\"]:\n            return {\"status\": 409}\n    save({\"tool\": tool, \"start\": start, \"end\": end})\n    return {\"status\": 201}\n"
+}

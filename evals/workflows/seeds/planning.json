@@ -1,0 +1,4 @@
+{
+  "docs/deep-mode/tracker.md": "# Tracker\n\nKind: local\nIssues: docs/deep-mode/issues/\nLabels use the role names spec, ticket, enhancement, bug, triage:new and triage:agent-ready.\nCreate one Markdown file per issue named NNNN-slug.md, with Status, Labels, Parent and Blocked by header lines. Use four-digit issue IDs; use none for absent parents or blockers.\n",
+  "README.txt": "A local planning workspace for a community tool library. There is no remote tracker.\n"
+}

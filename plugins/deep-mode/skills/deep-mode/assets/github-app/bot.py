@@ -54,6 +54,7 @@ from urllib.parse import quote
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import brand  # noqa: E402
 import ghapp  # noqa: E402
+import review_context  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pr-agent"))
 import pr_agent_local  # noqa: E402  (its sealed `omp -p`: no tools, no files, no project config)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "loop"))
@@ -1232,7 +1233,7 @@ class Item:
 
 # ---------------------------------------------------------------- prompts
 
-def review_prompt(c, round_no: int, diff: str, author_reply) -> str:
+def review_prompt(c, round_no: int, diff: str, author_reply, source_context: str = "") -> str:
     pr = c.pr
     later = ""
     if author_reply:
@@ -1255,6 +1256,7 @@ List only findings that are still open. Reuse an id when you re-report the same 
 {untrusted('pr', f"title: {pr.get('title', '')}{chr(10)}author: {login_of(pr)}{chr(10)}{chr(10)}{pr.get('body') or ''}")}
 {thread}
 {untrusted('diff', diff)}
+{untrusted('source-context', source_context) if source_context and not c.own else ""}
 """
 
 
@@ -1486,8 +1488,7 @@ class PRConversation:
             worktree_at(self.clone, self.review_tree, self.head)
             diff, cut = git(self.clone, "diff", span), "; read the changed files in the working directory"
         else:
-            # Someone else's PR: the reviewer is sealed and sees only this text, so the diff carries as much
-            # context as still fits.
+            # Sealed reviewers receive only untrusted text, never a contributor checkout or tools.
             cut = ""
             for context in (40, 10, 3):
                 diff = git(self.clone, "diff", f"--unified={context}", span)
@@ -1496,7 +1497,11 @@ class PRConversation:
         if len(diff) > MAX_DIFF:
             diff = diff[:MAX_DIFF] + f"\n[diff truncated{cut}]"
         session = f"{self.it.tag}-reviewer" if self.own and not self.bot.dry else None
-        prompt = review_prompt(self, round_no, f"{stat}\n\n{diff}", self.author_reply)
+        source_context = ""
+        if not self.own:
+            base_oid = git(self.clone, "merge-base", f"origin/{self.base}", self.head)
+            source_context = review_context.build_context(self.clone, base_oid, self.head)
+        prompt = review_prompt(self, round_no, f"{stat}\n\n{diff}", self.author_reply, source_context)
         again = ("Your reply had no parseable findings block. Reply again: the summary, then exactly one fenced "
                  "```json block {\"findings\":[...]}.")
         if self.own:

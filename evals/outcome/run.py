@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """Outcome eval: one organic task, with deep-mode installed and without, scored by hidden checks and blinded judges.
 
-  python evals/outcome/run.py setup [--task billsplit] [--ref HEAD] [--per-variant 2] [--seed N]
-  python evals/outcome/run.py run [--task billsplit] [--max-cost 3] [--model ID]
-  python evals/outcome/run.py collect [--task billsplit]
-  python evals/outcome/run.py judge [--task billsplit] [--max-cost 3] [--dry-run | --reparse]
+  python evals/outcome/run.py setup [--task billsplit] [--run-id ID] [--ref HEAD] [--compare-ref REF] [--per-variant 2]
+  python evals/outcome/run.py run [--task billsplit] [--run-id ID] --model ID [--max-cost 3]
+  python evals/outcome/run.py collect [--task billsplit] [--run-id ID]
+  python evals/outcome/run.py judge [--task billsplit] [--run-id ID] --judge-model ID --judge-model ID
   python evals/outcome/run.py selftest [--task billsplit]
 
 A task is a folder tasks/<task>/ holding project/ (what candidates get), prompt.txt (the request), rubric.md (judges
@@ -35,21 +35,25 @@ from types import SimpleNamespace
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 SCRATCH = ROOT / ".scratch"
-API_KEYS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "CODEX_API_KEY")
+sys.path.insert(0, str(ROOT / "plugins/deep-mode/skills/deep-mode/assets/pr-agent"))
+import pr_agent_local
 SKIP_DIRS = {".git", ".omp", ".scratch", ".worktrees", "node_modules"}
-JUDGES = ("anthropic/claude-opus-5-5", "openai-codex/gpt-6.1-terra")
 # Words in replies and action logs that would tell a judge which candidates had deep-mode installed.
 SCRUB = [(r"light[ -]?panel[ -]?", ""), (r"deep[ -]?mode", "the workflow"), (r"\bplaybook(s?)\b", r"checklist\1")]
 CHECK_TIMEOUT = 600
 
 
-def task_paths(name):
+def task_paths(name, run_id=None):
+    for value in (name, run_id):
+        if value is not None and not re.fullmatch(r"[a-z][a-z0-9-]*", value):
+            raise ValueError("task and run-id must be lowercase project slugs")
     home = HERE / "tasks" / name
     if not (home / "project").is_dir():
         sys.exit(f"no task {name!r}: {home.relative_to(ROOT)}/project is missing")
-    runs = SCRATCH / f"{name}-runs"
-    return SimpleNamespace(name=name, home=home, project=home / "project", runs=runs, key=runs / "key.json",
-                           pack=SCRATCH / f"{name}-review")
+    prefix = f"{name}-{run_id}" if run_id else name
+    runs = SCRATCH / f"{prefix}-runs"
+    return SimpleNamespace(name=name, prefix=prefix, home=home, project=home / "project", runs=runs,
+                           key=runs / "key.json", pack=SCRATCH / f"{prefix}-review")
 
 
 def git(*args, cwd):
@@ -57,29 +61,42 @@ def git(*args, cwd):
                           cwd=cwd, check=True, capture_output=True, text=True, encoding="utf-8").stdout.strip()
 
 
-def child_env():
-    return {name: value for name, value in os.environ.items() if name not in API_KEYS}
+def child_env(folder):
+    env = pr_agent_local.scrubbed_env()
+    temp = Path(folder) / ".scratch/tmp"
+    temp.mkdir(parents=True, exist_ok=True)
+    env.update(TMP=str(temp), TEMP=str(temp), TMPDIR=str(temp))
+    return env
+
+
+def skill_snapshot(ref):
+    sha = git("rev-parse", "--verify", f"{ref}^{{commit}}", cwd=ROOT)
+    archive = subprocess.run(["git", "archive", f"{sha}:plugins/deep-mode/skills"],
+                             cwd=ROOT, check=True, capture_output=True).stdout
+    with tarfile.open(fileobj=io.BytesIO(archive)) as tar:
+        skills = sorted(m.name.split("/")[0] for m in tar.getmembers() if re.fullmatch(r"[^/]+/SKILL\.md", m.name))
+    command = git("show", f"{sha}:plugins/deep-mode/commands/deep.md", cwd=ROOT)
+    return {"ref": sha, "archive": archive, "skills": skills,
+            "body": re.sub(r"^---\n.*?\n---\n", "", command, flags=re.S).strip()}
 
 
 def setup(args):
-    t = task_paths(args.task)
+    t = task_paths(args.task, args.run_id)
+    if args.per_variant < 1:
+        raise ValueError("per-variant must be positive")
     if t.key.exists():
-        sys.exit(f"{t.key.relative_to(ROOT)} exists; remove .scratch/{t.name}-* first for a fresh run")
-    ref_sha = git("rev-parse", args.ref, cwd=ROOT)
-    # The deep-mode variant gets every skill the plugin ships, since SKILL.md and /deep point at its siblings.
-    skills_tar = subprocess.run(["git", "archive", f"{ref_sha}:plugins/deep-mode/skills"],
-                                cwd=ROOT, check=True, capture_output=True).stdout
-    with tarfile.open(fileobj=io.BytesIO(skills_tar)) as tar:
-        skills = sorted(m.name.split("/")[0] for m in tar.getmembers() if re.fullmatch(r"[^/]+/SKILL\.md", m.name))
-    command = git("show", f"{ref_sha}:plugins/deep-mode/commands/deep.md", cwd=ROOT)
-    body = re.sub(r"^---\n.*?\n---\n", "", command, flags=re.S).strip()
+        sys.exit(f"{t.key.relative_to(ROOT)} exists; choose a new --run-id to preserve its evidence")
+    snapshots = {"deep-mode": skill_snapshot(args.ref)}
+    if args.compare_ref:
+        snapshots["previous"] = skill_snapshot(args.compare_ref)
     request = (t.home / "prompt.txt").read_text(encoding="utf-8").strip()
     package = json.loads((t.project / "package.json").read_text(encoding="utf-8"))
-    variants = ["deep-mode"] * args.per_variant + ["plain"] * args.per_variant
+    variants = [variant for variant in [*snapshots, "plain"] for _ in range(args.per_variant)]
     random.Random(args.seed).shuffle(variants)
-    key = {"task": t.name, "ref": ref_sha, "seed": args.seed, "skills": skills, "candidates": {}}
+    key = {"task": t.name, "run_id": args.run_id, "seed": args.seed,
+           "refs": {name: s["ref"] for name, s in snapshots.items()}, "candidates": {}}
     for number, variant in enumerate(variants, 1):
-        folder = SCRATCH / f"{t.name}-{number}"
+        folder = SCRATCH / f"{t.prefix}-{number}"
         if folder.exists():
             sys.exit(f"{folder} exists")
         shutil.copytree(t.project, folder)
@@ -87,25 +104,36 @@ def setup(args):
         git("add", "-A", cwd=folder)
         git("commit", "-q", "-m", f"{package['name']} {package['version']}", cwd=folder)
         (folder / ".git/info/exclude").write_text(".omp/\n", encoding="utf-8")
-        if variant == "deep-mode":
+        snapshot = snapshots.get(variant)
+        if snapshot:
             target = folder / ".omp/skills"
             target.mkdir(parents=True)
-            with tarfile.open(fileobj=io.BytesIO(skills_tar)) as tar:
+            with tarfile.open(fileobj=io.BytesIO(snapshot["archive"])) as tar:
                 tar.extractall(target, filter="data")
-        prompt = body.replace("$ARGUMENTS", request) if variant == "deep-mode" else request
+        prompt = snapshot["body"].replace("$ARGUMENTS", request) if snapshot else request
         run_dir = t.runs / str(number)
         run_dir.mkdir(parents=True)
         (run_dir / "prompt.txt").write_text(prompt + "\n", encoding="utf-8")
         key["candidates"][str(number)] = {"variant": variant, "folder": str(folder),
-                                          "base": git("rev-parse", "HEAD", cwd=folder)}
+            "ref": snapshot["ref"] if snapshot else None, "skills": snapshot["skills"] if snapshot else [],
+            "base": git("rev-parse", "HEAD", cwd=folder)}
         print(f"{folder.relative_to(ROOT)}  {variant}")
     t.key.write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
 
 
 def omp_command(omp, run_dir, args, model, extra):
     cmd = [omp, "-p", "--no-title", "--mode", "json", "--max-cost", str(args.max_cost), "--max-time", args.max_time,
-           "--session-dir", str(run_dir / "sessions"), "--no-rules", "--no-context-files", "--no-extensions", *extra]
-    return cmd + (["--model", model] if model else [])
+           "--session-dir", str(run_dir / "sessions"), "--no-rules", "--no-context-files", "--no-extensions",
+           "--no-prewalk", "--wait-async", "--config", str(run_dir / "runtime.yml"), *extra]
+    return cmd + ["--model", model]
+
+
+def runtime_config(run_dir, model):
+    config = ("retry:\n  modelFallback: false\n  fallbackChains: {}\nprewalk:\n  enabled: false\n"
+              "task:\n  perCallModel: false\n  agentModelOverrides:\n")
+    config += "".join(f"    {agent}: {json.dumps(model)}\n"
+                      for agent in ("task", "scout", "reviewer", "security-reviewer", "sonic"))
+    (run_dir / "runtime.yml").write_text(config, encoding="utf-8")
 
 
 def run_all(jobs):
@@ -114,7 +142,7 @@ def run_all(jobs):
     for name, cmd, cwd, run_dir in jobs:
         out = open(run_dir / "events.jsonl", "w", encoding="utf-8")
         err = open(run_dir / "stderr.txt", "w", encoding="utf-8")
-        procs[name] = (subprocess.Popen(cmd, cwd=cwd, env=child_env(), stdout=out, stderr=err), out, err, time.monotonic())
+        procs[name] = (subprocess.Popen(cmd, cwd=cwd, env=child_env(cwd), stdout=out, stderr=err), out, err, time.monotonic())
         print(f"started {name}")
     done = {}
     while len(done) < len(procs):
@@ -129,18 +157,28 @@ def run_all(jobs):
 
 
 def run(args):
-    t = task_paths(args.task)
+    t = task_paths(args.task, args.run_id)
     key = json.loads(t.key.read_text(encoding="utf-8"))
+    if any((t.runs / number / "events.jsonl").exists() for number in key["candidates"]):
+        sys.exit("candidate outputs already exist; choose a new --run-id instead of overwriting evidence")
+    credentials = pr_agent_local.omp_oauth_credentials(args.model)
+    key["runtime"] = {"omp": subprocess.run([shutil.which("omp") or "omp", "--version"],
+                         capture_output=True, text=True, check=True).stdout.strip(),
+                      "model": args.model, "max_cost": args.max_cost, "max_time": args.max_time,
+                      "oauth_credential_ids": sorted(credentials)}
+    t.key.write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
     omp = shutil.which("omp") or sys.exit("omp is not on PATH")
     jobs = []
     for number, info in key["candidates"].items():
         run_dir = t.runs / number
-        deep = info["variant"] == "deep-mode"
-        skills = ["--skills", ",".join(key["skills"])] if deep else ["--no-skills"]
+        runtime_config(run_dir, args.model)
+        skills = ["--skills", ",".join(info["skills"])] if info["skills"] else ["--no-skills"]
         cmd = omp_command(omp, run_dir, args, args.model, skills)
         jobs.append((number, cmd + [(run_dir / "prompt.txt").read_text(encoding="utf-8").strip()], info["folder"], run_dir))
+        (run_dir / "command.json").write_text(json.dumps(jobs[-1][1], indent=2) + "\n", encoding="utf-8")
     for number, (code, seconds) in run_all(jobs).items():
-        key["candidates"][number].update({"exit": code, "wall_seconds": seconds, "model": args.model or "default"})
+        key["candidates"][number].update({"exit": code, "wall_seconds": seconds, "model": args.model,
+                                        "max_cost": args.max_cost, "max_time": args.max_time})
     t.key.write_text(json.dumps(key, indent=2) + "\n", encoding="utf-8")
 
 
@@ -185,6 +223,16 @@ def tree_files(folder):
         if path.is_file() and not SKIP_DIRS & set(rel.parts):
             files[rel.as_posix()] = path.read_text(encoding="utf-8", errors="replace")
     return files
+
+
+def copy_deliverable(folder, target, supplied_skills):
+    shutil.copytree(folder, target, ignore=shutil.ignore_patterns(*SKIP_DIRS))
+    skills = folder / ".omp/skills"
+    if skills.is_dir():
+        for skill in skills.iterdir():
+            if skill.is_dir() and not skill.is_symlink() and skill.name not in supplied_skills:
+                shutil.copytree(skill, target / ".omp/skills" / skill.name,
+                                ignore=shutil.ignore_patterns(*SKIP_DIRS))
 
 
 def unified_diff(before, after):
@@ -392,7 +440,7 @@ def git_state(folder):
 
 
 def collect(args):
-    t = task_paths(args.task)
+    t = task_paths(args.task, args.run_id)
     key = json.loads(t.key.read_text(encoding="utf-8"))
     if t.pack.exists():
         shutil.rmtree(t.pack)
@@ -421,8 +469,10 @@ def collect(args):
                 (before / name).parent.mkdir(parents=True, exist_ok=True)
                 (before / name).write_text(files[name], encoding="utf-8")
         measurements[number] = {
-            "label": label, "variant": info["variant"], "cost": cost, "models": models, "exit": info.get("exit"),
-            "wall_seconds": info.get("wall_seconds"), "tool_calls": len(calls), "files_changed": changed,
+            "label": label, "variant": info["variant"], "ref": info.get("ref"), "cost": cost,
+            "models": models, "requested_model": info.get("model"), "exit": info.get("exit"),
+            "wall_seconds": info.get("wall_seconds"), "tool_calls": len(calls),
+            "process_finished": info.get("exit") == 0 and bool(reply), "files_changed": changed,
             "diff_lines": lines, "hidden": hidden_checks(t, folder, run_dir / "scored"),
             "specs_after": run_specs(folder), "specs_on_old_code": run_specs(before),
             "new_or_changed_specs": [name for name in changed if is_spec(name)], "git": git_state(folder),
@@ -432,7 +482,7 @@ def collect(args):
         # Any path outside its own folder could reach the hidden checks, the reference, a sibling or the key.
         measurements[number]["contaminated"] = bool(measurements[number]["outside_paths"])
         target = t.pack / label
-        shutil.copytree(folder, target / "repo", ignore=shutil.ignore_patterns(*SKIP_DIRS))
+        copy_deliverable(folder, target / "repo", info.get("skills", []))
         (target / "reply.md").write_text(sanitize(reply, folder, t.name) + "\n", encoding="utf-8")
         (target / "diff.patch").write_text(patch, encoding="utf-8")
         actions = [("[helper] " if "helper" in c else "") + sanitize(describe(c), folder, t.name) for c in calls]
@@ -473,6 +523,10 @@ Each lettered folder holds:
 - diff.patch: their changes against base/
 - reply.md: their final message to the user
 - actions.txt: the tool calls they made, in order. Lines starting [helper] came from helpers they started.
+
+All candidates and this judge run receive TEMP, TMP and TMPDIR pointing inside their own project.
+Do not infer a system-temp escape from os.tmpdir(), tempfile or mktemp alone.
+Supplied experiment skills are omitted; candidate-authored verification helpers remain so their tests can run.
 
 Score every folder on every criterion of the rubric below.
 Read the code and run it; Node is installed. Work only inside this folder.
@@ -549,19 +603,26 @@ def agreement(first, second, letters):
 
 
 def judge(args):
-    t = task_paths(args.task)
+    t = task_paths(args.task, args.run_id)
     rubric = (t.home / "rubric.md").read_text(encoding="utf-8")
     letters = sorted(p.name for p in t.pack.iterdir() if p.is_dir() and p.name != "base")
+    if not args.reparse and not args.dry_run and any(
+            (t.runs / f"judge-{index}").exists() for index in (1, 2)):
+        sys.exit("judge evidence already exists; use --reparse or choose a new --run-id")
     if not args.reparse:
         prompt = judge_prompt(t, letters, rubric)
         (t.runs / "judge-prompt.txt").write_text(prompt, encoding="utf-8")
         if args.dry_run:
             print(prompt)
             return
+        if not args.judge_model or len(args.judge_model) != 2 or len(set(args.judge_model)) != 2:
+            sys.exit("choose two distinct --judge-model IDs; no default model or billing route is assumed")
+        (t.runs / "judge-models.json").write_text(json.dumps(args.judge_model), encoding="utf-8")
         start_judges(t, args, prompt)
     count = criteria_count(rubric)
+    models = json.loads((t.runs / "judge-models.json").read_text(encoding="utf-8"))
     verdicts = {}
-    for model, index in zip(JUDGES, range(1, len(JUDGES) + 1)):
+    for index, model in enumerate(models, 1):
         run_dir = t.runs / f"judge-{index}"
         meta = json.loads((run_dir / "meta.json").read_text(encoding="utf-8"))
         reply, cost, models, calls = read_run(run_dir)
@@ -575,7 +636,7 @@ def judge(args):
         verdicts[model] = {"cost": cost, "models": models, "exit": meta.get("exit"), "pack": meta["pack"],
                            "scores": scores, "parse_error": error, "outside_paths": hits, "contaminated": bool(hits)}
     result = {"letters": letters, "judges": verdicts}
-    first, second = (verdicts[m]["scores"] for m in JUDGES)
+    first, second = (v["scores"] for v in verdicts.values())
     if first and second:
         result["agreement"] = agreement(first, second, letters)
     (t.runs / "judges.json").write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
@@ -586,17 +647,16 @@ def start_judges(t, args, prompt):
     """Run every judge at once, each in its own copy of the pack under a random folder with no run data beside it."""
     omp = shutil.which("omp") or sys.exit("omp is not on PATH")
     jobs = []
-    for index, model in enumerate(JUDGES, 1):
+    for index, model in enumerate(args.judge_model, 1):
+        pr_agent_local.omp_oauth_credentials(model)
         run_dir = t.runs / f"judge-{index}"
-        if (run_dir / "meta.json").exists():
-            old = Path(json.loads((run_dir / "meta.json").read_text(encoding="utf-8"))["pack"]).parent
-            shutil.rmtree(old, ignore_errors=True)
         if run_dir.exists():
-            shutil.rmtree(run_dir)
+            sys.exit("judge evidence already exists; choose a new --run-id")
         run_dir.mkdir(parents=True)
         pack = SCRATCH / f"judge-{secrets.token_hex(4)}" / "pack"
         shutil.copytree(t.pack, pack)
         (run_dir / "meta.json").write_text(json.dumps({"model": model, "pack": str(pack)}, indent=2) + "\n", encoding="utf-8")
+        runtime_config(run_dir, model)
         jobs.append((index, omp_command(omp, run_dir, args, model, ["--no-skills"]) + [prompt], pack, run_dir))
     for index, (code, seconds) in run_all(jobs).items():
         meta_path = t.runs / f"judge-{index}" / "meta.json"
@@ -615,7 +675,7 @@ def report(t, result):
             print(f"    parse error: {verdict['parse_error']} (fix the reply.md, then judge --reparse)")
         for hit in verdict["outside_paths"]:
             print(f"    outside: {hit}")
-    print("letter variant   hidden  cost     calls  wall   " + "  ".join(m.split("/")[1] for m in JUDGES))
+    print("letter variant   hidden  cost     calls  wall   " + "  ".join(result["judges"]))
     for letter in result["letters"]:
         m = by_label[letter]
         totals = [str(v["scores"][letter]["total"]) if v["scores"] else "-" for v in result["judges"].values()]
@@ -627,10 +687,10 @@ def report(t, result):
 
 
 def selftest(args):
-    t = task_paths(args.task)
+    t = task_paths(args.task, args.run_id)
     if not (t.home / "reference").is_dir():
         sys.exit(f"{t.home.relative_to(ROOT)}/reference is missing")
-    work = SCRATCH / f"{t.name}-selftest"
+    work = SCRATCH / f"{t.prefix}-selftest"
     if work.exists():
         shutil.rmtree(work)
     original, reference = work / "original", work / "reference"
@@ -665,16 +725,19 @@ def main():
         steps[step] = func
         p = sub.add_parser(step)
         p.add_argument("--task", default="billsplit", help="folder under evals/outcome/tasks/")
+        p.add_argument("--run-id", help="unique project slug; keeps earlier runs and their evidence untouched")
         if step == "setup":
             p.add_argument("--ref", default="HEAD", help="commit whose deep-mode skill and /deep command are installed")
+            p.add_argument("--compare-ref", help="also run the previous skill revision beside the new revision and plain")
             p.add_argument("--per-variant", type=int, default=2)
             p.add_argument("--seed", type=int, default=7)
         if step in ("run", "judge"):
             p.add_argument("--max-cost", type=float, default=3.0, help="omp --max-cost per process, in USD")
             p.add_argument("--max-time", default="45m")
         if step == "run":
-            p.add_argument("--model", help="omp --model for every candidate (default: omp's default model)")
+            p.add_argument("--model", required=True, help="explicit omp model ID for every candidate")
         if step == "judge":
+            p.add_argument("--judge-model", action="append", help="two distinct explicit model IDs; repeat this option")
             p.add_argument("--dry-run", action="store_true", help="write and print the judge prompt; call no model")
             p.add_argument("--reparse", action="store_true", help="re-read the saved judge replies; call no model")
     args = parser.parse_args()

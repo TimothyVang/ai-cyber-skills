@@ -5,25 +5,25 @@ This eval follows the Eval playbook (`plugins/deep-mode/skills/deep-mode/referen
 
 ## Design
 
-- **Variant under test.** deep-mode installed versus not installed.
+- **Variants under test.** A chosen deep-mode revision versus plain. `setup --compare-ref <commit>` adds a previous revision as a third arm under the same task, model and runtime settings.
 - **With deep-mode.** Every skill under `plugins/deep-mode/skills/` at a chosen commit is copied into the candidate's `.omp/skills/`.
   `SKILL.md` and `/deep` point at the sibling skills (`create-verification-skill`, `software-architecture` and others), so all of them ship.
   The prompt starts with what `/deep` expands to (`plugins/deep-mode/commands/deep.md` at that commit), with the task's request as its argument.
 - **Without.** The same project and the same request, nothing else.
 - **Tasks.** Each task is a folder under `tasks/`. See Tasks below.
-- **Candidates.** `--per-variant` per variant, assigned to folders `.scratch/<task>-1` and up in a seeded random order.
+- **Candidates.** `--per-variant` per variant, assigned in seeded random order. A unique `--run-id` gives every run its own project directories, raw logs, key and judge pack. Existing candidate outputs are never overwritten by `run`.
   Each folder is its own `git init` repo with one commit, named from the project's `package.json` name and version.
   `.omp/` sits in `.git/info/exclude` in every folder, so `git status` looks the same in both variants.
 - **Isolation.** Each candidate is one `omp -p --max-cost <cap>` process with its folder as the working directory.
-  Both variants run with `--no-rules --no-context-files --no-extensions`, so the user's global `AGENTS.md`, rules, and contain hook stay out.
-  The deep-mode candidates run with `--skills` naming every copied skill, which loads the project copies.
-  The others run with `--no-skills`, because deep-mode is also installed globally on the machine that ran this.
-  The API keys are removed from the child's environment, so every run bills the subscription.
-  omp checks the cost cap between turns, so one turn can overshoot it.
+- Both variants run with `--no-rules --no-context-files --no-extensions`, so the user's global context and containment hooks stay out.
+- The deep-mode variants load the complete skills snapshot at their recorded commits; plain uses `--no-skills`.
+- The model is explicit. The runner checks subscription OAuth metadata, scrubs credential-shaped environment variables and disables provider fallback and automatic model switching. Common helper roles use the same model; actual model IDs are retained in results.
+- Each process gets its own contained temporary directory. This is process/config isolation, not an OS sandbox. Review the contamination report.
+- The reported dollar-valued usage is a harness accounting estimate, not an API invoice. omp checks its cap between turns, so one turn can overshoot it.
 - **Primary score.** The task's hidden checks, run at collect time against a copy of each candidate's final tree.
   Candidates never see them. The score is the number that pass.
-- **Secondary score.** Two blinded judges, `anthropic/claude-opus-5-5` and `openai-codex/gpt-6.1-terra`, score the task's rubric.
-  Each runs as its own `omp -p` process in its own copy of the judge pack, at `.scratch/judge-<random>/pack`.
+- **Secondary score.** Two explicitly selected blinded judges score the rubric. Use a different family when authorized and available; disclose when both are the same family.
+  Each runs as its own `omp -p` process in its own copy of the judge pack under `.scratch/`.
   So one judge's trial runs never reach the other, and no run data sits beside a judge's folder.
   `judge` reports both judges separately and how far they agree.
   It always writes each raw reply and `judges.json`, with a `parse_error` for a reply it could not read.
@@ -72,7 +72,7 @@ The Eval playbook's blinding gates hold here.
   Both variants share that path, so it tells a candidate nothing about which variant it is.
 - Run data (prompts, event logs, sessions, the variant key, hidden check results) sits in `.scratch/<task>-runs/`, outside every candidate folder.
 - Candidates are never told about each other.
-- The judge pack leaves `.git/`, `.omp/`, `.scratch/` and `.worktrees/` out of each copy and replaces folder paths with `<project>`.
+- The judge pack omits `.git/`, `.scratch/`, `.worktrees/` and the supplied skill snapshot. Candidate-authored verification helpers remain under `.omp/skills/` so dependent tests still run. Folder paths become `<project>`.
   It drops every action line that reads a skill file.
   In replies and actions it removes "light panel", which names deep-mode's verifier, and replaces "deep-mode" and "playbook" with neutral words.
 - Judges never see the hidden checks or their results.
@@ -84,24 +84,27 @@ The Eval playbook's blinding gates hold here.
   A `cd` target is judged from where the `cd` starts, so `cd spec && ... && cd ..` stays clean.
   Inside a quoted string that holds code, such as `node -e "import('../src/a.js')"`, only absolute, home and temp paths count.
   So a quoted script that reads `../` is missed. A quoted path given on its own, as in `cat "../x"`, still counts.
-  A `mktemp` with no `-p`, `--tmpdir`, folder template or earlier `TMPDIR=` in the same command counts too, since it lands in system temp.
+  A `mktemp` without an explicit destination is flagged conservatively; check the recorded process environment, because this runner points `TMPDIR` into that candidate's own `.scratch/tmp`.
   A path that lands outside the process's own folder, by an absolute path, a home or temp variable, or `..` that climbs out, is listed.
   Any hit marks the run `contaminated` in `measurements.json` or `judges.json` and in the printed table.
   Read the hits. A regex that looks like a path can be a false alarm. `evals/outcome/test_run.py` holds the cases the scan must get right.
+- Adjudicate flagged paths against the raw call. A path inside text being written, or a search pattern such as `/tmp`, is not itself a filesystem read. Keep the raw flag and record the reason separately instead of silently clearing it.
 - The other residual risk is behavior. A deep-mode candidate's actions still show its worktree and verifier steps, which a judge may recognize.
 
 ## Rerun
 
 ```bash
-python evals/outcome/run.py selftest --task kitty                      # hidden checks fail on project/, pass on reference/
-rm -rf .scratch/kitty-*                                                # only from a previous run
-python evals/outcome/run.py setup --task kitty --ref HEAD --per-variant 3
-python evals/outcome/run.py run --task kitty --max-cost 4 --model anthropic/claude-opus-5-5
-python evals/outcome/run.py collect --task kitty                       # hidden checks, measurements, judge pack
-python evals/outcome/run.py judge --task kitty                         # both judges, then the combined table
+python evals/outcome/run.py selftest --task kitty
+python evals/outcome/run.py setup --task kitty --run-id delivery --ref HEAD --compare-ref <previous-commit> --per-variant 5
+python evals/outcome/run.py run --task kitty --run-id delivery --max-cost 4 --model openai-codex/gpt-6-astra
+python evals/outcome/run.py collect --task kitty --run-id delivery
+python evals/outcome/run.py judge --task kitty --run-id delivery --judge-model openai-codex/gpt-6.1-terra:high --judge-model openai-codex/gpt-6-luna:high
 ```
 
-`--task` defaults to `billsplit`, so the first run's commands still work unchanged.
+`--task` defaults to `billsplit`. Model selection is now explicit; older commands need `--model` or `--judge-model` arguments.
+
+Choose a fresh project-shaped `--run-id` for each repetition; omit `--compare-ref` for a two-arm run. Replace the model IDs with subscription models you are authorized to use, identically across candidate arms. `process_finished` records successful process exit with a reply, not feature correctness. Claim completed delivery only after the checked-out files pass the hidden behavior checks and the reply/transcript confirms the task finished.
+Parallel runs share host and provider load. Report concurrency and failures, and do not promote timing differences as a speedup without an alternating, repeated measurement. These small fixtures are development evaluations, not a production review-quality or competitor benchmark.
 `judge --dry-run` writes the judge prompt to `.scratch/<task>-runs/judge-prompt.txt` without calling a model.
 
 `collect` prints one line per candidate and writes `.scratch/<task>-runs/measurements.json`.

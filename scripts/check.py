@@ -16,7 +16,7 @@ BANNED = re.compile(
     r"|cloud\s*x\s*berry|greptile|code\s*rabbit|james\s+clements",
     re.I,
 )
-WHITE_LABEL_EXEMPT = {Path("scripts/check.py"), Path("trending")}
+WHITE_LABEL_EXEMPT = {Path("scripts/check.py"), Path("trending"), Path("evals/workflows")}
 LOCAL_ONLY = {".git", ".scratch", ".worktrees", "__pycache__"}  # self-ignored work folders and caches, never shipped
 RULES_WINDOW_BYTES = 20_000  # about 5,000 tokens at 4 bytes each: what Claude Code keeps of a skill after compaction
 CORE_LINE_BYTES = 600  # deep-mode's SKILL.md, playbooks and techniques: one instruction per line
