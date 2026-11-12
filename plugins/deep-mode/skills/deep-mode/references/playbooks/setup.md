@@ -31,7 +31,7 @@ Files it may write:
 
    Kind: github | local | other
    Repo: <owner/name, or none>
-   Reservations: <local kind: URL of the one remote every contributor pushes to, or none>
+   Reservations: <local kind: URL of the shared repository, or none>
    Triage external PRs: no
 
    ## Labels
@@ -47,6 +47,10 @@ Files it may write:
    - ...
    ```
 
+   `Reservations:` (local kind only; else `none`) is where the tracker technique reserves issue numbers.
+   - No remote → `none`.
+   - One repository every contributor can push to → its URL. A personal fork never qualifies. Several candidates → ask which one.
+   - Contributors work only from their own forks → `none`, and say that parallel clones can then collide on numbers; the github kind avoids it.
    `Triage external PRs` defaults to `no`. The user turns it on by editing the file. Done when the file exists with every section above filled.
 5. **Seed the domain docs.** No `GLOSSARY.md` → write the domain-model header (project name and one sentence on what it does) and an empty `## Terms`. Monorepo signals → one glossary per package that owns its own concepts, listed from the root file.
    No `docs/adr/` → create it with `0001-record-decisions-as-adrs.md`, an ADR in the domain-model format that records this setup choice.
