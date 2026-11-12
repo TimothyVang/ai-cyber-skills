@@ -141,7 +141,7 @@ Step 2 of Route. First match wins.
 | "run the factory / work the issue queue / turn issues into PRs / set up a software factory" | Work a queue playbook, factory source |
 | "drive the board / work the backlog / run this project autonomously / keep going on the roadmap" | Work a queue playbook, board source |
 | "autopilot this queue", "full autopilot", "autopilot, don't merge", "stack them, don't ship", "build the stack, I'll land it" | Work a queue playbook, PR source (`stack-only` when told not to merge) |
-| "set up deep-mode here", "configure the tracker / labels", "add a glossary and ADRs", or the first use of spec, tickets, or triage in a repo (Setup then resumes the requested playbook) | Setup playbook |
+| "set up deep-mode here", "configure the tracker / labels", "add a glossary and ADRs", or the first time a repo writes a spec, tickets, or triage (Setup then resumes the requested playbook; a spec that already exists means setup is done) | Setup playbook |
 | "triage the issues", "what needs my attention", "is #42 ready for an agent", "move #42 to agent-ready" | Triage playbook |
 | "write the spec", "turn this into a spec", "spec it up" | Spec playbook |
 | "break this into tickets", "split the spec into issues", "make tickets for this" | Tickets playbook |
