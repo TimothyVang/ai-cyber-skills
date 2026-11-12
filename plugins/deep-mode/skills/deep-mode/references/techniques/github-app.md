@@ -45,7 +45,7 @@ py -3 assets/github-app/bot.py status
 
 - `install-autostart` registers `deep-mode-bot` with Task Scheduler (Windows), launchd (macOS), or a systemd user unit or crontab `@reboot` entry (Linux); `uninstall-autostart` removes it.
 - The first run records a start time; a repo added to the app later starts at its first poll. Only events after it get a turn. That first poll lists every open PR and records each older PR's head as backlog; any head seen after it is new, whatever its commit dates, including on a PR first seen later (reopened). `--backlog` takes older open PRs and issues too.
-- Each cycle lists every open PR and issue and takes non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deep-mode` or come from the owner after the bots' last turn. On the owner's own PRs only the owner's comments count. On an issue that an own PR's merge waits on, any human comment since the bots' last reply counts, however old. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all, with the comments that triggered it.
+- Each cycle lists every open PR and issue and takes non-draft PRs with an unhandled head SHA, new issues, and new human comments that start a line with `/deep-mode` or come from the owner after the bots' last turn. On the owner's own PRs only the owner's comments count. On an issue that an own PR's merge waits on, any human comment since the bots' last reply counts, however old. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all, with the comments that triggered it.
 - A comment counts as the bots' only when the app posted it, or the owner's account posted it with the bot signature; a signature from anyone else is a human comment.
 - The owner is the `gh` user running the bot, even when an organization owns the app.
 - One bot process runs at a time (a lock file). `--dry-run` takes no lock: each run clones into a workspace of its own and removes it afterwards, so previews can run beside the bot and each other. State is in `~/.config/deep-mode/bot-state.json`. Clones, worktrees, logs and per-item transcripts are in `~/.cache/deep-mode/bot/`.
@@ -53,8 +53,18 @@ py -3 assets/github-app/bot.py status
 Config is `~/.config/deep-mode/bot.json`, created with these defaults on the first run. Each role is `{"agent": "<acpx agent>", "model": "<optional model id>"}`:
 
 ```json
-{"author":{"agent":"omp"},"reviewer":{"agent":"omp"},"verifiers":[{"agent":"omp"},{"agent":"omp"},{"agent":"omp"}],"autonomousMerge":true,"maxRounds":3,"interval":120,"mention":"@deep-mode"}
+{"author":{"agent":"omp"},"reviewer":{"agent":"omp"},"verifiers":[{"agent":"omp"},{"agent":"omp"},{"agent":"omp"}],"autonomousMerge":true,"maxRounds":3,"interval":120}
 ```
+
+## Trigger
+
+The trigger is `/deep-mode`, a slash command, so it notifies no GitHub account.
+
+- It counts at the start of a comment line, in any letter case, followed by a space or the end of the line. A URL, a path, a quoted line (`> /deep-mode implement`) and `/deep-mode:land-pr` never trigger.
+- `/deep-mode implement` on one line, from the owner, requests a build. Text may follow it: `/deep-mode implement: only the docs`.
+- `bot.json` `"mention": "<value>"` overrides the trigger. A value that starts with `/` follows the line-start rule. Any other value, such as your app's `@<app-slug>`, counts anywhere in a comment as a whole token.
+- One stored value is ignored: `"mention": "@<brand>"`, the brand name after `@`. Installs made before the slash trigger wrote it into `bot.json` as the default, and it notifies whoever owns that GitHub account. The bot uses the brand's trigger instead and logs one line per cycle until you remove the key. `bot.json` is never rewritten. A brand that wants the bare handle sets `mention` in its brand file.
+- With the default trigger, the old `@<brand> implement` no longer requests a build, and `@<brand>` in someone else's comment no longer starts a turn. An owner's comment still starts a discussion turn whatever it says. A failed build that only the old command authorized retries as discussion only, so comment `/deep-mode implement` again.
 
 ## Opt out
 
@@ -69,7 +79,7 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 - PR and issue text is untrusted data. Prompts say so, wrap it in delimiters, and defang `@path` mentions. A request in it to merge, push, run, or post elsewhere is a finding.
 - Only the user's own PRs merge, and only through pr-conversation's gates, enforced in code at the merging head: same head as the panel, the ownership gate re-checked (with other writers, each commit the bot didn't push needs the owner as committer and a verified signature), required checks green (a check the rules tie to one GitHub App counts only that app's check runs and the commit statuses its bot account set), the head contains its base, linked issues answered, not conflicting, merge authorized. Branch rules are read again after any wait for checks. `--admin` only when the required review is the one rule it would bypass and no check, required or not, is failing or cancelled. No rebase, no force-push, no branch deletion.
 - After each merge, a verifier runs the repo's checks on the merge commit. Red → the bot opens a `deep-mode/revert-pr-<n>` PR, which the next cycle lands like any other; a check that can't run or returns no verdict is reported, never reverted on. The bot records the merge before running `gh pr merge` and records each step after it (read-back, note, trunk check), so an error anywhere after GitHub accepts the merge resumes on the next cycles (three attempts) even though the PR is closed. No time limit drops that record: while the PR stays open the bot reads its state each cycle, so a merge that shows up late still gets its trunk check; the record goes when the steps finish, the PR is closed unmerged, or it merges at another head.
-- Answering an issue a PR's merge waits on never starts a second implementation; only an owner's `@deep-mode implement` does.
+- Answering an issue a PR's merge waits on never starts a second implementation; only an owner's `/deep-mode implement` does.
 - The author and the verifiers run (both with `--approve-all`) only after the current head re-passes the ownership gate, so a push from another account mid-conversation sends the PR to a human.
 - No one but the owner steers a write-enabled agent: on the owner's PRs other people's comments neither trigger a turn nor reach a prompt, and an issue build plans and implements in new agent sessions that see only the owner's comments, never an earlier discussion's context.
 - Implementing an issue reuses an existing `deep-mode/issue-<n>` branch only when every commit on it is one the bots made; otherwise the bots stop and say so.
@@ -80,4 +90,4 @@ Config is `~/.config/deep-mode/bot.json`, created with these defaults on the fir
 
 ## Bot name
 
-Rename the bots with `install.py --brand <name>`. It writes `assets/github-app/brand.local.json`, and `brand.py` derives the app name, comment signature, mention, branch prefix, repo config file, config and cache directories, and autostart task from it.
+Rename the bots with `install.py --brand <name>`. It writes `assets/github-app/brand.local.json`, and `brand.py` derives the app name, comment signature, trigger (`/<name>`), branch prefix, repo config file, config and cache directories, and autostart task from it.

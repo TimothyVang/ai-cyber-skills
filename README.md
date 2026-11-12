@@ -177,7 +177,7 @@ py -3 assets/github-app/bot.py watch                                # poll in th
 
 - **Your PRs:** the bots merge in the base when it conflicts, review, fix or dismiss each finding, run a 3-verifier panel, and merge once required checks are green.
 - **Others' PRs:** review comments only. They never merge.
-- **Issues:** the bots plan and critique in the thread. On an issue you opened, or after you comment `@deep-mode implement`, they build it and open a PR that closes it.
+- **Issues:** the bots plan and critique in the thread. On an issue you opened, or after you comment `/deep-mode implement`, they build it and open a PR that closes it. Anyone else calls the bots with a comment line that starts with `/deep-mode`; a slash command notifies no GitHub account.
 - **Agents and models:** each role in `bot.json` is `{"agent": "omp", "model": "<optional>"}`. Put the author on a Claude model and the reviewer on a GPT model in omp, and one harness gives you cross-family review.
 - **Opt out:** a base-branch `.deep-mode.json` with `"bot": false` skips the repo, and `"autonomousMerge": false` stops it at merge-ready.
 

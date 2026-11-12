@@ -31,7 +31,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 | A PR number, a PR URL, or "review" a PR | **pr-review** in PR mode (`references/techniques/pr-review.md`) |
 | "review since <ref>", "review my branch against the spec / coding standards" | **pr-review** in local mode (`references/techniques/pr-review.md`) |
 | "land / finish / merge this PR on your own", "bots talk it out in the PR", "no human approval", or your own PR once it is open | **pr-conversation** technique (`references/techniques/pr-conversation.md`) |
-| "have the bots plan / discuss / implement this issue", "@deep-mode implement" | **issue-conversation** technique (`references/techniques/issue-conversation.md`) |
+| "have the bots plan / discuss / implement this issue", "/deep-mode implement" | **issue-conversation** technique (`references/techniques/issue-conversation.md`) |
 | "install deep-mode on my repos", "run the bots on their own", "AI review on my own subscription", or start, stop, or opt a repo out of the bots | **github-app** technique (`references/techniques/github-app.md`) |
 | "check on / babysit / get green" a PR | Babysit playbook |
 | "help on / contribute to / what can I work on" a project, or a repo the user can't push to that has a brief | `skill://contribute` |
