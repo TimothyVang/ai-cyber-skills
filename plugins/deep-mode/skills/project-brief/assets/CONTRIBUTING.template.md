@@ -52,9 +52,9 @@ Expires: <YYYY-MM-DD, 7 days after posting>
 
 - **Files** lists every path you expect to change. Use `dir/` for a whole directory. Be specific: other contributors' agents avoid these paths.
 - A claim is active until its `Expires` date. Still working? Post a fresh claim comment with a new date.
-- An issue with an assignee counts as claimed too.
-- Giving up? Comment on the issue with `<!-- deep-mode:unclaim -->` on its own line plus a short note, so someone else can pick it up.
-- Expired claims are released: the maintainer comments that the issue is open again.
+- An issue with an assignee counts as claimed too, unless that assignee posted a claim comment on it: then only the comment counts.
+- Giving up? Comment on the issue with `<!-- deep-mode:unclaim -->` on its own line plus a short note, so someone else can pick it up. It releases only your own claim.
+- Expired claims are released. The scripts stop counting a claim the day after `Expires`, even when the claimant is still assigned, and the maintainer comments that the issue is open again.
 - Don't claim more than you can finish in a week. Split big tasks first.
 
 ## 4. Check for overlap, twice
@@ -65,7 +65,7 @@ Two path sets overlap when a path is equal or one is a directory (`dir/`) contai
 python scripts/pr-overlap.py check --repo {{OWNER/REPO}} --files src/a.py,docs/ --exclude-issue N
 ```
 
-After claiming, pass `--exclude-issue <your issue>` so your own claim isn't reported. Exit code `0` means no overlap. `3` means an open PR or an active claim touches the same paths; the output lists them. Coordinate on that issue or PR, or pick another task. `2` means a usage or `gh` error. To list active claims: `python scripts/pr-overlap.py claims --repo {{OWNER/REPO}}`.
+After claiming, pass `--exclude-issue <your issue>` so your own claim isn't reported. Someone else's claim on the same issue still is. Exit code `0` means no overlap. `3` means an open PR or an active claim touches the same paths; the output lists them. Coordinate on that issue or PR, or pick another task. `2` means a usage or `gh` error. To list active claims: `python scripts/pr-overlap.py claims --repo {{OWNER/REPO}}`.
 
 ## 5. Build and prove it
 
@@ -102,4 +102,9 @@ Everything above works by hand: post the claim comment, run the overlap check, f
 
 ## Roadmap
 
-[ROADMAP.md](ROADMAP.md) is generated from GitHub Issues by `scripts/sync-roadmap.py`. Edit issues, not that file.
+[ROADMAP.md](ROADMAP.md) is a snapshot of the task board, generated from GitHub Issues by `scripts/sync-roadmap.py`. Edit issues, not that file.
+
+- It goes stale between syncs. The live board is the open `help wanted` issues plus `python scripts/pr-overlap.py claims --repo {{OWNER/REPO}}`. `/deep-mode:contribute` reads those, not the file.
+- The maintainer's agent refreshes it on every `/deep-mode:project-brief` re-run with `python scripts/sync-roadmap.py --repo {{OWNER/REPO}}` and ships the changed file in that run's PR.
+- To see whether it is current: `python scripts/sync-roadmap.py --repo {{OWNER/REPO}} --check`. Exit `1` means out of date.
+- Leave it out of task PRs. A regenerated roadmap in every PR would overlap all the others.
