@@ -7,6 +7,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+import threading
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -903,6 +904,33 @@ class RepoCheckTest(unittest.TestCase):
         self.assertEqual(c.it.asked, [])  # no agent: the command decided
         self.assertIn("exited 1", c.revert_red.call_args.args[1])
 
+    def test_python_in_the_check_is_the_bots_own_interpreter(self):
+        # Under pythonw from a logon task, the check's bash found no `python` (PR #52 got exit 127 as a finding).
+        fake = self.tmp / "interpreter"
+        fake.mkdir()
+        (fake / "python").write_text("#!/bin/sh\necho bot-python \"$@\"\n", encoding="utf-8", newline="\n")
+        (fake / "python").chmod(0o755)
+        c, _ = self.conversation("ok", check="python --version")
+        with mock.patch.object(bot.sys, "executable", str(fake / "pythonw.exe")):
+            command, code, output = c.repo_check(c.head)
+        self.assertEqual((code, output), (0, "bot-python --version"))
+
+    def test_a_check_that_cannot_start_is_no_finding_and_blocks_the_merge(self):
+        c, sha = self.conversation("ok", check="no-such-command-for-the-bot-test")
+        with self.assertRaises(bot.CheckCannotStart):  # an item error: the next cycle retries it
+            c.check_findings()
+        self.assertEqual(len(c.it.posts), 1)
+        self.assertIn("could not start", c.it.posts[0][1])
+        self.assertIn("no finding goes to the author", c.it.posts[0][1])
+        with self.assertRaises(bot.CheckCannotStart):  # the retry says nothing new on the thread
+            c.check_findings()
+        self.assertEqual(len(c.it.posts), 1)
+        c.item["panelSha"] = sha
+        c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
+        with mock.patch.object(bot, "merge_pr") as merge, self.assertRaises(bot.CheckCannotStart):
+            c.land("3/3")
+        merge.assert_not_called()
+
 
 class LightPanelTest(unittest.TestCase):
     def setUp(self):
@@ -979,6 +1007,184 @@ class AutostartPathTest(unittest.TestCase):
                 self.assertEqual(bot.stable_script(), link / "skills/deep-mode/assets/github-app/bot.py")
                 link.rmdir() if os.name == "nt" else link.unlink()  # not installed through omp: the real path
                 self.assertEqual(bot.stable_script(), script.resolve())
+
+    def test_a_git_checkout_finds_the_omp_install_only_when_asked(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            root = home / ".omp/plugins/cache/plugins/deep-mode___deep-mode___0.7.0"
+            root.mkdir(parents=True)
+            (home / ".omp/plugins/node_modules").mkdir(parents=True)
+            link = home / ".omp/plugins/node_modules/deep-mode"
+            if not link_dir(link, root):
+                self.skipTest("cannot make a directory link here")
+            script = home / "src/plugins/deep-mode/skills/deep-mode/assets/github-app/bot.py"
+            with mock.patch.object(bot, "__file__", str(script)), mock.patch.object(Path, "home", return_value=home):
+                self.assertIsNone(bot.omp_install())  # the watcher never updates a checkout
+                found = bot.omp_install(anywhere=True)
+            self.assertEqual((found["marketplace"], found["plugin"]), ("deep-mode", "deep-mode"))
+            self.assertEqual(found["assets"], link / "skills/deep-mode/assets")
+            link.rmdir() if os.name == "nt" else link.unlink()
+
+
+class AutoUpdateTest(unittest.TestCase):
+    OLD, NEW = "a" * 40, "b" * 40
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.assets = self.tmp / "install/skills/deep-mode/assets"
+        (self.assets / "github-app").mkdir(parents=True)
+        (self.assets / "github-app/bot.py").write_text("v1", encoding="utf-8")
+        self.install = {"marketplace": "deep-mode", "plugin": "deep-mode", "link": self.tmp / "install",
+                        "script": self.assets / "github-app/bot.py", "assets": self.assets}
+        self.logs = []
+        for target, name, value in ((bot, "UPDATE_PATH", self.tmp / "update.json"), (bot, "CONFIG_DIR", self.tmp),
+                                    (bot, "log", self.logs.append), (bot.Lock, "path", self.tmp / "bot.lock"),
+                                    (bot, "omp_install", lambda anywhere=False: self.install),
+                                    (bot, "remote_main", mock.Mock(return_value=self.NEW))):
+            patcher = mock.patch.object(target, name, value)
+            patcher.start()
+            self.addCleanup(patcher.stop)
+        self.ran = []
+        self.new_code = True
+
+    def upgrade(self, command, **kw):
+        """omp's commands: the second one rewrites the install, with new bot code when `new_code`."""
+        self.ran.append((command, kw))
+        if command[2] == "upgrade" and self.new_code:
+            (self.assets / "github-app/bot.py").write_text("v2", encoding="utf-8")
+
+    def watcher(self, **cfg):
+        updates = bot.AutoUpdate()
+        b = mock.Mock(cfg={"autoUpdate": True, "updateMinutes": 60, **cfg}, merged_self=False)
+        return updates, b
+
+    def test_an_unchanged_main_runs_no_upgrade(self):
+        bot.save_update_record({"sha": self.NEW})
+        with mock.patch.object(bot, "run", side_effect=self.upgrade):
+            result = bot.update_install(self.install)
+        self.assertEqual((result["upgraded"], self.ran), (False, []))
+
+    def test_a_new_main_runs_the_upgrade_without_api_keys_and_records_it(self):
+        bot.save_update_record({"sha": self.OLD})
+        with mock.patch.object(bot, "run", side_effect=self.upgrade), \
+                mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "x", "OPENAI_API_KEY": "y"}):
+            result = bot.update_install(self.install)
+        self.assertEqual([c for c, _ in self.ran], [["omp", "plugin", "marketplace", "update", "deep-mode"],
+                                                    ["omp", "plugin", "upgrade", "deep-mode"]])
+        for _, kw in self.ran:
+            self.assertNotIn("ANTHROPIC_API_KEY", kw["env"])
+            self.assertNotIn("OPENAI_API_KEY", kw["env"])
+        self.assertTrue(result["upgraded"] and result["codeChanged"])
+        self.assertEqual(bot.load_update_record()["sha"], self.NEW)
+
+    def test_new_bot_code_restarts_the_watcher_with_its_command_line(self):
+        updates, b = self.watcher()
+        with mock.patch.object(bot, "run", side_effect=self.upgrade), \
+                mock.patch.object(bot.subprocess, "Popen") as popen, \
+                mock.patch.object(bot.sys, "argv", ["bot.py", "watch", "--interval", "30"]), \
+                mock.patch.dict(os.environ, {}, clear=False) as env:
+            env.pop("INVOCATION_ID", None)
+            self.assertEqual(updates.after_cycle(b), 0)
+        self.assertEqual(popen.call_args.args[0],
+                         [bot.sys.executable, str(self.install["script"]), "watch", "--interval", "30"])
+        detached = popen.call_args.kwargs
+        self.assertTrue(detached.get("start_new_session") or detached["creationflags"] & 0x8)  # DETACHED_PROCESS
+
+    def test_an_upgrade_that_leaves_the_bot_code_alone_keeps_watching(self):
+        self.new_code = False
+        updates, b = self.watcher()
+        with mock.patch.object(bot, "run", side_effect=self.upgrade), mock.patch.object(bot.subprocess, "Popen") as popen:
+            self.assertIsNone(updates.after_cycle(b))
+        self.assertEqual(len(self.ran), 2)
+        popen.assert_not_called()
+
+    def test_a_failed_upgrade_is_logged_and_retried_at_the_next_check(self):
+        bot.save_update_record({"sha": self.OLD})
+        updates, b = self.watcher()
+        with mock.patch.object(bot, "run", side_effect=RuntimeError("omp exited 1")):
+            self.assertIsNone(updates.after_cycle(b))
+        self.assertTrue(any("update failed: omp exited 1" in line for line in self.logs))
+        record = bot.load_update_record()
+        self.assertEqual(record["sha"], self.OLD)  # not recorded: the next check upgrades again
+        record["checkedAt"] = "2000-01-01T00:00:00Z"  # an interval later
+        bot.save_update_record(record)
+        with mock.patch.object(bot, "run", side_effect=self.upgrade), mock.patch.object(bot.subprocess, "Popen"):
+            updates.after_cycle(b)
+        self.assertEqual(bot.load_update_record()["sha"], self.NEW)
+
+    def test_checks_wait_for_the_interval_unless_the_bot_merged_into_its_own_repo(self):
+        bot.save_update_record({"sha": self.NEW, "checkedAt": bot.now_iso()})
+        updates, b = self.watcher()
+        self.assertIsNone(updates.after_cycle(b))
+        bot.remote_main.assert_not_called()
+        b.merged_self = True
+        self.assertIsNone(updates.after_cycle(b))
+        bot.remote_main.assert_called_once()
+
+    def test_auto_update_false_skips_the_check(self):
+        updates, b = self.watcher(autoUpdate=False)
+        self.assertIsNone(updates.after_cycle(b))
+        bot.remote_main.assert_not_called()
+
+    def test_a_git_checkout_never_updates_and_says_so_once(self):
+        with mock.patch.object(bot, "omp_install", return_value=None):
+            updates, b = self.watcher()
+        self.assertIsNone(updates.after_cycle(b))
+        self.assertIsNone(updates.after_cycle(b))
+        bot.remote_main.assert_not_called()
+        self.assertEqual(len([line for line in self.logs if "auto-update off" in line]), 1)
+
+    def test_the_restart_waits_for_the_running_item_and_hands_over_the_lock(self):
+        events = []
+
+        class OneCycle:
+            def __init__(self, args):
+                self.cfg, self.merged_self = {"autoUpdate": True, "updateMinutes": 60, "interval": 1}, True
+
+            def cycle(self):
+                events.append("item starts")
+                bot.pause(0.1)
+                events.append("item ends")
+
+        def upgrade(command, **kw):
+            events.append(command[2])
+            self.upgrade(command, **kw)
+
+        args = mock.Mock(interval=1)
+        with mock.patch.object(bot, "Bot", OneCycle), mock.patch.object(bot, "run", side_effect=upgrade), \
+                mock.patch.object(bot.subprocess, "Popen", side_effect=lambda *a, **kw: events.append("restart")), \
+                mock.patch.dict(os.environ, {}, clear=False) as env, self.assertRaises(SystemExit) as stop:
+            env.pop("INVOCATION_ID", None)
+            bot.cmd_watch(args)
+        self.assertEqual(stop.exception.code, 0)
+        self.assertEqual(events, ["item starts", "item ends", "marketplace", "upgrade", "restart"])
+        with bot.Lock():  # released for the new watcher
+            pass
+
+
+class LockTest(unittest.TestCase):
+    def test_a_waiting_watcher_takes_the_lock_once_the_old_one_lets_go(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bot.Lock, "path", Path(tmp) / "bot.lock"):
+            old = bot.Lock().__enter__()
+            with self.assertRaises(SystemExit):
+                bot.Lock().__enter__()  # status and `once` still fail at once
+            threading.Timer(1.5, old.__exit__).start()
+            new = bot.Lock(wait=10).__enter__()
+            new.__exit__()
+
+
+class BotConfigTest(unittest.TestCase):
+    def test_update_keys_have_defaults_and_are_validated(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bot, "CONFIG_DIR", Path(tmp)), \
+                mock.patch.object(bot, "BOT_CONFIG", Path(tmp) / "bot.json"):
+            cfg = bot.load_bot_config()
+            self.assertEqual((cfg["autoUpdate"], cfg["updateMinutes"]), (True, 60))
+            for bad in ({"autoUpdate": "no"}, {"updateMinutes": 0}, {"updateMinutes": True}):
+                (Path(tmp) / "bot.json").write_text(json.dumps(bad), encoding="utf-8")
+                with self.subTest(bad), self.assertRaises(SystemExit):
+                    bot.load_bot_config()
 
 
 class ParallelReposTest(unittest.TestCase):

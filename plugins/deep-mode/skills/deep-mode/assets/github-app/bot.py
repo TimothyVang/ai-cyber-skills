@@ -3,6 +3,7 @@
 
     python bot.py once [--repo o/r] [--item pr:N|issue:N] [--backlog] [--dry-run]
     python bot.py watch [--interval 120]
+    python bot.py update [--dry-run]
     python bot.py install-autostart | uninstall-autostart
     python bot.py status
 
@@ -19,6 +20,9 @@ workspace of its own (<cache>/dry-run/<pid>-<id>, removed afterwards) beside a r
 prints what each triggered item would get; with --item it also runs that item's first read-only agent turn (the
 reviewer on a PR, the author's plan on an issue) and prints the reply.
 
+Updates: a watcher running from an omp plugin install upgrades that install when the brand repo's main moves
+(`autoUpdate`, `updateMinutes` in bot.json) and restarts itself when its own code changed. See `update`.
+
 Config: <CONFIG_DIR>/bot.json (defaults for missing keys; never overwritten). A repo opts out with
 `"bot": false`, and turns merging off with `"autonomousMerge": false`, in the brand's repo config file
 on its base branch.
@@ -27,6 +31,7 @@ import argparse
 import concurrent.futures
 import datetime as dt
 import functools
+import hashlib
 import json
 import os
 import plistlib
@@ -64,7 +69,12 @@ TASK_NAME = B["autostartId"]
 LAUNCHD_LABEL = f"dev.{TASK_NAME}"
 DEFAULTS = {"author": {"agent": "omp"}, "reviewer": {"agent": "omp"},
             "verifiers": [{"agent": "omp"}, {"agent": "omp"}, {"agent": "omp"}],
-            "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": B["mention"], "parallelRepos": 4}
+            "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": B["mention"], "parallelRepos": 4,
+            "autoUpdate": True, "updateMinutes": 60}
+UPDATE_PATH = CONFIG_DIR / "update.json"  # its own file: `bot.py update` may write it while a watcher runs
+UPDATE_TIMEOUT = 600  # seconds for each omp command of an upgrade
+LOCK_WAIT = 60  # seconds a starting watcher waits for the lock (the watcher it replaces is exiting)
+BOT_CODE = ("github-app", "pr-agent", "loop")  # the asset folders bot.py imports from
 ACPX_CONFIG = Path.home() / ".acpx" / "config.json"
 SIGNATURE = f"**{NAME} "
 SEVERITIES = ("P0", "P1", "P2")
@@ -165,6 +175,10 @@ class Blocked(Exception):
     """A conversation stopped at a gate; the message says why."""
 
 
+class CheckCannotStart(Exception):
+    """The repo check exited 127 (command not found): the bot's setup failed, not the PR's code."""
+
+
 # ---------------------------------------------------------------- small helpers
 
 def now_iso() -> str:
@@ -179,9 +193,9 @@ def log(message: str) -> None:
         fh.write(line + "\n")
 
 
-def run(cmd, cwd=None, stdin=None, check=True, timeout=600):
+def run(cmd, cwd=None, stdin=None, check=True, timeout=600, env=None):
     proc = unlocked(subprocess.run, [str(c) for c in cmd], cwd=cwd, input=stdin, capture_output=True, text=True,
-                    encoding="utf-8", errors="replace", timeout=timeout, creationflags=NO_WINDOW,
+                    encoding="utf-8", errors="replace", timeout=timeout, creationflags=NO_WINDOW, env=env,
                     **({} if stdin is not None else {"stdin": subprocess.DEVNULL}))
     if check and proc.returncode:
         detail = (proc.stderr or proc.stdout).strip()[-800:]
@@ -571,6 +585,11 @@ def load_bot_config(write: bool = True) -> dict:
         cfg["verifiers"] = [as_role(v) for v in cfg["verifiers"]]
         if not isinstance(cfg["parallelRepos"], int) or cfg["parallelRepos"] < 1:
             raise ValueError("parallelRepos must be a positive integer")
+        if not isinstance(cfg["autoUpdate"], bool):
+            raise ValueError("autoUpdate must be true or false")
+        if isinstance(cfg["updateMinutes"], bool) or not isinstance(cfg["updateMinutes"], int) \
+                or cfg["updateMinutes"] < 1:
+            raise ValueError("updateMinutes must be a positive integer")
     except ValueError as err:
         raise SystemExit(f"{BOT_CONFIG}: {err}") from None
     return cfg
@@ -1333,13 +1352,30 @@ class PRConversation:
         tmp.mkdir(parents=True, exist_ok=True)
         env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
         env.update(TMPDIR=str(tmp), TMP=str(tmp), TEMP=str(tmp), PYTHONDONTWRITEBYTECODE="1")
+        # The bot may run under pythonw from a logon task, whose bash child finds no `python`. Its own interpreter's
+        # folder (python.exe sits beside pythonw.exe) goes first, so `python` in the check is the bot's Python.
+        env["PATH"] = os.pathsep.join(filter(None, [str(Path(sys.executable).parent), env.get("PATH")]))
         bash = goal_loop.find_bash()
         log(f"{self.it.key}: repo check `{command}` at {sha[:7]}")
         code, output = unlocked(goal_loop.run_limited, [bash, "-c", command] if bash else command,
                                 REPO_CHECK_MINUTES, shell=not bash, cwd=tree, env=env, stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
         self.item["repoCheck"] = {"sha": sha, "code": code, "command": command}
-        return command, code, output.strip()[-3000:]
+        output = output.strip()[-3000:]
+        if code == 127:
+            self.cannot_start(sha, command, output)
+        return command, code, output
+
+    def cannot_start(self, sha: str, command: str, output: str) -> None:
+        """Exit 127 is the shell's command not found: the bot's environment, not the PR. The author gets no
+        finding and nothing merges; one note per head and command, and the item errors so the next cycle retries."""
+        if self.item.get("checkCannotStart") != {"sha": sha, "command": command}:
+            self.item["checkCannotStart"] = {"sha": sha, "command": command}
+            self.it.say("coordinator", "bot.py", sha, f"The repo check `{command}` could not start at `{sha[:7]}` "
+                        "(exit 127, command not found). That is the bot's setup, not this PR: no finding goes to "
+                        f"the author and nothing merges until it runs. The next cycle tries again.\n\n```text\n"
+                        f"{output}\n```")
+        raise CheckCannotStart(f"the repo check `{command}` could not start (exit 127, command not found)")
 
     def check_findings(self) -> list:
         """The repo check at the current head as a P1 finding for the author when it fails, else nothing."""
@@ -1633,6 +1669,8 @@ class PRConversation:
                 return "merged"
             step.update(confirmed=True, commit=view["mergeCommit"]["oid"])
             self.bot.save()
+        if same(self.repo, B["repo"]):
+            self.bot.merged_self = True  # the bot's own source moved: the watcher checks for an update now
         if not step.get("noted"):
             self.it.say("coordinator", "bot.py", sha, f"Merged `{sha[:7]}` ({step.get('method') or 'merged'}). "
                         + step["summary"])
@@ -1835,6 +1873,7 @@ class Bot:
         self.args, self.dry = args, bool(args.dry_run)
         self.live_turns = not self.dry or bool(args.item)  # dry-run runs read-only agent turns only for --item
         self.cfg, self.state, self.ident = load_bot_config(write=not self.dry), load_state(), Identity()
+        self.merged_self = False
 
     def save(self) -> None:
         if not self.dry:
@@ -2020,25 +2059,33 @@ class Bot:
 # ---------------------------------------------------------------- process plumbing
 
 class Lock:
-    """One bot process at a time; the OS releases the lock if the process dies."""
+    """One bot process at a time; the OS releases the lock if the process dies. With `wait`, a held lock is tried
+    again each second for that many seconds (a restarting watcher's new process waits for the old one to exit)."""
 
     path = WORK / "bot.lock"
+
+    def __init__(self, wait: float = 0):
+        self.wait = wait
 
     def __enter__(self):
         WORK.mkdir(parents=True, exist_ok=True)
         self.fh = open(self.path, "a+")
-        try:
-            if os.name == "nt":
-                import msvcrt
-                self.fh.seek(0)
-                msvcrt.locking(self.fh.fileno(), msvcrt.LK_NBLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(self.fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            self.fh.close()
-            raise SystemExit(f"another {NAME} bot is running (lock {self.path})") from None
-        return self
+        deadline = time.monotonic() + self.wait
+        while True:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    self.fh.seek(0)
+                    msvcrt.locking(self.fh.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self.fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return self
+            except OSError:
+                if time.monotonic() >= deadline:
+                    self.fh.close()
+                    raise SystemExit(f"another {NAME} bot is running (lock {self.path})") from None
+                time.sleep(1)
 
     def __exit__(self, *exc):
         self.fh.close()
@@ -2077,7 +2124,8 @@ def remove_tree(path: Path) -> None:
 
 
 def cmd_watch(args) -> None:
-    with Lock():
+    updates = AutoUpdate()
+    with Lock(wait=LOCK_WAIT):
         while True:
             bot = None
             try:
@@ -2085,20 +2133,188 @@ def cmd_watch(args) -> None:
                 bot.cycle()
             except (Exception, SystemExit) as err:  # a bad cycle (network, config) must not end the watcher
                 log(f"cycle failed: {err}")
+            # Only here, between cycles: every repo worker has finished and no item is running.
+            code = updates.after_cycle(bot)
+            if code is not None:
+                raise SystemExit(code)  # leaving the `with` releases the lock for the new watcher
             time.sleep(args.interval or (bot.cfg["interval"] if bot else DEFAULTS["interval"]))
 
 
-def stable_script() -> Path:
-    """This file by a path that survives plugin upgrades. An omp plugin install lives in a versioned cache folder
-    (`.../cache/plugins/<marketplace>___<plugin>___<version>/`) and is linked from `~/.omp/plugins/node_modules/
-    <plugin>`; autostart must use the link, or the next upgrade leaves the task pointing at a deleted folder."""
+# ---------------------------------------------------------------- updates
+
+def omp_install(anywhere: bool = False):
+    """The omp plugin install this file runs from, or None. An install lives in a versioned cache folder
+    (`.../cache/plugins/<marketplace>___<plugin>___<version>/`) linked from `~/.omp/plugins/node_modules/<plugin>`.
+    With `anywhere`, a git checkout of the plugin also finds the omp install of the same plugin, when there is one.
+    Returns the marketplace and plugin names, the link, and this script and the assets folder through the link."""
     here = Path(__file__).resolve()
-    plugin_root = here.parents[4]  # <plugin>/skills/<skill>/assets/github-app/bot.py
-    link = Path.home() / ".omp" / "plugins" / "node_modules" / plugin_root.name.split("___")[1] \
-        if plugin_root.name.count("___") == 2 else None
-    if link and link.exists() and link.resolve() == plugin_root:
-        return link / here.relative_to(plugin_root)
-    return here
+    root = here.parents[4]  # <plugin>/skills/<skill>/assets/github-app/bot.py
+    parts = root.name.split("___")
+    link = Path.home() / ".omp" / "plugins" / "node_modules" / (parts[1] if len(parts) == 3 else root.name)
+    if not link.exists():
+        return None
+    target = link.resolve()
+    found = target.name.split("___")
+    if len(found) != 3 or (target != root and not anywhere):
+        return None
+    return {"marketplace": found[0], "plugin": found[1], "link": link, "script": link / here.relative_to(root),
+            "assets": link / here.parent.parent.relative_to(root)}
+
+
+def stable_script() -> Path:
+    """This file by a path that survives plugin upgrades: autostart and a restart after an update must use the omp
+    link, or the next upgrade leaves them pointing at a deleted versioned folder."""
+    install = omp_install()
+    return install["script"] if install else Path(__file__).resolve()
+
+
+def code_hash(assets: Path) -> str:
+    """One digest over the bot's code: every file in the asset folders it imports from."""
+    digest = hashlib.sha256()
+    for folder in BOT_CODE:
+        for path in sorted((assets / folder).rglob("*")):
+            if path.is_file() and "__pycache__" not in path.parts:
+                digest.update(f"{path.relative_to(assets).as_posix()}\0".encode())
+                digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
+
+
+def upgrade_commands(install: dict) -> list:
+    """`omp plugin upgrade` reinstalls from omp's local clone of the marketplace and never fetches it; the
+    marketplace update fetches main first, so an unchanged version still gets main's latest files."""
+    return [["omp", "plugin", "marketplace", "update", install["marketplace"]],
+            ["omp", "plugin", "upgrade", install["plugin"]]]
+
+
+def load_update_record() -> dict:
+    try:
+        record = json.loads(UPDATE_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return record if isinstance(record, dict) else {}
+
+
+def save_update_record(record: dict) -> None:
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = UPDATE_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
+    os.replace(tmp, UPDATE_PATH)
+
+
+def remote_main() -> str:
+    sha = gh("api", f"repos/{B['repo']}/commits/main", "--jq", ".sha", timeout=120).strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise RuntimeError(f"`gh api repos/{B['repo']}/commits/main` returned {sha[:80]!r}, not a commit")
+    return sha
+
+
+def update_install(install: dict, dry: bool = False) -> dict:
+    """Upgrade the omp install when the brand repo's main is not the commit recorded at the last update (none
+    recorded counts as different). Raises when a command fails; the record then keeps the old commit."""
+    recorded = load_update_record().get("sha")
+    result = {"remote": remote_main(), "recorded": recorded, "commands": upgrade_commands(install),
+              "upgraded": False, "codeChanged": False}
+    if dry or result["remote"] == recorded:
+        return result
+    before = code_hash(install["assets"])
+    env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
+    for command in result["commands"]:
+        run(command, env=env, timeout=UPDATE_TIMEOUT, cwd=Path.home())
+    result.update(upgraded=True, codeChanged=code_hash(install["assets"]) != before)
+    save_update_record({**load_update_record(), "sha": result["remote"], "updatedAt": now_iso()})
+    return result
+
+
+def minutes_since(stamp) -> float:
+    try:
+        then = dt.datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    except (TypeError, ValueError):
+        return float("inf")
+    return (dt.datetime.now(dt.timezone.utc) - then).total_seconds() / 60
+
+
+def restart_watcher(script: Path) -> int:
+    """Start this watcher's command line from the updated code as a detached process, and return the exit code for
+    this one. The new process waits for the lock (LOCK_WAIT) that this one releases as it exits. Under systemd
+    (INVOCATION_ID) a child dies with the unit, so the watcher exits 75 and the unit's Restart=on-failure starts it."""
+    if os.environ.get("INVOCATION_ID"):
+        return 75
+    command = [sys.executable, str(script), *sys.argv[1:]]
+    if os.name == "nt":
+        spawn = {"creationflags": subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | NO_WINDOW}
+    else:
+        spawn = {"start_new_session": True}
+    subprocess.Popen(command, cwd=Path.home(), stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL,
+                     stderr=subprocess.DEVNULL, close_fds=True, **spawn)
+    log(f"restarting: started `{subprocess.list2cmdline(command)}`; this watcher exits")
+    return 0
+
+
+class AutoUpdate:
+    """The watcher's self-update, run only between cycles. At most every `updateMinutes`, and right after a merge
+    into the bot's own repo, it upgrades the omp install when main moved, and restarts the watcher when the bot's
+    code on disk differs from the code this process started with (an upgrade by `bot.py update` counts too)."""
+
+    def __init__(self):
+        self.install, self.started, self.off = omp_install(), None, None
+        if not self.install:
+            self.off = f"{Path(__file__).resolve()} is not an omp plugin install (update a git checkout with git pull)"
+            return
+        try:
+            self.started = code_hash(self.install["assets"])
+        except OSError as err:
+            self.off = f"the bot's code can't be read ({err})"
+
+    def after_cycle(self, bot):
+        """None to keep watching, else the exit code for this process (a new watcher took over). Never raises."""
+        if bot is None or not bot.cfg["autoUpdate"]:
+            return None
+        if self.off:
+            log(f"auto-update off: {self.off}")
+            self.off, self.install = None, None  # logged once
+            return None
+        if not self.install:
+            return None
+        try:
+            record = load_update_record()
+            if not bot.merged_self and minutes_since(record.get("checkedAt")) < bot.cfg["updateMinutes"]:
+                return None
+            save_update_record({**record, "checkedAt": now_iso()})
+            result = update_install(self.install)
+            if result["upgraded"]:
+                log(f"updated {self.install['plugin']} to {B['repo']}@{result['remote'][:7]}"
+                    f" (was {(result['recorded'] or 'unrecorded')[:10]})")
+            if code_hash(self.install["assets"]) == self.started:
+                return None
+            return restart_watcher(self.install["script"])
+        except Exception as err:  # never stops the bot: the next check retries
+            log(f"update failed: {err}; the next check in {bot.cfg['updateMinutes']} minutes retries")
+            return None
+
+
+def cmd_update(args) -> None:
+    """One check-and-upgrade of the omp install now. It never restarts a watcher: a running watcher restarts
+    itself at its next update check when the bot's code changed."""
+    install = omp_install(anywhere=True)
+    here = Path(__file__).resolve()
+    if not install:
+        raise SystemExit(f"no omp install of this plugin found; {here} updates with git pull")
+    print(f"omp install: {install['marketplace']}/{install['plugin']} at {install['link']} -> "
+          f"{install['link'].resolve()}")
+    if install["link"].resolve() not in here.parents:
+        print(f"this copy ({here}) is not that install; a watcher updates itself only when it runs from the install")
+    result = update_install(install, dry=args.dry_run)
+    commands = " && ".join(shlex.join(c) for c in result["commands"])
+    print(f"remote {B['repo']} main: {result['remote']}")
+    print(f"recorded at the last update: {result['recorded'] or 'none'}")
+    if result["remote"] == result["recorded"]:
+        print("up to date: nothing to run")
+    elif args.dry_run:
+        print(f"would run: {commands}")
+    else:
+        print(f"ran: {commands}")
+        print("bot code changed: a running watcher restarts at its next update check" if result["codeChanged"]
+              else "bot code unchanged")
 
 
 def autostart_command() -> list:
@@ -2182,7 +2398,7 @@ def cmd_status(args) -> None:
                       "autostart": autostart, "autostartKind": autostart_kind(), "running": running,
                       "lastCycle": state.get("lastCycle"), "since": state.get("since"), "config": config,
                       "items": statuses, "recent": {k: v.get("status") for k, v in recent},
-                      "workspace": str(WORK), "logs": str(LOGS)}, indent=2))
+                      "update": load_update_record(), "workspace": str(WORK), "logs": str(LOGS)}, indent=2))
 
 
 def cmd_install_autostart(args) -> None:
@@ -2264,6 +2480,9 @@ def main() -> None:
     watch = sub.add_parser("watch", help="poll forever")
     watch.add_argument("--interval", type=int, help="seconds between cycles (default: bot.json interval)")
     watch.set_defaults(func=cmd_watch, repo=None, item=None, backlog=False, dry_run=False)
+    update = sub.add_parser("update", help="upgrade the omp install now when the repo's main moved")
+    update.add_argument("--dry-run", action="store_true", help="print the commits and the commands; change nothing")
+    update.set_defaults(func=cmd_update)
     sub.add_parser("status", help="config, state and whether a bot is running").set_defaults(func=cmd_status)
     sub.add_parser("install-autostart", help="start `watch` at logon (Windows Task Scheduler)").set_defaults(
         func=cmd_install_autostart)
