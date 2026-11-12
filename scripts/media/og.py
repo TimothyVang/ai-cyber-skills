@@ -31,6 +31,10 @@ def render(brand: dict, out: Path, own_run: bool = False) -> Path:
 
     for i, c in enumerate([p["ACCENT"], p["SKY"], p["REVIEWER"], p["AMBER"], p["AUTHOR"]]):
         d.rounded_rectangle([(64 + i * 52) * S, 70 * S, (104 + i * 52) * S, 78 * S], 4 * S, fill=c)
+    size = 88  # the product name, shrunk until it fits the card's width
+    while size > 36 and d.textlength(brand["name"], font=font("bold", size * S)) > 1152 * S:
+        size -= 4
+    d.text((64 * S, 196 * S), brand["name"], font=font("bold", size * S), fill=p["TEXT"], anchor="ls")
     tag_font = font("light", 38 * S)
     tag_lines = wrap(d, brand["tagline"], tag_font, 1150 * S)[:2]
     for i, line in enumerate(tag_lines):

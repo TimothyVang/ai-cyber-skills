@@ -103,3 +103,5 @@ It creates the app in your browser as `<slug>-<login>` (for example `acme-review
 ## Images
 
 `scripts/media/` holds the generators. `render.py --brand <file> --root <copy>` renders `og.png`, `how-it-works.svg`, `pr-conversation.svg`, `issue-flow.svg`, `install.gif` (from `install.cast`, with agg) and `how-it-works.gif` (frames drawn with Pillow, encoded with gifski). The build runs it for you. To show a recording of your own installer instead of the example output, run `py -3 scripts/media/capture_install.py` in the built copy, then `py -3 scripts/media/render.py`, and reword the two captions in `README.md` and `docs/index.html`. A rebuild writes the example again.
+
+`og.png` is drawn with Pillow: your name, tagline and colors, as text and shapes. Your logo is an SVG, which Pillow cannot draw, so the card does not include it.
