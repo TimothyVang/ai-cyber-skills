@@ -148,7 +148,7 @@ Step 2 of Route. First match wins.
 | "grill with docs", "record the decisions", or "grill me" in a repo with `GLOSSARY.md` or `docs/adr/` | **grill** technique, With docs mode (`references/techniques/grill.md`) |
 | "grill me / grill this plan / stress-test this idea" | **grill** technique (`references/techniques/grill.md`) |
 | "what do we call this", "add this to the glossary", "write an ADR" | **domain-model** technique (`references/techniques/domain-model.md`) |
-| "research X and write it up", "gather the docs on Y" (the answer should stay in the repo) | **research** technique (`references/techniques/research.md`) |
+| "research X and write it up", "gather the docs on Y", "what are people on Reddit or X saying about Z" (the answer should stay in the repo) | **research** technique (`references/techniques/research.md`) |
 | "which flow fits", "what's the process for X", "explain the deepmodebot workflow" | `references/flows.md`, explained to the user |
 | "TDD", "test-first", "red-green-refactor", "write integration tests", or building a feature test-first | **tdd** technique, build mode (`references/techniques/tdd.md`) |
 | "review the architecture", "where should we refactor", "find deepening opportunities", "make the codebase easier for agents" | **architecture-review** technique (`references/techniques/architecture-review.md`) |
