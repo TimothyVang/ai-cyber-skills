@@ -188,6 +188,17 @@ class Build(unittest.TestCase):
         self.assertEqual(whitelabel.find_leftovers(self.out, whitelabel.leftover_regex(normalized(SRC))),
                          ["README.md:3: claims a real run this copy has not made"])
 
+    def test_the_github_app_gets_the_brand_files_description(self):
+        runtime = "skills/deep-mode/assets/github-app/brand.json"
+        (self.src / "plugins/deep-mode" / runtime).parent.mkdir(parents=True)
+        (self.src / "plugins/deep-mode" / runtime).write_text(json.dumps({
+            "name": "deep-mode", "description": "deep-mode bots: review, fix, verify and merge.",
+            "homepage": "https://github.com/TimothyVang/deep-mode"}), encoding="utf-8")
+        self.assertEqual(self.build(), [])
+        built = json.loads((self.out / "plugins/zeta-review/skills/zeta/assets/github-app/brand.json").read_text(encoding="utf-8"))
+        self.assertEqual((built["name"], built["description"], built["homepage"]),
+                         ("zeta-review", "Zeta Review bots.", "https://zeta.example/"))
+
 
 if __name__ == "__main__":
     unittest.main()

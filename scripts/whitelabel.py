@@ -326,8 +326,9 @@ def update_manifests(out: Path, d: dict) -> None:
     runtime = out / "plugins" / d["slug"] / "skills" / d["mainSkillName"] / "assets/github-app/brand.json"
     if runtime.is_file():
         data = json.loads(runtime.read_text(encoding="utf-8"))
-        data.update(name=d["slug"], homepage=d["homepage"], mention=d["botTrigger"], branchPrefix=d["slug"],
-                    repoConfigFile=f".{d['slug']}.json", configDirName=d["slug"], autostartId=f"{d['slug']}-bot")
+        data.update(name=d["slug"], description=d["description"], homepage=d["homepage"], mention=d["botTrigger"],
+                    branchPrefix=d["slug"], repoConfigFile=f".{d['slug']}.json", configDirName=d["slug"],
+                    autostartId=f"{d['slug']}-bot")
         write_json(runtime, data)
 
 
