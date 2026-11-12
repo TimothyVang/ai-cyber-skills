@@ -380,7 +380,11 @@ class TrunkCheckTest(unittest.TestCase):
             c.clone, c.verifier_trees = Path(tmp), [Path(tmp) / "v0"]
             c.it = FakeItem(reply)
             c.open_revert = revert or mock.Mock(return_value="https://github.com/o/r/pull/8")
-            with mock.patch.object(bot, "git"), mock.patch.object(bot, "worktree_at", return_value=Path(tmp)):
+            # No `check` in the base config, so the verifier runs. base_config is stubbed: the real one runs
+            # `git show` in the temp dir, which finds the enclosing repo when TMP sits inside a checkout (the
+            # bot's own repo check sets it to the check worktree's .scratch/tmp).
+            with mock.patch.object(bot, "git"), mock.patch.object(bot, "worktree_at", return_value=Path(tmp)), \
+                    mock.patch.object(bot, "base_config", return_value={}):
                 status = c.trunk_check(self.SHA)
         self.assertEqual(len(c.it.asked), 1)  # reached the verifier, not the could-not-run branch
         self.assertIn("trunk check after pull request o/r#7", c.it.asked[0])
