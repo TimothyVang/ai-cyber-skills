@@ -22,7 +22,7 @@ Only edit the verification skill's own directory (its `SKILL.md`, `features/`, a
 
 ## Pass
 
-0. **Locate the target.** Glob `.omp/skills/verify-*/SKILL.md` from the repo root. Several candidates → pick the one whose app the change touches, and log why. None → stop and point at `/skill:create-verification-skill` instead of inventing a target.
+0. **Locate the target.** Glob `.omp/skills/verify-*/SKILL.md`, `.claude/skills/verify-*/SKILL.md`, and `.agents/skills/verify-*/SKILL.md` from the repo root (omp, Claude Code, and Codex and most other harnesses read those folders). Several candidates → pick the one whose app the change touches, and log why. None → stop and point at the **create-verification-skill** skill instead of inventing a target.
 
 1. **Index hygiene.** Read `features/README.md` and glob its sibling files. Fix missing, extra, duplicate, or dead entries.
 

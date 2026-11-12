@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Claude Code hook: deny Write, Edit and NotebookEdit outside the project root (deep-mode "Contain the work").
 
+Hooks start it through claude-guard.sh, which picks a Python 3.8+ and denies the write when there is none.
 Modes (first argument):
   (none)               PreToolUse: always enforce. Used by the deep-mode skill's frontmatter hook.
   if-active <data-dir> PreToolUse: enforce only in sessions marked active. Used by the plugin's hooks.json.

@@ -1,8 +1,8 @@
 # Frontend UI/UX rules (bundled)
 
-Exported from the private repo `TimothyVang/frontend` at `ca27e738` by its `scripts/export_deep_mode.py`. Edit there and re-export; don't edit here. These files are complete on their own.
+Exported from the private repo `TimothyVang/frontend` at `757eab7` by its `scripts/export_deep_mode.py`. Edit there and re-export; don't edit here. These files are complete on their own.
 
-Paths written `TimothyVang/frontend:<path>` and bracketed citations like `[youtube/...]` point at that repo's evidence (transcripts, clips, screenshots, vendored skills). If `gh` can read it, shallow-clone it to `~/.omp/agent/frontend` (`gh repo clone TimothyVang/frontend ~/.omp/agent/frontend -- --depth 1`), never into the project you're working on. Otherwise skip the evidence; the rules below stand alone.
+Paths written `TimothyVang/frontend:<path>` and bracketed citations like `[youtube/...]` point at that repo's evidence (transcripts, clips, screenshots, vendored skills). If `gh` can read it, shallow-clone it into the project's self-ignored scratch folder (`gh repo clone TimothyVang/frontend .scratch/refs/frontend -- --depth 1`, about 300 MB) and never commit from it: deep-mode keeps every write inside the project root, and `.scratch/` holds a `.gitignore` of `*`. Otherwise skip the evidence; the rules below stand alone.
 
 ## Playbook sections (read the one the task routes to)
 

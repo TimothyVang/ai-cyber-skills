@@ -99,7 +99,7 @@ Optional: append `agents-snippet.md` to `~/.omp/agent/AGENTS.md`. It routes larg
 /plugin install deep-mode@deep-mode
 ```
 
-Once any `/deep-mode:` command runs in a session, the plugin's hook denies `Write`, `Edit`, and `NotebookEdit` outside the project for the rest of that session. Your other sessions are untouched. It needs `python` or `python3` on `PATH`.
+Once any `/deep-mode:` command runs in a session, the plugin's hook denies `Write`, `Edit`, and `NotebookEdit` outside the project for the rest of that session. Your other sessions are untouched. It needs Python 3.8 or newer (`python3` or `python`) on `PATH`: without it the guard cannot check paths, so it denies those three tools in a deep-mode session until Python is installed.
 
 The skills name omp tools (`task`, `todo`, `ask`). `plugins/deep-mode/skills/deep-mode/references/harnesses/README.md` maps them: `Agent`, `TaskCreate` or `TodoWrite`, and `AskUserQuestion`.
 

@@ -1,4 +1,4 @@
-"""Tests for the containment guards (claude_guard.py and omp-contain.ts).
+"""Tests for the containment guards (claude_guard.py behind claude-guard.sh, and omp-contain.ts).
 
 Run: python -m unittest discover -s <this folder> -p "test_*.py"
 The omp hook cases need `bun` on PATH and are skipped without it.
@@ -15,6 +15,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 GUARD = HERE / "claude_guard.py"
+ENTRY = HERE / "claude-guard.sh"
+PLUGIN = HERE.parents[3]  # plugins/deep-mode
 HOOK = HERE / "omp-contain.ts"
 
 DRIVER = """
@@ -35,6 +37,19 @@ console.log(JSON.stringify(out));
 def git(cwd, *args):
     subprocess.run(["git", "-C", str(cwd), "-c", "user.name=t", "-c", "user.email=t@example.com", *args],
                    check=True, capture_output=True)
+
+
+def find_bash():
+    """On Windows, System32\\bash.exe is WSL and cannot see Windows paths; use the bash beside git."""
+    bash = shutil.which("bash")
+    if os.name != "nt" or (bash and "system32" not in bash.lower()):
+        return bash
+    git_exe = shutil.which("git")
+    for rel in ("../bin/bash.exe", "../usr/bin/bash.exe", "../../bin/bash.exe"):
+        candidate = os.path.normpath(os.path.join(os.path.dirname(git_exe), rel)) if git_exe else ""
+        if candidate and os.path.exists(candidate):
+            return candidate
+    return None
 
 
 def remove_tree(path):
@@ -151,6 +166,56 @@ class ClaudeGuard(GuardCase):
     def test_unreadable_input_does_not_block(self):
         proc = subprocess.run([sys.executable, str(GUARD)], input="not json", capture_output=True, text=True)
         self.assertEqual((proc.returncode, proc.stdout), (0, ""))
+
+
+@unittest.skipUnless(find_bash(), "needs bash")
+class ClaudeHookEntry(GuardCase):
+    """The commands Claude Code runs: claude-guard.sh, the plugin's hooks.json, and the skill's frontmatter hook."""
+
+    def hook(self, command, event, python=True, **env):
+        full_env = {**self.env, "CLAUDE_CONFIG_DIR": str(self.claude_dir), "CLAUDE_PLUGIN_ROOT": PLUGIN.as_posix(),
+                    **({} if python else {"DEEP_MODE_GUARD_PYTHONS": "no-such-python"}), **env}
+        proc = subprocess.run([find_bash(), "-c", command], input=json.dumps(event), capture_output=True, text=True,
+                              env=full_env)
+        return proc.returncode, "deny" if '"permissionDecision": "deny"' in proc.stdout else "allow", proc.stderr
+
+    def write(self, path, session="s1"):
+        return {"tool_name": "Write", "tool_input": {"file_path": str(path)}, "cwd": str(self.proj),
+                "session_id": session}
+
+    def entry(self, *args):
+        return f'bash "{ENTRY.as_posix()}" {" ".join(args)}'
+
+    def test_the_skill_hook_denies_outside_writes_and_allows_inside_ones(self):
+        text = (PLUGIN / "skills" / "deep-mode" / "SKILL.md").read_text(encoding="utf-8")
+        command = text.split("command: '", 1)[1].split("'\n", 1)[0]
+        self.assertEqual(self.hook(command, self.write(self.outside / "x.txt"))[:2], (0, "deny"))
+        self.assertEqual(self.hook(command, self.write(self.proj / "a.txt"))[:2], (0, "allow"))
+
+    def test_the_plugin_hooks_guard_a_session_after_a_deep_mode_command(self):
+        hooks = json.loads((PLUGIN / "hooks" / "hooks.json").read_text(encoding="utf-8"))["hooks"]
+        activate = hooks["UserPromptSubmit"][0]["hooks"][0]["command"]
+        pre = hooks["PreToolUse"][0]["hooks"][0]["command"]
+        data = {"CLAUDE_PLUGIN_DATA": (self.tmp / "entry-data").as_posix()}
+        outside = self.write(self.outside / "x.txt", session="p1")
+        self.assertEqual(self.hook(pre, outside, **data)[:2], (0, "allow"))
+        self.hook(activate, {"prompt": "/deep-mode:deep fix it", "session_id": "p1"}, **data)
+        self.assertEqual(self.hook(pre, outside, **data)[:2], (0, "deny"))
+
+    def test_without_python_an_active_session_is_denied_every_write(self):
+        data = (self.tmp / "no-python-data").as_posix()
+        inside = self.write(self.proj / "a.txt", session="n1")
+        code, _, err = self.hook(self.entry("enforce"), inside, python=False)
+        self.assertEqual(code, 2)
+        self.assertIn("Python 3.8", err)
+        self.assertEqual(self.hook(self.entry("if-active", f'"{data}"'), inside, python=False)[0], 0)  # not active
+        self.hook(self.entry("activate", f'"{data}"'), {"prompt": "just chatting", "session_id": "n1"}, python=False)
+        self.assertEqual(self.hook(self.entry("if-active", f'"{data}"'), inside, python=False)[0], 0)
+        self.hook(self.entry("activate", f'"{data}"'), {"prompt": " /deep-mode:deep x", "session_id": "n1"},
+                  python=False)
+        self.assertEqual(self.hook(self.entry("if-active", f'"{data}"'), inside, python=False)[0], 2)
+        other = self.write(self.proj / "a.txt", session="n2")
+        self.assertEqual(self.hook(self.entry("if-active", f'"{data}"'), other, python=False)[0], 0)
 
 
 @unittest.skipUnless(shutil.which("bun"), "bun is not on PATH")

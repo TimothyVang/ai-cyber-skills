@@ -7,7 +7,7 @@ hooks:
     - matcher: "Write|Edit|NotebookEdit"
       hooks:
         - type: command
-          command: 'for f in "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/deep-mode/assets/contain/claude_guard.py" "$HOME/.claude/skills/deep-mode/assets/contain/claude_guard.py"; do if [ -f "$f" ]; then for py in python3 python; do if "$py" -c "import sys; sys.exit(sys.version_info < (3, 8))" >/dev/null 2>&1; then exec "$py" "$f"; fi; done; echo "deep-mode write guard: no Python 3.8+ on PATH, so writes are not fenced" >&2; exit 1; fi; done; exit 0'
+          command: 'for f in "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/deep-mode/assets/contain/claude-guard.sh" "$HOME/.claude/skills/deep-mode/assets/contain/claude-guard.sh"; do if [ -f "$f" ]; then exec "${BASH:-bash}" "$f" enforce; fi; done; exit 0'
 ---
 
 # Deep mode
@@ -30,9 +30,11 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 
 | Size | Looks like | How to run it |
 |---|---|---|
-| **S** | One file or an obvious spot, a clear fix or small change, under ~30 lines | Fast path: one-line restate, make the change, run the real thing once to prove it, short report. No subagents, todo list, architect, or decision log. |
+| **S** | One file or an obvious spot, a clear fix or small change, under ~30 lines | Fast path: one-line restate, make the change, run the real thing once to prove it, short report. No subagents, todo list, architect, or decision log for the work itself; its PR still lands through **pr-conversation**, panel included. |
 | **M** | A few files, one feature or bug with a cause to find | The matched playbook. Delegates only when work splits cleanly. |
 | **L** | Cross-cutting, new module, many files, risky, or long-running | The full playbook with subagents, architect where shapes differ, and a show-me-your-work trail. |
+
+Read-only work (a review, an investigation, a question) has no size: it follows its playbook or technique and is done when evidence backs the answer. It changes nothing, so it needs no panel.
 
 **4. Act, then report.** Git and forge work in the user's repo is yours, including merges after a **panel** pass (`references/techniques/panel.md`); see Autonomy. Report it at the end, and ask, once and at the end, only for Autonomy's hard stops.
 
@@ -79,7 +81,7 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 
 - **Just do it.** Work proceeds without asking, including commits, pushes, PRs, issues, board cards, and merges.
 - **Your own PRs land on their own.** Once every review finding is fixed or dismissed, linked issues are answered, the panel passes, and required checks are green, the **pr-conversation** technique merges the user's own PR. No separate ask.
-- **Done means a panel pass.** No task is done and nothing merges until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. Then merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
+- **Done means a panel pass.** No change is done and nothing merges until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. Then merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
 - **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself: pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal. Log each one as a show-me-your-work trail row (choice, why, evidence, how to reverse), and list them in the final reply under "Decisions I made" so the user can override any. Where a playbook, technique, or sibling skill says to ask the user before deciding, committing, pushing, opening a PR, or merging in the user's own repo, this rule wins. Someone else's repo keeps its asks.
 - **Hard stops** still need the user's yes, batched into one question at the end: force-push or history rewrite on a shared or default branch; deleting branches, data, or resources you didn't create; deploys, releases, and package publishing; messages outside the repo (email, chat, other people's repos); bypassing a forge protection (required reviews or checks, admin merge); spending money or creating accounts; anything needing a credential or secret only the user has; writes outside the project root (Contain the work). A request that already asks for one of these is its yes.
 - **Standing yes for your own PRs.** `~/.config/deep-mode/bot.json` `"autonomousMerge": true` (the default), or a base-branch `.deep-mode.json` `{"autonomousMerge": true}`, lets **pr-conversation** admin-merge your own PRs past a required review, never past a failing check. A base-branch `"autonomousMerge": false` overrides both.
@@ -144,7 +146,7 @@ Step 2 of Route. First match wins.
 | "review the architecture", "where should we refactor", "find deepening opportunities", "make the codebase easier for agents" | **architecture-review** technique (`references/techniques/architecture-review.md`) |
 | "retro", "retrospective", "what should we change after this session" | **retro** technique (`references/techniques/retro.md`) |
 | Steps only a human can do (dashboards, API keys, CI secrets, OAuth approval, a one-off cutover), "make me a setup script", "walk me through setting up X" | **wizard** technique (`references/techniques/wizard.md`) |
-| Learning a topic over several sessions: "teach me X over the next month", "make me a course", or a folder with `MISSION.md` | **course** technique (`references/techniques/course.md`) |
+| Learning a topic over several sessions: "teach me X over the next month", "make me a course", "continue my course" | **course** technique (`references/techniques/course.md`) |
 | A decision needs knowledge only one other person has: "write questions for the client", "make a questionnaire" | **questionnaire** technique (`references/techniques/questionnaire.md`) |
 | "wait, what?", "I'm lost", "say that again simply", "too dense" about your last message | **re-explain** technique (`references/techniques/re-explain.md`) |
 | "hand this off", "write a handoff", "continue in a new session", "start a background agent on the rest" | Handoff playbook |
@@ -197,7 +199,7 @@ One file per principle in `references/principles/<name>.md`. Read the file befor
 
 ## Playbooks
 
-If you have `todo`, open a list whose first items are the matched playbook's steps, one item per step as `<n>. <short imperative>`, before any task-specific items. A step you skip is dropped, with the reason stated in your reply. Full steps are in `references/playbooks/<file>.md`.
+If you have `todo`, open a list whose first items are the matched playbook's steps, one item per step as `<n>. <short imperative>`, before any task-specific items. A step you skip is dropped, with the reason stated in your reply. Full steps are in `references/playbooks/<file>.md`. The Routes table picks the playbook. When a request fits two, the earlier Routes row wins and the other runs after it only if the request still needs it.
 
 | Playbook | File | Use for |
 |---|---|---|
