@@ -33,7 +33,8 @@ VERDICT = re.compile(r"(VERDICT:\s*(?:NOT )?DONE|^`?(?:panel|conversation):\s*[^
 # An author's prose answers (threads without the JSON reply): "3. **Empty pane: fixed.** ...",
 # "| <finding> | **fixed**: ... |", "| <finding> | **fixed in `<sha>`**. ... |" or "... is **fixed**: ..."
 ANSWER_ITEM = re.compile(r"^\s*(?:\d+[.)]|[-*])\s*\*\*(.+?)[:.]?\s+(fixed|dismissed)\.?\*\*\s*(.*)$", re.I)
-ANSWER_ROW = re.compile(r"^\|\s*(.+?)\s*\|\s*\*\*(fixed|dismissed)(?: in `?[0-9a-f]{7,40}`?)?\*\*[:.]?\s*(.*?)\s*\|?$", re.I)
+# The finding cell holds no pipe and ends on a non-space: a free (.+?) backtracked cubically on a run of spaces.
+ANSWER_ROW = re.compile(r"^\|\s*([^|]*[^\s|])\s*\|\s*\*\*(fixed|dismissed)(?: in `?[0-9a-f]{7,40}`?)?\*\*[:.]?\s*(.*?)\s*\|?$", re.I)
 ANSWER_INLINE = re.compile(r"\*\*(fixed|dismissed)(?: in `?[0-9a-f]{7,40}`?)?\*\*", re.I)
 TABLE_RULE = re.compile(r"^\|\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?$")  # a markdown table's |---|:--:| row (not a --- rule)
 CELL_SPLIT = re.compile(r"(?<!\\)\|")
