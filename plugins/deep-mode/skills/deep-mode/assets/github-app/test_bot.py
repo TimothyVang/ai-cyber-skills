@@ -183,6 +183,10 @@ class TriggerTest(unittest.TestCase):
         self.assertFalse(asks(f"Example:\n\n    {MENTION} implement"))  # an indented code block
         self.assertFalse(asks(f"<!-- {MENTION} implement\n{MENTION} implement -->"))
         self.assertTrue(asks(f"{fence}\nsome log\n{fence}\n{MENTION} implement"))  # after a closed block it counts
+        # a nested fence, and a stray fence inside a quote, do not expose a command that is only shown
+        self.assertFalse(asks(f"{fence}`\n{fence}\n{MENTION} implement\n{fence}\n{fence}`"))
+        self.assertFalse(asks(f"> they wrote {fence}\n\nThe command is:\n{fence}\n{MENTION} implement\n{fence}"))
+        self.assertFalse(asks(f"~~~\n{MENTION} implement"))  # an unclosed block runs to the end
 
     def test_retry_keeps_the_triggering_comments(self):
         request = comment(OWNER, "2026-01-01T00:00:01Z", f"{MENTION} implement, and keep the API stable")

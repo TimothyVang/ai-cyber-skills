@@ -378,14 +378,31 @@ def with_pending(pending: list, comments: list) -> list:
                   key=lambda c: c.get("createdAt", ""))
 
 
+def said_lines(body: str) -> list:
+    """The lines of a comment that are speech: outside HTML comments and fenced code blocks. A fence opens on a
+    line of three or more backticks or tildes and closes on a line of at least as many of the same character, as
+    Markdown reads it, so a quoted or nested fence cannot expose a command that was only being shown."""
+    lines, fence = [], None
+    for line in re.sub(r"<!--.*?(-->|\Z)", "", body, flags=re.S).splitlines():
+        mark = re.match(r" {0,3}(`{3,}|~{3,})", line)
+        if fence:
+            if mark and mark.group(1).startswith(fence):
+                fence = None
+        elif mark:
+            fence = mark.group(1)
+        else:
+            lines.append(line)
+    return lines
+
+
 def wants_implementation(issue: dict, comments: list, item: dict, owner: str, mention: str) -> bool:
     """The owner asked (`<mention> implement`), or opened the issue and didn't mark it discussion-only. An issue
     flagged because a PR's merge waits on it (`answerAll`) is only answered: that PR is its implementation."""
     # The command opens a line, as its own word: "... implementation looks wrong", a quoted "> ... implement", and
     # a command shown inside a code block or an HTML comment are talk about the command, not the command.
-    command = re.compile(rf"^ {{0,3}}{re.escape(mention)}[ \t]+implement(?![\w-])", re.I | re.M)
-    shown = re.compile(r"```.*?(```|\Z)|~~~.*?(~~~|\Z)|<!--.*?(-->|\Z)", re.S)
-    if any(same(login_of(c), owner) and command.search(shown.sub("", c.get("body") or "")) for c in comments):
+    command = re.compile(rf" {{0,3}}{re.escape(mention)}[ \t]+implement(?![\w-])", re.I)
+    if any(same(login_of(c), owner) and any(command.match(line) for line in said_lines(c.get("body") or ""))
+           for c in comments):
         return True
     if item.get("handled") or item.get("implemented") or item.get("answerAll") or not same(login_of(issue), owner):
         return False
