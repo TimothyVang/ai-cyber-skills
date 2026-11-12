@@ -15,6 +15,8 @@ Read when a task touches one of these areas and you need to know which reference
 
 **Architecture: monorepos, ontology, databases, backend infrastructure** (repo layout and workspace tooling, domain vocabulary and typed models, knowledge graphs and semantic layers, choosing, organizing, or migrating a database, multi-tenancy, queues and durable workflows, API style, reliability, observability, deployment, IaC) → `skill://software-architecture`, then only the file it routes to. Cited and dated 2026-11-11; it builds on `skill://domain-rules/references/backend-system-design.md` and the model-the-domain principle rather than repeating them.
 
+**Agent-assisted language rewrites** (assessing a Rust migration, choosing incremental replacement versus an all-at-once port, or preserving behavior during a rewrite) → `references/rust-migration-case-studies.md`. Cited accounts from the GitHub Copilot runtime and Bun; reported outcomes are separate from transferable guidance.
+
 **Agent tooling** (browser automation, agent sandboxes, coding-agent harnesses or multi-agent orchestrators, autoresearch loops) → read the cited landscape in `research/README.md` of a local checkout of `TimothyVang/automation-tools` before picking a tool. No checkout: `gh repo clone TimothyVang/automation-tools .scratch/refs/automation-tools` from the project root (private; skip if you can't access it). It is a 2026-11-11 snapshot tuned for omp + Orca on Windows, so recheck release dates and licenses of the tool you pick.
 
 **Engineering domain rules** come from `skill://domain-rules` (its `SKILL.md` lists sources). Read only the file the task touches, before designing or reviewing in that area:

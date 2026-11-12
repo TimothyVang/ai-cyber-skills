@@ -19,9 +19,10 @@ FAKE = """
 import json, os, sys, time
 action = os.environ.get("FAKE_ACTION", "noop")
 record = os.environ.get("FAKE_RECORD")
+prompt = sys.stdin.read()
 if record:
     with open(record, "w", encoding="utf-8") as handle:
-        json.dump({"env": dict(os.environ), "argv": sys.argv[1:], "cwd": os.getcwd(), "stdin": sys.stdin.read()}, handle)
+        json.dump({"env": dict(os.environ), "argv": sys.argv[1:], "cwd": os.getcwd(), "stdin": prompt}, handle)
 if action == "hang":
     time.sleep(120)
 elif action == "forge-cache":
@@ -40,6 +41,14 @@ elif action == "tamper-protect":
         handle.write("exit 0\\n")
 elif action == "create-conftest":
     open("conftest.py", "w").close()
+elif action in ("revise-plan", "adapt"):
+    path = "goals/g.md"
+    text = open(path, encoding="utf-8").read()
+    if action == "adapt" and "Next action: create the missing output." in prompt and "missing output artifact" in prompt:
+        open("ok.txt", "w").close()
+    else:
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write("\\nObserved missing output. Next action: create the missing output.\\n")
 if action == "fail":
     sys.exit(3)
 """
@@ -117,6 +126,28 @@ class LoopCase(unittest.TestCase):
         run = self.loop("run", "goals/g.md", action="noop")
         self.assertEqual(run.returncode, 3, run.stdout + run.stderr)
         self.assertEqual(len(self.trail_rows()), 2)
+
+    def test_revised_plan_and_check_feedback_drive_the_next_iteration(self):
+        (self.repo / "check.sh").write_text(
+            "test -f ok.txt || { echo 'missing output artifact'; exit 1; }\n", encoding="utf-8")
+        self.goal()
+        run = self.loop("run", "goals/g.md", action="adapt")
+        self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+        self.assertEqual(len(self.trail_rows()), 2)
+        logs = self.repo / ".scratch" / "goals" / "g"
+        first = next(logs.glob("*-iteration-1-prompt.txt")).read_text(encoding="utf-8")
+        second = next(logs.glob("*-iteration-2-prompt.txt")).read_text(encoding="utf-8")
+        self.assertNotIn("Next action: create the missing output.", first)
+        self.assertIn("Next action: create the missing output.", second)
+        self.assertIn("missing output artifact", second)
+        self.assertTrue((self.repo / "ok.txt").exists())
+
+    def test_plan_only_revisions_do_not_avoid_the_stall_stop(self):
+        self.goal(max_iterations=5, stall_after=2)
+        run = self.loop("run", "goals/g.md", action="revise-plan")
+        self.assertEqual(run.returncode, 3, run.stdout + run.stderr)
+        self.assertEqual(len(self.trail_rows()), 2)
+        self.assertFalse((self.repo / "ok.txt").exists())
 
     def test_editing_the_goal_or_a_protected_file_exits_4(self):
         for action in ("tamper-goal", "tamper-protect"):
