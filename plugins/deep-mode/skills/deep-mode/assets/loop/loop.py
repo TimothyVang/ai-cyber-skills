@@ -96,38 +96,51 @@ def protected_paths(fields, root, goal_path):
     return paths
 
 
-def walk_files(root, rel, skip=()):
-    """Yield the root-relative path of every file under rel, git-ignored or not, in sorted order, without following
-    symlinked folders. Skips .git, tool caches, and the root-relative folders in skip. A missing rel yields itself."""
+def walk_files(root, rel, skip=(), follow=False):
+    """Yield the root-relative path of every file under rel, git-ignored or not, in sorted order. Skips .git, tool
+    caches, and the root-relative folders in skip. A missing rel yields itself. With follow, symlinked folders are
+    walked (each real folder once, so link cycles end) and the link itself is yielded too, so a repointed link shows."""
     full = os.path.join(root, rel)
     if not os.path.isdir(full):
         yield rel
         return
-    for folder, dirs, files in os.walk(full):
+    seen = set()
+    for folder, dirs, files in os.walk(full, followlinks=follow):
+        if follow:
+            real = os.path.realpath(folder)
+            if real in seen:
+                dirs[:] = []
+                continue
+            seen.add(real)
         dirs[:] = sorted(d for d in dirs if d != ".git" and d not in CACHE_PARTS
                          and os.path.relpath(os.path.join(folder, d), root).replace(os.sep, "/") not in skip)
-        for name in sorted(files):
+        links = [d for d in dirs if follow and os.path.islink(os.path.join(folder, d))]
+        for name in sorted(files + links):
             yield os.path.relpath(os.path.join(folder, name), root).replace(os.sep, "/")
 
 
 def protect_digest(root, paths):
-    """Content hash of every file under the protected paths, git-ignored files included, so edits, deletions, and new
-    files (a conftest.py that skips every test) all show up. Tool caches are skipped: running the check writes them."""
+    """Content hash of every file under the protected paths, git-ignored files and symlinked folders included, so
+    edits, deletions, new files (a conftest.py that skips every test), and repointed links all show up. Tool caches
+    are skipped: running the check writes them."""
     digests = {}
     for path in paths:
-        for rel in walk_files(root, path):
-            try:
-                with open(os.path.join(root, rel), "rb") as handle:
-                    digests[rel] = hashlib.sha256(handle.read()).hexdigest()
-            except FileNotFoundError:
-                digests[rel] = "missing"
+        for rel in [path, *walk_files(root, path, follow=True)]:
+            full = os.path.join(root, rel)
+            entry = f"link:{os.readlink(full)}\0" if os.path.islink(full) else ""
+            if os.path.isfile(full):
+                with open(full, "rb") as handle:
+                    entry += hashlib.sha256(handle.read()).hexdigest()
+            elif not os.path.isdir(full):
+                entry += "missing"
+            digests[rel] = entry
     return digests
 
 
 def workspace_state(root, skip):
     """HEAD plus the path, size, and mtime of every file in the working tree, git-ignored files included, minus .git,
     tool caches, and the loop's own logs and temp folder. Read-only: nothing is written to git's object store.
-    Changes when the agent edits, adds, deletes, or commits anything."""
+    Sampled just before and after the harness, so files the check rewrites (.coverage) never count as progress."""
     state = hashlib.sha256(git(root, "rev-parse", "--verify", "-q", "HEAD").stdout.encode())
     for rel in walk_files(root, ".", skip):
         try:
@@ -245,12 +258,14 @@ def main():
     guard = protect_digest(root, protect)
     own = {os.path.relpath(path, root).replace(os.sep, "/") for path in (tmp, log_dir)}
 
-    last_output, last_state, unchanged = output, workspace_state(root, own), 0
+    last_output, unchanged = output, 0
     for i in range(1, limit + 1):
         cmd = harness_command(fields, harness, prompt(i), cost)
+        before = workspace_state(root, own)
         started = time.time()
         with open(os.path.join(log_dir, f"{run_id}-iteration-{i}.log"), "x", encoding="utf-8", errors="replace") as log:
             harness_exit = subprocess.run(cmd, cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL).returncode
+        progressed = workspace_state(root, own) != before
         if parse(opts.goal)[1] != digest:
             print(f"iteration {i}: the agent changed the goal's frontmatter; stopping")
             return 4
@@ -270,9 +285,8 @@ def main():
             print(f"harness exited {harness_exit} (a cost cap, auth, or terminal failure); stopping. Log: "
                   f"{os.path.relpath(log.name, root)}")
             return 5
-        state = workspace_state(root, own)
-        unchanged = unchanged + 1 if output == last_output and state == last_state else 0
-        last_output, last_state = output, state
+        unchanged = 0 if progressed or output != last_output else unchanged + 1
+        last_output = output
         if unchanged >= stall_after:
             print(f"neither the check output nor the working tree changed for {unchanged} iterations; stopping as stalled")
             return 3
