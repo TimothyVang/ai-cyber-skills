@@ -33,7 +33,10 @@ Read the case's `note` before changing either.
 
 ## Outcome
 
-Measures whether installing deep-mode changes how well an agent fixes a real bug.
+Measures whether installing deep-mode changes how well an agent does a real coding task.
 It follows the Eval playbook (`plugins/deep-mode/skills/deep-mode/references/playbooks/eval.md`) and its blinding gates.
-Design, rubric, and how to rerun are in `outcome/README.md`.
-Each run writes `results/outcome-<date>.md` with notes per candidate, the judge's verdict, and a recommendation.
+Each task in `outcome/tasks/` is a small project, a request in a user's words, a rubric, and hidden checks the candidates never see.
+`billsplit` is a one-file bug fix. `kitty` is a medium feature with rounding and integration traps.
+The hidden checks passed are the primary score. Two blinded judges from different model families score the rubric as a second view.
+Design, tasks, and how to rerun are in `outcome/README.md`.
+Each run writes a results file in `results/` with notes per candidate, both judges' verdicts, and a recommendation.
