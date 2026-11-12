@@ -1,3 +1,5 @@
+![The deep-mode logo](brand/logo.svg)
+
 # deep-mode
 
 **deep-mode** is an open-source MIT plugin for coding agents. It has two halves:

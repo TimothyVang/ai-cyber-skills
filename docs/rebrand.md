@@ -62,7 +62,7 @@ py -3 scripts/whitelabel.py --brand brand/examples/acme.json --out ../acme-revie
 The build:
 
 1. Copies every file. It replaces deep-mode's names with yours in text and in paths, longest name first, so `/deep-mode:deep`, `deep-stack` and `/deep` each get the right replacement.
-2. Writes your brand file, logo and favicon into `brand/` and the site, and updates the plugin, marketplace and bot manifests.
+2. Writes your brand file, logo and favicon into `brand/` and the site, and updates the plugin, marketplace and bot manifests. The README shows `brand/logo.svg` at the top, and the site's nav shows `docs/images/logo.svg`.
 3. Rethemes the site, rewrites its SEO tags and JSON-LD, and rebuilds `llms-full.txt`.
 4. Re-renders the images with `scripts/media/render.py`.
 5. Verifies. It fails if `deep-mode`, `deep mode`, `DEEP_MODE` or the upstream author's name is left anywhere, in any case and in any path, outside `LICENSE*` and `NOTICE*`. Then it runs the copy's own `scripts/check.py`.
