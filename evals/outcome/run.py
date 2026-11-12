@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Outcome eval: one organic task, with deep-mode installed and without, scored by hidden checks and blinded judges.
+"""Outcome eval: one organic task, with deepmodebot installed and without, scored by hidden checks and blinded judges.
 
   python evals/outcome/run.py setup [--task billsplit] [--ref HEAD] [--per-variant 2] [--seed N]
   python evals/outcome/run.py run [--task billsplit] [--max-cost 3] [--model ID]
@@ -38,7 +38,7 @@ SCRATCH = ROOT / ".scratch"
 API_KEYS = ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "CODEX_API_KEY")
 SKIP_DIRS = {".git", ".omp", ".scratch", ".worktrees", "node_modules"}
 JUDGES = ("anthropic/claude-opus-5-5", "openai-codex/gpt-6.1-terra")
-# Words in replies and action logs that would tell a judge which candidates had deep-mode installed.
+# Words in replies and action logs that would tell a judge which candidates had deepmodebot installed.
 SCRUB = [(r"light[ -]?panel[ -]?", ""), (r"deep[ -]?mode", "the workflow"), (r"\bplaybook(s?)\b", r"checklist\1")]
 CHECK_TIMEOUT = 600
 
@@ -66,16 +66,16 @@ def setup(args):
     if t.key.exists():
         sys.exit(f"{t.key.relative_to(ROOT)} exists; remove .scratch/{t.name}-* first for a fresh run")
     ref_sha = git("rev-parse", args.ref, cwd=ROOT)
-    # The deep-mode variant gets every skill the plugin ships, since SKILL.md and /deep point at its siblings.
-    skills_tar = subprocess.run(["git", "archive", f"{ref_sha}:plugins/deep-mode/skills"],
+    # The deepmodebot variant gets every skill the plugin ships, since SKILL.md and /deep point at its siblings.
+    skills_tar = subprocess.run(["git", "archive", f"{ref_sha}:plugins/deepmodebot/skills"],
                                 cwd=ROOT, check=True, capture_output=True).stdout
     with tarfile.open(fileobj=io.BytesIO(skills_tar)) as tar:
         skills = sorted(m.name.split("/")[0] for m in tar.getmembers() if re.fullmatch(r"[^/]+/SKILL\.md", m.name))
-    command = git("show", f"{ref_sha}:plugins/deep-mode/commands/deep.md", cwd=ROOT)
+    command = git("show", f"{ref_sha}:plugins/deepmodebot/commands/deep.md", cwd=ROOT)
     body = re.sub(r"^---\n.*?\n---\n", "", command, flags=re.S).strip()
     request = (t.home / "prompt.txt").read_text(encoding="utf-8").strip()
     package = json.loads((t.project / "package.json").read_text(encoding="utf-8"))
-    variants = ["deep-mode"] * args.per_variant + ["plain"] * args.per_variant
+    variants = ["deepmodebot"] * args.per_variant + ["plain"] * args.per_variant
     random.Random(args.seed).shuffle(variants)
     key = {"task": t.name, "ref": ref_sha, "seed": args.seed, "skills": skills, "candidates": {}}
     for number, variant in enumerate(variants, 1):
@@ -87,12 +87,12 @@ def setup(args):
         git("add", "-A", cwd=folder)
         git("commit", "-q", "-m", f"{package['name']} {package['version']}", cwd=folder)
         (folder / ".git/info/exclude").write_text(".omp/\n", encoding="utf-8")
-        if variant == "deep-mode":
+        if variant == "deepmodebot":
             target = folder / ".omp/skills"
             target.mkdir(parents=True)
             with tarfile.open(fileobj=io.BytesIO(skills_tar)) as tar:
                 tar.extractall(target, filter="data")
-        prompt = body.replace("$ARGUMENTS", request) if variant == "deep-mode" else request
+        prompt = body.replace("$ARGUMENTS", request) if variant == "deepmodebot" else request
         run_dir = t.runs / str(number)
         run_dir.mkdir(parents=True)
         (run_dir / "prompt.txt").write_text(prompt + "\n", encoding="utf-8")
@@ -135,7 +135,7 @@ def run(args):
     jobs = []
     for number, info in key["candidates"].items():
         run_dir = t.runs / number
-        deep = info["variant"] == "deep-mode"
+        deep = info["variant"] == "deepmodebot"
         skills = ["--skills", ",".join(key["skills"])] if deep else ["--no-skills"]
         cmd = omp_command(omp, run_dir, args, args.model, skills)
         jobs.append((number, cmd + [(run_dir / "prompt.txt").read_text(encoding="utf-8").strip()], info["folder"], run_dir))
@@ -666,7 +666,7 @@ def main():
         p = sub.add_parser(step)
         p.add_argument("--task", default="billsplit", help="folder under evals/outcome/tasks/")
         if step == "setup":
-            p.add_argument("--ref", default="HEAD", help="commit whose deep-mode skill and /deep command are installed")
+            p.add_argument("--ref", default="HEAD", help="commit whose deepmodebot skill and /deep command are installed")
             p.add_argument("--per-variant", type=int, default=2)
             p.add_argument("--seed", type=int, default=7)
         if step in ("run", "judge"):

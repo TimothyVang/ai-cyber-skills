@@ -19,7 +19,7 @@ BANNED = re.compile(
 WHITE_LABEL_EXEMPT = {Path("scripts/check.py"), Path("trending")}
 LOCAL_ONLY = {".git", ".scratch", ".worktrees", "__pycache__"}  # self-ignored work folders and caches, never shipped
 RULES_WINDOW_BYTES = 20_000  # about 5,000 tokens at 4 bytes each: what Claude Code keeps of a skill after compaction
-CORE_LINE_BYTES = 600  # deep-mode's SKILL.md, playbooks and techniques: one instruction per line
+CORE_LINE_BYTES = 600  # deepmodebot's SKILL.md, playbooks and techniques: one instruction per line
 # Reference skills hold cited facts that go stale; each SKILL.md states the date they were true as of.
 LIBRARY_SKILLS = ("agent-harnesses", "cloud-devsecops", "domain-rules", "frontend-ui", "secrets-and-auth",
                   "software-architecture")
@@ -97,7 +97,7 @@ for path in ROOT.rglob("*"):
     if BANNED.search(str(rel)):
         problems.append(f"{rel}: banned name in path")
 
-skill_root = ROOT / "plugins/deep-mode/skills/deep-mode"
+skill_root = ROOT / "plugins/deepmodebot/skills/deepmodebot"
 
 # README counts must match the folders.
 counts = re.search(r"(\d+) playbooks, (\d+) principles and (\d+) techniques", (ROOT / "README.md").read_text(encoding="utf-8"))
@@ -121,16 +121,16 @@ for md in [skill_root / "SKILL.md", *(skill_root / "references").glob("playbooks
 
 # Library skills carry the date their facts were checked; an old one is reported, not failed.
 for name in LIBRARY_SKILLS:
-    head = (ROOT / "plugins/deep-mode/skills" / name / "SKILL.md").read_text(encoding="utf-8").split("\n---\n", 1)[0]
+    head = (ROOT / "plugins/deepmodebot/skills" / name / "SKILL.md").read_text(encoding="utf-8").split("\n---\n", 1)[0]
     stamp = re.search(r'^\s+as-of:\s*"?(\d{4}-\d{2}-\d{2})"?\s*$', head, re.M)
     if not stamp:
-        problems.append(f"plugins/deep-mode/skills/{name}/SKILL.md: frontmatter needs metadata.as-of: YYYY-MM-DD")
+        problems.append(f"plugins/deepmodebot/skills/{name}/SKILL.md: frontmatter needs metadata.as-of: YYYY-MM-DD")
     elif (dt.date.today() - dt.date.fromisoformat(stamp.group(1))).days > STALE_AFTER_DAYS:
         print(f"note: {name} facts are as of {stamp.group(1)}, over {STALE_AFTER_DAYS} days old; recheck and restamp")
 
 # docs/llms-full.txt embeds whole files; each embedded copy must match its source. --fix rewrites it.
 llms = ROOT / "docs/llms-full.txt"
-blob_base = "https://github.com/TimothyVang/deep-mode/blob/main/"
+blob_base = "https://github.com/TimothyVang/deepmodebot/blob/main/"
 pieces = re.split(r"\n\n---\n\nSource: (\S+)\n\n", llms.read_text(encoding="utf-8"))
 fresh = pieces[0] + "".join(
     f"\n\n---\n\nSource: {url}\n\n" + (ROOT / url.removeprefix(blob_base)).read_text(encoding="utf-8") for url in pieces[1::2])
@@ -145,7 +145,7 @@ if fresh != llms.read_text(encoding="utf-8"):
 skill_bytes = (skill_root / "SKILL.md").read_bytes()
 window = skill_bytes.find(b"\n## Routes\n")
 if window < 0 or window > RULES_WINDOW_BYTES:
-    problems.append(f"plugins/deep-mode/skills/deep-mode/SKILL.md: '## Routes' starts at byte {window}; the rules before it must fit in {RULES_WINDOW_BYTES} bytes")
+    problems.append(f"plugins/deepmodebot/skills/deepmodebot/SKILL.md: '## Routes' starts at byte {window}; the rules before it must fit in {RULES_WINDOW_BYTES} bytes")
 
 # Every skill's own references and skill:// links resolve (check_skill.py, the per-skill checker).
 skill_dirs = sorted(str(p.parent) for p in ROOT.glob("plugins/*/skills/*/SKILL.md"))

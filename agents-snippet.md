@@ -1,6 +1,6 @@
 ## Rigor
 
-For large or risky work (multi-file features, migrations, perf work, multi-PR work, autonomous or overnight runs), or when I say "deep mode", read `skill://deep-mode` and follow it. `/deep <task>` does the same. Skip it for ordinary small tasks.
+For large or risky work (multi-file features, migrations, perf work, multi-PR work, autonomous or overnight runs), or when I say "Deepmodebot", read `skill://deepmodebot` and follow it. `/deep <task>` does the same. Skip it for ordinary small tasks.
 
 ## Verification
 
