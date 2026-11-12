@@ -40,6 +40,7 @@ The thesis: if you want to go fast, go deep first. Verification is the limiting 
 | "run pr-agent / describe, review, improve this PR with PR-Agent" | **pr-agent** technique (`references/techniques/pr-agent.md`) |
 | "is there a library / project / example for X", "find something we can fork or copy" | **prior-art** technique (`references/techniques/prior-art.md`) |
 | A new app, an empty repo, "start / build me <app>", "what stack" | `skill://rasmic-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
+| "write / improve your own prompt, skill, goal, or loop", "make yourself able to X", a workflow done the same way twice | Self-authoring playbook |
 | Anything else | The Playbooks table below |
 
 **3. Size it**, then follow that size's rules. Re-size if the work turns out bigger.
@@ -94,7 +95,7 @@ For size **S**, only the one-line restate and proving it on the real artifact ap
 - **A number you measured** (speedup, regression, latency, eval score) → **benchmark-checklist** before you report or act on it.
 - **Prose** (reply, docs, PR body, commit message) → **unslop**; docs and PR/commit text also → **technical-writing**.
 - **Before review** → **no-comments** on your diff. For a diff under ~20 lines, apply its keep-list yourself instead of spawning.
-- **Repeated correction** (yours or the user's) → **correct**. Fix it at the highest rung that works: architecture or data structures, then a lint rule or test, then a skill or rule, and human review last.
+- **Repeated correction** (yours or the user's) → **correct**. Fix it at the highest rung that works: architecture or data structures, then a lint rule or test, then a skill or rule, and human review last. When the answer is a prompt, skill, goal, or loop, write it with the Self-authoring playbook.
 - **Long, autonomous, or step-away work** → keep a decision trail with **show-me-your-work**.
 - **PR-status requests** ("check on PR X", "get it green") → Babysit playbook. **Land a green stack** → Shipping playbook. Green is not safe.
 - **Any PR** → the **pr-review** technique (`references/techniques/pr-review.md`): before opening one, self-review your branch in local mode and fix/dismiss/escalate each finding; maintainers review incoming PRs with `/deep-mode:review-pr <PR number>`. It runs on your own agent and subagents, no outside service, and never replaces live proof. Once the PR exists, run the **pr-agent** technique (`references/techniques/pr-agent.md`) on it. A repo with the PR security gate (**security-audit**, `references/techniques/security-audit.md`) also needs that check green; its findings are review findings.
@@ -130,7 +131,9 @@ One file per principle in `references/principles/<name>.md`. Read the file befor
 - Use your harness's subagent tool: omp `task`, Claude Code `Agent`, Codex `spawn_agent` (Codex spawns only when told to). Read-only research uses omp `agent: "scout"`, Claude Code `Explore`, or Codex `explorer`. Anything that edits, runs the app, or reads transcripts uses the default agent. omp `reviewer` is read-only: use it only to review a diff. Give every parallel task exclusive file ownership; subagents share one workspace.
 - Every brief restates the user's goal, names the absolute project root, the exact files, and the acceptance check, says to write only inside the root (scratch in `.scratch/`), and tells code-writing delegates which `skill://deep-mode/references/principles/<name>.md` files apply. omp subagents do not receive AGENTS.md, so put anything they must follow in the brief.
 - Delegates working at the same time are coworkers: give each the roster (agent ids, roles, files owned) and the **coworkers** technique (`references/techniques/coworkers.md`), so they ask, hand off, and push back on each other directly instead of through you. Panel verifiers are the exception: they vote before they talk.
-- Tier by difficulty. The hardest changes (cross-cutting design, concurrency, subtle algorithms) go to your strongest judgment model. Mechanical edits go to a fast model. For a second opinion or a judge, use a different model family when one is available. Agreement across families is high signal.
+- **Delegate only when it pays.** A child re-pays the system prompt, context files, and a cold cache, and multi-agent work runs about 15x the tokens of a chat. Delegate for context isolation (wide searches, log or transcript digests, review with fresh eyes) or truly independent parallel slices. Do one-file or one-grep tasks, tightly coupled work, and the hard reasoning itself in the main session. Message a finished child for follow-ups instead of spawning a new one.
+- **Match model and effort to the task.** Search and mechanical edits go to the small tier: omp `scout` or `sonic`, a Claude Code subagent on `haiku` at `low` effort, Codex on `gpt-6-luna`. Routine features take the mid tier at medium effort. Hard design, debugging, concurrency, and review take the strongest model at high effort: omp `@slow` or `reviewer`, Claude Opus or Fable, Codex Astra or Sol. Plan on a large model and execute on a cheaper one for long runs (omp `--prewalk`, Claude `opusplan`). For a second opinion or a judge, use a different model family when one is available. The per-harness table is in `references/harnesses/delegation-efficiency.md`.
+- **Spend tokens deliberately.** Keep context files short, read file ranges instead of whole files, ask delegates for compact reports, and set a cap on unattended runs (omp `--max-cost`, Claude Code `--max-budget-usd`). Don't switch model or effort mid-task when you can avoid it, because that breaks the prompt cache. Subagents draw on the same subscription limits as the main session.
 - You own every delegate's work. Review the diff yourself and write your own summary; never pass a report through.
 - Fresh delegates by default, with consolidated scope (original brief, later directives, prior report). Reuse a running delegate only when the work needs state that lives in it.
 
@@ -168,6 +171,7 @@ If you have `todo`, open a list whose first items are the matched playbook's ste
 | Visual parity | `visual-parity` | Pixel-exact UI equivalence between two implementations or styling systems. |
 | Reference rebuild | `reference-rebuild` | Redesign or rebuild a product UI to the standard of a named app: study the real reference, design on a canvas first, build from it, prove in the running app. |
 | Authoring a skill | `authoring-a-skill` | Writing or editing a SKILL.md. |
+| Self-authoring | `self-authoring` | Write and prove a reusable prompt, skill, goal, or loop; run goals headless with `assets/loop/loop.py`; promote project-local first. |
 | Eval | `eval` | Test how a skill, prompt, or structure change affects agent behavior, blinded, before promoting it. |
 | Multi-phase plan | `multi-phase-plan` | Work that spans phases or stacked PRs. Plan after the design is settled, every unit ending in proof. |
 | Wayfinder | `wayfinder` | An effort too big for one session with a foggy route: chart a map of decision tickets and resolve them until the way is clear. |
