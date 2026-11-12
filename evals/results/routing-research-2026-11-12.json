@@ -1,0 +1,56 @@
+{
+  "date": "2026-11-12",
+  "skill": "plugins/deepmodebot/skills/deepmodebot/SKILL.md",
+  "skill_sha256": "ce905d806d01603a49bd4769bc0b5bbbda6790c7def758d79017e80fd7c1f024",
+  "cases_file": "evals/routing/cases.json",
+  "model_requested": null,
+  "models_observed": [
+    "openai-codex/gpt-6.1-sol"
+  ],
+  "max_cost_per_case": 0.5,
+  "scores": {
+    "cases": 2,
+    "route": 2,
+    "size": 2,
+    "both": 2,
+    "cost_usd": 0.2569
+  },
+  "results": [
+    {
+      "id": "reddit-sentiment",
+      "request": "What are people on Reddit and X saying about Cursor's new pricing? Keep the write-up in the repo so we can cite it in the pricing ADR.",
+      "expected": {
+        "route": "research",
+        "size": "none"
+      },
+      "answer": {
+        "route": "research",
+        "size": "none"
+      },
+      "raw": "{\"route\":\"research\",\"size\":\"none\"}",
+      "model": "openai-codex/gpt-6.1-sol",
+      "cost": 0.12866,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "channel-archive",
+      "request": "Archive every video and its transcript from this YouTube channel into the repo: https://www.youtube.com/@example",
+      "expected": {
+        "route": "scrape",
+        "size": "L"
+      },
+      "answer": {
+        "route": "scrape",
+        "size": "L"
+      },
+      "raw": "{\"route\":\"scrape\",\"size\":\"L\"}",
+      "model": "openai-codex/gpt-6.1-sol",
+      "cost": 0.128278,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    }
+  ]
+}
