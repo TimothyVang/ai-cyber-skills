@@ -2253,7 +2253,16 @@ def save_update_record(record: dict) -> None:
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     tmp = UPDATE_PATH.with_suffix(".tmp")
     tmp.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
-    os.replace(tmp, UPDATE_PATH)
+    # On Windows the replace fails while another process has the file open (the old watcher polls it during a
+    # handover), so retry briefly before giving up.
+    for attempt in range(20):
+        try:
+            os.replace(tmp, UPDATE_PATH)
+            return
+        except PermissionError:
+            if attempt == 19:
+                raise
+            time.sleep(0.1)
 
 
 def remote_main() -> str:
