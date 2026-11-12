@@ -6,6 +6,12 @@
 
 Every brief carries the roster: each coworker's agent id, role, and the files or tickets it owns. The root also keeps the roster in the program's tracker file, so a replacement agent can find its team.
 
+Name one integration owner and one build owner in that roster; the root may be both. A peer's "not ready" blocks taking its changes. Only the integration owner resolves overlap and accepts a handoff at an agreed revision; access to another worktree is not authority to copy or change it.
+
+## Shared build resources
+
+Writing workers return their changes and diagnostics without running builds, tests or formatters mid-flight. The build owner runs the combined checks after the edit wave. Across independent active sessions on one machine, record one build lease (owner, command, start, release) in the tracker and grant the next only after the current process exits. Waiting workers continue non-conflicting source work; they do not start duplicate builds or kill a peer's process. Done when each check has one owner and the lease is released on success or failure.
+
 ## How to reach a coworker
 
 - omp: `write agent://<id>` sends a message and wakes an idle agent. `agent://all` broadcasts; use it only for something every coworker must act on (trunk is red, a shared contract changed).
