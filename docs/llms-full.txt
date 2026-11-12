@@ -189,7 +189,7 @@ py -3 assets/github-app/install.py      # python3 on macOS and Linux
 
 With the omp plugin installed, run `install.py` from the plugin instead, so the bot keeps itself up to date: `py -3 ~/.omp/plugins/node_modules/deep-mode/skills/deep-mode/assets/github-app/install.py`.
 
-`install.py` checks git, `gh`, openssl and npm, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private app in the browser, waits while you install it on the repos you pick, and writes `~/.config/deep-mode/bot.json`. Autostart at logon (Task Scheduler, launchd, systemd or cron) is optional; it registers one on a yes. It asks before each change. `--yes` accepts every default; `--check` changes nothing.
+`install.py` checks git, `gh`, openssl and npm, installs acpx when it is missing, finds the ACP agents on your PATH (omp first, then Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode), registers omp with acpx, sends a test prompt over ACP to the agents the bots will use, creates your private app in the browser, waits while you install it on the repos you pick, and writes `~/.config/deep-mode/bot.json`. Autostart at logon (Task Scheduler or the Startup folder, launchd, systemd or cron) is optional; it registers one on a yes. It asks before each change. `--yes` accepts every default; `--check` changes nothing.
 
 ![A real run of install.py --check](docs/images/install.gif)
 
@@ -203,7 +203,7 @@ py -3 assets/github-app/bot.py watch                                # poll in th
 
 - **Your PRs:** the bots merge in the base when it conflicts, review, fix or dismiss each finding, run a 3-verifier panel, and merge once required checks are green.
 - **Others' PRs:** review comments only. They never merge.
-- **Issues:** the bots plan and critique in the thread. On an issue you opened, or after you comment `@deep-mode implement`, they build it and open a PR that closes it.
+- **Issues:** the bots plan and critique in the thread. On an issue you opened, or after you comment `@deepmodebot implement`, they build it and open a PR that closes it.
 - **Agents and models:** each role in `bot.json` is `{"agent": "omp", "model": "<optional>"}`. Put the author on a Claude model and the reviewer on a GPT model in omp, and one harness gives you cross-family review.
 - **Updates:** a bot run from the omp plugin checks between cycles, at most hourly and right after it merges into this repo. When `main` moved it upgrades the plugin, and it restarts itself when its own code changed. `bot.py update` checks now. `"autoUpdate": false` in `bot.json` turns it off. A bot run from a git clone never updates; pull it yourself.
 - **Opt out:** a base-branch `.deep-mode.json` with `"bot": false` skips the repo, and `"autonomousMerge": false` stops it at merge-ready.
@@ -255,7 +255,15 @@ The build renames the plugin, commands, skills, the bot and its GitHub App, reth
 
 ## Contribute
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). Short version: branch, edit, run `python scripts/check.py` (there is no CI, so this is the gate), open a PR.
+Want to help build deep-mode itself? Install the plugin, clone this repo, and run:
+
+```text
+/deep-mode:contribute
+```
+
+Your agent reads the [project brief](docs/PROJECT_BRIEF.md), picks an unclaimed task from the [roadmap](ROADMAP.md) (issues labeled [`help wanted`](https://github.com/TimothyVang/deep-mode/issues?q=is%3Aissue+is%3Aopen+label%3A%22help+wanted%22)) that doesn't overlap open PRs or other claims, claims it after you say yes, and opens a PR with proof.
+
+Full rules, including how to do it by hand: [CONTRIBUTING.md](CONTRIBUTING.md). Short version: claim the issue, branch, edit, run `python scripts/check.py` (there is no CI, so this is the gate), open a PR.
 
 ## FAQ
 
@@ -343,7 +351,7 @@ Source: https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/ski
 - **An identity.** A private GitHub App the user creates on their own account. Bot comments show as `<slug>[bot]`, so the thread reads as bots, not as the user. The app never runs a model.
 - **A poller, not a service.** `bot.py` runs on the user's machine and polls the installed repos every `interval` seconds. There are no webhooks and no server.
 - **Any ACP agent, no API keys.** The models run in agent CLIs that `acpx` reaches over ACP: omp by default, or Claude Code, Codex, Gemini CLI, Cursor, Copilot, OpenCode and others. Each harness uses its own subscription login (Claude.ai, ChatGPT and the like). Each role in `bot.json` picks an agent and an optional model, so omp alone can seat an author on a Claude model and a reviewer on a GPT model for cross-family review. Every call draws on subscription usage.
-- **The user's hands for writes.** Pushes, PR creation and merges use the user's own `gh` and git credentials. The app token only posts comments.
+- **The user's hands for writes.** Pushes, PR creation and merges use the user's own `gh` and git credentials. The app token reads the installed repos' PRs, issues and comments and posts the bots' replies.
 - **The conversations.** Each cycle runs the **pr-conversation** (`references/techniques/pr-conversation.md`) and **issue-conversation** (`references/techniques/issue-conversation.md`) techniques. On the user's own PRs that ends in a merge.
 
 ## Setup
@@ -381,11 +389,14 @@ py -3 assets/github-app/bot.py status
 ```
 
 - `install-autostart` is optional. It registers `deep-mode-bot` with Task Scheduler (Windows), launchd (macOS), or a systemd user unit or crontab `@reboot` entry (Linux); `uninstall-autostart` removes it.
-  - Installed as an omp plugin, the task points at `~/.omp/plugins/node_modules/deep-mode/...`, the link omp keeps on the current version, so an upgrade never leaves it on a deleted folder.
+  - Installed as an omp plugin, the task or launcher points at `~/.omp/plugins/node_modules/deep-mode/...`, the link omp keeps on the current version, so an upgrade never leaves it on a deleted folder.
+- On Windows a logon task usually needs an elevated terminal. When Task Scheduler refuses it, `install-autostart` writes `deep-mode-bot.cmd` to your Startup folder instead, which needs no admin rights. It runs `watch` in a minimized window and appends its output to `logs/watch.log` in the cache directory. `status` reports which entry is there as `autostartKind`: `schtasks` or `startup-folder`.
 - Repos are polled side by side, `parallelRepos` at a time (default 4). Items within one repo run one at a time, so one long conversation never stalls the other repos.
 - The first run records a start time; a repo added to the app later starts at its first poll. Only events after it get a turn. That first poll lists every open PR and records each older PR's head as backlog; any head seen after it is new, whatever its commit dates, including on a PR first seen later (reopened). `--backlog` takes older open PRs and issues too.
-- Each cycle lists every open PR and issue and takes non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deep-mode` or come from the owner after the bots' last turn. On the owner's own PRs only the owner's comments count. On an issue that an own PR's merge waits on, any human comment since the bots' last reply counts, however old. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all, with the comments that triggered it.
-- Comments are read through GitHub's GraphQL API: the newest 100 on each item, each with its author's type. Another app's comment is never taken for a human's, so it neither triggers a turn nor holds up a merge.
+- Each cycle lists every open PR and issue and takes non-draft PRs with an unhandled head SHA, new issues, and new human comments that mention `@deepmodebot` or come from the owner after the bots' last turn. On the owner's own PRs only the owner's comments count. On an issue that an own PR's merge waits on, any human comment since the bots' last reply counts, however old. An item whose turn fails (an agent, GitHub or network error) is retried on the next cycles, three attempts in all, with the comments that triggered it.
+- With an app configured, discovery uses paginated REST requests authenticated by its installation, not the user's GraphQL quota. Comment authors retain their bot or human type. Without an app, explicit `--repo` runs use the user's `gh` discovery.
+- Active PR metadata and checks also use the installation's read budget through a scoped `gh` child environment. Ownership, collaborators and branch-protection authority still use the human's credentials. Normal PR creation and SHA-pinned merges use the human's REST API; the explicit `--admin` path remains separate and fails closed.
+- A primary rate limit or secondary `Retry-After` response pauses repository reads until the reset time instead of flooding the rest of the installation. `status` reports the persisted `readCooldown` with its reason and deadline.
 - A comment counts as the bots' only when the app posted it, or the owner's account posted it with the bot signature; a signature from anyone else is a human comment.
 - The owner is the `gh` user running the bot, even when an organization owns the app.
 - One bot process runs at a time (a lock file). `--dry-run` takes no lock: each run clones into a workspace of its own and removes it afterwards, so previews can run beside the bot and each other.
@@ -394,12 +405,14 @@ py -3 assets/github-app/bot.py status
 Config is `~/.config/deep-mode/bot.json`, created with these defaults on the first run. Each role is `{"agent": "<acpx agent>", "model": "<optional model id>"}`:
 
 ```json
-{"author":{"agent":"omp"},"reviewer":{"agent":"omp"},"verifiers":[{"agent":"omp"},{"agent":"omp"},{"agent":"omp"}],"autonomousMerge":true,"maxRounds":3,"interval":120,"mention":"@deep-mode","parallelRepos":4,"autoUpdate":true,"updateMinutes":60}
+{"author":{"agent":"omp"},"reviewer":{"agent":"omp"},"verifiers":[{"agent":"omp"},{"agent":"omp"},{"agent":"omp"}],"autonomousMerge":true,"maxRounds":3,"interval":120,"mention":"@deepmodebot","parallelRepos":4,"autoUpdate":true,"updateMinutes":60}
 ```
+
+The shipped trigger is `@deepmodebot`, the project's owned organization handle. A reseller keeps its own trigger and `mention` remains configurable. An old stored bare `@deep-mode` default is ignored with a warning rather than continuing to notify an unrelated account.
 
 A repo names its own gate in its base-branch `.deep-mode.json`: `{"check": "npm test"}`.
 - On the owner's PRs the bot runs it in a clean worktree at the head, before the panel and again at the exact head it merges. A nonzero exit, 127 included, goes to the author as a P1 finding, and the merge waits for a pass. The limit is 30 minutes.
-- Before running it, the bot looks up the command's first word on the check's `PATH` (bash's `command -v`). On Windows that `PATH` starts with the bot's own Python folder, so `python` works under `pythonw`. A builtin, a path, or a command that doesn't parse is left to the run.
+- Before running it, the bot looks up the command's first word on the check's `PATH` (bash's `command -v`). On Windows a temporary child-only launcher binds `python` to the bot's own interpreter, including under `pythonw`. It does not change the user's PATH or the repo's check command. A builtin, a path, or a command that doesn't parse is left to the run.
 - A first word the bot can't find is the bot's setup, not the PR. The bot posts one coordinator note, sends no finding, blocks the merge, and retries on the next cycle.
 - After a merge it is the trunk check: red opens the revert PR, with no agent involved. Without a `check`, a verifier agent runs the repo's documented checks. A trunk check that can't start reverts nothing; the bot keeps the merge record and retries each cycle until the check runs.
 
@@ -438,7 +451,7 @@ A repo names its own gate in its base-branch `.deep-mode.json`: `{"check": "npm 
 - After each merge, the trunk check runs on the merge commit: the repo's `check` command when set, else a verifier running the documented checks. Red → the bot opens a `deep-mode/revert-pr-<n>` PR, which the next cycle lands like any other; a check that can't run or returns no verdict is reported, never reverted on.
   - The bot records the merge before running `gh pr merge` and records each step after it (read-back, note, trunk check), so an error anywhere after GitHub accepts the merge resumes on the next cycles (three attempts) even though the PR is closed.
   - No time limit drops that record: while the PR stays open the bot reads its state each cycle, so a merge that shows up late still gets its trunk check. The record goes when the steps finish, the PR is closed unmerged, or it merges at another head.
-- Answering an issue a PR's merge waits on never starts a second implementation; only an owner's `@deep-mode implement` does. The command opens a line as its own word: `@deep-mode implementation looks wrong`, a quoted command, and one shown inside a code block or an HTML comment don't count.
+- Answering an issue a PR's merge waits on never starts a second implementation; only an owner's `@deepmodebot implement` does. The command opens a line as its own word: `@deepmodebot implementation looks wrong`, a quoted command, and one shown inside a code block or an HTML comment don't count.
 - The author and the verifiers run (both with `--approve-all`) only after the current head re-passes the ownership gate, so a push from another account mid-conversation sends the PR to a human.
 - A size S diff (at most 30 changed lines in at most 2 files, measured with `git diff --numstat --no-renames`, and no path about auth, secrets, permissions, migrations, CI or agent config) gets a light panel. One verifier votes, from another agent than the author's when `bot.json` has one, else another model, and must PASS. Every other diff gets all the configured verifiers.
   - The bot judges S from size and paths only. A `full-panel` label on the PR gets all the verifiers, for what paths can't show (input parsing at a trust boundary).
@@ -607,7 +620,7 @@ Source: https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/ski
 
 # issue-conversation
 
-**Use when:** an issue should be discussed, and maybe built, by the bots: "have the bots work this issue", "plan this issue in the thread", or an owner comment `@deep-mode implement`. The deep-mode bot (`references/techniques/github-app.md`) runs it on every repo the app is installed on.
+**Use when:** an issue should be discussed, and maybe built, by the bots: "have the bots work this issue", "plan this issue in the thread", or an owner comment `@deepmodebot implement`. The deep-mode bot (`references/techniques/github-app.md`) runs it on every repo the app is installed on.
 
 The plan, its critique and the build happen as a conversation of bots on the issue, so anyone can read why the work took its shape. The bots, sessions, identity and signature lines are those of the **pr-conversation** technique (`references/techniques/pr-conversation.md`).
 An author agent and a reviewer agent (any ACP agents, omp by default, each with an optional model from `bot.json`) talk over ACP through `acpx`, and the coordinator mirrors each turn to the issue under the deep-mode GitHub App, or the user's `gh` with no app.
@@ -616,7 +629,7 @@ Every model call runs on the subscription each harness is logged in with, never 
 ## Triggers
 
 - A newly opened issue.
-- A new human comment that mentions `@deep-mode`, or any new comment from the owner, after the bots' last turn.
+- A new human comment that mentions `@deepmodebot`, or any new comment from the owner, after the bots' last turn.
 - Bot comments never trigger a turn.
 
 ## Steps
@@ -630,13 +643,13 @@ Every model call runs on the subscription each harness is logged in with, never 
    Done when the issue has a reviewer comment after the plan.
 4. **Answer.** The critique goes into the author's session. The author revises the plan or answers each point with proof. Post it as author. One round per trigger; the next human comment starts another.
    Done when the issue has an author comment that addresses every critique point.
-5. **Implement**, only when the owner opened the issue or the owner commented `@deep-mode implement`. The author runs with `--approve-all` in a new worktree on branch `deep-mode/issue-<n>` off the default branch.
+5. **Implement**, only when the owner opened the issue or the owner commented `@deepmodebot implement`. The author runs with `--approve-all` in a new worktree on branch `deep-mode/issue-<n>` off the default branch.
    It builds the answered plan under deep-mode's rules (prove it on the real artifact, tests red first), commits, pushes with the user's own git credentials, and opens a ready PR whose body has `Closes #<n>`.
    The coordinator posts the PR link on the issue. The next cycle lands that PR through **pr-conversation**.
    Done when a ready PR with `Closes #<n>` is open from `deep-mode/issue-<n>` and its link is on the issue.
 6. **Anyone else's issue** gets steps 1 to 4 only. The bots never build it, label it, assign it, or close it.
    When the issue or a comment in the prompt is not the owner's, those turns are sealed: model calls with no tools, no files and no checkout, so a prompt injection cannot make an agent read a local file or fetch a URL and post it.
-   A sealed plan rests on the issue text alone and says where it would need the code. An owner's `@deep-mode implement` runs the build with its tools as in step 5.
+   A sealed plan rests on the issue text alone and says where it would need the code. An owner's `@deepmodebot implement` runs the build with its tools as in step 5.
    Done when the issue has the three posted turns and no branch, label, assignee, or close from the bots.
 
 ## Gates

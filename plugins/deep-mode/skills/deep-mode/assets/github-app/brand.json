@@ -2,7 +2,7 @@
   "name": "deep-mode",
   "description": "deep-mode bots: review, fix, verify and merge in the PR and issue threads.",
   "homepage": "https://github.com/TimothyVang/deep-mode",
-  "mention": "@deep-mode",
+  "mention": "@deepmodebot",
   "branchPrefix": "deep-mode",
   "repoConfigFile": ".deep-mode.json",
   "configDirName": "deep-mode",

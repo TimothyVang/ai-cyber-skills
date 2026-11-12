@@ -2,13 +2,19 @@
 
     python test_bot.py
 """
+import email.message
+import contextlib
+import io
 import json
 import os
 import shutil
 import subprocess
 import tempfile
 import threading
+import time
 import unittest
+import urllib.error
+import urllib.parse
 from pathlib import Path
 from unittest import mock
 
@@ -24,6 +30,40 @@ def comment(login, at, body="hi"):
 
 def ours(c):
     return c["author"]["login"] == "app-slug" or c["body"].startswith(bot.SIGNATURE)
+
+
+class TriggerMatchingTest(unittest.TestCase):
+    def test_handles_match_whole_tokens_case_insensitively(self):
+        for body in ("@deepmodebot", "hey @DEEPMODEBOT continue", "(@deepmodebot), please"):
+            with self.subTest(body):
+                self.assertTrue(bot.trigger_re("@deepmodebot").search(body))
+                self.assertEqual(len(bot.human_triggers(
+                    [comment("stranger", "t", body)], None, OWNER, "@deepmodebot", ours)), 1)
+        for body in ("@deepmodebot-extra", "@deepmodebot_extra", "@deepmodebot2", "mail@deepmodebot"):
+            with self.subTest(body):
+                self.assertFalse(bot.trigger_re("@deepmodebot").search(body))
+                self.assertEqual(bot.human_triggers(
+                    [comment("stranger", "t", body)], None, OWNER, "@deepmodebot", ours), [])
+
+    def test_explicit_slash_triggers_are_line_commands_not_urls_or_paths(self):
+        for body in ("/custom", "  /CUSTOM continue", "Please review.\n/custom continue"):
+            with self.subTest(body):
+                self.assertTrue(bot.trigger_re("/custom").search(body))
+        for body in ("https://example.com/custom", "/custom/path", "/custom:continue", "say /custom continue"):
+            with self.subTest(body):
+                self.assertFalse(bot.trigger_re("/custom").search(body))
+
+    def test_implementation_command_is_whole_word_and_owner_only_for_both_trigger_forms(self):
+        issue = {"author": {"login": "other"}}
+        for mention in ("@deepmodebot", "/custom"):
+            for body, expected in ((f"{mention} implement", True), (f"   {mention} IMPLEMENT, please", True),
+                                   (f"{mention} implementation", False), (f"{mention}-other implement", False),
+                                   (f"{mention} implement-more", False), (f"    {mention} implement", False)):
+                with self.subTest(mention=mention, body=body):
+                    self.assertEqual(bot.wants_implementation(
+                        issue, [comment(OWNER, "t", body)], {"handled": True}, OWNER, mention), expected)
+                    self.assertFalse(bot.wants_implementation(
+                        issue, [comment("stranger", "t", body)], {"handled": True}, OWNER, mention))
 
 
 class JsonBlockTest(unittest.TestCase):
@@ -377,7 +417,11 @@ class TrunkCheckTest(unittest.TestCase):
             c.clone, c.verifier_trees = Path(tmp), [Path(tmp) / "v0"]
             c.it = FakeItem(reply)
             c.open_revert = revert or mock.Mock(return_value="https://github.com/o/r/pull/8")
-            with mock.patch.object(bot, "git"), mock.patch.object(bot, "worktree_at", return_value=Path(tmp)):
+            # No `check` in the base config, so the verifier runs. base_config is stubbed: the real one runs
+            # `git show` in the temp dir, which finds the enclosing repo when TMP sits inside a checkout (the
+            # bot's own repo check sets it to the check worktree's .scratch/tmp).
+            with mock.patch.object(bot, "git"), mock.patch.object(bot, "worktree_at", return_value=Path(tmp)), \
+                    mock.patch.object(bot, "base_config", return_value={}):
                 status = c.trunk_check(self.SHA)
         self.assertEqual(len(c.it.asked), 1)  # reached the verifier, not the could-not-run branch
         self.assertIn("trunk check after pull request o/r#7", c.it.asked[0])
@@ -507,6 +551,332 @@ class CommentTest(unittest.TestCase):
         query = next(arg for arg in gh.call_args.args if arg.startswith("query="))
         self.assertIn("issues(states: OPEN", query)
         self.assertIn("comments(last: 100)", query)  # the newest hundred, not the oldest
+
+
+class AppDiscoveryTest(unittest.TestCase):
+    def identity(self):
+        ident = object.__new__(bot.Identity)
+        ident.app, ident.owner, ident.logins = {"slug": "app"}, OWNER, {"app[bot]"}
+        ident.bot = "app[bot]"
+        ident.installs, ident.cooldown = {"o/r": 7}, {}
+        return ident
+
+    def row(self, n, **kw):
+        return {"number": n, "title": f"Item {n}", "body": None, "html_url": f"https://github.com/o/r/issues/{n}",
+                "user": {"login": OWNER, "type": "User"}, "created_at": "2026-01-01T00:00:00Z",
+                "labels": [{"name": "help wanted"}], "draft": False,
+                "head": {"ref": "feature", "sha": "a" * 40, "repo": {"id": 1}},
+                "base": {"ref": "main", "repo": {"id": 1}}, **kw}
+
+    def test_app_discovery_pages_items_and_comments_and_normalizes_without_gh(self):
+        ident = self.identity()
+        paths = []
+
+        def request(method, path, token, **kw):
+            self.assertEqual((method, token, kw), ("GET", "installation-token", {"bearer": False}))
+            paths.append(path)
+            url = urllib.parse.urlsplit(path)
+            query = urllib.parse.parse_qs(url.query)
+            self.assertEqual(query["per_page"], ["100"])
+            page = int(query["page"][0])
+            if url.path == "/repos/o/r/pulls":
+                return [self.row(n) for n in range(1, 101)] if page == 1 else [
+                    self.row(101, draft=True, head={"ref": "fork", "sha": "b" * 40, "repo": {"id": 2}})]
+            if url.path == "/repos/o/r/issues":
+                return [self.row(n, pull_request={}) for n in range(1, 101)] if page == 1 else [self.row(102)]
+            if url.path == "/repos/o/r/issues/1/comments":
+                if page == 1:
+                    return [{"user": {"type": "Bot", "login": "ci"}, "body": MENTION,
+                             "created_at": "2026-01-01T00:00:01Z"} for _ in range(100)]
+                return [{"user": {"type": "User", "login": OWNER}, "body": "please continue",
+                         "created_at": "2026-01-01T00:00:02Z"}]
+            if url.path == "/repos/o/r/issues/102/comments":
+                return [{"user": None, "body": None, "created_at": "2026-01-02T00:00:00Z"}]
+            return []
+
+        with mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot.ghapp, "request", side_effect=request), \
+                mock.patch.object(bot, "gh", side_effect=AssertionError("personal gh used for discovery")):
+            prs, issues = ident.open_items("o/r", "pr"), ident.open_items("o/r", "issue")
+        self.assertEqual(len(prs), 101)
+        self.assertEqual(set(prs[0]), set(bot.PR_FIELDS.split(",")) | {"comments"})
+        self.assertEqual((prs[0]["headRefName"], prs[0]["headRefOid"], prs[0]["baseRefName"]),
+                         ("feature", "a" * 40, "main"))
+        self.assertEqual((prs[0]["body"], prs[0]["createdAt"], prs[0]["labels"]),
+                         ("", "2026-01-01T00:00:00Z", [{"name": "help wanted"}]))
+        self.assertFalse(prs[0]["isCrossRepository"])
+        self.assertTrue(prs[-1]["isCrossRepository"])
+        self.assertTrue(prs[-1]["isDraft"])
+        comments = prs[0]["comments"]
+        self.assertEqual(len(comments), 101)
+        self.assertEqual(comments[0]["author"], {"login": "ci[bot]", "__typename": "Bot"})
+        self.assertEqual(comments[-1]["createdAt"], "2026-01-01T00:00:02Z")
+        self.assertEqual(bot.human_triggers(comments, None, OWNER, MENTION, ident.is_ours), [comments[-1]])
+        self.assertEqual([i["number"] for i in issues], [102])
+        self.assertEqual(set(issues[0]), set(bot.ISSUE_FIELDS.split(",")) | {"comments"})
+        self.assertEqual(issues[0]["comments"], [
+            {"author": {"login": "", "__typename": ""}, "body": "", "createdAt": "2026-01-02T00:00:00Z"}])
+        self.assertTrue(any("/pulls?" in p and "page=2" in p for p in paths))
+        self.assertTrue(any("/issues?" in p and "page=2" in p for p in paths))
+
+    def test_installation_discovery_is_paginated(self):
+        with mock.patch.object(bot.ghapp, "app_jwt", return_value="app-jwt"), \
+                mock.patch.object(bot.ghapp, "request", side_effect=[
+                    [{"id": n} for n in range(100)], [{"id": 100}]]) as request:
+            self.assertEqual(len(bot.ghapp.installations({})), 101)
+        self.assertIn("page=2", request.call_args.args[1])
+
+    def test_disabled_issues_are_empty_but_other_read_errors_surface(self):
+        ident = self.identity()
+        for status in (410, 403):
+            with self.subTest(status), mock.patch.object(
+                    ident, "pages", side_effect=bot.ghapp.RequestError("GET", "/issues", status, "disabled")):
+                if status == 410:
+                    self.assertEqual(ident.open_items("o/r", "issue"), [])
+                else:
+                    with self.assertRaises(bot.ghapp.RequestError):
+                        ident.open_items("o/r", "issue")
+
+    def test_no_app_retains_the_paginated_gh_fallback(self):
+        ident = self.identity()
+        ident.app = None
+        with mock.patch.object(bot, "gh_json", return_value=[{"number": 9}]) as listed, \
+                mock.patch.object(bot, "open_comments", return_value={9: [comment(OWNER, "t")]}) as comments:
+            self.assertEqual(ident.open_items("o/r", "pr"), [{"number": 9, "comments": [comment(OWNER, "t")]}])
+        self.assertIn(str(bot.LIST_LIMIT), listed.call_args.args)
+        comments.assert_called_once_with("o/r", "pullRequests")
+
+
+class InstallationReadTest(unittest.TestCase):
+    def test_views_checks_and_linked_metadata_use_only_a_child_installation_token(self):
+        ident = AppDiscoveryTest().identity()
+        fields = "headRefOid,mergeStateStatus,mergeable,reviewDecision,state"
+        view = {"headRefOid": "a" * 40, "mergeStateStatus": "CLEAN", "mergeable": "MERGEABLE",
+                "reviewDecision": "", "state": "OPEN"}
+        calls = []
+
+        def run(cmd, **kw):
+            calls.append(cmd)
+            self.assertEqual(kw["env"]["GH_TOKEN"], "installation-token")
+            self.assertNotIn("installation-token", " ".join(cmd))
+            self.assertEqual(os.environ["GH_TOKEN"], "human-token")
+            data = [{"name": "check", "bucket": "pass"}] if cmd[1:3] == ["pr", "checks"] else \
+                {"closingIssuesReferences": [{"number": 1, "url": "https://github.com/o/r/issues/1"}]} \
+                if cmd[-1] == "closingIssuesReferences" else view
+            return subprocess.CompletedProcess(cmd, 0, json.dumps(data), "")
+
+        with mock.patch.dict(os.environ, {"GH_TOKEN": "human-token"}), \
+                mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot, "run", side_effect=run):
+            self.assertEqual(ident.pr_view("o/r", 7, fields), view)
+            self.assertEqual(bot.pr_checks("o/r", 7, ident=ident), [{"name": "check", "bucket": "pass"}])
+            self.assertEqual(bot.pr_checks("o/r", 7, required=True, ident=ident)[0]["bucket"], "pass")
+            self.assertEqual(ident.pr_view("o/r", 7, "closingIssuesReferences")["closingIssuesReferences"][0]["number"], 1)
+        self.assertIn("--required", calls[2])
+
+    def test_installation_graphql_exhaustion_becomes_the_cycle_cooldown_exception(self):
+        ident = AppDiscoveryTest().identity()
+        failed = subprocess.CompletedProcess(["gh"], 1, "", "GraphQL: API rate limit exceeded")
+        with mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot, "run", return_value=failed) as run, \
+                mock.patch.object(ident, "read", return_value={"resources": {
+                    "core": {"remaining": 100, "reset": 1900}, "graphql": {"remaining": 0, "reset": 2000}}}) as read, \
+                self.assertRaises(bot.ghapp.RateLimited) as raised:
+            ident.pr_view("o/r", 7, "headRefOid")
+        self.assertEqual(raised.exception.retry_at, 2000)
+        read.assert_called_once_with("o/r", "/rate_limit")
+        run.assert_called_once()
+
+    def test_ownership_still_reads_author_commits_and_collaborators_as_the_human(self):
+        c = object.__new__(bot.PRConversation)
+        c.repo, c.n = "o/r", 7
+        c.bot = mock.Mock(ident=AppDiscoveryTest().identity())
+        c.bot.trusted.return_value = set()
+        row = AppDiscoveryTest().row(7)
+        with mock.patch.object(bot, "gh_json", return_value=row) as read, \
+                mock.patch.object(bot, "pr_commits", return_value=[commit("a" * 40)]) as commits, \
+                mock.patch.object(bot, "push_writers", return_value=[OWNER]) as writers, \
+                mock.patch.object(c.bot.ident, "gh_read", side_effect=AssertionError("app used for authority")):
+            self.assertTrue(c.ownership("a" * 40))
+        read.assert_called_once_with("api", "repos/o/r/pulls/7")
+        commits.assert_called_once_with("o/r", 7)
+        writers.assert_called_once_with("o/r")
+
+    def test_pinned_check_runs_statuses_and_app_ids_use_installation_reads(self):
+        ident = AppDiscoveryTest().identity()
+        outputs = ['{"app":42,"status":"completed","conclusion":"success"}\n',
+                   '{"login":"ci[bot]","type":"Bot","state":"success"}\n', "42\n"]
+
+        def run(cmd, **kw):
+            self.assertEqual(kw["env"]["GH_TOKEN"], "installation-token")
+            return subprocess.CompletedProcess(cmd, 0, outputs.pop(0), "")
+
+        with mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot, "run", side_effect=run):
+            self.assertEqual(bot.app_checks("o/r", "a" * 40, "check", [42], ident=ident), {"42": ["pass", "pass"]})
+        self.assertEqual(outputs, [])
+
+    def test_secondary_read_throttle_uses_retry_after_without_another_request(self):
+        ident = AppDiscoveryTest().identity()
+        failed = subprocess.CompletedProcess(["gh"], 1, "", "secondary rate limit; Retry-After: 90")
+        with mock.patch.object(bot.time, "time", return_value=1000), \
+                mock.patch.object(bot.ghapp, "installation_token", return_value="installation-token"), \
+                mock.patch.object(bot, "run", return_value=failed), mock.patch.object(ident, "read") as read, \
+                self.assertRaises(bot.ghapp.RateLimited) as raised:
+            ident.pr_view("o/r", 7, "state")
+        self.assertEqual(raised.exception.retry_at, 1090)
+        read.assert_not_called()
+
+    def test_no_app_views_keep_the_normal_gh_environment(self):
+        ident = AppDiscoveryTest().identity()
+        ident.app = None
+        with mock.patch.object(bot, "run", return_value=subprocess.CompletedProcess(["gh"], 0, "{}", "")) as run:
+            self.assertEqual(ident.pr_view("o/r", 7, "state"), {})
+        self.assertIsNone(run.call_args.kwargs["env"])
+
+
+class HumanRestMutationTest(unittest.TestCase):
+    def test_non_admin_merge_uses_human_rest_with_the_exact_voted_head(self):
+        reply = subprocess.CompletedProcess(["gh"], 0, '{"merged":true}', "")
+        with mock.patch.object(bot, "run", return_value=reply) as run:
+            self.assertEqual(bot.merge_pr("o/r", 7, "a" * 40, False, app=True), "squash")
+        args, kw = run.call_args
+        self.assertEqual(args[0], ["gh", "api", "--method", "PUT", "repos/o/r/pulls/7/merge", "--input", "-"])
+        self.assertEqual(json.loads(kw["stdin"]), {"sha": "a" * 40, "merge_method": "squash"})
+        self.assertNotIn("env", kw)
+
+    def test_merge_refusal_is_not_success_or_an_admin_fallback(self):
+        reply = subprocess.CompletedProcess(["gh"], 0, '{"merged":false,"message":"head moved"}', "")
+        with mock.patch.object(bot, "run", return_value=reply) as run, self.assertRaises(bot.Blocked):
+            bot.merge_pr("o/r", 7, "a" * 40, False, app=True)
+        run.assert_called_once()
+
+    def test_explicit_admin_merge_keeps_human_gh_and_fails_closed_when_unavailable(self):
+        reply = subprocess.CompletedProcess(["gh"], 1, "", "GraphQL: API rate limit exceeded")
+        with mock.patch.object(bot, "run", return_value=reply) as run, self.assertRaises(bot.Blocked):
+            bot.merge_pr("o/r", 7, "a" * 40, True, app=True)
+        args, kw = run.call_args
+        self.assertEqual(args[0][:3], ["gh", "pr", "merge"])
+        self.assertIn("--admin", args[0])
+        self.assertEqual(args[0][args[0].index("--match-head-commit") + 1], "a" * 40)
+        self.assertNotIn("env", kw)
+        run.assert_called_once()
+
+    def test_disabled_squash_falls_back_to_merge_with_the_same_head_guard(self):
+        denied = subprocess.CompletedProcess(["gh"], 1, "", "Squash merges are not allowed")
+        merged = subprocess.CompletedProcess(["gh"], 0, '{"merged":true}', "")
+        with mock.patch.object(bot, "run", side_effect=[denied, merged]) as run:
+            self.assertEqual(bot.merge_pr("o/r", 7, "a" * 40, False, app=True), "merge")
+        self.assertEqual([json.loads(call.kwargs["stdin"]) for call in run.call_args_list], [
+            {"sha": "a" * 40, "merge_method": "squash"}, {"sha": "a" * 40, "merge_method": "merge"}])
+
+    def test_pr_creation_uses_human_rest_and_preserves_metadata(self):
+        with mock.patch.object(bot, "gh", return_value='{"html_url":"https://github.com/o/r/pull/8"}') as gh:
+            self.assertEqual(bot.create_pr("o/r", "main", "feature", "Title", "Body", Path("clone"), app=True),
+                             "https://github.com/o/r/pull/8")
+        args, kw = gh.call_args
+        self.assertEqual(args, ("api", "--method", "POST", "repos/o/r/pulls", "--input", "-"))
+        self.assertEqual(json.loads(kw["stdin"]), {"base": "main", "head": "feature", "title": "Title", "body": "Body"})
+        self.assertNotIn("env", kw)
+
+
+class DiscoveryRateLimitTest(unittest.TestCase):
+    def test_request_honors_primary_reset_and_secondary_retry_after_without_retrying(self):
+        for headers, expected in [
+                ({"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "2000"}, 2000),
+                ({"Retry-After": "90"}, 1090),
+                ({"Retry-After": "Thu, 01 Jan 1970 00:30:00 GMT"}, 1800),
+                ({"X-RateLimit-Remaining": "0", "X-RateLimit-Reset": "2000", "Retry-After": "90"}, 2000)]:
+            with self.subTest(headers):
+                response_headers = email.message.Message()
+                for key, value in headers.items():
+                    response_headers[key] = value
+                error = urllib.error.HTTPError("https://api.github.com/repos/o/r/pulls", 403, "limited",
+                                               response_headers, io.BytesIO(b'{"message":"rate limit exceeded"}'))
+                with mock.patch.object(bot.ghapp.time, "time", return_value=1000), \
+                        mock.patch.object(bot.ghapp.urllib.request, "urlopen", side_effect=error) as request, \
+                        self.assertRaises(bot.ghapp.RateLimited) as raised:
+                    bot.ghapp.request("GET", "/repos/o/r/pulls", "installation-token")
+                self.assertEqual(raised.exception.retry_at, expected)
+                self.assertIn("discovery paused until", str(raised.exception))
+                request.assert_called_once()
+
+    def test_cycle_stops_queued_repos_and_new_cycles_until_reset(self):
+        b = object.__new__(bot.Bot)
+        b.dry, b.state = False, {"since": "2026-01-01T00:00:00Z", "items": {}}
+        b.args, b.cfg = mock.Mock(repo=None, backlog=False), {"parallelRepos": 1}
+        b.ident = AppDiscoveryTest().identity()
+        b.ident.repos = mock.Mock(return_value=["o/r", "o/other", "o/third"])
+        b.save = mock.Mock()
+        calls = []
+
+        def repo_cycle(repo, since):
+            calls.append(repo)
+            if len(calls) == 1:
+                raise bot.ghapp.RateLimited(2000, "GitHub primary rate limit exhausted")
+
+        b.repo_cycle = repo_cycle
+        with mock.patch.object(bot.time, "time", return_value=1000), mock.patch.object(bot, "log") as log:
+            b.cycle()
+            self.assertEqual(calls, ["o/r"])
+            b.cycle()
+            self.assertEqual(calls, ["o/r"])
+            self.assertEqual(b.ident.repos.call_count, 1)
+            with mock.patch.object(bot.ghapp, "installation_token") as token:
+                with self.assertRaises(bot.ghapp.RateLimited):
+                    b.ident.read("o/r", "/repos/o/r/pulls")
+                token.assert_not_called()
+            self.assertTrue(any("primary rate limit exhausted" in str(call) for call in log.call_args_list))
+        self.assertEqual(b.state["readCooldown"]["until"], 2000)
+        b.save.assert_called()
+        with mock.patch.object(bot.time, "time", return_value=2001), mock.patch.object(bot, "log"):
+            b.cycle()
+        self.assertEqual(calls, ["o/r", "o/r", "o/other", "o/third"])
+        self.assertNotIn("readCooldown", b.state)
+
+    def test_interrupted_turn_preserves_the_request_without_spending_an_error_attempt(self):
+        b = object.__new__(bot.Bot)
+        b.dry, b.state = False, {"items": {}}
+        b.save = mock.Mock()
+        request = comment(OWNER, "2026-01-01T00:00:01Z", "please continue")
+        it = mock.Mock(key="o/r#pr:1")
+        conversation = mock.Mock()
+        conversation.run.side_effect = bot.ghapp.RateLimited(2000, "limited")
+        with mock.patch.object(bot, "Item", return_value=it), \
+                mock.patch.object(bot, "PRConversation", return_value=conversation), \
+                mock.patch.object(bot, "log"), self.assertRaises(bot.ghapp.RateLimited):
+            b.handle("o/r", "pr", {"number": 1}, ["new comment"], [request], Path("clone"), "main")
+        item = b.state["items"]["o/r#pr:1"]
+        self.assertEqual(item["status"], "awaiting-read-budget")
+        self.assertEqual(item["pendingComments"], [request])
+        self.assertNotIn("errors", item)
+        pr = {"headRefOid": "a" * 40, "author": {"login": OWNER},
+              "comments": [request, comment("app-slug", "2026-01-01T00:00:02Z")]}
+        item.update(heads={"a" * 40: "handled"}, handled=True)
+        reasons, picked = bot.pr_reasons(pr, item, None, OWNER, MENTION, ours)
+        self.assertEqual(reasons, ["read budget reset after an interrupted turn"])
+        self.assertEqual(bot.with_pending(item["pendingComments"], picked), [request])
+        self.assertEqual(bot.issue_reasons(pr, item, None, OWNER, MENTION, ours)[0], reasons)
+
+    def test_interrupted_first_poll_keeps_its_event_floor(self):
+        b = object.__new__(bot.Bot)
+        b.args, b.cfg = mock.Mock(item=None), {"mention": MENTION}
+        b.state = {"items": {}, "lastCycle": "earlier"}
+        b.ident = AppDiscoveryTest().identity()
+        b.ident.open_items = mock.Mock(side_effect=bot.ghapp.RateLimited(2000, "limited"))
+        with mock.patch.object(bot, "now_iso", return_value="2026-01-02T00:00:00Z"):
+            with self.assertRaises(bot.ghapp.RateLimited):
+                b.repo_cycle("o/r", "2026-01-01T00:00:00Z")
+        issue = {"number": 1, "author": {"login": OWNER}, "createdAt": "2026-01-02T00:00:01Z", "comments": []}
+        b.ident.open_items = mock.Mock(side_effect=[[], [issue]])
+        b.handle = mock.Mock()
+        with mock.patch.object(bot, "now_iso", return_value="2026-01-03T00:00:00Z"), \
+                mock.patch.object(bot, "ensure_clone", return_value=Path("clone")), \
+                mock.patch.object(b.ident, "read", return_value={"default_branch": "main"}), \
+                mock.patch.object(bot, "base_config", return_value={}):
+            b.repo_cycle("o/r", "2026-01-01T00:00:00Z")
+        self.assertEqual(b.state["repoSince"]["o/r"], "2026-01-02T00:00:00Z")
+        b.handle.assert_called_once()
 
 
 class SealedReviewTest(unittest.TestCase):
@@ -766,6 +1136,8 @@ class ImplementReleaseTest(unittest.TestCase):
         c.clone, c.tree, c.author, c.reviewer = Path("clone"), Path("w/issue5"), {"agent": "a"}, {"agent": "a"}
         c.issue = {"title": "t", "body": "b", "author": {"login": OWNER}}
         c.bot, c.it = mock.Mock(), mock.Mock()
+        c.bot.ident = AppDiscoveryTest().identity()
+        c.bot.ident.app = None
         c.it.ask.return_value = "done"
         if close:
             c.it.close_sessions.side_effect = close
@@ -910,17 +1282,29 @@ class RepoCheckTest(unittest.TestCase):
         return mock.patch.object(bot, "git", side_effect=lambda *a, **kw: "" if "fetch" in a else bot.run(
             ["git", *a[1:]], cwd=a[0]).stdout.strip())
 
-    @unittest.skipUnless(os.name == "nt", "the interpreter folder goes on PATH on Windows only")
-    def test_python_in_the_check_is_the_bots_own_interpreter(self):
-        # Under pythonw from a logon task, the check's bash found no `python` (PR #52 got exit 127 as a finding).
-        fake = self.tmp / "interpreter"
-        fake.mkdir()
-        (fake / "python").write_text("#!/bin/sh\necho bot-python \"$@\"\n", encoding="utf-8", newline="\n")
-        (fake / "python").chmod(0o755)
-        c, _ = self.conversation("ok", check="python --version")
-        with mock.patch.object(bot.sys, "executable", str(fake / "pythonw.exe")):
-            command, code, output = c.repo_check(c.head)
-        self.assertEqual((code, output), (0, "bot-python --version"))
+    def test_python_check_uses_the_real_interpreter_with_no_python_on_ambient_path(self):
+        bash = bot.goal_loop.find_bash()
+        self.assertIsNotNone(bash)
+        command = '"python" "check me.py" "space argument" && python -c "print(\'second command\')"'
+        c, _ = self.conversation("ok", check=command)
+        tree = bot.worktree_at(c.clone, c.check_tree, c.head)
+        (tree / "check me.py").write_text(
+            "import sys\nassert sys.argv[1] == 'space argument'\nprint(sys.executable)\n", encoding="utf-8")
+        empty = self.tmp / "empty-path"
+        empty.mkdir()
+        with mock.patch.dict(os.environ, {"PATH": str(empty)}), \
+                mock.patch.object(bot, "base_config", return_value={"check": command}), \
+                mock.patch.object(bot, "worktree_at", return_value=tree), \
+                mock.patch.object(bot.goal_loop, "find_bash", return_value=bash):
+            self.assertIsNone(shutil.which("python"))
+            got_command, code, output = c.repo_check(c.head)
+            self.assertEqual(os.environ["PATH"], str(empty))
+        self.assertEqual((got_command, code), (command, 0))
+        exe = Path(bot.sys.executable)
+        if exe.name.lower() == "pythonw.exe" and exe.with_name("python.exe").is_file():
+            exe = exe.with_name("python.exe")
+        self.assertEqual(output.splitlines(), [str(exe), "second command"])
+        self.assertEqual(list((tree / ".scratch" / "tmp").glob("check-python-*")), [])
 
     def test_a_check_that_cannot_start_is_no_finding_and_blocks_the_merge(self):
         c, sha = self.conversation("ok", check="FOO=1 no-such-command-for-the-bot-test --all")
@@ -973,7 +1357,8 @@ class AfterMergeRetryTest(unittest.TestCase):
                 step = {"pr": {"number": 7, "merged": True}, **({"checkCannotStart": True} if cannot_start else {})}
                 b = object.__new__(bot.Bot)
                 b.args = mock.Mock(item=None, backlog=False)
-                b.cfg, b.ident = {"mention": MENTION}, mock.Mock(owner=OWNER, is_ours=ours)
+                b.cfg, b.ident = {"mention": MENTION}, mock.Mock(
+                    owner=OWNER, is_ours=ours, app=None, open_items=mock.Mock(return_value=[]))
                 b.state = {"items": {"o/r#pr:7": {"errors": bot.MAX_ATTEMPTS, "afterMerge": step}},
                            "repoSince": {"o/r": "2026-01-01T00:00:00Z"}, "lastCycle": "2026-01-02T00:00:00Z"}
                 b.handle = mock.Mock()
@@ -1329,6 +1714,31 @@ class LockTest(unittest.TestCase):
 
 
 class BotConfigTest(unittest.TestCase):
+    def test_only_the_legacy_deep_mode_mention_migrates(self):
+        self.assertEqual(bot.effective_mention("@deep-mode", "deep-mode", "@deepmodebot"), "@deepmodebot")
+        self.assertEqual(bot.effective_mention(None, "deep-mode", "@deepmodebot"), "@deepmodebot")
+        for name, default in (("deep-mode", "@deepmodebot"), ("acme-review", "@acme-review")):
+            for stored in ("@deepmodebot", "@custom", "/custom", "@acme-review"):
+                with self.subTest(name=name, stored=stored):
+                    self.assertEqual(bot.effective_mention(stored, name, default), stored)
+        self.assertEqual(bot.effective_mention("@deep-mode", "acme-review", "@acme-review"), "@deep-mode")
+
+    def test_migration_warns_without_rewriting_and_explicit_handle_is_unchanged(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bot, "CONFIG_DIR", Path(tmp)), \
+                mock.patch.object(bot, "BOT_CONFIG", Path(tmp) / "bot.json"), \
+                mock.patch.object(bot, "NAME", "deep-mode"), mock.patch.dict(bot.B, {"mention": "@deepmodebot"}):
+            for stored, expected in (("@deep-mode", "@deepmodebot"), ("@deepmodebot", "@deepmodebot"),
+                                     ("@custom", "@custom"), ("/custom", "/custom")):
+                with self.subTest(stored=stored):
+                    raw = json.dumps({"mention": stored})
+                    bot.BOT_CONFIG.write_text(raw, encoding="utf-8")
+                    note = mock.Mock()
+                    self.assertEqual(bot.load_bot_config(note=note)["mention"], expected)
+                    self.assertEqual(bot.BOT_CONFIG.read_text(encoding="utf-8"), raw)
+                    self.assertEqual(note.call_count, int(stored == "@deep-mode"))
+                    if note.called:
+                        self.assertIn("unrelated GitHub account", note.call_args.args[0])
+
     def test_update_keys_have_defaults_and_are_validated(self):
         with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bot, "CONFIG_DIR", Path(tmp)), \
                 mock.patch.object(bot, "BOT_CONFIG", Path(tmp) / "bot.json"):
@@ -1406,6 +1816,182 @@ class TextTest(unittest.TestCase):
         for bad in ({}, {"agent": " "}, 3):
             with self.assertRaises(ValueError):
                 bot.as_role(bad)
+
+
+def finished(code=0, stdout="", stderr=""):
+    return subprocess.CompletedProcess([], code, stdout=stdout, stderr=stderr)
+
+
+class AskTest(unittest.TestCase):
+    DENIED = "[acpx] tokens: input=16 output=4716\n[acpx] error: PERMISSION_DENIED Permission request denied or cancelled"
+
+    def ask(self, proc, perms="--approve-reads"):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bot, "WORK", Path(tmp)), \
+                mock.patch.object(bot, "log"), mock.patch.object(bot.shutil, "which", return_value="acpx"), \
+                mock.patch.object(bot, "known_agents", return_value={"omp"}), \
+                mock.patch.object(bot, "run", return_value=proc):
+            return bot.Item(None, "o/r", "issue", 30).ask({"agent": "omp"}, "prompt", Path(tmp), perms)
+
+    def test_read_only_turn_that_was_denied_a_tool_still_replies(self):
+        self.assertEqual(self.ask(finished(5, "the plan\n", self.DENIED)), "the plan")
+        self.assertEqual(self.ask(finished(2, "the plan\n", self.DENIED)), "the plan")
+
+    def test_denied_turn_fails_for_a_writing_role(self):
+        with self.assertRaisesRegex(RuntimeError, "exit 5"):
+            self.ask(finished(5, "the plan\n", self.DENIED), perms="--approve-all")
+
+    def test_denied_turn_without_a_reply_fails(self):
+        with self.assertRaisesRegex(RuntimeError, "exit 5"):
+            self.ask(finished(5, "\n", self.DENIED))
+
+    def test_other_failures_fail(self):
+        with self.assertRaisesRegex(RuntimeError, "exit 1"):
+            self.ask(finished(1, "the plan\n", "[acpx] error: RUNTIME agent crashed"))
+
+    def test_cut_short_reply_that_mentions_the_marker_fails(self):
+        # acpx flushes the text so far when a turn times out; half a plan that quotes PERMISSION_DENIED is not a reply.
+        with self.assertRaisesRegex(RuntimeError, "exit 3"):
+            self.ask(finished(3, "half a plan about PERMISSION_DENIED\n",
+                              "[acpx] error: TIMEOUT QUEUE_RUNTIME_PROMPT_FAILED Timed out after 3600000ms"))
+
+    def test_a_marker_line_in_the_reply_is_not_acpx(self):
+        # acpx writes its error lines to stderr; the same text on stdout is the agent's reply, cut short here.
+        with self.assertRaisesRegex(RuntimeError, "exit 5"):
+            self.ask(finished(5, "partial plan\n[acpx] error: PERMISSION_DENIED Permission request denied\n", ""))
+
+
+class FakeScheduler:
+    """Stands in for bot.run: one Task Scheduler task that schtasks /Create, /Query and /Delete act on."""
+
+    def __init__(self, task=False, create_denied=False, delete_denied=False, query_denied=False, missing=False):
+        self.task, self.create_denied, self.delete_denied, self.missing = task, create_denied, delete_denied, missing
+        self.query_denied = query_denied
+
+    def __call__(self, cmd, **kw):
+        if self.missing:
+            raise FileNotFoundError("schtasks not found")
+        verb = cmd[1]
+        if verb == "/Query" and self.query_denied:
+            return finished(1, stderr="ERROR: Access is denied.")
+        if verb == "/Query" and "/FO" in cmd:  # the full list, as `/FO CSV /NH` prints it
+            names = ["\\Other task"] + ([f"\\{bot.TASK_NAME}"] if self.task else [])
+            return finished(0, stdout="".join(f'"{name}","N/A","Ready"\n' for name in names))
+        if verb == "/Query":
+            return finished(0 if self.task else 1)
+        if (verb == "/Create" and self.create_denied) or (verb == "/Delete" and self.task and self.delete_denied):
+            return finished(1, stderr="ERROR: Access is denied.")
+        if verb == "/Delete" and not self.task:
+            return finished(1, stderr="ERROR: The system cannot find the file specified.")
+        self.task = verb == "/Create"
+        return finished(0)
+
+
+class WindowsAutostartTest(unittest.TestCase):
+    COMMAND = ["C:\\py\\pythonw.exe", "C:\\app\\bot.py", "watch"]
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.launcher = Path(tmp.name) / "Startup" / "bot.cmd"
+        self.logs = Path(tmp.name) / "logs"
+        for patch in (mock.patch.object(bot, "startup_launcher", return_value=self.launcher),
+                      mock.patch.object(bot, "LOGS", self.logs)):
+            patch.start()
+            self.addCleanup(patch.stop)
+
+    def scheduler(self, **kw):
+        patch = mock.patch.object(bot, "run", FakeScheduler(**kw))
+        self.addCleanup(patch.stop)
+        return patch.start()
+
+    def install(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            kind, where = bot.install_windows_autostart(self.COMMAND)
+        return kind, out.getvalue()
+
+    def stale_launcher(self):
+        self.launcher.parent.mkdir()
+        self.launcher.write_text("old", encoding="utf-8")
+
+    def test_denied_task_falls_back_to_a_startup_folder_launcher(self):
+        self.scheduler(create_denied=True)
+        kind, said = self.install()
+        self.assertEqual(kind, "startup-folder")
+        self.assertIn("Access is denied", said)  # the reason for the fallback is shown
+        text = self.launcher.read_text(encoding="utf-8")
+        for part in [*self.COMMAND, str(self.logs / "watch.log")]:
+            self.assertIn(part, text)  # the real run is test_launcher_starts_the_command_and_logs_its_output
+        self.assertEqual(bot.windows_autostart(), ["startup-folder"])
+
+    def test_missing_schtasks_falls_back_too(self):
+        self.scheduler(missing=True)
+        self.assertEqual(self.install()[0], "startup-folder")
+        self.assertEqual(bot.windows_autostart(), ["startup-folder"])
+
+    def test_task_replaces_an_earlier_launcher(self):
+        self.scheduler()
+        self.stale_launcher()
+        self.assertEqual(self.install()[0], "schtasks")
+        self.assertEqual(bot.windows_autostart(), ["schtasks"])
+        self.assertFalse(self.launcher.exists())
+
+    def test_install_fails_when_neither_entry_can_be_made(self):
+        self.scheduler(create_denied=True)
+        self.launcher.parent.write_text("a file where the Startup folder should be", encoding="utf-8")
+        with self.assertRaises(SystemExit) as failed:
+            self.install()
+        self.assertIn("Access is denied", str(failed.exception))
+        self.assertIn(str(self.launcher), str(failed.exception))
+        self.assertEqual(bot.windows_autostart(), [])
+
+    def test_uninstall_removes_the_task_and_the_launcher(self):
+        self.scheduler(task=True)
+        self.stale_launcher()
+        self.assertEqual(bot.windows_autostart(), ["schtasks", "startup-folder"])
+        self.assertEqual(bot.uninstall_windows_autostart(), [])
+        self.assertEqual(bot.windows_autostart(), [])
+        self.assertEqual(bot.uninstall_windows_autostart(), [])  # nothing left: a second run is not an error
+
+    def test_uninstall_reports_a_task_it_could_not_delete(self):
+        self.scheduler(task=True, delete_denied=True)
+        self.stale_launcher()
+        left = bot.uninstall_windows_autostart()
+        self.assertEqual(len(left), 1)
+        self.assertIn("Access is denied", left[0])
+        self.assertEqual(bot.windows_autostart(), ["schtasks"])
+
+    def test_uninstall_does_not_report_a_task_it_could_not_check_as_removed(self):
+        self.scheduler(task=True, missing=True)  # schtasks missing or hung: neither /Delete nor /Query ran
+        left = bot.uninstall_windows_autostart()
+        self.assertEqual(len(left), 1)
+        self.assertIn("not checked", left[0])
+        self.assertIn("schtasks not found", left[0])
+        # schtasks runs but refuses both: /Delete's exit 1 is not proof that the task is gone
+        self.scheduler(task=True, delete_denied=True, query_denied=True)
+        left = bot.uninstall_windows_autostart()
+        self.assertEqual(len(left), 1)
+        self.assertIn("not checked", left[0])
+        self.assertIn("Access is denied", left[0])
+
+    @unittest.skipUnless(os.name == "nt", "runs a real .cmd launcher")
+    def test_launcher_starts_the_command_and_logs_its_output(self):
+        # cmd parses the launcher twice, so the paths carry what breaks batch files: a space, %, a defined %NAME%,
+        # &, ( ), ! and non-ASCII. The launcher sits elsewhere: the cmd /c that starts it would expand its path.
+        with tempfile.TemporaryDirectory(prefix="auto 100% %USERNAME% é & (x) ! ", ignore_cleanup_errors=True) as tmp, \
+                tempfile.TemporaryDirectory() as plain:
+            stub, log_file, launcher = Path(tmp) / "stub.py", Path(tmp) / "watch.log", Path(plain) / "launcher.cmd"
+            stub.write_text("import sys\nprint('stub ran', sys.argv[1:], flush=True)\nraise RuntimeError('stub boom')\n",
+                            encoding="utf-8")
+            bot.write_launcher(launcher, [bot.autostart_command()[0], str(stub), "watch"], log_file)
+            subprocess.run(f'cmd /d /s /c ""{launcher}""', check=True, timeout=60, creationflags=bot.NO_WINDOW,
+                           stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            text, deadline = "", time.monotonic() + 30
+            while "stub boom" not in text and time.monotonic() < deadline:  # `start` does not wait for the command
+                time.sleep(0.2)
+                text = log_file.read_text(encoding="utf-8", errors="replace") if log_file.is_file() else ""
+            self.assertIn("stub ran ['watch']", text)
+            self.assertIn("RuntimeError: stub boom", text)
 
 
 if __name__ == "__main__":

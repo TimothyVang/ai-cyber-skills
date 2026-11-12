@@ -41,7 +41,7 @@ Expires: <YYYY-MM-DD, 7 days after posting>
 
 - `<login>`: `gh api user -q .login`.
 - `Expires`: `python -c "import datetime as d;print(d.datetime.now(d.timezone.utc).date()+d.timedelta(days=7))"` (UTC).
-- The newest claim comment on an issue wins. To renew or change `Files`, post a new claim comment; don't edit the old one.
+- Your newest claim comment is your claim: it replaces your earlier ones and never changes anyone else's. To renew or change `Files`, post a new claim comment; don't edit the old one.
 - To release, post a comment from the same account that contains `<!-- deep-mode:unclaim -->`:
 
 ```
@@ -73,7 +73,7 @@ Released by @<login>: <one-line reason>
    gh issue list --repo R --state open --label "help wanted" --limit 200 --json number,title,labels,assignees,url,body
    python "$OVERLAP" claims --repo R --json
    ```
-   - Drop issues with an active claim or an assignee.
+   - Drop every issue the `claims` output lists. It covers claim comments and assignees, with one entry per holder, and leaves out an assignee whose own claim comment expired or was released.
    - Task issues from the maintainer's template use body headings `### Goal`, `### Why`, `### Area / files`, `### Done when`, `### Skills needed`, and `### Size` (`S`, `M`, or `L`). Read them when present; free-form issues get your own estimate.
    - Keep the ones that match the human's interest and the issue's `### Skills needed`.
    - Order smallest-first: `good first issue` first, then `### Size` `S` → `M` → `L`, then by how few files and how little design the issue implies.
@@ -91,7 +91,7 @@ Released by @<login>: <one-line reason>
    - No overlap (exit `0`) → say so, with the command you ran.
 
 6. **Claim it.** Show the human the exact claim comment (format above, with the real login, plan, files, and date). On their yes:
-   - Right before posting, run `python "$OVERLAP" claims --repo R --json`. Issue N already has an active claim or an assignee from another login → stop, tell the human, and go back to step 4 or coordinate as in step 5.
+   - Right before posting, run `python "$OVERLAP" claims --repo R --json`. Issue N is in that output under another login → stop, tell the human, and go back to step 4 or coordinate as in step 5.
    - Write the body to a `mktemp -p .scratch` file and post it: `gh issue comment N --repo R --body-file "$f"`.
    - Self-assign if the repo permits: `gh issue edit N --repo R --add-assignee @me`. A permission error is fine; the claim comment is the record.
    - Right after posting, run `gh issue view N --repo R --comments` and confirm no other author posted a claim comment after your step-4 read. One did → post the unclaim comment (format above) for yourself, tell the human, and pick other work (step 4) or coordinate with them (step 5).

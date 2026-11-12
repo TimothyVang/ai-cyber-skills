@@ -48,8 +48,8 @@ def load(path) -> dict:
             raise BrandError(f"{key} {data[key]!r}: use lowercase letters, digits or hyphens")
     if not re.match(r"^[A-Z][A-Z0-9_]*$", data["envPrefix"]):
         raise BrandError(f"envPrefix {data['envPrefix']!r}: use uppercase letters, digits or underscores")
-    if not re.match(r"^/[a-z0-9][a-z0-9-]*$", data["botTrigger"]):
-        raise BrandError(f"botTrigger {data['botTrigger']!r}: a slash and a lowercase word, like /acme-review")
+    if not re.match(r"^[@/][a-z0-9][a-z0-9-]*$", data["botTrigger"]):
+        raise BrandError(f"botTrigger {data['botTrigger']!r}: a mention or slash command, like @acme-review or /acme-review")
     if not re.match(r"^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$", data["repo"]):
         raise BrandError(f"repo {data['repo']!r}: use owner/name")
     if not isinstance(data["author"], dict) or not data["author"].get("name") or not data["author"].get("url"):

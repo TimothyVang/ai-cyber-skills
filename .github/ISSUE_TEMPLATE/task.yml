@@ -1,0 +1,62 @@
+name: Task
+description: A claimable unit of work. Contributors pick these up with /deep-mode:contribute.
+title: "[Task]: "
+labels: ["help wanted", "discussion-only"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        One task = one branch = one PR. Keep it small enough to finish in a week; split anything bigger.
+        To work on it, post a claim comment (see CONTRIBUTING.md) or run `/deep-mode:contribute`.
+        The `discussion-only` label keeps this repo's bots from building the task, so it stays open for contributors.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What should be true when this is done, from the user's point of view.
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why
+      description: The problem this solves and who it helps.
+    validations:
+      required: true
+  - type: input
+    id: files
+    attributes:
+      label: Area / files
+      description: Comma-separated repo paths this task is expected to touch. A trailing "/" means a whole directory. Overlap checks use these.
+      placeholder: src/export/, docs/export.md
+    validations:
+      required: true
+  - type: textarea
+    id: done-when
+    attributes:
+      label: Done when
+      description: Observable acceptance checks. How a reviewer can see it working on the real app.
+      placeholder: |
+        - Running `...` prints ...
+        - The reports page has a CSV button that downloads ...
+    validations:
+      required: true
+  - type: input
+    id: skills
+    attributes:
+      label: Skills needed
+      description: Languages, frameworks, or domain knowledge that help.
+      placeholder: Python, SQL
+    validations:
+      required: false
+  - type: dropdown
+    id: size
+    attributes:
+      label: Size
+      description: S fits a newcomer (also label it `good first issue`). L should be split before anyone claims it.
+      options:
+        - S
+        - M
+        - L
+    validations:
+      required: true
