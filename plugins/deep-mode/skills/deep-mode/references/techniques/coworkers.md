@@ -1,6 +1,6 @@
 # coworkers
 
-**Use when:** two or more agents work at the same time: owners, workers, and verifiers under Board, Autopilot, Orchestrate, Wayfinder, or any fan-out. They work like colleagues on one team: they talk to each other directly, honestly, and only when it moves the work.
+**Use when:** two or more agents work at the same time: owners, workers, and verifiers under Work a queue (`references/playbooks/work-a-queue.md`), Run a goal (`references/playbooks/run-a-goal.md`), Wayfinder, or any fan-out. They work like colleagues on one team: they talk to each other directly, honestly, and only when it moves the work.
 
 ## The roster
 

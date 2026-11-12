@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Structural checks for the skills in this repo. Prints OK or a list of problems and exits non-zero."""
 import ast
+import datetime as dt
 import json
 import re
 import shutil
@@ -15,9 +16,14 @@ BANNED = re.compile(
     r"|cloud\s*x\s*berry|greptile|code\s*rabbit|james\s+clements",
     re.I,
 )
-WHITE_LABEL_EXEMPT = {Path("scripts/check.py"), Path("plugins/deep-mode/skills/deep-mode/references/trending")}
+WHITE_LABEL_EXEMPT = {Path("scripts/check.py"), Path("trending")}
 LOCAL_ONLY = {".git", ".scratch", ".worktrees", "__pycache__"}  # self-ignored work folders and caches, never shipped
 RULES_WINDOW_BYTES = 20_000  # about 5,000 tokens at 4 bytes each: what Claude Code keeps of a skill after compaction
+CORE_LINE_BYTES = 600  # deep-mode's SKILL.md, playbooks and techniques: one instruction per line
+# Reference skills hold cited facts that go stale; each SKILL.md states the date they were true as of.
+LIBRARY_SKILLS = ("agent-harnesses", "cloud-devsecops", "domain-rules", "frontend-ui", "secrets-and-auth",
+                  "software-architecture")
+STALE_AFTER_DAYS = 120
 problems = []
 
 
@@ -99,6 +105,29 @@ actual = tuple(len(list((skill_root / "references" / kind).glob("*.md"))) for ki
 if not counts or tuple(map(int, counts.groups())) != actual:
     problems.append(f"README.md: says {counts.groups() if counts else 'no'} playbooks, principles, techniques; the folders hold {actual}")
 
+# Process files: every playbook and technique says when it is done, and core lines stay one instruction long.
+for kind in ("playbooks", "techniques"):
+    for md in sorted((skill_root / "references" / kind).glob("*.md")):
+        if "Done when" not in md.read_text(encoding="utf-8"):
+            problems.append(f"{md.relative_to(ROOT)}: no 'Done when' completion criterion")
+for md in [skill_root / "SKILL.md", *(skill_root / "references").glob("playbooks/*.md"),
+           *(skill_root / "references").glob("techniques/*.md")]:
+    text = md.read_text(encoding="utf-8")
+    body_start = text.find("\n---\n", 4) + 5 if text.startswith("---\n") else 0  # the frontmatter hook is one line
+    for number, line in enumerate(text[body_start:].splitlines(), text[:body_start].count("\n") + 1):
+        if len(line.encode("utf-8")) > CORE_LINE_BYTES:
+            problems.append(f"{md.relative_to(ROOT)}:{number}: line is {len(line.encode('utf-8'))} bytes "
+                            f"(max {CORE_LINE_BYTES} in core files; split it)")
+
+# Library skills carry the date their facts were checked; an old one is reported, not failed.
+for name in LIBRARY_SKILLS:
+    head = (ROOT / "plugins/deep-mode/skills" / name / "SKILL.md").read_text(encoding="utf-8").split("\n---\n", 1)[0]
+    stamp = re.search(r'^\s+as-of:\s*"?(\d{4}-\d{2}-\d{2})"?\s*$', head, re.M)
+    if not stamp:
+        problems.append(f"plugins/deep-mode/skills/{name}/SKILL.md: frontmatter needs metadata.as-of: YYYY-MM-DD")
+    elif (dt.date.today() - dt.date.fromisoformat(stamp.group(1))).days > STALE_AFTER_DAYS:
+        print(f"note: {name} facts are as of {stamp.group(1)}, over {STALE_AFTER_DAYS} days old; recheck and restamp")
+
 # docs/llms-full.txt embeds whole files; each embedded copy must match its source. --fix rewrites it.
 llms = ROOT / "docs/llms-full.txt"
 blob_base = "https://github.com/TimothyVang/deep-mode/blob/main/"
@@ -117,6 +146,13 @@ skill_bytes = (skill_root / "SKILL.md").read_bytes()
 window = skill_bytes.find(b"\n## Routes\n")
 if window < 0 or window > RULES_WINDOW_BYTES:
     problems.append(f"plugins/deep-mode/skills/deep-mode/SKILL.md: '## Routes' starts at byte {window}; the rules before it must fit in {RULES_WINDOW_BYTES} bytes")
+
+# Every skill's own references and skill:// links resolve (check_skill.py, the per-skill checker).
+skill_dirs = sorted(str(p.parent) for p in ROOT.glob("plugins/*/skills/*/SKILL.md"))
+run = subprocess.run([sys.executable, str(skill_root / "scripts/check_skill.py"), *skill_dirs],
+                     capture_output=True, text=True, encoding="utf-8", errors="replace")
+if run.returncode:
+    problems.append(f"check_skill.py found problems:\n{(run.stdout + run.stderr).strip()[-3000:]}")
 
 # Every shipped Python file parses, and every test folder passes.
 test_dirs = set()

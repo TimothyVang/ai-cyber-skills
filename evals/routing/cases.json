@@ -1,0 +1,147 @@
+{
+  "context": "You are in a git repo the user owns and can push to: a TypeScript web app (Next.js, Postgres, Stripe) with a GitHub remote. It has no GLOSSARY.md, no docs/adr/, no factory.json, and no verify skill.",
+  "cases": [
+    {
+      "id": "typo-fix",
+      "request": "The quickstart in README.md says `npm run devv`. It should be `npm run dev`. Fix it.",
+      "route": "bug-fix",
+      "size": "S",
+      "note": "One line in one file, nothing sensitive."
+    },
+    {
+      "id": "bug-with-cause",
+      "request": "Checkout sometimes charges the wrong total when a customer applies both a coupon and a gift card. Support has three tickets about it this week. Find out why and fix it.",
+      "route": "bug-fix",
+      "size": "M",
+      "note": "A bug with a cause to find."
+    },
+    {
+      "id": "ui-feature",
+      "request": "Add a dark mode toggle to the settings page. It should remember the choice across reloads and follow the OS setting until the user picks one.",
+      "route": "feature",
+      "size": "M",
+      "note": "One feature across a few files."
+    },
+    {
+      "id": "stripe-postgres-feature",
+      "request": "Add annual billing. Create a yearly price in Stripe, store each subscription's billing interval in Postgres with a migration, handle the webhook for plan changes, and show the interval on the account page.",
+      "route": "feature",
+      "size": "L",
+      "note": "Cross-cutting: payments, a database migration, a webhook, and UI."
+    },
+    {
+      "id": "review-pr",
+      "request": "review PR 57",
+      "route": "pr-review",
+      "size": "none",
+      "note": "Read-only review."
+    },
+    {
+      "id": "land-pr",
+      "request": "PR 88 is my two-line fix to the date formatter in src/lib/dates.ts. It's open and CI is green. Land it on your own.",
+      "route": "pr-conversation",
+      "size": "S",
+      "note": "Own PR whose diff fits the S lane."
+    },
+    {
+      "id": "babysit-pr",
+      "request": "babysit PR 12 until it's green. CI is failing and there are two unresolved review threads.",
+      "route": "babysit",
+      "size": "M",
+      "note": "Drives an existing PR; changes code to fix CI and threads, so it is not read-only."
+    },
+    {
+      "id": "overnight-goal",
+      "request": "I'm going to bed. Get the whole suite passing on Windows and keep going until it's done.",
+      "route": "run-a-goal",
+      "size": "L",
+      "note": "One session to a completion predicate, unattended."
+    },
+    {
+      "id": "drive-backlog",
+      "request": "drive the backlog. Work through the open issues on the roadmap and keep going.",
+      "route": "work-a-queue",
+      "size": "L",
+      "note": "Was the Board route."
+    },
+    {
+      "id": "autopilot-no-merge",
+      "request": "autopilot these PRs but don't merge anything: #101 add retries to the HTTP client, #102 fix date parsing in the importer, #103 bump the eslint config.",
+      "route": "work-a-queue",
+      "size": "L",
+      "note": "Queue of independent PRs in stack-only mode."
+    },
+    {
+      "id": "run-factory",
+      "request": "run the factory",
+      "context": "You are in a git repo the user owns and can push to: a TypeScript web app with a GitHub remote. It has a factory.json at the root and open issues labeled for agents.",
+      "route": "work-a-queue",
+      "size": "L",
+      "note": "Labeled issues through the factory CLI."
+    },
+    {
+      "id": "implement-spec",
+      "request": "implement spec #4",
+      "route": "phased-build",
+      "size": "L",
+      "note": "Every ticket of a spec onto one integration branch."
+    },
+    {
+      "id": "own-migration",
+      "request": "Own this migration for the next two weeks: move every API route from REST handlers to tRPC. Keep pushing it forward across sessions.",
+      "route": "run-a-goal",
+      "size": "L",
+      "note": "Multi-day program with a coordinator; was the Orchestrate route."
+    },
+    {
+      "id": "how-does-it-work",
+      "request": "How does session refresh work in this app? Where does the refresh token get rotated?",
+      "route": "investigation",
+      "size": "none",
+      "note": "Read-only question."
+    },
+    {
+      "id": "perf-regression",
+      "request": "/api/search got about 3x slower since last week's release. p95 went from 120ms to 400ms. Find out why and get it back.",
+      "route": "perf-issue",
+      "size": "M",
+      "note": "Measured slowness against a baseline."
+    },
+    {
+      "id": "grill-me",
+      "request": "grill me on my plan to replace our cron jobs with a Postgres-backed job queue",
+      "route": "grill",
+      "size": "none",
+      "note": "No GLOSSARY.md or docs/adr/, so plain grill mode."
+    },
+    {
+      "id": "new-app",
+      "request": "Build me a small app that tracks my reading list: add books, mark them read, and see what I read this year.",
+      "context": "You are in an empty folder that is not a git repo.",
+      "route": "prior-art",
+      "size": "L",
+      "note": "New-app row names prior-art first; a new project is a new module."
+    },
+    {
+      "id": "setup-for-contributors",
+      "request": "set this repo up for contributors and make some issues people can pick up",
+      "route": "project-brief",
+      "size": "M",
+      "note": "Sibling skill; writes a brief and issues."
+    },
+    {
+      "id": "write-a-skill",
+      "request": "Write me a skill that turns our merged PR titles into CHANGELOG.md entries the way we format them.",
+      "route": "authoring-a-skill",
+      "size": "M",
+      "note": "Writing a SKILL.md."
+    },
+    {
+      "id": "secrets-rename",
+      "request": "Rename the env var STRIPE_KEY to STRIPE_SECRET_KEY in src/config.ts and .env.example.",
+      "route": "refactoring",
+      "size": "M",
+      "note": "Tiny and two files, but it touches secrets, so it is not S."
+    }
+  ]
+}

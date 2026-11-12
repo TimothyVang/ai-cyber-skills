@@ -1,6 +1,6 @@
 # tracker
 
-**Use when:** a flow reads or writes issues: the Spec, Tickets, Implement spec, and Triage playbooks. This file is the one place that says how each tracker kind does each operation, so those flows name an operation and never a command.
+**Use when:** a flow reads or writes issues: the Spec, Tickets, Phased build (`references/playbooks/phased-build.md`), and Triage playbooks. This file is the one place that says how each tracker kind does each operation, so those flows name an operation and never a command.
 
 ## Which tracker
 
@@ -74,3 +74,5 @@ Claim a local issue by setting `Status: claimed` and committing before any work,
 
 - Every issue, comment, and label change goes through the kind the config names. Never mix kinds in one repo.
 - Writing issues, labels, and comments in the user's own repo is routine work. In a repo the user can't push to, posting is a hard stop (SKILL.md Autonomy): show the text and ask.
+
+**Done when** every issue operation the flow ran is visible through this table's Read or List for the configured kind, with the role labels mapped.

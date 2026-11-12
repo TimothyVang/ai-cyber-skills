@@ -3,6 +3,7 @@
 
     python bot.py once [--repo o/r] [--item pr:N|issue:N] [--backlog] [--dry-run]
     python bot.py watch [--interval 120]
+    python bot.py update [--dry-run]
     python bot.py install-autostart | uninstall-autostart
     python bot.py status
 
@@ -19,14 +20,20 @@ workspace of its own (<cache>/dry-run/<pid>-<id>, removed afterwards) beside a r
 prints what each triggered item would get; with --item it also runs that item's first read-only agent turn (the
 reviewer on a PR, the author's plan on an issue) and prints the reply.
 
+Updates: a watcher running from an omp plugin install upgrades that install when the brand repo's main moves
+(`autoUpdate`, `updateMinutes` in bot.json) and restarts itself when its own code changed. See `update`.
+
 Config: <CONFIG_DIR>/bot.json (defaults for missing keys; never overwritten). A repo opts out with
 `"bot": false`, and turns merging off with `"autonomousMerge": false`, in the brand's repo config file
 on its base branch.
 """
 import argparse
 import concurrent.futures
+import csv
+import ctypes
 import datetime as dt
 import functools
+import hashlib
 import json
 import os
 import plistlib
@@ -36,6 +43,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import threading
 import time
 import traceback
 import uuid
@@ -47,6 +55,8 @@ import brand  # noqa: E402
 import ghapp  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pr-agent"))
 import pr_agent_local  # noqa: E402  (its sealed `omp -p`: no tools, no files, no project config)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "loop"))
+import loop as goal_loop  # noqa: E402  (find_bash, run_limited: a time-limited command whose tree is killed)
 
 B = brand.BRAND
 NAME = B["name"]
@@ -61,13 +71,32 @@ TASK_NAME = B["autostartId"]
 LAUNCHD_LABEL = f"dev.{TASK_NAME}"
 DEFAULTS = {"author": {"agent": "omp"}, "reviewer": {"agent": "omp"},
             "verifiers": [{"agent": "omp"}, {"agent": "omp"}, {"agent": "omp"}],
-            "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": B["mention"]}
+            "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": B["mention"], "parallelRepos": 4,
+            "autoUpdate": True, "updateMinutes": 60}
+UPDATE_PATH = CONFIG_DIR / "update.json"  # its own file: `bot.py update` may write it while a watcher runs
+UPDATE_TIMEOUT = 600  # seconds for each omp command of an upgrade
+LOCK_WAIT = 60  # seconds a starting watcher waits for the lock (the watcher it replaces is letting go)
+HANDOVER_WAIT = 60  # seconds a restarting watcher waits for the new one to confirm it holds the lock
+HANDOVER_ENV = "BOT_HANDOVER_TOKEN"  # the token a restarted watcher writes to update.json once it holds the lock
+BOT_CODE = ("github-app", "pr-agent", "loop")  # the asset folders bot.py imports from
 ACPX_CONFIG = Path.home() / ".acpx" / "config.json"
 SIGNATURE = f"**{NAME} "
 SEVERITIES = ("P0", "P1", "P2")
 AGENT_TIMEOUT = 3600
 CHECK_WAIT = 1800
 MISSING_LOOKS = 3  # cycles a required check may stay unreported, with nothing running, after the wait
+REPO_CHECK_MINUTES = 30  # time limit for the base branch's `check` command (.deep-mode.json)
+# A size S diff (SKILL.md Route step 3) gets a light panel of one verifier: at most this many changed lines in
+# this many files, and no path that touches auth, secrets, permissions, migrations, CI, or agent config.
+LIGHT_PANEL_LINES, LIGHT_PANEL_FILES = 30, 2
+SENSITIVE_PATH = re.compile(r"auth|login|password|secret|credential|token|permission|security|migration|"
+                            r"(^|/)\.github/|(^|/)\.gitlab-ci\.yml$|(^|/)jenkinsfile$|pipelines?\.ya?ml$|"
+                            r"(^|/)\.(circleci|buildkite|husky)/|(^|/)\.env|(^|/)\.(omp|claude|codex|agents|cursor|"
+                            r"gemini|windsurf|kiro|pi)/|(^|/)(agents|claude|gemini|skill)\.md$|(^|/)\.(cursor|windsurf|"
+                            r"cline)rules$|mcp\.json$|(^|/)\.deep-mode\.json$", re.I)
+# A label that asks for the full panel on a diff the bot would size S, for what paths can't show (a change to
+# input parsing at a trust boundary).
+FULL_PANEL_LABELS = frozenset({"full-panel"})
 LIST_LIMIT = 100_000  # open PRs or issues listed per repo per cycle: gh pages through all of them
 MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for a new push or comment
 MERGE_SETTLE = 60  # seconds a merge read-back polls for MERGED before calling the merge not done
@@ -115,8 +144,43 @@ SEALED_NOTE = ("You have no tools and no files: everything you can check is in t
                "in the text below, and say so when a point depends on code you cannot see.")
 
 
+# Repos are polled in parallel worker threads. A worker holds BIG whenever it runs Python, so bot state is only
+# ever touched by one thread, and lets go of it while it waits on a subprocess, a sleep, or a sealed model call.
+BIG = threading.Lock()
+_holding = threading.local()
+# Set on Ctrl-C: each worker stops at its next blocking call instead of finishing its whole repo cycle.
+STOP = threading.Event()
+
+
+class Stopped(BaseException):
+    """The bot is shutting down. A BaseException, so no `except Exception` records it as an item error."""
+
+
+def unlocked(fn, *args, **kwargs):
+    """Run a blocking call with BIG released when this thread holds it, so other repos' workers can go on."""
+    if not getattr(_holding, "big", False):
+        return fn(*args, **kwargs)
+    _holding.big = False
+    BIG.release()
+    try:
+        return fn(*args, **kwargs)
+    finally:
+        BIG.acquire()
+        _holding.big = True
+        if STOP.is_set():
+            raise Stopped()
+
+
+def pause(seconds: float) -> None:
+    unlocked(time.sleep, seconds)
+
+
 class Blocked(Exception):
     """A conversation stopped at a gate; the message says why."""
+
+
+class CheckCannotStart(Exception):
+    """The repo check exited 127 (command not found): the bot's setup failed, not the PR's code."""
 
 
 # ---------------------------------------------------------------- small helpers
@@ -133,10 +197,10 @@ def log(message: str) -> None:
         fh.write(line + "\n")
 
 
-def run(cmd, cwd=None, stdin=None, check=True, timeout=600):
-    proc = subprocess.run([str(c) for c in cmd], cwd=cwd, input=stdin, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=timeout, creationflags=NO_WINDOW,
-                          **({} if stdin is not None else {"stdin": subprocess.DEVNULL}))
+def run(cmd, cwd=None, stdin=None, check=True, timeout=600, env=None):
+    proc = unlocked(subprocess.run, [str(c) for c in cmd], cwd=cwd, input=stdin, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=timeout, creationflags=NO_WINDOW, env=env,
+                    **({} if stdin is not None else {"stdin": subprocess.DEVNULL}))
     if check and proc.returncode:
         detail = (proc.stderr or proc.stdout).strip()[-800:]
         raise RuntimeError(f"{' '.join(str(c) for c in cmd[:5])} exited {proc.returncode}: {detail}")
@@ -523,6 +587,13 @@ def load_bot_config(write: bool = True) -> dict:
         if not isinstance(cfg["verifiers"], list) or not cfg["verifiers"]:
             raise ValueError("verifiers must be a non-empty list")
         cfg["verifiers"] = [as_role(v) for v in cfg["verifiers"]]
+        if not isinstance(cfg["parallelRepos"], int) or cfg["parallelRepos"] < 1:
+            raise ValueError("parallelRepos must be a positive integer")
+        if not isinstance(cfg["autoUpdate"], bool):
+            raise ValueError("autoUpdate must be true or false")
+        if isinstance(cfg["updateMinutes"], bool) or not isinstance(cfg["updateMinutes"], int) \
+                or cfg["updateMinutes"] < 1:
+            raise ValueError("updateMinutes must be a positive integer")
     except ValueError as err:
         raise SystemExit(f"{BOT_CONFIG}: {err}") from None
     return cfg
@@ -578,7 +649,8 @@ class Identity:
             if repo not in self.installs:
                 self.installs[repo] = ghapp.installation_for(self.app, repo)
             token = ghapp.installation_token(self.app, self.installs[repo])
-            ghapp.request("POST", f"/repos/{repo}/issues/{number}/comments", token, {"body": body}, bearer=False)
+            unlocked(ghapp.request, "POST", f"/repos/{repo}/issues/{number}/comments", token, {"body": body},
+                     bearer=False)
         else:
             run(["gh", "api", "-X", "POST", f"repos/{repo}/issues/{number}/comments", "--input", "-"],
                 stdin=json.dumps({"body": body}))
@@ -608,17 +680,63 @@ def base_config(clone: Path, branch: str) -> dict:
     return data if isinstance(data, dict) else {"autonomousMerge": False}
 
 
+def norm_path(path) -> str:
+    return os.path.normcase(os.path.realpath(path))
+
+
+def worktree_holders(clone: Path, branch: str) -> list:
+    """Paths of the worktrees that have `branch` checked out. `--porcelain -z` needs git 2.36 or later."""
+    holders, path = [], None
+    for field in run(["git", "worktree", "list", "--porcelain", "-z"], cwd=clone).stdout.split("\0"):
+        if field.startswith("worktree "):
+            path = field[len("worktree "):]
+        elif field == f"branch refs/heads/{branch}" and path:
+            holders.append(path)
+    return holders
+
+
+def free_branch(clone: Path, branch: str, keep: Path) -> None:
+    """Release `branch` from every worktree but `keep`, so `-B branch` can reset it. A holder under the bot's
+    worktrees dir is detached, keeping its HEAD commit and uncommitted changes; any other holder (a user's
+    worktree, the main clone) is left alone and raises. Raises unless the branch reads back free."""
+    root, keep, errors = norm_path(WORK / "worktrees"), norm_path(keep), []
+    for holder in worktree_holders(clone, branch):
+        held = norm_path(holder)
+        if held == keep:
+            continue
+        try:
+            ours = held != root and os.path.commonpath([held, root]) == root
+        except ValueError:  # another drive
+            ours = False
+        if not ours:
+            raise RuntimeError(f"`{branch}` is checked out at {Path(holder)}, outside the bot's worktrees "
+                               f"({Path(root)}); release it there")
+        proc = run(["git", "checkout", "--detach", "--quiet"], cwd=holder, check=False)
+        if proc.returncode:
+            errors.append(f"{Path(holder)}: {(proc.stderr or proc.stdout).strip()[-300:]}")
+        else:
+            log(f"{clone.name}: detached {Path(holder)} to free `{branch}`")
+    still = [str(Path(h)) for h in worktree_holders(clone, branch) if norm_path(h) != keep]
+    if still:
+        raise RuntimeError(f"`{branch}` is still checked out at {', '.join(still)}: {'; '.join(errors)}")
+
+
 def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
-    """Check `ref` out at `path` (the bot's own scratch worktree): on `branch` reset to ref, or detached."""
+    """Check `ref` out at `path` (the bot's own scratch worktree): on `branch` reset to ref, or detached.
+    Another bot worktree holding `branch` is detached first (free_branch)."""
     if not (path / ".git").exists():
         shutil.rmtree(path, ignore_errors=True)
         git(clone, "worktree", "prune")
         path.parent.mkdir(parents=True, exist_ok=True)
+        if branch:
+            free_branch(clone, branch, path)
         git(clone, "worktree", "add", "--force", *(["-B", branch] if branch else ["--detach"]), path, ref)
         return path
     run(["git", "merge", "--abort"], cwd=path, check=False)
     git(path, "reset", "--hard", "--quiet")
     git(path, "clean", "-fdq")
+    if branch:
+        free_branch(clone, branch, path)
     git(path, "checkout", "--force", "--quiet", *(["-B", branch, ref] if branch else ["--detach", ref]))
     return path
 
@@ -723,8 +841,53 @@ def checks_running(contexts: list, checks: list, required: list, pinned: dict) -
         any("pending" in seen for apps in pinned.values() for seen in apps.values())
 
 
+def diff_size(numstat: str) -> dict:
+    """Changed lines and files from `git diff --numstat`, and whether the diff is size S (a light panel): at most
+    LIGHT_PANEL_LINES lines in LIGHT_PANEL_FILES files, no binary file, no SENSITIVE_PATH."""
+    lines, files, small = 0, 0, True
+    for row in filter(str.strip, numstat.split("\0")):  # `--numstat -z --no-renames`: a rename is a delete and an add
+        added, deleted, path = row.strip("\n").split("\t", 2)
+        files += 1
+        if not (added.isdigit() and deleted.isdigit()) or SENSITIVE_PATH.search(path.replace("\\", "/")):
+            small = False
+        else:
+            lines += int(added) + int(deleted)
+    small = small and 0 < files <= LIGHT_PANEL_FILES and lines <= LIGHT_PANEL_LINES
+    return {"lines": lines, "files": files, "small": small}
+
+
 def is_held(labels) -> bool:
     return any((label.get("name") or "").lower() in HOLD_LABELS for label in labels or [])
+
+
+# Words a shell runs itself. The pre-check leaves them to the run (in bash, `command -v` knows them anyway).
+SHELL_WORDS = frozenset({"!", ".", ":", "[", "[[", "{", "(", "alias", "builtin", "call", "case", "cd", "command",
+                         "echo", "eval", "exec", "export", "false", "for", "function", "if", "pushd", "set", "source",
+                         "test", "true", "type", "ulimit", "umask", "unset", "until", "while"})
+
+
+def missing_command(command: str, env: dict, cwd: Path, bash) -> str:
+    """The check command's first word when the check's shell can't find it in `env`'s PATH, else "". Resolved the
+    way the check runs: bash's `command -v`, or shutil.which without bash. A builtin, a path, or a command that
+    doesn't parse is left to the run, where a nonzero exit is the code's failure."""
+    try:
+        words = shlex.split(command)
+    except ValueError:
+        return ""
+    while words and re.fullmatch(r"[A-Za-z_]\w*=.*", words[0], re.S):  # leading `NAME=value` assignments
+        words.pop(0)
+    word = words[0] if words else ""
+    if not re.fullmatch(r"[\w.+-]+", word) or word in SHELL_WORDS:
+        return ""
+    if not bash:
+        return "" if shutil.which(word, path=env.get("PATH")) else word
+    try:
+        proc = unlocked(subprocess.run, [bash, "-c", 'command -v -- "$1" >/dev/null', "check", word], cwd=cwd,
+                        env=env, stdin=subprocess.DEVNULL, capture_output=True, timeout=60, creationflags=NO_WINDOW)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""  # no answer: the run itself decides
+    return "" if proc.returncode == 0 else word
+
 
 
 def as_comment(node: dict) -> dict:
@@ -813,6 +976,7 @@ class Item:
         self.key = f"{repo}#{kind}:{number}"
         self.tag = f"{slug(repo)}-{kind}{number}"
         self.transcript = WORK / "logs" / slug(repo) / f"{kind}-{number}.md"
+        self.sessions = {}  # session name -> the acpx command prefix (agent, model, cwd) that opened it
 
     def note(self, text: str) -> None:
         self.transcript.parent.mkdir(parents=True, exist_ok=True)
@@ -847,6 +1011,7 @@ class Item:
         base = [acpx, "--cwd", cwd] + (["--model", role["model"]] if role.get("model") else [])
         if session:
             run(base + [agent, "sessions", "ensure", "--name", session], timeout=600)
+            self.sessions[session] = base + [agent, "sessions"]
         cmd = base + [perms, "--non-interactive-permissions", "deny", "--timeout", str(AGENT_TIMEOUT),
                       "--format", "quiet", agent]
         cmd += (["prompt", "-s", session] if session else ["exec"]) + ["--file", prompt_file]
@@ -860,9 +1025,13 @@ class Item:
         reply = "\n".join(line for line in proc.stdout.strip().splitlines()
                           if not line.startswith("[acpx] error")).strip()
         self.note(f"REPLY <- {role_label(role)} (exit {proc.returncode})\n\n{reply}\n\n{proc.stderr.strip()[-2000:]}")
-        # A read-only role that tried a denied tool (e.g. running tests) still answered: acpx exits 2 with
-        # PERMISSION_DENIED, and the reply on stdout is complete.
-        denied = proc.returncode == 2 and "PERMISSION_DENIED" in proc.stdout + proc.stderr and perms == "--approve-reads"
+        # A read-only role that tried a denied tool (e.g. running tests) still answered. acpx reports that once
+        # the turn has ended and the whole reply is on stdout: a non-zero exit (5 in acpx 0.22) whose only error
+        # line is PERMISSION_DENIED. Any other error line means the turn was cut short and the reply is partial.
+        # acpx writes its error lines to stderr; one on stdout is the agent's text, so it never counts.
+        errors = [line for line in proc.stderr.splitlines() if line.startswith("[acpx] error")]
+        denied = (perms == "--approve-reads" and bool(errors)
+                  and all(line.startswith("[acpx] error: PERMISSION_DENIED") for line in errors))
         if (proc.returncode and not denied) or not reply:
             raise RuntimeError(f"{role_label(role)} turn failed (exit {proc.returncode}): {proc.stderr.strip()[-400:]}")
         return reply
@@ -875,9 +1044,9 @@ class Item:
         self.note(f"PROMPT -> {role_label(role)} (sealed: no tools)\n\n{prompt}")
         log(f"{self.key}: {role_label(role)} turn (sealed: no tools)")
         try:
-            model = role.get("model") or pr_agent_local.omp_default_model()
-            reply, _ = pr_agent_local.omp_complete([{"role": "user", "content": prompt}], model,
-                                                   pr_agent_local.omp_oauth_credentials(model))
+            model = role.get("model") or unlocked(pr_agent_local.omp_default_model)
+            reply, _ = unlocked(lambda: pr_agent_local.omp_complete(
+                [{"role": "user", "content": prompt}], model, pr_agent_local.omp_oauth_credentials(model)))
         except SystemExit as err:  # pr_agent_local reports a setup problem by exiting
             raise RuntimeError(str(err)) from None
         # pr_agent_local puts a word joiner after each @ of the prompt so omp attaches no file; drop the echoes.
@@ -886,6 +1055,20 @@ class Item:
         if not reply:
             raise RuntimeError(f"{role_label(role)} sealed turn returned nothing")
         return reply
+
+    def close_sessions(self, names) -> None:
+        """Close named sessions this item opened (acpx closes per cwd; `sessions prune` would delete them).
+        Only for one-off sessions: discussion sessions keep their context across cycles. Failures are logged."""
+        for name in names:
+            prefix = self.sessions.pop(name, None)
+            if not prefix:
+                continue
+            try:
+                proc = run(prefix + ["close", name], check=False, timeout=120)
+                if proc.returncode:
+                    raise RuntimeError(f"exit {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}")
+            except Exception as err:
+                log(f"{self.key}: could not close session {name} ({err})")
 
 
 # ---------------------------------------------------------------- prompts
@@ -1057,6 +1240,7 @@ class PRConversation:
         trees = WORK / "worktrees" / slug(self.repo)
         self.review_tree, self.author_tree = trees / f"pr{self.n}-review", trees / f"pr{self.n}-author"
         self.verifier_trees = [trees / f"pr{self.n}-v{i}" for i in range(1, len(self.cfg["verifiers"]) + 1)]
+        self.check_tree = trees / f"pr{self.n}-check"
         self.answered, self.author_reply = set(), None
 
     def run(self) -> str:
@@ -1103,7 +1287,7 @@ class PRConversation:
                            "headRefOid,mergeStateStatus,mergeable,reviewDecision,state")
             if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                 break
-            time.sleep(5)
+            pause(5)
         self.head = view["headRefOid"]
         self.heads.add(self.head)
         return view
@@ -1181,6 +1365,8 @@ class PRConversation:
         while True:
             open_ = blocking(self.review(rounds + 1), self.answered)
             if not open_:
+                open_ = self.check_findings()  # the repo's own gate first: it costs no model calls
+            if not open_:
                 passed, tally, failures = self.panel()
                 if passed:
                     return self.land(tally)
@@ -1191,6 +1377,58 @@ class PRConversation:
                 raise Blocked(f"not converged after {rounds} round(s). Open findings:\n{lines}")
             rounds += 1
             self.answer(open_)
+
+    def repo_check(self, sha: str):
+        """Run the base branch's `check` command (.deep-mode.json, so a PR can't change its own gate) at `sha` in
+        a clean worktree. Returns (command, exit code, last output), the code None when it ran past
+        REPO_CHECK_MINUTES, or None when the repo sets no check. Only ever on the owner's own code."""
+        command = base_config(self.clone, self.base).get("check")
+        if not isinstance(command, str) or not command.strip():
+            return None
+        tree = worktree_at(self.clone, self.check_tree, sha)
+        tmp = tree / ".scratch" / "tmp"
+        tmp.mkdir(parents=True, exist_ok=True)
+        env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
+        env.update(TMPDIR=str(tmp), TMP=str(tmp), TEMP=str(tmp), PYTHONDONTWRITEBYTECODE="1")
+        if os.name == "nt":
+            # Under pythonw from a logon task the bash child finds no `python`. The bot's interpreter folder
+            # (python.exe sits beside pythonw.exe) goes first, so `python` in the check is the bot's Python.
+            env["PATH"] = os.pathsep.join(filter(None, [str(Path(sys.executable).parent), env.get("PATH")]))
+        bash = goal_loop.find_bash()
+        missing = missing_command(command, env, tree, bash)
+        if missing:
+            self.cannot_start(sha, command, missing)
+        log(f"{self.it.key}: repo check `{command}` at {sha[:7]}")
+        code, output = unlocked(goal_loop.run_limited, [bash, "-c", command] if bash else command,
+                                REPO_CHECK_MINUTES, shell=not bash, cwd=tree, env=env, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+        self.item["repoCheck"] = {"sha": sha, "code": code, "command": command}
+        return command, code, output.strip()[-3000:]
+
+    def cannot_start(self, sha: str, command: str, missing: str) -> None:
+        """The check's first command is not on the bot's PATH: the bot's setup, not the PR. No finding, no merge,
+        no revert; one note per head and command, and the item errors so the next cycle retries."""
+        if self.item.get("checkCannotStart") != {"sha": sha, "command": command}:
+            self.item["checkCannotStart"] = {"sha": sha, "command": command}
+            self.it.say("coordinator", "bot.py", sha, f"The repo check `{command}` could not start at `{sha[:7]}`. "
+                        f"`{missing}` is not on the bot's PATH. That is the bot's setup, not this PR, so no finding "
+                        "goes to the author, and nothing merges or reverts until the check runs. The next cycle "
+                        "tries again.")
+        raise CheckCannotStart(f"the repo check `{command}` could not start: `{missing}` is not on the bot's PATH")
+
+    def check_findings(self) -> list:
+        """The repo check at the current head as a P1 finding for the author when it fails, else nothing."""
+        # The command runs the head's code with the owner's environment: only ever on the owner's own work.
+        self.require_own()
+        result = self.repo_check(self.head)
+        if result is None or result[1] == 0:
+            return []
+        command, code, output = result
+        what = f"ran past {REPO_CHECK_MINUTES} minutes" if code is None else f"exited {code}"
+        self.it.say("coordinator", "bot.py", self.head, f"The repo check `{command}` {what} at "
+                    f"`{self.head[:7]}`:\n\n```text\n{output}\n```")
+        return [{"id": "C1", "severity": "P1", "file": "", "line": 0,
+                 "claim": f"the repo check `{command}` {what}", "evidence": output[-1500:]}]
 
     def author_checkout(self) -> Path:
         """The author's worktree on the PR branch at the current head, once that head re-passes the ownership
@@ -1241,7 +1479,7 @@ class PRConversation:
             self.refresh()
             if self.head == new:
                 return
-            time.sleep(3)
+            pause(3)
         raise Blocked(f"local head `{new[:7]}` but GitHub reports `{self.head[:7]}`; someone else pushed")
 
     def sync_base(self) -> None:
@@ -1295,29 +1533,45 @@ class PRConversation:
 
     def panel(self):
         self.require_own()  # verifiers run with --approve-all: the head must still be the owner's own work
-        sha, verifiers = self.head, self.cfg["verifiers"]
-        for tree in self.verifier_trees:
-            worktree_at(self.clone, tree, sha)
+        sha, configured = self.head, self.cfg["verifiers"]
+        size = diff_size(git(self.clone, "diff", "--numstat", "-z", "--no-renames", f"origin/{self.base}...{sha}"))
+        if size["small"] and any((label.get("name") or "").lower() in FULL_PANEL_LABELS
+                                 for label in self.pr.get("labels") or []):
+            size["small"] = False
+        # A size S diff gets a light panel: one verifier, from another agent than the author's if one is configured,
+        # else another model. Everything else gets every configured verifier.
+        if size["small"]:
+            agent, model = self.author["agent"], self.author.get("model")
+            ranked = sorted(range(len(configured)), key=lambda i: (configured[i]["agent"] == agent,
+                                                                     configured[i].get("model") == model))
+            seats = ranked[:1]
+        else:
+            seats = list(range(len(configured)))
+        verifiers = [configured[i] for i in seats]
+        for i in seats:
+            worktree_at(self.clone, self.verifier_trees[i], sha)
         stat = git(self.clone, "diff", "--stat", f"origin/{self.base}...{sha}")
 
         def vote(index: int):
             agent = verifiers[index]
             try:
                 reply = self.it.ask(agent, verifier_prompt(self, index + 1, len(verifiers), stat),
-                                    self.verifier_trees[index], "--approve-all")
+                                    self.verifier_trees[seats[index]], "--approve-all")
             except Exception as err:  # a verifier that cannot run is a FAIL vote, not a crash
                 reply = f"The verifier could not run: {err}\n\n```json\n{{\"vote\":\"FAIL\",\"evidence\":\"did not run\"}}\n```"
             return reply, *parse_vote(reply)
 
         with concurrent.futures.ThreadPoolExecutor(len(verifiers)) as pool:
-            results = list(pool.map(vote, range(len(verifiers))))
+            results = unlocked(lambda: list(pool.map(vote, range(len(verifiers)))))
         for i, (reply, _, _) in enumerate(results, 1):
             self.it.say(f"verifier {i}", verifiers[i - 1], sha, reply)
         votes = [v for _, v, _ in results]
-        passed = panel_passed(votes)
+        passed = votes == ["PASS"] if size["small"] else panel_passed(votes)
         tally = f"{votes.count('PASS')}/{len(votes)}"
+        kind = (f"Light panel (size S: {size['lines']} changed lines in {size['files']} file(s))"
+                if size["small"] else "Panel")
         lines = "\n".join(f"- verifier {i} ({role_label(verifiers[i - 1])}): {v}" for i, v in enumerate(votes, 1))
-        self.it.say("panel", "bot.py", sha, f"Panel {'PASS' if passed else 'not done'} at `{sha[:7]}`: "
+        self.it.say("panel", "bot.py", sha, f"{kind} {'PASS' if passed else 'not done'} at `{sha[:7]}`: "
                     f"{tally} PASS.\n\n{lines}")
         self.item.update(panelSha=sha if passed else None, panelTally=tally)
         failures = [{"id": f"V{i}", "severity": "P1", "file": "", "line": 0,
@@ -1336,7 +1590,7 @@ class PRConversation:
                                "headRefOid,mergeStateStatus,mergeable,reviewDecision,labels")
                 if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                     break
-                time.sleep(5)
+                pause(5)
             checks, required = pr_checks(self.repo, self.n), pr_checks(self.repo, self.n, required=True)
             pinned = {name: app_checks(self.repo, view["headRefOid"], name, apps)
                       for name, apps in pinned_rules.items()}
@@ -1344,7 +1598,7 @@ class PRConversation:
             if not pending or time.time() > deadline:
                 break
             log(f"{self.it.key}: waiting for required checks")
-            time.sleep(30)
+            pause(30)
         head = view["headRefOid"]
         # A base that is neither the trunk nor a protected branch is a stack parent's branch: merging into it would
         # land the child before its parent, or into a branch that already merged.
@@ -1393,6 +1647,17 @@ class PRConversation:
                 self.it.say("coordinator", "bot.py", facts["head"], "Not merging. Panel " + tally + " PASS at `"
                             + (sha or "")[:7] + "`, but:\n" + "\n".join(f"- {r}" for r in reasons))
             return status
+        # The repo check must have passed at this exact head with the command the base sets now (it ran before the
+        # panel; a resumed item, or a base that changed its check, runs it again).
+        command = base_config(self.clone, self.base).get("check")
+        if (self.item.get("repoCheck") or {}) != {"sha": sha, "code": 0, "command": command}:
+            result = self.repo_check(sha)
+            if result is not None and result[1] != 0:
+                command, code, output = result
+                what = f"ran past {REPO_CHECK_MINUTES} minutes" if code is None else f"exited {code}"
+                self.it.say("coordinator", "bot.py", sha, f"Not merging: the repo check `{command}` {what} at "
+                            f"`{sha[:7]}`.\n\n```text\n{output}\n```\nA new push or an owner comment restarts it.")
+                return "blocked"
         checks = ", ".join(f"`{c['name']}` {c.get('bucket')}" for c in facts["required"]) or "none required"
         # Saved before `gh pr merge`: a closed PR is never listed again, so whatever fails after GitHub accepts
         # the merge (the reply, the read-back, the note, the trunk check), repo_cycle resumes from this record.
@@ -1423,7 +1688,7 @@ class PRConversation:
             view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "state,headRefOid,mergeCommit")
             if view["state"] == "MERGED" or time.monotonic() >= deadline:
                 return view
-            time.sleep(3)
+            pause(3)
 
     def finish_merge(self, settle: bool) -> str:
         """After `gh pr merge`: confirm MERGED, then the merge note, then the trunk check. Each step is recorded,
@@ -1443,6 +1708,8 @@ class PRConversation:
                 return "merged"
             step.update(confirmed=True, commit=view["mergeCommit"]["oid"])
             self.bot.save()
+        if B.get("repo") and same(self.repo, B["repo"]):
+            self.bot.merged_self = True  # the bot's own source moved: the watcher checks for an update now
         if not step.get("noted"):
             self.it.say("coordinator", "bot.py", sha, f"Merged `{sha[:7]}` ({step.get('method') or 'merged'}). "
                         + step["summary"])
@@ -1453,11 +1720,30 @@ class PRConversation:
         return status
 
     def trunk_check(self, merged: str) -> str:
-        """pr-conversation step 8: the repo's checks on the new trunk. Red opens a revert PR, which the next
-        cycle runs this conversation on."""
-        agent = self.cfg["verifiers"][0]
+        """pr-conversation step 8: the repo's checks on the new trunk. With a `check` command in the base
+        branch's .deep-mode.json the bot runs it itself; otherwise a verifier agent runs the documented checks.
+        Red opens a revert PR, which the next cycle runs this conversation on."""
         git(self.clone, "fetch", "origin", "--quiet", f"+refs/heads/{self.base}:refs/remotes/origin/{self.base}",
             timeout=1800)
+        step = self.item.get("afterMerge") or {}
+        step.pop("checkCannotStart", None)
+        try:
+            result = self.repo_check(merged)
+        except CheckCannotStart:
+            # No verdict, so nothing reverts. The record stays and repo_cycle keeps retrying it past MAX_ATTEMPTS:
+            # the retry costs no model call, and the trunk check must still run once the check can start.
+            step["checkCannotStart"] = True
+            raise
+        if result is not None:
+            command, code, output = result
+            if code is None:  # no verdict is not a red trunk: say so, revert nothing
+                self.it.say("coordinator", "bot.py", merged, f"The trunk check `{command}` at `{merged[:7]}` ran past "
+                            f"{REPO_CHECK_MINUTES} minutes. Run it on `{self.base}` by hand.")
+                return "merged"
+            self.it.say("trunk check", "bot.py", merged, f"`{command}` exited {code} at `{merged[:7]}`.\n\n"
+                        f"```text\n{output[-1500:]}\n```")
+            return "merged" if code == 0 else self.revert_red(merged, f"`{command}` exited {code}:\n{output}")
+        agent = self.cfg["verifiers"][0]
         tree = worktree_at(self.clone, self.verifier_trees[0], merged)
         try:
             reply = self.it.ask(agent, trunk_prompt(self, merged), tree, "--approve-all")
@@ -1475,8 +1761,11 @@ class PRConversation:
             return "merged"
         if vote == "PASS":
             return "merged"
+        return self.revert_red(merged, str(data.get("evidence") or "no parseable vote"))
+
+    def revert_red(self, merged: str, evidence: str) -> str:
         try:
-            url = self.open_revert(merged, str(data.get("evidence") or "no parseable vote"))
+            url = self.open_revert(merged, evidence)
         except Exception as err:
             self.it.say("coordinator", "bot.py", merged, f"Trunk is red after `{merged[:7]}`, and opening a revert "
                         f"PR failed ({err}). Revert it by hand.")
@@ -1545,7 +1834,8 @@ class IssueConversation:
             if self.bot.live_turns:
                 self.it.say("author", self.author, sha, self.turn(self.author, plan_prompt(self)))
             return "dry-run"
-        author_session, reviewer_session, build_session = issue_sessions(self.it.tag, implement)
+        sessions = issue_sessions(self.it.tag, implement)
+        author_session, reviewer_session, _ = sessions
         plan = self.turn(self.author, plan_prompt(self), author_session)
         self.it.say("author", self.author, sha, plan)
         critique = self.turn(self.reviewer, critique_prompt(self, plan), reviewer_session)
@@ -1558,9 +1848,11 @@ class IssueConversation:
         self.it.say("author", self.author, sha, answer)
         if not implement:
             return "discussed"
-        return self.implement(f"Plan:\n{plan}\n\nReview:\n{critique}\n\nAnswer:\n{answer}", build_session)
+        return self.implement(f"Plan:\n{plan}\n\nReview:\n{critique}\n\nAnswer:\n{answer}", sessions)
 
-    def implement(self, discussion: str, session: str) -> str:
+    def implement(self, discussion: str, sessions: tuple) -> str:
+        """Build on the issue branch in the impl tree and open its PR. `sessions` are the build's one-off
+        (author, reviewer, implement) session names from issue_sessions."""
         branch = f"{B['branchPrefix']}/issue-{self.n}"
         existing = gh_json("pr", "list", "-R", self.repo, "--head", branch, "--state", "open", "--json", "url") or []
         if existing:
@@ -1581,7 +1873,8 @@ class IssueConversation:
         tree = worktree_at(self.clone, self.tree.with_name(f"issue{self.n}-impl"),
                            f"origin/{branch}" if on_remote else f"origin/{self.default}", branch=branch)
         old = git(tree, "rev-parse", "HEAD")
-        reply = self.it.ask(self.author, implement_prompt(self, branch, discussion), tree, "--approve-all", session)
+        reply = self.it.ask(self.author, implement_prompt(self, branch, discussion), tree, "--approve-all",
+                            sessions[2])
         new = git(tree, "rev-parse", "HEAD")
         if int(git(tree, "rev-list", "--count", f"origin/{self.default}..HEAD")) == 0:
             self.it.say("coordinator", "bot.py", new, "The author made no commits, so no PR was opened.\n\n" + reply)
@@ -1598,10 +1891,26 @@ class IssueConversation:
                 f"author ({role_label(self.author)}) after a plan review with {role_label(self.reviewer)} in #{self.n}.")
         url = gh("pr", "create", "-R", self.repo, "--base", self.default, "--head", branch, "--title", title,
                  "--body-file", "-", stdin=body, cwd=self.clone).strip()
+        self.release(tree, sessions, branch)
         self.item["implemented"] = True
         self.it.say("coordinator", "bot.py", new,
                     f"Implemented on `{branch}` and opened {url}; the next cycle runs the PR conversation on it.")
         return "implemented"
+
+    def release(self, tree: Path, sessions: tuple, branch: str) -> None:
+        """Once the PR is open: close the build's one-off sessions, then detach the impl tree so the PR
+        conversation can check `branch` out. Detaching keeps the tree's files. Failures are only logged: the PR
+        is open either way, and the next worktree_at on `branch` detaches the tree again or fails loudly."""
+        try:
+            self.it.close_sessions(sessions)
+        except Exception as err:
+            log(f"{self.it.key}: could not close the build sessions ({err})")
+        try:
+            proc = run(["git", "checkout", "--detach", "--quiet"], cwd=tree, check=False)
+            if proc.returncode:
+                raise RuntimeError((proc.stderr or proc.stdout).strip()[-300:])
+        except Exception as err:
+            log(f"{self.it.key}: could not detach {tree} from `{branch}` ({err})")
 
 
 # ---------------------------------------------------------------- the cycle
@@ -1611,6 +1920,7 @@ class Bot:
         self.args, self.dry = args, bool(args.dry_run)
         self.live_turns = not self.dry or bool(args.item)  # dry-run runs read-only agent turns only for --item
         self.cfg, self.state, self.ident = load_bot_config(write=not self.dry), load_state(), Identity()
+        self.merged_self = False
 
     def save(self) -> None:
         if not self.dry:
@@ -1633,11 +1943,34 @@ class Bot:
         log(f"cycle as {self.ident.describe()}, events since {since or 'the beginning (backlog)'}"
             f"{', DRY RUN' if self.dry else ''}")
         repos = [self.args.repo] if self.args.repo else self.ident.repos()
-        for repo in repos:
+
+        def one(repo: str) -> None:
+            BIG.acquire()
+            _holding.big = True
             try:
                 self.repo_cycle(repo, since)
+            except Stopped:
+                log(f"{repo}: stopped")
             except Exception as err:
                 log(f"{repo}: {err}")
+            finally:
+                _holding.big = False
+                BIG.release()
+
+        # Repos run side by side, each one item at a time, so one long conversation never stalls the others.
+        pool = concurrent.futures.ThreadPoolExecutor(max(1, min(self.cfg["parallelRepos"], len(repos))))
+        futures = [pool.submit(one, repo) for repo in repos]
+        try:
+            # Wait in short slices: on Windows a plain wait on the pool never sees Ctrl-C.
+            while concurrent.futures.wait(futures, timeout=0.5)[1]:
+                pass
+        except KeyboardInterrupt:
+            STOP.set()  # workers stop at their next blocking call; queued repos never start
+            pool.shutdown(wait=False, cancel_futures=True)
+            raise
+        pool.shutdown()
+        for future in futures:
+            future.result()
         if not self.dry:
             self.state["lastCycle"] = now_iso()
             self.save()
@@ -1684,7 +2017,8 @@ class Bot:
             scheduled = {data["number"] for kind, data, *_ in todo}
             for key, item in list(self.state["items"].items()):  # merges whose post-merge steps didn't finish
                 step = item.get("afterMerge")
-                if not key.startswith(f"{repo}#pr:") or not step or item.get("errors", 0) >= MAX_ATTEMPTS:
+                if not key.startswith(f"{repo}#pr:") or not step or \
+                        (item.get("errors", 0) >= MAX_ATTEMPTS and not step.get("checkCannotStart")):
                     continue
                 if step["pr"]["number"] in scheduled or (want and want != f"pr:{step['pr']['number']}"):
                     continue  # an open PR already listed above runs finish_merge first anyway
@@ -1773,28 +2107,45 @@ class Bot:
 # ---------------------------------------------------------------- process plumbing
 
 class Lock:
-    """One bot process at a time; the OS releases the lock if the process dies."""
+    """One bot process at a time; the OS releases the lock if the process dies. With `wait`, a held lock is tried
+    again each second for that many seconds (a restarting watcher's new process waits for the old one to let go)."""
 
     path = WORK / "bot.lock"
 
+    def __init__(self, wait: float = 0):
+        self.wait, self.fh = wait, None
+
     def __enter__(self):
-        WORK.mkdir(parents=True, exist_ok=True)
-        self.fh = open(self.path, "a+")
-        try:
-            if os.name == "nt":
-                import msvcrt
-                self.fh.seek(0)
-                msvcrt.locking(self.fh.fileno(), msvcrt.LK_NBLCK, 1)
-            else:
-                import fcntl
-                fcntl.flock(self.fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        except OSError:
-            self.fh.close()
-            raise SystemExit(f"another {NAME} bot is running (lock {self.path})") from None
+        self.acquire(self.wait)
         return self
 
+    def acquire(self, wait: float = 0) -> None:
+        WORK.mkdir(parents=True, exist_ok=True)
+        self.fh = open(self.path, "a+")
+        deadline = time.monotonic() + wait
+        while True:
+            try:
+                if os.name == "nt":
+                    import msvcrt
+                    self.fh.seek(0)
+                    msvcrt.locking(self.fh.fileno(), msvcrt.LK_NBLCK, 1)
+                else:
+                    import fcntl
+                    fcntl.flock(self.fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                return
+            except OSError:
+                if time.monotonic() >= deadline:
+                    self.release()
+                    raise SystemExit(f"another {NAME} bot is running (lock {self.path})") from None
+                time.sleep(1)
+
+    def release(self) -> None:
+        if self.fh is not None:
+            self.fh.close()
+            self.fh = None
+
     def __exit__(self, *exc):
-        self.fh.close()
+        self.release()
 
 
 def cmd_once(args) -> None:
@@ -1830,7 +2181,12 @@ def remove_tree(path: Path) -> None:
 
 
 def cmd_watch(args) -> None:
-    with Lock():
+    updates = AutoUpdate()
+    with Lock(wait=LOCK_WAIT) as lock:
+        token = os.environ.pop(HANDOVER_ENV, None)
+        if token:  # started by a restart: tell the old watcher this one holds the lock, so it can exit
+            save_update_record({**load_update_record(), "watcher": {"token": token, "pid": os.getpid(),
+                                                                     "at": now_iso()}})
         while True:
             bot = None
             try:
@@ -1838,14 +2194,236 @@ def cmd_watch(args) -> None:
                 bot.cycle()
             except (Exception, SystemExit) as err:  # a bad cycle (network, config) must not end the watcher
                 log(f"cycle failed: {err}")
+            # Only here, between cycles: every repo worker has finished and no item is running.
+            code = updates.after_cycle(bot, lock)
+            if code is not None:
+                raise SystemExit(code)
             time.sleep(args.interval or (bot.cfg["interval"] if bot else DEFAULTS["interval"]))
+
+
+# ---------------------------------------------------------------- updates
+
+def omp_install(anywhere: bool = False):
+    """The omp plugin install this file runs from, or None. An install lives in a versioned cache folder
+    (`.../cache/plugins/<marketplace>___<plugin>___<version>/`) linked from `~/.omp/plugins/node_modules/<plugin>`.
+    With `anywhere`, a git checkout of the plugin also finds the omp install of the same plugin, when there is one.
+    Returns the marketplace and plugin names, the link, and this script and the assets folder through the link."""
+    here = Path(__file__).resolve()
+    root = here.parents[4]  # <plugin>/skills/<skill>/assets/github-app/bot.py
+    parts = root.name.split("___")
+    link = Path.home() / ".omp" / "plugins" / "node_modules" / (parts[1] if len(parts) == 3 else root.name)
+    if not link.exists():
+        return None
+    target = link.resolve()
+    found = target.name.split("___")
+    if len(found) != 3 or (target != root and not anywhere):
+        return None
+    return {"marketplace": found[0], "plugin": found[1], "link": link, "script": link / here.relative_to(root),
+            "assets": link / here.parent.parent.relative_to(root)}
+
+
+def stable_script() -> Path:
+    """This file by a path that survives plugin upgrades: autostart and a restart after an update must use the omp
+    link, or the next upgrade leaves them pointing at a deleted versioned folder."""
+    install = omp_install()
+    return install["script"] if install else Path(__file__).resolve()
+
+
+def code_hash(assets: Path) -> str:
+    """One digest over the bot's code: every file in the asset folders it imports from."""
+    digest = hashlib.sha256()
+    for folder in BOT_CODE:
+        for path in sorted((assets / folder).rglob("*")):
+            if path.is_file() and "__pycache__" not in path.parts:
+                digest.update(f"{path.relative_to(assets).as_posix()}\0".encode())
+                digest.update(hashlib.sha256(path.read_bytes()).digest())
+    return digest.hexdigest()
+
+
+def upgrade_commands(install: dict) -> list:
+    """`omp plugin upgrade` reinstalls from omp's local clone of the marketplace and never fetches it; the
+    marketplace update fetches main first, so an unchanged version still gets main's latest files."""
+    return [["omp", "plugin", "marketplace", "update", install["marketplace"]],
+            ["omp", "plugin", "upgrade", install["plugin"]]]
+
+
+def load_update_record() -> dict:
+    try:
+        record = json.loads(UPDATE_PATH.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return record if isinstance(record, dict) else {}
+
+
+def save_update_record(record: dict) -> None:
+    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    tmp = UPDATE_PATH.with_suffix(".tmp")
+    tmp.write_text(json.dumps(record, indent=2, sort_keys=True), encoding="utf-8")
+    # On Windows the replace fails while another process has the file open (the old watcher polls it during a
+    # handover), so retry briefly before giving up.
+    for attempt in range(20):
+        try:
+            os.replace(tmp, UPDATE_PATH)
+            return
+        except PermissionError:
+            if attempt == 19:
+                raise
+            time.sleep(0.1)
+
+
+def remote_main() -> str:
+    sha = gh("api", f"repos/{B['repo']}/commits/main", "--jq", ".sha", timeout=120).strip()
+    if not re.fullmatch(r"[0-9a-f]{40}", sha):
+        raise RuntimeError(f"`gh api repos/{B['repo']}/commits/main` returned {sha[:80]!r}, not a commit")
+    return sha
+
+
+def update_install(install: dict, dry: bool = False) -> dict:
+    """Upgrade the omp install when the brand repo's main is not the commit recorded at the last update (none
+    recorded counts as different). Raises when a command fails; the record then keeps the old commit."""
+    recorded = load_update_record().get("sha")
+    result = {"remote": remote_main(), "recorded": recorded, "commands": upgrade_commands(install),
+              "upgraded": False, "codeChanged": False}
+    if dry or result["remote"] == recorded:
+        return result
+    before = code_hash(install["assets"])
+    env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
+    for command in result["commands"]:
+        run(command, env=env, timeout=UPDATE_TIMEOUT, cwd=Path.home())
+    result.update(upgraded=True, codeChanged=code_hash(install["assets"]) != before)
+    save_update_record({**load_update_record(), "sha": result["remote"], "updatedAt": now_iso()})
+    return result
+
+
+def minutes_since(stamp) -> float:
+    try:
+        then = dt.datetime.strptime(stamp, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    except (TypeError, ValueError):
+        return float("inf")
+    return (dt.datetime.now(dt.timezone.utc) - then).total_seconds() / 60
+
+
+def restart_watcher(script: Path, lock: Lock):
+    """Hand the watch over to a new process running the updated code, and return this process's exit code, or
+    None when the handover failed and this watcher goes on with the old code. Under systemd (INVOCATION_ID and the
+    bot's unit) a child would die with the unit, so the watcher exits 75 and the unit's Restart=on-failure starts it.
+    Otherwise it lets go of the lock, starts the same command line detached, and waits HANDOVER_WAIT seconds for the
+    child to record its token in update.json after taking the lock. Without that, the child is stopped and this
+    watcher takes the lock back; its output is in LOGS/restart-<pid>.log."""
+    if os.environ.get("INVOCATION_ID") and systemd_unit().is_file():
+        return 75
+    token, command = uuid.uuid4().hex, [sys.executable, str(script), *sys.argv[1:]]
+    if os.name == "nt":
+        spawn = {"creationflags": subprocess.DETACHED_PROCESS | subprocess.CREATE_NEW_PROCESS_GROUP | NO_WINDOW}
+    else:
+        spawn = {"start_new_session": True}
+    LOGS.mkdir(parents=True, exist_ok=True)
+    child_log, child, problem = LOGS / f"restart-{os.getpid()}.log", None, "it did not take the lock"
+    lock.release()
+    try:
+        with open(child_log, "a", encoding="utf-8") as out:
+            child = subprocess.Popen(command, cwd=Path.home(), env={**os.environ, HANDOVER_ENV: token},
+                                     stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=out, close_fds=True,
+                                     **spawn)
+        deadline = time.monotonic() + HANDOVER_WAIT
+        while True:
+            if (load_update_record().get("watcher") or {}).get("token") == token:
+                log(f"restarted: `{subprocess.list2cmdline(command)}` holds the lock; this watcher exits")
+                return 0
+            if child.poll() is not None:
+                problem = f"it exited {child.returncode}"
+                break
+            if time.monotonic() >= deadline:
+                problem = f"it did not take the lock within {HANDOVER_WAIT} s"
+                break
+            time.sleep(0.5)
+    except Exception as err:
+        problem = f"it could not start ({err})"
+    if child is not None and child.poll() is None:
+        child.kill()  # never two watchers
+    lock.acquire(LOCK_WAIT)
+    log(f"restart failed: {problem} (its output: {child_log}); this watcher goes on with the old code and the next "
+        "update check tries again")
+    return None
+
+
+class AutoUpdate:
+    """The watcher's self-update, run only between cycles. At most every `updateMinutes`, and right after a merge
+    into the bot's own repo, it upgrades the omp install when main moved, and restarts the watcher when the bot's
+    code on disk differs from the code this process started with (an upgrade by `bot.py update` counts too)."""
+
+    def __init__(self):
+        self.install, self.started, self.off = omp_install(), None, None
+        if not B.get("repo"):
+            self.install, self.off = None, "the brand names no repo to update from"
+            return
+        if not self.install:
+            self.off = f"{Path(__file__).resolve()} is not an omp plugin install (update a git checkout with git pull)"
+            return
+        try:
+            self.started = code_hash(self.install["assets"])
+        except OSError as err:
+            self.off = f"the bot's code can't be read ({err})"
+
+    def after_cycle(self, bot, lock: Lock):
+        """None to keep watching, else the exit code for this process (a new watcher took over). Never raises."""
+        if bot is None or not bot.cfg["autoUpdate"]:
+            return None
+        if self.off:
+            log(f"auto-update off: {self.off}")
+            self.off, self.install = None, None  # logged once
+            return None
+        if not self.install:
+            return None
+        try:
+            record = load_update_record()
+            if not bot.merged_self and minutes_since(record.get("checkedAt")) < bot.cfg["updateMinutes"]:
+                return None
+            save_update_record({**record, "checkedAt": now_iso()})
+            result = update_install(self.install)
+            if result["upgraded"]:
+                log(f"updated {self.install['plugin']} to {B['repo']}@{result['remote'][:7]}"
+                    f" (was {(result['recorded'] or 'unrecorded')[:10]})")
+            if code_hash(self.install["assets"]) == self.started:
+                return None
+            return restart_watcher(self.install["script"], lock)
+        except Exception as err:  # never stops the bot: the next check retries
+            log(f"update failed: {err}; the next check in {bot.cfg['updateMinutes']} minutes retries")
+            return None
+
+
+def cmd_update(args) -> None:
+    """One check-and-upgrade of the omp install now. It never restarts a watcher: a running watcher restarts
+    itself at its next update check when the bot's code changed."""
+    install = omp_install(anywhere=True)
+    here = Path(__file__).resolve()
+    if not B.get("repo"):
+        raise SystemExit("auto-update is off: the brand names no repo to update from")
+    if not install:
+        raise SystemExit(f"no omp install of this plugin found; {here} updates with git pull")
+    print(f"omp install: {install['marketplace']}/{install['plugin']} at {install['link']} -> "
+          f"{install['link'].resolve()}")
+    if install["link"].resolve() not in here.parents:
+        print(f"this copy ({here}) is not that install; a watcher updates itself only when it runs from the install")
+    result = update_install(install, dry=args.dry_run)
+    commands = " && ".join(shlex.join(c) for c in result["commands"])
+    print(f"remote {B['repo']} main: {result['remote']}")
+    print(f"recorded at the last update: {result['recorded'] or 'none'}")
+    if result["remote"] == result["recorded"]:
+        print("up to date: nothing to run")
+    elif args.dry_run:
+        print(f"would run: {commands}")
+    else:
+        print(f"ran: {commands}")
+        print("bot code changed: a running watcher restarts at its next update check" if result["codeChanged"]
+              else "bot code unchanged")
 
 
 def autostart_command() -> list:
     exe = Path(sys.executable)
     if os.name == "nt" and exe.with_name("pythonw.exe").is_file():
         exe = exe.with_name("pythonw.exe")  # no console window at logon; log() writes LOGS/bot.log
-    return [str(exe), str(Path(__file__).resolve()), "watch"]
+    return [str(exe), str(stable_script()), "watch"]
 
 
 def launchd_plist() -> Path:
@@ -1873,19 +2451,122 @@ def crontab_lines():
     return proc.stdout.splitlines() if proc.returncode == 0 else []
 
 
+def startup_launcher() -> Path:
+    """The launcher in the user's Startup folder. Windows says where that folder is, since it can be redirected;
+    the default place under %APPDATA% is used only when the call fails."""
+    buf = ctypes.create_unicode_buffer(260)
+    try:
+        found = ctypes.windll.shell32.SHGetFolderPathW(None, 7, None, 0, buf) == 0  # 7: CSIDL_STARTUP
+    except OSError:
+        found = False
+    folder = Path(buf.value) if found and buf.value else Path(
+        os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming",
+        "Microsoft", "Windows", "Start Menu", "Programs", "Startup")
+    return folder / f"{TASK_NAME}.cmd"
+
+
+def write_launcher(launcher: Path, command: list, log_file: Path) -> None:
+    """Write the .cmd that runs `command` in a minimized window of its own and appends its output to `log_file`.
+    The window is the cmd that holds the redirect; `start` passes none to the program it launches.
+    The file is UTF-8, so it switches the code page first. cmd parses the start line twice, and the second
+    parse, in the new window, expands any %NAME% that is defined, which no escape inside quotes prevents. So
+    the paths go into variables, set here where doubling `%` is the only escape, and the new window reads them
+    with delayed expansion (`/v:on`), whose values are never parsed again. Its outer quotes and redirects are
+    caret-escaped, so they belong to the new window, not to this file."""
+    values = [*command, log_file]
+    sets = [f'set "BOT_LAUNCH_{i}={value}"'.replace("%", "%%") for i, value in enumerate(values)]
+    args = " ".join(f'"!BOT_LAUNCH_{i}!"' for i in range(len(command)))
+    line = (f'start "{TASK_NAME}" /min cmd /v:on /s /c ^"{args} ^>^> "!BOT_LAUNCH_{len(command)}!" 2^>^&1^"'
+            .replace("%", "%%"))
+    launcher.parent.mkdir(parents=True, exist_ok=True)
+    launcher.write_bytes("\r\n".join(["@echo off", "chcp 65001 >nul", "setlocal DisableDelayedExpansion",
+                                      *sets, line, ""]).encode("utf-8"))
+
+
+def schtasks(*args) -> tuple:
+    """One schtasks call as (exit code, detail); the code is None when schtasks could not run (missing or hung).
+    That is a result, not an exception, so `status` never raises here."""
+    try:
+        proc = run(["schtasks", *args], check=False, timeout=60)
+    except (OSError, subprocess.SubprocessError) as err:
+        return None, str(err)
+    return proc.returncode, (proc.stderr or proc.stdout).strip()[-400:]
+
+
+def windows_autostart() -> list:
+    """The Windows autostart entries present now, the Task Scheduler task first."""
+    kinds = ["schtasks"] if schtasks("/Query", "/TN", TASK_NAME)[0] == 0 else []
+    return kinds + (["startup-folder"] if startup_launcher().is_file() else [])
+
+
+def install_windows_autostart(command: list) -> tuple:
+    """Start `command` at logon; returns (kind, where). Task Scheduler comes first. An ONLOGON task needs an
+    elevated terminal on most machines, so any failure there falls back to a launcher in the user's Startup
+    folder, which needs no admin rights. A reinstall tries the task again and then drops the launcher."""
+    launcher = startup_launcher()
+    code, detail = schtasks("/Create", "/TN", TASK_NAME, "/TR", subprocess.list2cmdline(command),
+                            "/SC", "ONLOGON", "/IT", "/F")
+    if code == 0:
+        launcher.unlink(missing_ok=True)
+        return "schtasks", f"Task Scheduler task {TASK_NAME}"
+    try:
+        write_launcher(launcher, command, LOGS / "watch.log")
+    except OSError as err:
+        raise SystemExit(f"autostart failed. Task Scheduler: {detail}. Startup-folder launcher {launcher}: {err}") \
+            from None
+    print(f"Task Scheduler did not take the task ({detail}); using the Startup folder, which needs no admin rights")
+    return "startup-folder", str(launcher)
+
+
+def task_listed() -> tuple:
+    """Whether the task is in schtasks' full list, as (True/False, "") or (None, why) when the list cannot be read.
+    `/Query /TN` cannot tell a missing task from one this user may not read: both exit 1."""
+    try:
+        proc = run(["schtasks", "/Query", "/FO", "CSV", "/NH"], check=False, timeout=60)
+    except (OSError, subprocess.SubprocessError) as err:
+        return None, str(err)
+    if proc.returncode:
+        return None, (proc.stderr or proc.stdout).strip()[-400:]
+    names = {row[0].lower() for row in csv.reader(proc.stdout.splitlines()) if row}
+    return f"\\{TASK_NAME}".lower() in names, ""
+
+
+def uninstall_windows_autostart() -> list:
+    """Remove the task and the launcher; returns one line for each entry that is still there, with the reason.
+    When /Delete fails, the task counts as gone only if schtasks' full list can be read and lacks it."""
+    launcher = startup_launcher()
+    deleted, task_error = schtasks("/Delete", "/TN", TASK_NAME, "/F")
+    try:
+        launcher.unlink(missing_ok=True)
+        launcher_error = ""
+    except OSError as err:
+        launcher_error = str(err)
+    left = []
+    if deleted != 0:
+        listed, list_error = task_listed()
+        if listed:
+            left.append(f"Task Scheduler task {TASK_NAME}: {task_error}")
+        elif listed is None:
+            left.append(f"Task Scheduler task {TASK_NAME}, not checked: {task_error}; {list_error}")
+    if launcher.is_file():
+        left.append(f"Startup-folder launcher {launcher}: {launcher_error}")
+    return left
+
+
 def autostart_kind() -> str:
+    """How autostart is, or would be, registered here. On Windows that is the entry present now: the task, else
+    the Startup-folder launcher, else `schtasks`, which an install tries first."""
     if os.name == "nt":
-        return "schtasks"
+        return (windows_autostart() or ["schtasks"])[0]
     if sys.platform == "darwin":
         return "launchd"
     return "systemd" if has_user_systemd() else "cron"
 
 
 def autostart_installed() -> bool:
-    kind = autostart_kind()
-    if kind == "schtasks":
-        return run(["schtasks", "/Query", "/TN", TASK_NAME], check=False).returncode == 0
-    if kind == "launchd":
+    if os.name == "nt":
+        return bool(windows_autostart())
+    if sys.platform == "darwin":
         return launchd_plist().is_file()
     return systemd_unit().is_file() or any(CRON_MARK in line for line in crontab_lines() or [])
 
@@ -1922,17 +2603,18 @@ def cmd_status(args) -> None:
                       "autostart": autostart, "autostartKind": autostart_kind(), "running": running,
                       "lastCycle": state.get("lastCycle"), "since": state.get("since"), "config": config,
                       "items": statuses, "recent": {k: v.get("status") for k, v in recent},
-                      "workspace": str(WORK), "logs": str(LOGS)}, indent=2))
+                      "update": load_update_record(), "workspace": str(WORK), "logs": str(LOGS)}, indent=2))
 
 
 def cmd_install_autostart(args) -> None:
     LOGS.mkdir(parents=True, exist_ok=True)
-    command, kind = autostart_command(), autostart_kind()
-    if kind == "schtasks":
-        proc = run(["schtasks", "/Create", "/TN", TASK_NAME, "/TR", subprocess.list2cmdline(command),
-                    "/SC", "ONLOGON", "/IT", "/F"], check=False)
-        where = f"Task Scheduler task {TASK_NAME}"
-    elif kind == "launchd":
+    command = autostart_command()
+    if os.name == "nt":  # not by the installed kind: a reinstall must try Task Scheduler again
+        kind, where = install_windows_autostart(command)
+        print(f"autostart installed ({kind}: {where}); logs in {LOGS}")
+        return
+    kind = autostart_kind()
+    if kind == "launchd":
         plist = launchd_plist()
         plist.parent.mkdir(parents=True, exist_ok=True)
         with open(plist, "wb") as fh:
@@ -1966,16 +2648,17 @@ def cmd_install_autostart(args) -> None:
                    check=False)
         where = "crontab @reboot"
     if proc.returncode:
-        raise SystemExit(f"autostart via {kind} failed: {(proc.stderr or proc.stdout).strip()[-400:]}"
-                         + ("; ONLOGON tasks may need an elevated terminal once" if kind == "schtasks" else ""))
+        raise SystemExit(f"autostart via {kind} failed: {(proc.stderr or proc.stdout).strip()[-400:]}")
     print(f"autostart installed ({kind}: {where}); logs in {LOGS}")
 
 
 def cmd_uninstall_autostart(args) -> None:
+    if os.name == "nt":
+        left = uninstall_windows_autostart()
+        print(f"autostart still present ({'; '.join(left)})" if left else "autostart removed")
+        return
     kind = autostart_kind()
-    if kind == "schtasks":
-        run(["schtasks", "/Delete", "/TN", TASK_NAME, "/F"], check=False)
-    elif kind == "launchd":
+    if kind == "launchd":
         run(["launchctl", "unload", "-w", launchd_plist()], check=False)
         launchd_plist().unlink(missing_ok=True)
     else:
@@ -2004,10 +2687,13 @@ def main() -> None:
     watch = sub.add_parser("watch", help="poll forever")
     watch.add_argument("--interval", type=int, help="seconds between cycles (default: bot.json interval)")
     watch.set_defaults(func=cmd_watch, repo=None, item=None, backlog=False, dry_run=False)
+    update = sub.add_parser("update", help="upgrade the omp install now when the repo's main moved")
+    update.add_argument("--dry-run", action="store_true", help="print the commits and the commands; change nothing")
+    update.set_defaults(func=cmd_update)
     sub.add_parser("status", help="config, state and whether a bot is running").set_defaults(func=cmd_status)
-    sub.add_parser("install-autostart", help="start `watch` at logon (Windows Task Scheduler)").set_defaults(
-        func=cmd_install_autostart)
-    sub.add_parser("uninstall-autostart", help="remove the logon task").set_defaults(func=cmd_uninstall_autostart)
+    sub.add_parser("install-autostart", help="start `watch` at logon (Windows: a Task Scheduler task, or a "
+                   "Startup-folder launcher when the task is refused)").set_defaults(func=cmd_install_autostart)
+    sub.add_parser("uninstall-autostart", help="remove the logon entry").set_defaults(func=cmd_uninstall_autostart)
     args = parser.parse_args()
     if getattr(args, "item", None) and not re.fullmatch(r"(pr|issue):\d+", args.item):
         parser.error("--item must be pr:N or issue:N")

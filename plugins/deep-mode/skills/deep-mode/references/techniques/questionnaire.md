@@ -5,10 +5,14 @@
 **Ask the user only about the send**, which they can always answer: who receives it and what must come back. The questions in the document aim at the gap between what that person knows and what the user needs.
 
 1. **Recipient.** Infer from the conversation, then confirm in one exchange only what is missing: role, expertise, relationship to the user, and what they know that the user does not. This sets tone and how much background the document must carry.
+   Done when role, expertise, relationship, and what they know are each stated.
 2. **What comes back.** List the decisions or facts the user cannot settle alone, each phrased as "after the answers we can decide/do ...". Drop any item you can resolve now by lookup, prototype, or judgment.
+   Done when every listed item is something the user cannot settle by lookup, prototype, or judgment.
 3. **Write it** to `docs/questionnaires/<slug>.md` in a repo, else `questionnaire-<slug>.md` in the current directory, using the layout below. Order questions by importance, since an async reader may answer only once. Group them under themed headings once there are more than five. One idea per question, never two joined by "and". Prefer questions that ask for an example, a number, or a choice between named options over open "thoughts on X?". Add a one-line reason only where a question could be misread or answered lightly. Write through **unslop** (`references/techniques/unslop.md`).
+   Done when the file exists with every layout section filled.
 4. **Check coverage.** Every item from step 2 maps to at least one question. Remove questions whose answer would not change any decision.
 5. **Report** the path. When answers come back, record each settled decision where it belongs (an ADR in `docs/adr/`, a `GLOSSARY.md` term, the spec, or a decision trail row) and continue the blocked work.
+   Done when the path is in the reply, and later every answer is recorded in its home.
 
 **Layout**
 
@@ -36,3 +40,5 @@ _Why we ask: <only when needed>_
 ```
 
 **Output:** the file path, the recipient, and the decisions each question unblocks.
+
+**Done when** every item from step 2 maps to a question in the file and the user has the path.

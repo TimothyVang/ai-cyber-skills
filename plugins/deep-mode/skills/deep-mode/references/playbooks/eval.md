@@ -4,13 +4,19 @@ Use when: measuring whether a variant (skill, prompt, rule) changes agent behavi
 
 ## Steps
 
-1. Frame: state the variant under test and what behavior counts as success. Write a 3–6 criterion rubric for the judge only; hold it back from candidates.
+1. Frame: state the variant under test and what behavior counts as success. Write a 3 to 6 criterion rubric for the judge only; hold it back from candidates.
+   Done when the variant, the success behavior, and the rubric are written down outside every candidate dir.
 2. Set up one sanitized working dir per candidate with the variant installed under its `.omp/skills/`. Plant the context an organic task would have (project skeleton, skills the candidate would naturally read). Never run candidates as `task` children: they inherit this session's skills, rules, and cwd.
-3. Author one organic prompt: what a user would type, goal not meta.
+   Done when each candidate dir exists with the variant installed and a search finds no Gates blocklist word in any path or file.
+3. Author one organic prompt: what a user would type, goal not meta. Done when the prompt contains no Gates blocklist word and no chain-eliciting cue.
 4. Run N candidates in parallel (the **arena** technique's step 3, Fan out, `references/techniques/arena.md`), each as an isolated `omp -p "<prompt>"` process via background `bash` with `cwd` set to that candidate's sanitized dir, same prompt, different models where available (`--model`). Capture each process's output and session file.
+   Done when every candidate process has exited and its output and session file are saved.
 5. Spawn one blinded judge via `task` on a different model family than the candidates, when one is available (arena step 4, Cross-judge). Judge gets outputs by sanitized label plus the rubric.
+   Done when the judge returns a verdict that scores every label on every rubric criterion.
 6. Verify chain-following from transcripts, not self-report: read each candidate's session transcript (the `omp -p` session file for its sanitized dir), note which files it actually opened, and grade from those reads plus code shape. Never read transcripts outside this experiment's candidates.
+   Done when each candidate has a list of files it opened, taken from its transcript.
 7. Read every candidate output end to end yourself. Compare with the judge's verdict; disagreement means model bias or an ambiguous rubric. Synthesize.
+   Done when the synthesis names each point where you and the judge disagree, or states there were none, and gives a promote or reject recommendation.
 
 ## Gates
 
