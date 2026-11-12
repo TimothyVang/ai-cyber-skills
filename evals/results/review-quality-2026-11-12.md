@@ -56,4 +56,4 @@ cases plus the completed raw response. Receipt: `.scratch/evidence/review-interr
 
 Two additional held-out calls completed through the checkpointed transport in `quality-v5-holdout-enriched.json`.
 Both had valid responses, with the expected alias finding on the reverse patch and none on the forward patch.
-These integrity smoke runs are not pooled into the paired accuracy table. Thirteen evaluator regression tests passed.
+These integrity smoke runs are not pooled into the paired accuracy table. Fifteen evaluator regression tests passed. The actual CLI also rejected traversal, absolute-path, reserved-device and case-colliding corpus IDs before launch; controlled malformed-severity inputs produced handled validation errors. These are boundary probes, not additional agent accuracy runs.

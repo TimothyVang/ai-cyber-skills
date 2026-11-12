@@ -128,7 +128,12 @@ def load_corpus(path=CORPUS):
     if corpus.get("schema") != 1 or not isinstance(corpus.get("cases"), list):
         raise ValueError("unsupported corpus schema")
     ids = [c["id"] for c in corpus["cases"]]
-    if len(ids) != len(set(ids)):
+    if any(not isinstance(identifier, str)
+           or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]*", identifier)
+           or re.fullmatch(r"CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]", identifier, re.I)
+           for identifier in ids):
+        raise ValueError("case ids must be portable directory slugs")
+    if len(ids) != len({identifier.casefold() for identifier in ids}):
         raise ValueError("duplicate case id")
     project_splits = {}
     pairs = {}

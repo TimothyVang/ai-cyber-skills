@@ -25,6 +25,13 @@ checks["user_title_preserved"] = display_title("drill") == "Tool library: drill"
 print(json.dumps(checks))
 '''
 
+REGRESSION_RUNNER = '''
+import sys, unittest
+suite = unittest.defaultTestLoader.discover(sys.argv[1], pattern="test_reservations.py")
+result = unittest.TextTestRunner(verbosity=2).run(suite)
+sys.exit(0 if result.wasSuccessful() and result.testsRun > len(result.skipped) else 1)
+'''
+
 
 def planning_checks(project):
     issues = sorted((project / 'docs' / 'deepmodebot' / 'issues').glob('*.md'))
@@ -95,8 +102,8 @@ def main(argv=None, runtime=None):
             test_directory = tests[0].parent if len(tests) == 1 else project
             env = workflow.process_env(project)
             for name, command in [('behavior', [sys.executable, '-c', HANDOFF_PROBE]),
-                                  ('regression', [sys.executable, '-B', '-m', 'unittest', 'discover',
-                                                  '-s', str(test_directory), '-p', 'test_reservations.py'])]:
+                                  ('regression', [sys.executable, '-B', '-c', REGRESSION_RUNNER,
+                                                  str(test_directory)])]:
                 try:
                     result = subprocess.run(command, cwd=project, env=env, capture_output=True,
                                             text=True, encoding='utf-8', timeout=60)

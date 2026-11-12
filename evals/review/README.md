@@ -37,6 +37,8 @@ python evals/review/run.py run --model openai-codex/gpt-6-astra --mode enriched 
 
 Before that optional command, prepare local Git object repositories under `.scratch/review-context/{pytest,requests,django}` with the exact commit IDs pinned in each case's `context`. Bug packets read the pre-fix commit; paired clean packets read the fix commit. The evaluator never checks out or executes those files.
 
+Case IDs must be portable alphanumeric/hyphen/underscore directory slugs, unique ignoring case. Traversal, absolute paths and reserved Windows device names are rejected before a model launches.
+
 Context packets use the production builder's defaults, up to 12 whole UTF-8 blobs, each at most 128 KiB and 256 KiB total. The report records included paths, packet digests, pinned commits and omissions. A packet with no source blobs fails the case instead of being presented as enriched. Partial packets remain explicitly bounded; omitted files and unresolved imports mean source coverage is incomplete.
 
 Each case has its own working directory and runs sequentially. `--max-cost` bounds each case (default 0.25); `--timeout` bounds seconds (default 180); `--only ID` selects one case. The evaluator reuses `pr_agent_local`'s OAuth-only credential check and scrubbed environment.

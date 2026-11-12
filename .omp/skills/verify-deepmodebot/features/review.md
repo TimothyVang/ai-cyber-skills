@@ -12,6 +12,7 @@ A contributor receives a code review informed by bounded committed source, witho
 - Loading an old default trigger retires the unrelated-account mention without rewriting stored configuration or changing explicit custom triggers.
 - Review manifests checkpoint completed, interrupted and pending cases instead of dropping an interrupted batch.
 - Malformed finding field types fail one response rather than terminating the remaining batch.
+- Corpus case IDs cannot escape their directory, collide by case or name reserved Windows devices.
 
 ## How to get to it (user POV)
 

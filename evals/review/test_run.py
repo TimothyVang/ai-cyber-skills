@@ -195,6 +195,23 @@ class BudgetBoundaryTests(unittest.TestCase):
 
 
 class CorpusContextTests(unittest.TestCase):
+    def test_case_ids_cannot_escape_or_use_reserved_directories(self):
+        corpus = review_eval.load_corpus()
+        for identifier in ("../previous", "/absolute", "C:\\outside", "a/b", "a\\b",
+                           ".", "", "CON", "com1", [], None):
+            corpus["cases"][0]["id"] = identifier
+            with self.subTest(identifier=identifier), \
+                    patch.object(Path, "read_text", return_value=json.dumps(corpus)), \
+                    self.assertRaisesRegex(ValueError, "portable directory slugs"):
+                review_eval.load_corpus()
+
+    def test_case_ids_cannot_collide_on_case_insensitive_filesystems(self):
+        corpus = review_eval.load_corpus()
+        corpus["cases"][1]["id"] = corpus["cases"][0]["id"].upper()
+        with patch.object(Path, "read_text", return_value=json.dumps(corpus)), \
+                self.assertRaisesRegex(ValueError, "duplicate case id"):
+            review_eval.load_corpus()
+
     def test_forward_patch_can_have_bugs_but_cannot_use_unrelated_context(self):
         corpus = review_eval.load_corpus()
         forward = next(c for c in corpus["cases"]

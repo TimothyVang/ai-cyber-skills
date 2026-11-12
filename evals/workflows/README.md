@@ -105,6 +105,8 @@ python evals/workflows/check_artifacts.py --id handoff-01
 
 These commands verify the captured snapshot and work on a copy under `artifact-checks/`. Planning checks resolve issue IDs, parent links, required headers and an acyclic blocker graph. Handoff checks independently exercise owner, non-owner, missing-ID and repeated cancellation, preserve the user's display prefix, and run the delivered regression suite. All journeys check required artifacts and immutable inputs. `artifact-checks/checks.json` and the raw subprocess records are evidence paths for the assessment. These checks do not assess prose quality or prove route adherence; the named semantic/transcript checks still require independent review. Inspect the local generated code before executing its behavior probes.
 
+Handoff regression coverage requires a successful `unittest` suite with at least one non-skipped test. Empty discovery, unsupported pytest-only functions, entirely skipped suites and failing tests are rejected.
+
 Copy `assessment-template.json` to a new `assessment.json` inside the run folder. Fill `reviewer`, every check's boolean `passed`, a specific rationale and a list of repository-relative evidence paths. Check requirements are in `scenarios.json`. A semantic failure is `false`, never omitted. Missing/failed process attempts need no positive assessment and can still be collected as failures.
 
 ```bash

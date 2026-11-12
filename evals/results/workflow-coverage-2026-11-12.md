@@ -12,7 +12,7 @@ Independent assessments read the artifacts and complete executable actions in th
 
 The actual report CLI observed **126 inventory items, 110 mapped and 16 missing**. Mapping is not execution or parity. All four current journeys passed. Across **12 retained attempts**, the current protocol counts **four passed, one failed and seven invalid**.
 
-The earlier handoff failure remains failed. All seven earlier passes lack the new input-bound capture protocol and are invalid under it. Their receipts were not rewritten or upgraded. Earlier reporting also exposed duplicate references to the same capture; the reporter now deduplicates identical paths while rejecting distinct captures for the same phase. Twenty-five focused workflow tests passed after the integrity repairs, including rejection of intervening handoff edits and scrubbing credentials from actual test subprocesses.
+The earlier handoff failure remains failed. All seven earlier passes lack the new input-bound capture protocol and are invalid under it. Their receipts were not rewritten or upgraded. Earlier reporting also exposed duplicate references to the same capture; the reporter now deduplicates identical paths while rejecting distinct captures for the same phase. Twenty-six focused workflow tests passed after the integrity repairs. They cover intervening handoff edits, credential scrubbing and rejection of zero-test, entirely skipped and failing regression suites. The strengthened checker also reran the actual captured handoff successfully under `handoff-delivery-03/regression-coverage-check/`.
 
 ## Findings by journey
 

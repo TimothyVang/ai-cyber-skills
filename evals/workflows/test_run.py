@@ -279,6 +279,26 @@ class EvidenceProtocolTests(unittest.TestCase):
         regression = runner.load(folder / 'artifact-checks/regression.json')
         self.assertEqual(regression['exit_code'], 0, regression['stderr'])
 
+    def test_regression_requires_a_successful_non_skipped_test(self):
+        folder = self.fixture_run('handoff')
+        source = folder / 'phase-2/artifacts'
+        shutil.copytree(folder / 'project', source)
+        cases = {
+            'zero': "def test_not_discovered():\n assert False\n",
+            'skipped': ("import unittest\n@unittest.skip('not exercised')\n"
+                        "class Check(unittest.TestCase):\n def test_owner(self):\n  self.fail()\n"),
+            'failed': ("import unittest\nclass Check(unittest.TestCase):\n"
+                       " def test_owner(self):\n  self.assertEqual(1, 2)\n"),
+        }
+        for name, code in cases.items():
+            (source / 'test_reservations.py').write_text(code, encoding='utf-8')
+            self.rewrite(folder / 'phase-2/capture.json', {'snapshot': runner.project_files(source)})
+            output = f'regression-{name}'
+            with self.subTest(name=name), contextlib.redirect_stdout(io.StringIO()):
+                artifact_checks.main(['--id', 'synthetic', '--output-name', output], runtime=runner)
+            checks = runner.load(folder / output / 'checks.json')
+            self.assertFalse(checks['checks']['regression:exit'])
+
     def test_escape_path_is_rejected(self):
         with self.assertRaises(ValueError):
             runner.inside(self.root, '../outside.json')

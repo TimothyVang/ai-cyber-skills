@@ -10,6 +10,7 @@ A maintainer can distinguish a documented route from a workflow that an agent ac
 - Collection reruns trusted artifact checks in a fresh `collected-checks-*` directory instead of accepting supplied success flags.
 - Every phase's input tree is bound to prepare or the preceding successful capture, rejecting intervening edits.
 - Agent and artifact-probe subprocesses scrub credential variables and use project-local temp directories.
+- Handoff regression checks reject zero discovered tests, entirely skipped suites and failing tests.
 
 ## How to get to it (user POV)
 
