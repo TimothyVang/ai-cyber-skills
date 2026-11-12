@@ -8,6 +8,7 @@
 <meta name="author" content="TimothyVang">
 <meta name="robots" content="index, follow">
 <link rel="canonical" href="https://timothyvang.github.io/deep-mode/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="alternate" type="text/markdown" href="llms.txt" title="llms.txt">
 <meta name="theme-color" content="#0b1220">
 <meta property="og:type" content="website">
@@ -53,7 +54,7 @@
     {"@type": "Question", "name": "What is deep-mode?",
      "acceptedAnswer": {"@type": "Answer", "text": "deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel."}},
     {"@type": "Question", "name": "How do the deep-mode PR bots work?",
-     "acceptedAnswer": {"@type": "Answer", "text": "A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote, and a gate in code merges your own PR at the voted head."}},
+     "acceptedAnswer": {"@type": "Answer", "text": "A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote (one, who must pass it, for a small change), and a gate in code merges your own PR at the voted head."}},
     {"@type": "Question", "name": "Does deep-mode need an API key?",
      "acceptedAnswer": {"@type": "Answer", "text": "No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage."}},
     {"@type": "Question", "name": "Which agents and harnesses does deep-mode work with?",
@@ -63,20 +64,24 @@
     {"@type": "Question", "name": "What is the deep-mode software factory?",
      "acceptedAnswer": {"@type": "Answer", "text": "A set of playbooks and techniques that take an idea to merged code: set up the repo, grill the idea, prototype a fork, write a spec, cut it into tickets, build them with TDD on one integration branch or one PR per ticket, then review and land through a verifier panel. Triage, research, a domain model, architecture review and retros sit around that line."}},
     {"@type": "Question", "name": "Has deep-mode merged a real PR on its own?",
-     "acceptedAnswer": {"@type": "Answer", "text": "Yes. PR 19 in TimothyVang/deep-mode went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot. The whole conversation is public in the PR thread."}}
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. PR 19 in TimothyVang/deep-mode went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot. The whole conversation is public in the PR thread."}},
+    {"@type": "Question", "name": "Can I white-label an AI code review GitHub App?",
+     "acceptedAnswer": {"@type": "Answer", "text": "Yes. deep-mode is MIT licensed and ships a brand kit, so you can sell it as your own product. Write one brand.json with your name, slug, command and skill names, bot trigger, colors, logo and URLs, then run py -3 scripts/whitelabel.py --brand <file> --out <dir>. It builds a full copy under your brand: the product name and logo, the site colors, the commands and skills, the bot and its GitHub App, the docs site, the README, the images, and the SEO and llms files. A last check fails the build if any old name is left. LICENSE and NOTICE stay as they are, with your copyright line added. install.py --brand <name> is a shortcut that renames only the bots."}}
   ]
 }
 </script>
 <style>
-:root{--bg:#f7f8fb;--fg:#0f172a;--muted:#475569;--card:#ffffff;--edge:#dbe2ee;--accent:#6d28d9;--code:#eef2f8}
-@media (prefers-color-scheme:dark){:root{--bg:#070c16;--fg:#e6edf3;--muted:#9fb0c8;--card:#0f1828;--edge:#22304d;--accent:#a78bfa;--code:#111b2f}}
+:root{--brand-primary:#6d28d9;--brand-accent:#a78bfa;--brand-bg:#0b1220;--brand-surface:#111b2f;--brand-text:#e6edf3;--brand-muted:#9fb0c8}
+:root{--bg:color-mix(in srgb,var(--brand-primary) 3%,#f7f8fb);--fg:#0f172a;--muted:#475569;--card:#ffffff;--edge:color-mix(in srgb,var(--brand-primary) 10%,#dbe2ee);--accent:var(--brand-primary);--on-accent:#fff;--code:color-mix(in srgb,var(--brand-primary) 5%,#eef2f8)}
+@media (prefers-color-scheme:dark){:root{--bg:var(--brand-bg);--fg:var(--brand-text);--muted:var(--brand-muted);--card:var(--brand-surface);--edge:color-mix(in srgb,var(--brand-muted) 15%,var(--brand-surface));--accent:var(--brand-accent);--on-accent:var(--brand-bg);--code:color-mix(in srgb,var(--brand-muted) 6%,var(--brand-surface))}}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.6 ui-sans-serif,-apple-system,"Segoe UI",Helvetica,Arial,sans-serif}
 a{color:var(--accent)}
 header.top{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--edge)}
 nav{max-width:1100px;margin:0 auto;padding:10px 24px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
-nav .brand{font-weight:800;color:var(--fg);text-decoration:none;margin-right:auto}
+nav .brand{color:var(--fg);text-decoration:none;margin-right:auto}
+nav .brand img{display:block;height:32px;width:auto}
 nav a{text-decoration:none;color:var(--muted);font-size:15px}
 nav a:hover{color:var(--fg)}
 main{max-width:1100px;margin:0 auto;padding:0 24px 64px}
@@ -90,7 +95,7 @@ p.lead{font-size:20px;color:var(--muted);max-width:860px;margin:0 0 24px}
 .pills li{border:1px solid var(--edge);background:var(--card);border-radius:999px;padding:4px 12px;font-size:14px;color:var(--muted)}
 .cta{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:32px}
 .btn{display:inline-block;padding:10px 18px;border-radius:10px;font-weight:600;text-decoration:none;border:1px solid var(--edge);background:var(--card);color:var(--fg)}
-.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 figure{margin:24px 0}
 figure img{display:block;width:100%;height:auto;border-radius:18px}
 figcaption{color:var(--muted);font-size:15px;margin-top:10px}
@@ -115,7 +120,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <body>
 <header class="top">
 <nav aria-label="Main">
-<a class="brand" href="#top">deep-mode</a>
+<a class="brand" href="#top"><img src="images/logo.svg" alt="deep-mode" height="32"></a>
 <a href="#how">How it works</a>
 <a href="#factory">Software factory</a>
 <a href="#install">Install</a>
@@ -150,7 +155,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <img src="images/how-it-works.svg" width="1200" height="650" alt="Diagram: on GitHub, your private app deep-mode-login, PR and issue threads, and branches and checks. On your machine, the config directory, bot.py watch, your gh and git, and acpx connecting an author agent and a reviewer agent, omp by default.">
 </figure>
 <h3>The PR conversation</h3>
-<p>The coordinator posts a kickoff. When the branch conflicts with its base, the author agent merges the base into the head and pushes; it never rebases or force-pushes. The reviewer agent returns findings as JSON with evidence. The author fixes each one or dismisses it with proof. They repeat until no P0 or P1 is open, for at most three rounds, and an owner's <code>@deep-mode continue</code> starts more. Then three verifier agents, each in its own worktree at the final head, vote PASS or FAIL. Two PASS votes are needed.</p>
+<p>The coordinator posts a kickoff. When the branch conflicts with its base, the author agent merges the base into the head and pushes; it never rebases or force-pushes. The reviewer agent returns findings as JSON with evidence. The author fixes each one or dismisses it with proof. They repeat until no P0 or P1 is open, for at most three rounds, and an owner's <code>@deep-mode continue</code> starts more. Then the repo's own check runs (its <code>.deep-mode.json</code> <code>check</code> command), and three verifier agents, each in its own worktree at the final head, vote PASS or FAIL. Two PASS votes are needed; a small change (at most 30 lines in 2 files, nothing security-sensitive) gets one verifier, who must pass it.</p>
 <figure>
 <img src="images/pr-conversation.svg" width="1200" height="940" alt="Sequence diagram of the PR conversation: kickoff, conflict merge, review and answer rounds over ACP mirrored to the thread, a three-verifier panel, and the merge gate checks before a squash merge.">
 </figure>
@@ -174,7 +179,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <tr><td>2. Settle a fork by running it</td><td>Prototype</td><td>A decision backed by an observation</td></tr>
 <tr><td>3. Write it down</td><td>Spec</td><td><code>docs/specs/&lt;slug&gt;.md</code> and a spec issue</td></tr>
 <tr><td>4. Cut it up</td><td>Tickets</td><td>Tickets with their blockers</td></tr>
-<tr><td>5. Build it</td><td>Implement spec (one integration branch) or Board (one PR per ticket), with TDD</td><td>Merged code</td></tr>
+<tr><td>5. Build it</td><td>Phased build (one integration branch) or Work a queue (one PR per ticket), with TDD</td><td>Merged code</td></tr>
 <tr><td>6. Review and land</td><td>PR review (correctness, security, spec and standards lenses), verifier panel, PR conversation</td><td>A merged PR with evidence</td></tr>
 </tbody>
 </table>
@@ -183,9 +188,8 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <dl class="skills">
 <div><dt>Triage</dt><dd>Sorts incoming issues and outside PRs into a category and a state, and posts a brief or the questions that block them.</dd></div>
 <div><dt>Wayfinder</dt><dd>Charts an effort too big for one session and hands its decisions to a spec.</dd></div>
-<div><dt>Board</dt><dd>Runs a project on GitHub issues with status labels. Every task ends in a merge after a panel pass.</dd></div>
-<div><dt>Factory</dt><dd>Runs a queue of labeled issues through the <code>factory</code> CLI: spec, hidden tests, code, reviews and merge for each job.</dd></div>
-<div><dt>Orchestrate</dt><dd>Runs a multi-day program with many stacked PRs and subagents from one coordinator.</dd></div>
+<div><dt>Run a goal</dt><dd>Drives one goal to a checkable end without you, in one session or as a multi-day program with many PRs and subagents.</dd></div>
+<div><dt>Work a queue</dt><dd>Turns a backlog, a queue of PRs, or labeled issues (through the <code>factory</code> CLI) into merged PRs, each after a panel pass.</dd></div>
 <div><dt>domain-model</dt><dd>Keeps <code>GLOSSARY.md</code> and ADRs current as names and decisions change.</dd></div>
 <div><dt>research</dt><dd>Writes an answer that later sessions will cite into the repo.</dd></div>
 <div><dt>architecture-review</dt><dd>Finds structural friction across the codebase and settles which refactors to make.</dd></div>
@@ -208,7 +212,7 @@ footer div{max-width:1100px;margin:0 auto;padding:24px}
 <p>In omp:</p>
 <pre><code>omp plugin marketplace add TimothyVang/deep-mode
 omp plugin install deep-mode@deep-mode</code></pre>
-<p>In Claude Code, run <code>/plugin marketplace add TimothyVang/deep-mode</code> and <code>/plugin install deep-mode@deep-mode</code>. Codex, Cursor and other harnesses that load <code>SKILL.md</code> skills take the folders in <code>plugins/deep-mode/skills/</code>. Then, in any repo, run <code>/deep-mode:deep &lt;your task&gt;</code>.</p>
+<p>In Claude Code, run <code>/plugin marketplace add TimothyVang/deep-mode</code> and <code>/plugin install deep-mode@deep-mode</code>. In Codex, run <code>codex plugin marketplace add TimothyVang/deep-mode</code> and <code>codex plugin add deep-mode@deep-mode</code>. Cursor and other harnesses that load <code>SKILL.md</code> skills take the folders in <code>plugins/deep-mode/skills/</code>. Then, in any repo, run <code>/deep-mode:deep &lt;your task&gt;</code> in omp or Claude Code, or <code>$deep-mode:deep-mode &lt;your task&gt;</code> in Codex, which loads the skills but not the slash commands.</p>
 <h3>The bots</h3>
 <p>You need git, <code>gh</code> logged in, openssl (Git for Windows ships one), Node and npm, Python 3.10 or newer, and at least one ACP agent CLI on its subscription login. Then run three commands:</p>
 <pre><code>git clone https://github.com/TimothyVang/deep-mode
@@ -239,7 +243,7 @@ py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre
 <h3>What is deep-mode?</h3>
 <p>deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel.</p>
 <h3>How do the deep-mode PR bots work?</h3>
-<p>A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote, and a gate in code merges your own PR at the voted head.</p>
+<p>A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. The repo's check command runs, verifiers vote (three, or one for a small change), and a gate in code merges your own PR at the voted head.</p>
 <h3>Does deep-mode need an API key?</h3>
 <p>No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage.</p>
 <h3>Which agents and harnesses does deep-mode work with?</h3>
@@ -250,12 +254,14 @@ py -3 assets/github-app/install.py      # python3 on macOS and Linux</code></pre
 <p>A set of playbooks and techniques that take an idea to merged code: set up the repo, grill the idea, prototype a fork, write a spec, cut it into tickets, build them with TDD on one integration branch or one PR per ticket, then review and land through a verifier panel. Triage, research, a domain model, architecture review and retros sit around that line.</p>
 <h3>Has deep-mode merged a real PR on its own?</h3>
 <p>Yes. <a href="https://github.com/TimothyVang/deep-mode/pull/19">PR 19</a> in TimothyVang/deep-mode went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot. The whole conversation is public in the PR thread.</p>
+<h3>Can I white-label an AI code review GitHub App?</h3>
+<p>Yes. deep-mode is MIT licensed and ships a brand kit, so you can sell it as your own product. Write one <code>brand.json</code> with your name, slug, command and skill names, bot trigger, colors, logo and URLs, then run <code>py -3 scripts/whitelabel.py --brand &lt;file&gt; --out &lt;dir&gt;</code>. It builds a full copy under your brand: the product name and logo, the site colors, the commands and skills, the bot and its GitHub App, the docs site, the README, the images, and the SEO and llms files. A last check fails the build if any old name is left. LICENSE and NOTICE stay as they are, with your copyright line added. <code>install.py --brand &lt;name&gt;</code> is a shortcut that renames only the bots. The <a href="https://github.com/TimothyVang/deep-mode/blob/main/docs/rebrand.md">rebrand guide</a> walks through it.</p>
 </section>
 </main>
 <footer>
 <div>
 <p>deep-mode is MIT licensed, by <a href="https://github.com/TimothyVang">TimothyVang</a>. See <a href="https://github.com/TimothyVang/deep-mode/blob/main/LICENSE">LICENSE</a> and <a href="https://github.com/TimothyVang/deep-mode/blob/main/NOTICE.md">NOTICE.md</a>. Agents are reached through <a href="https://github.com/openclaw/acpx">acpx</a>. The diagrams are hand-written SVG; the GIFs are encoded with <a href="https://github.com/ImageOptim/gifski">gifski</a> and <a href="https://github.com/asciinema/agg">agg</a> from real screenshots and a real terminal recording.</p>
-<p><a href="https://github.com/TimothyVang/deep-mode">Source</a> · <a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a></p>
+<p><a href="https://github.com/TimothyVang/deep-mode">Source</a> · <a href="https://github.com/TimothyVang/deep-mode/issues">Support</a> · <a href="llms.txt">llms.txt</a> · <a href="llms-full.txt">llms-full.txt</a></p>
 </div>
 </footer>
 </body>

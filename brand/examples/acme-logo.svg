@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="48" viewBox="0 0 240 48" role="img" aria-label="Acme Review">
+<style>.word{fill:#0b2420}@media (prefers-color-scheme:dark){.word{fill:#e7f5f2}}</style>
+<rect width="48" height="48" rx="24" fill="#0d2220"/>
+<path d="M24 9 L39 36 H9 Z" fill="none" stroke="#2dd4bf" stroke-width="3.5" stroke-linejoin="round"/>
+<path d="M17.5 27 L22 31 L30.5 21.5" fill="none" stroke="#fbbf24" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+<text class="word" x="60" y="33" font-family="Georgia, 'Times New Roman', serif" font-size="27" font-weight="700">Acme Review</text>
+</svg>
