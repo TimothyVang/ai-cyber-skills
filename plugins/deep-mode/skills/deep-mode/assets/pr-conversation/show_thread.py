@@ -24,6 +24,7 @@ import subprocess
 import sys
 
 MAX_LINE = 2000
+CONTROLS = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 ROLES = r"(?:author|reviewer|verifier \d|panel|coordinator|trunk check)"
 SIGNATURE = re.compile(rf"^\*\*\S+ ({ROLES}\b[^*]*)\*\*\s*·\s*(.*)$")
 THREAD_URL = re.compile(r"^https://github\.com/([\w.-]+/[\w.-]+)/(pull|issues)/(\d+)(?:[/?#].*)?$")
@@ -56,7 +57,10 @@ def parse_url(url: str):
 def gh_json(path: str, paginate: bool = False):
     """`gh api <path>` parsed; paginated arrays come back as one list."""
     cmd = ["gh", "api", *(["--paginate", "--jq", ".[]"] if paginate else []), path]
-    out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    try:
+        out = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
+    except FileNotFoundError:
+        raise GhError("the GitHub CLI `gh` is not installed or not on PATH") from None
     if out.returncode:
         raise GhError(f"gh api {path} failed: {out.stderr.strip()[-400:]}")
     if paginate:
@@ -108,10 +112,19 @@ def may_speak(comment: dict) -> bool:
 
 
 def clean(text: str) -> str:
+    text = re.sub(r"```.*?```", "", text, flags=re.S)
+    # Inline code is text the bot meant literally (`<url>`, `<!--`): set it aside before stripping markup.
+    spans: list[str] = []
+    def keep(m: re.Match) -> str:
+        spans.append(m.group(0))
+        return f"\x00{len(spans) - 1}\x00"
+    text = re.sub(r"`[^`\n]+`", keep, text.replace("\x00", ""))
     # An unclosed comment runs to the end: one pass, where a lone "<!--" would rescan the rest each time.
     text = re.sub(r"<!--.*?(?:-->|\Z)", "", text, flags=re.S)
-    text = re.sub(r"```.*?```", "", text, flags=re.S)
-    return html.unescape(re.sub(r"<[^>]+>", " ", text))
+    text = re.sub(r"<[^>]+>", " ", text)
+    # A numeric entity is cut to 7 digits: Python refuses to parse an integer string over 4,300.
+    text = re.sub(r"&#(x?)(\d{8,})", lambda m: f"&#{m.group(1)}{m.group(2)[:7]}", text)
+    return html.unescape(re.sub(r"\x00(\d+)\x00", lambda m: spans[int(m.group(1))], text))
 
 
 def records(data: dict, key: str) -> list[dict]:
@@ -141,7 +154,7 @@ def json_objects(body: str) -> list[dict]:
                 continue
             try:
                 data = json.loads(block)
-            except ValueError:
+            except (ValueError, RecursionError):  # malformed, or nested deeper than Python parses
                 continue
             if isinstance(data, dict):
                 out.append(data)
@@ -246,6 +259,12 @@ def voices(url: str, limit=140) -> list[dict]:
     return [v for c in comments(repo, number) if (v := voice(c, limit))]
 
 
+def printable(line: str) -> str:
+    """Thread text bound for a terminal: C0 controls (tabs kept), DEL and C1 dropped, so a comment can't
+    write the clipboard, retitle the window or clear the screen."""
+    return CONTROLS.sub("", line)
+
+
 def digest(found: list[dict], full: bool = False) -> list[str]:
     """The text blocks the CLI prints: time, voice, head and id, then the gist (or the body with full=True)."""
     out = []
@@ -256,7 +275,7 @@ def digest(found: list[dict], full: bool = False) -> list[str]:
             continue
         lines = v["body"].strip().splitlines()  # a signed body's first line is the signature printed above
         out.extend(f"    {line}" for line in (lines if v["kind"] == "pr-agent" else lines[1:]))
-    return out
+    return [printable(line) for line in out]
 
 
 def main() -> int:

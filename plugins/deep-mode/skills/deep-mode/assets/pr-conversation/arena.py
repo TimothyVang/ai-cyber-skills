@@ -48,7 +48,8 @@ EFFECT = {"P0": "A critical hit!", "P1": "It's super effective!"}
 ANSWER = re.compile(r"^(fixed|dismissed)\b\s*(.*?)(?:\s+in ([0-9a-f]{7,40}))?\s*—\s*(.*)$", re.I)
 VOTE = re.compile(r"^vote:\s*(\S+)(?:\s*—\s*(.*))?$", re.I)
 DONE = re.compile(r"^VERDICT:\s*((?:NOT )?DONE)", re.I)
-TALLY = re.compile(r"(\d+)/(\d+)\s*(PASS|DONE)?", re.I)
+# Bounded digit runs: an unbounded \d+ rescans a long run of digits from every start (quadratic).
+TALLY = re.compile(r"(?<!\d)(\d{1,3})/(\d{1,3})(?!\d)\s*(PASS|DONE)?", re.I)
 
 # 16x16 sprites, one per voice plus the thread itself: "." is clear, 0-3 the palette, lightest to darkest.
 SPRITES = {
@@ -462,7 +463,7 @@ def serve(source: Source, port: int, open_browser: bool) -> None:
 
 def print_digest(threads: list[dict]) -> None:
     for t in threads:
-        print(f"{t['label']} · {t['state']} · {t['title']}\n{t['url']}")
+        print(st.printable(f"{t['label']} · {t['state']} · {t['title']}") + f"\n{t['url']}")
         for line in st.digest(t["turns"]):
             print(line)
         print()

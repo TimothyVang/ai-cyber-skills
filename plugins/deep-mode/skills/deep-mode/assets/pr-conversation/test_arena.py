@@ -326,6 +326,36 @@ class TerminalStatus(unittest.TestCase):
         self.assertEqual((len(got["threads"]), got["generated"]), (2, "2026-11-11T21:56:00+00:00"))
         self.assertIn("error connecting", got["errors"][0])
 
+    def test_code_spans_keep_their_markup(self):
+        body = "Round 2: an unclosed `<!--` runs to `\\Z`; run `arena.py <url>`.\n<!-- hidden -->Next <b>line</b>."
+        self.assertEqual(st.clean(body), "Round 2: an unclosed `<!--` runs to `\\Z`; run `arena.py <url>`.\nNext  line .")
+
+    def test_hostile_bodies_never_reach_the_terminal_or_raise(self):
+        comment = lambda body: {"id": 1, "html_url": "", "created_at": "2026-11-11T00:00:00Z", "body": body,
+                                "user": {"login": "me", "type": "User"}, "author_association": "OWNER"}
+        sig = "**deep-mode reviewer** · head `abc1234`\n\n"
+        osc = st.voice(comment(sig + fenced({"findings": [{"severity": "P1", "file": "a", "line": 1,
+                                                          "claim": "\x1b]52;c;aGk=\x07\x9b2J ok"}]})))
+        printed = "\n".join(st.digest([osc]) + st.digest([osc], full=True))
+        self.assertNotRegex(printed, r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
+        self.assertIn("ok", printed)
+        st.voice(comment(sig + "```json\n" + "[" * 5000 + "\n```"))  # deeper than json parses
+        st.voice(comment(sig + "&#" + "9" * 5000 + ";"))  # longer than int() takes
+        started = time.perf_counter()
+        arena.turn_lines(st.voice(comment("**deep-mode panel** · head `abc1234`\n\n" + "7" * 65000)), False)
+        self.assertLess(time.perf_counter() - started, 1.0)
+
+    def test_missing_gh_is_a_plain_error(self):
+        original = st.subprocess.run
+        def missing(*_, **__):
+            raise FileNotFoundError("gh")
+        st.subprocess.run = missing
+        try:
+            with self.assertRaisesRegex(st.GhError, "not installed"):
+                st.gh_json("repos/o/r/issues/1")
+        finally:
+            st.subprocess.run = original
+
 
 def two_threads():
     sig = "**deep-mode {}** · head `{}`\n\n"
