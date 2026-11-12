@@ -17,22 +17,25 @@ FILE_LINK = re.compile(r"skill://([\w-]+)/([\w./-]+\.(?:md|py|sh|json|txt|ts|cjs
 EXPORTED = {"frontend-ui"}  # skills exported from another repo; a scripts/ path there names that repo's file
 
 
-def installed_skills(skill_dir: Path) -> dict[str, Path]:
+def installed_skills(skill_dir: Path) -> tuple[dict[str, Path], bool]:
+    """The skills a link may name: this skill's siblings, plus what `omp skill list` reports. The flag says whether
+    that list was read; without it a link to a global skill (skill://tdd) can't be judged, so it isn't."""
     found = {p.parent.name: p.parent for p in skill_dir.parent.glob("*/SKILL.md")}
     omp = shutil.which("omp")
-    if omp:
-        try:
-            out = subprocess.run([omp, "skill", "list", "--json"], capture_output=True, text=True, timeout=60).stdout
-            data = json.loads(out)
-            for skill in data if isinstance(data, list) else data.get("skills", []):
-                path = skill.get("path") or skill.get("filePath") or ""
-                found.setdefault(skill["name"], Path(path).parent if path else Path())
-        except (OSError, ValueError, subprocess.SubprocessError):
-            pass
-    return found
+    if not omp:
+        return found, False
+    try:
+        out = subprocess.run([omp, "skill", "list", "--json"], capture_output=True, text=True, timeout=60).stdout
+        data = json.loads(out)
+        for skill in data if isinstance(data, list) else data.get("skills", []):
+            path = skill.get("path") or skill.get("filePath") or ""
+            found.setdefault(skill["name"], Path(path).parent if path else Path())
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return found, False
+    return found, True
 
 
-def check(skill_dir: Path, skills: dict[str, Path]) -> list[str]:
+def check(skill_dir: Path, skills: dict[str, Path], listed: bool = True) -> list[str]:
     problems = []
     entry = skill_dir / "SKILL.md"
     if not entry.exists():
@@ -45,7 +48,7 @@ def check(skill_dir: Path, skills: dict[str, Path]) -> list[str]:
         for n, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
             links = LINK.findall(line)
             for link in links:
-                if link.split("/")[0] not in skills:
+                if link.split("/")[0] not in skills and listed:
                     problems.append(f"{doc.relative_to(skill_dir)}:{n}: skill://{link} is not installed")
             for name, rel in FILE_LINK.findall(line):
                 if name in skills and skills[name] != Path() and not (skills[name] / rel).exists():
@@ -71,7 +74,7 @@ def main() -> int:
     problems = []
     for arg in sys.argv[1:]:
         skill_dir = Path(arg).expanduser().resolve()
-        problems += check(skill_dir, installed_skills(skill_dir))
+        problems += check(skill_dir, *installed_skills(skill_dir))
     for problem in problems:
         print(problem)
     print("ok" if not problems else f"{len(problems)} problem(s)")

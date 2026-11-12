@@ -134,6 +134,12 @@ SEALED_NOTE = ("You have no tools and no files: everything you can check is in t
 # ever touched by one thread, and lets go of it while it waits on a subprocess, a sleep, or a sealed model call.
 BIG = threading.Lock()
 _holding = threading.local()
+# Set on Ctrl-C: each worker stops at its next blocking call instead of finishing its whole repo cycle.
+STOP = threading.Event()
+
+
+class Stopped(BaseException):
+    """The bot is shutting down. A BaseException, so no `except Exception` records it as an item error."""
 
 
 def unlocked(fn, *args, **kwargs):
@@ -147,6 +153,8 @@ def unlocked(fn, *args, **kwargs):
     finally:
         BIG.acquire()
         _holding.big = True
+        if STOP.is_set():
+            raise Stopped()
 
 
 def pause(seconds: float) -> None:
@@ -618,7 +626,8 @@ class Identity:
             if repo not in self.installs:
                 self.installs[repo] = ghapp.installation_for(self.app, repo)
             token = ghapp.installation_token(self.app, self.installs[repo])
-            ghapp.request("POST", f"/repos/{repo}/issues/{number}/comments", token, {"body": body}, bearer=False)
+            unlocked(ghapp.request, "POST", f"/repos/{repo}/issues/{number}/comments", token, {"body": body},
+                     bearer=False)
         else:
             run(["gh", "api", "-X", "POST", f"repos/{repo}/issues/{number}/comments", "--input", "-"],
                 stdin=json.dumps({"body": body}))
@@ -979,8 +988,8 @@ class Item:
         log(f"{self.key}: {role_label(role)} turn (sealed: no tools)")
         try:
             model = role.get("model") or unlocked(pr_agent_local.omp_default_model)
-            reply, _ = unlocked(pr_agent_local.omp_complete, [{"role": "user", "content": prompt}], model,
-                                pr_agent_local.omp_oauth_credentials(model))
+            reply, _ = unlocked(lambda: pr_agent_local.omp_complete(
+                [{"role": "user", "content": prompt}], model, pr_agent_local.omp_oauth_credentials(model)))
         except SystemExit as err:  # pr_agent_local reports a setup problem by exiting
             raise RuntimeError(str(err)) from None
         # pr_agent_local puts a word joiner after each @ of the prompt so omp attaches no file; drop the echoes.
@@ -1328,12 +1337,14 @@ class PRConversation:
         log(f"{self.it.key}: repo check `{command}` at {sha[:7]}")
         code, output = unlocked(goal_loop.run_limited, [bash, "-c", command] if bash else command,
                                 REPO_CHECK_MINUTES, shell=not bash, cwd=tree, env=env, stdout=subprocess.PIPE,
-                                stderr=subprocess.STDOUT)
-        self.item["repoCheck"] = {"sha": sha, "code": code}
+                                stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+        self.item["repoCheck"] = {"sha": sha, "code": code, "command": command}
         return command, code, output.strip()[-3000:]
 
     def check_findings(self) -> list:
         """The repo check at the current head as a P1 finding for the author when it fails, else nothing."""
+        # The command runs the head's code with the owner's environment: only ever on the owner's own work.
+        self.require_own()
         result = self.repo_check(self.head)
         if result is None or result[1] == 0:
             return []
@@ -1561,8 +1572,10 @@ class PRConversation:
                 self.it.say("coordinator", "bot.py", facts["head"], "Not merging. Panel " + tally + " PASS at `"
                             + (sha or "")[:7] + "`, but:\n" + "\n".join(f"- {r}" for r in reasons))
             return status
-        # The repo check must have passed at this exact head (it ran before the panel; a resumed item reruns it).
-        if (self.item.get("repoCheck") or {}) != {"sha": sha, "code": 0}:
+        # The repo check must have passed at this exact head with the command the base sets now (it ran before the
+        # panel; a resumed item, or a base that changed its check, runs it again).
+        command = base_config(self.clone, self.base).get("check")
+        if (self.item.get("repoCheck") or {}) != {"sha": sha, "code": 0, "command": command}:
             result = self.repo_check(sha)
             if result is not None and result[1] != 0:
                 command, code, output = result
@@ -1850,6 +1863,8 @@ class Bot:
             _holding.big = True
             try:
                 self.repo_cycle(repo, since)
+            except Stopped:
+                log(f"{repo}: stopped")
             except Exception as err:
                 log(f"{repo}: {err}")
             finally:
@@ -1857,8 +1872,14 @@ class Bot:
                 BIG.release()
 
         # Repos run side by side, each one item at a time, so one long conversation never stalls the others.
-        with concurrent.futures.ThreadPoolExecutor(max(1, min(self.cfg["parallelRepos"], len(repos)))) as pool:
+        pool = concurrent.futures.ThreadPoolExecutor(max(1, min(self.cfg["parallelRepos"], len(repos))))
+        try:
             list(pool.map(one, repos))
+        except KeyboardInterrupt:
+            STOP.set()  # workers stop at their next blocking call; queued repos never start
+            pool.shutdown(wait=False, cancel_futures=True)
+            raise
+        pool.shutdown()
         if not self.dry:
             self.state["lastCycle"] = now_iso()
             self.save()

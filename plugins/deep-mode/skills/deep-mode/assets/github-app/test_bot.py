@@ -849,12 +849,13 @@ class RepoCheckTest(unittest.TestCase):
         c.clone, c.check_tree, c.base, c.head, c.n, c.item = self.tmp / "clone", self.tmp / "check", "main", sha, 7, {}
         c.it = FakeItem("")
         c.it.key = "o/r#pr:7"
+        c.require_own = mock.Mock()
         return c, sha
 
     def test_a_passing_check_gives_no_finding_and_is_remembered_for_the_merge(self):
         c, sha = self.conversation("ok")
         self.assertEqual(c.check_findings(), [])
-        self.assertEqual(c.item["repoCheck"], {"sha": sha, "code": 0})
+        self.assertEqual(c.item["repoCheck"], {"sha": sha, "code": 0, "command": 'test "$(cat flag.txt)" = ok'})
 
     def test_a_failing_check_goes_to_the_author_as_a_p1_finding(self):
         c, sha = self.conversation("broken")
@@ -868,9 +869,24 @@ class RepoCheckTest(unittest.TestCase):
         self.assertIsNone(c.repo_check(c.head))
         self.assertEqual(c.check_findings(), [])
 
+    def test_the_check_never_runs_on_a_head_someone_else_pushed(self):
+        c, _ = self.conversation("ok")
+        c.require_own = mock.Mock(side_effect=bot.Blocked("not own"))
+        with mock.patch.object(c, "repo_check") as check, self.assertRaises(bot.Blocked):
+            c.check_findings()
+        check.assert_not_called()
+
+    def test_a_pass_with_an_older_check_command_is_run_again_before_the_merge(self):
+        c, sha = self.conversation("broken")
+        c.item = {"panelSha": sha, "repoCheck": {"sha": sha, "code": 0, "command": "true"}}  # the base changed it
+        c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
+        with mock.patch.object(bot, "merge_pr") as merge:
+            self.assertEqual(c.land("3/3"), "blocked")
+        merge.assert_not_called()
+
     def test_the_merge_waits_for_a_passing_check_at_the_exact_head(self):
         c, sha = self.conversation("broken")
-        c.item = {"panelSha": sha, "repoCheck": {"sha": "0" * 40, "code": 0}}  # passed at an older head
+        c.item = {"panelSha": sha, "repoCheck": {"sha": "0" * 40, "code": 0, "command": 'test "$(cat flag.txt)" = ok'}}
         c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
         with mock.patch.object(bot, "merge_pr") as merge:
             self.assertEqual(c.land("3/3"), "blocked")
@@ -986,6 +1002,28 @@ class ParallelReposTest(unittest.TestCase):
             b.cycle()
         self.assertEqual(finished, ["o/fast", "o/slow"])
         self.assertEqual(set(b.state["items"]), {"o/slow", "o/fast"})
+        self.assertFalse(bot.BIG.locked())
+
+    def test_stop_ends_each_worker_at_its_next_blocking_call(self):
+        b = object.__new__(bot.Bot)
+        b.dry, b.state = True, {"since": "2026-01-01T00:00:00Z", "items": {}}
+        b.args, b.cfg = mock.Mock(repo=None, backlog=False), {"parallelRepos": 2}
+        b.ident = mock.Mock(repos=mock.Mock(return_value=["o/a", "o/b"]))
+        b.ident.describe.return_value = "test"
+        done = []
+
+        def repo_cycle(repo, since):
+            for item in range(4):
+                bot.pause(0.2)
+                if repo == "o/a" and item == 0:
+                    bot.STOP.set()  # what Ctrl-C sets
+                done.append((repo, item))
+
+        b.repo_cycle = repo_cycle
+        self.addCleanup(bot.STOP.clear)
+        with mock.patch.object(bot, "log"):
+            b.cycle()
+        self.assertLess(len(done), 4)  # neither worker went on through its items
         self.assertFalse(bot.BIG.locked())
 
 

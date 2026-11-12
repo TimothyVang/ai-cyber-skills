@@ -46,7 +46,7 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | Self-authoring | deep-mode writes, validates, and proves its own prompts, skills, goals, and loops: project-local first, a deep-mode PR next, user-level only with your yes. `assets/loop/loop.py` runs a goal file headless in omp, Claude Code, or Codex until its check command passes, with an iteration cap, cost cap, stall stop, and a stop if the agent edits its own goal or the files its check runs, or the harness fails. Interactive sessions use each harness's native `/goal`. |
 | Efficient delegation | When a subagent pays for itself, which model tier and reasoning effort fits each task (search, mechanical edits, features, hard design, review, long runs, summaries) in omp, Claude Code, and Codex, how subscription limits are metered, and how to cut token use. In `plugins/deep-mode/skills/agent-harnesses/references/delegation-efficiency.md`, checked 2026-11-11. |
 
-The agent works on its own: it makes product and design calls, commits, pushes, opens PRs, keeps a board, and merges. A task is done, and a PR merges, only when a panel of three skeptical verifier agents runs it and at least two agree, with evidence the agent has checked. It still asks you before deploys, deleting things it didn't create, rewriting shared history, messaging people outside the repo, spending money, using secrets only you have, or writing anywhere outside the project.
+The agent works on its own: it makes product and design calls, commits, pushes, opens PRs, keeps a board, and merges. A task is done, and a PR merges, only when a panel of three skeptical verifier agents runs it and at least two agree, with evidence the agent has checked. A small change (at most 30 lines in 2 files, nothing security- or config-sensitive) gets one verifier, who must pass it. It still asks you before deploys, deleting things it didn't create, rewriting shared history, messaging people outside the repo, spending money, using secrets only you have, or writing anywhere outside the project.
 
 ## The software factory
 
@@ -411,7 +411,8 @@ A repo names its own gate in its base-branch `.deep-mode.json`: `{"check": "npm 
   - No time limit drops that record: while the PR stays open the bot reads its state each cycle, so a merge that shows up late still gets its trunk check. The record goes when the steps finish, the PR is closed unmerged, or it merges at another head.
 - Answering an issue a PR's merge waits on never starts a second implementation; only an owner's `@deep-mode implement` does. The command opens a line as its own word: `@deep-mode implementation looks wrong`, a quoted command, and one shown inside a code block or an HTML comment don't count.
 - The author and the verifiers run (both with `--approve-all`) only after the current head re-passes the ownership gate, so a push from another account mid-conversation sends the PR to a human.
-- A size S diff (at most 30 changed lines in at most 2 files, measured with `git diff --numstat`, and no path about auth, secrets, permissions, migrations, CI or agent config) gets a light panel. One verifier votes, from another model than the author's when `bot.json` has one, and must PASS. Every other diff gets all the configured verifiers.
+- A size S diff (at most 30 changed lines in at most 2 files, measured with `git diff --numstat --no-renames`, and no path about auth, secrets, permissions, migrations, CI or agent config) gets a light panel. One verifier votes, from another agent than the author's when `bot.json` has one, else another model, and must PASS. Every other diff gets all the configured verifiers.
+  - The bot judges S from size and paths only. A `full-panel` label on the PR gets all the verifiers, for what paths can't show (input parsing at a trust boundary).
 - No one but the owner steers a write-enabled agent: on the owner's PRs other people's comments neither trigger a turn nor reach a prompt, and an issue build plans and implements in new agent sessions that see only the owner's comments, never an earlier discussion's context.
 - Implementing an issue reuses an existing `deep-mode/issue-<n>` branch only when every commit on it is one the bots made; otherwise the bots stop and say so.
 - The bot never blocks itself on its own worktrees. Once an issue's PR is open, the bot closes that build's one-off agent sessions and detaches the implementation worktree from `deep-mode/issue-<n>`. A later checkout of a branch that another worktree under `~/.cache/deep-mode/bot/worktrees/` holds detaches that holder first; its files and uncommitted changes stay. A holder anywhere else, such as a user's own worktree, is never touched: the item errors and names it.
@@ -466,7 +467,7 @@ Roles come from `~/.config/deep-mode/bot.json`. Each is `{"agent": "<acpx agent>
 |---|---|---|---|
 | author | `author` | persistent, per PR | conflict merges, fixes, a reply to every finding |
 | reviewer | `reviewer` | persistent, per PR, read-only | findings |
-| verifier 1 to 3 | `verifiers` (three entries) | one-shot each, own worktree | a vote (only the first for a size S diff) |
+| verifier 1 to 3 | `verifiers` (three entries) | one-shot each, own worktree | a vote (for a size S diff only one: another agent than the author's if configured, else another model) |
 | panel | none (the coordinator) | none | the tally and the head it covers |
 | coordinator | none | none | the kickoff, status, the merge note |
 
