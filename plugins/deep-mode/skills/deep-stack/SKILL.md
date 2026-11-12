@@ -1,6 +1,6 @@
 ---
 name: deep-stack
-description: "Stack picks and ship loop: a 2026 default software stack and the decision rules behind it, applied to any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), plus an agent-driven UI design workflow and a per-task ship loop (worktree, service-layer build, recorded evidence, reviewed PR). Use when the user asks to pick a stack, \"what stack\", or to build a tech stack for a new app; designs a UI with an agent via a design system; or wants one change shipped as an evidence-backed, reviewed PR. An issue queue run as a software factory is deep-mode's Factory playbook."
+description: "Stack picks and ship loop: a 2026 default software stack and the decision rules behind it, applied to any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), plus an agent-driven UI design workflow and a per-task ship loop (worktree, service-layer build, recorded evidence, reviewed PR). Use when the user asks to pick a stack, \"what stack\", or to build a tech stack for a new app; designs a UI with an agent via a design system; or wants one change shipped as an evidence-backed, reviewed PR. An issue queue run as a software factory is deep-mode's Work a queue playbook, factory source."
 ---
 
 # Stack picks and ship loop

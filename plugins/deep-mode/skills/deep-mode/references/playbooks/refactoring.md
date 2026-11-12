@@ -4,17 +4,28 @@ Use when: changing structure while behavior stays fixed. You own the contract. N
 
 ## Steps
 
-1. Pin the behavior contract: run the **how** technique (`references/techniques/how.md`), then write a characterization test, snapshot, or equivalence harness capturing current behavior before structure moves. No coverage → write the pin first. Type check and lint are not a pin.
+1. Pin the behavior contract: run the **how** technique (`references/techniques/how.md`), then write a characterization test, snapshot, or equivalence harness capturing current behavior before structure moves.
+   No coverage → write the pin first. Type check and lint are not a pin.
+   Done when the pin runs green on the unchanged code and you have its command.
 2. Name the structure the code is missing (`references/principles/model-the-domain.md`). Boring code stays when its shape is clear and local. The reshape must delete branches or invalid states, not add indirection.
-3. Name the target shape: module layout, types, call graph as if built today (`references/principles/foundational-thinking.md`, `references/principles/redesign-from-first-principles.md`). Target changes a module or public interface with two or more viable shapes → run the **architect** technique (`references/techniques/architect.md`) first.
-4. Subtract before you add (`references/principles/subtract-before-you-add.md`): delete dead code, collapse one-caller wrappers, drop redundant validators, remove orphan references. Ship the smallest change reaching the target (`references/principles/laziness-protocol.md`); revert speculative "might help" cleanups.
+   Done when the missing structure is named in one sentence, with the branches or invalid states it deletes.
+3. Name the target shape: module layout, types, call graph as if built today (`references/principles/foundational-thinking.md`, `references/principles/redesign-from-first-principles.md`).
+   Target changes a module or public interface with two or more viable shapes → run the **architect** technique (`references/techniques/architect.md`) first.
+   Done when the target layout is written down, and an architect verdict exists when it was required.
+4. Subtract before you add (`references/principles/subtract-before-you-add.md`): delete dead code, collapse one-caller wrappers, drop redundant validators, remove orphan references.
+   Ship the smallest change reaching the target (`references/principles/laziness-protocol.md`); revert speculative "might help" cleanups.
+   Done when the subtraction is committed with the pin green and no speculative cleanup remains in the diff.
 5. Move in small behavior-preserving steps, each keeping the pin green.
    - API reshapes: migrate every caller and delete the old API in the same wave (`references/principles/migrate-callers-then-delete-legacy-apis.md`). No shims, no parallel old/new paths.
    - Spot-check every rename against the files; renames miss usages in strings, prose, back-references.
    - Delegate mechanical edits to a default `task` agent with scope: file paths, names being moved, behavior to hold, exclusive file ownership.
-6. Prove behavior unchanged on the real artifact, not "it compiles" (`references/principles/prove-it-works.md`). Larger reshapes: equivalence check (old-vs-new output diff script, recorded baseline replay, or smoke run on the matching surface via the project `verify-<app>` skill).
-7. Confirm it is worth keeping: the diff must lower reader load somewhere (`references/principles/minimize-reader-load.md`); else revert.
+   - Done when the code matches the target shape, the pin is green, and a grep for each old name returns no usages.
+6. Prove behavior unchanged on the real artifact, not "it compiles" (`references/principles/prove-it-works.md`).
+   Larger reshapes: equivalence check (old-vs-new output diff script, recorded baseline replay, or smoke run on the matching surface via the project `verify-<app>` skill).
+   Done when the real-artifact run or equivalence check shows no behavior difference, with its run path recorded.
+7. Confirm it is worth keeping: the diff must lower reader load somewhere (`references/principles/minimize-reader-load.md`); else revert. Done when the reader-load reduction is named, or the change is reverted.
 8. Sequence commits: subtraction, then reshape, then follow-on cleanup, each green (`references/principles/sequence-verifiable-units.md`). Commit and run **Opening a PR** (`references/playbooks/opening-a-pr.md`).
+   Done when the pin passes at every commit and the PR is open.
 
 ## Gates
 

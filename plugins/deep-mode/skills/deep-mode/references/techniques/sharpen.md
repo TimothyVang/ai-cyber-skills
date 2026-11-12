@@ -11,3 +11,5 @@
 **Hard rule.** Leave the user's choices open instead of deciding them.
 
 **Output:** the four answers, then the rewritten prompt.
+
+**Done when** each of the four answers is concrete (a named method, tool, material, or oracle) and the rewritten prompt asks for each one.

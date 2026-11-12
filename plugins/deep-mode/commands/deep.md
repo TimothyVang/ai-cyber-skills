@@ -1,5 +1,5 @@
 ---
-description: "One command for everything: fix, build, review a PR, contribute to a project, set up a project for helpers, start a new app, run a software factory, drive a kanban board, chart a big effort, or grill a plan. deep-mode routes it, sizes it, proves it, lands it on a 3-agent panel pass, and reports."
+description: "One command for everything: fix, build, review a PR, contribute to a project, set up a project for helpers, start a new app, run a software factory, drive a kanban board, chart a big effort, or grill a plan. deep-mode routes it, sizes it, proves it, lands it on a panel pass (one verifier for a small change, three otherwise), and reports."
 argument-hint: "<anything: a task, a PR number, 'what can I work on', 'start a new app that ...', 'drive the board', 'grill me on ...'>"
 ---
 
@@ -11,6 +11,6 @@ For a large or medium task, read the matched playbook's file and copy its steps 
 
 If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it for proof. If it has none, the task is medium or large, it changes user-visible behavior, and the app runs locally, I pre-authorize running `skill://create-verification-skill` first; say you did.
 
-Decide and act without asking: commits, pushes, PRs, issues, board cards, and merges are yours; merge only on a 3-agent panel pass at the exact head. Ask me once, at the end, only for the hard stops in deep-mode's Autonomy section (deploys, deleting what you didn't create, history rewrites on shared branches, messages outside the repo, money, secrets). Claiming an issue in someone else's project is the one thing you ask about before starting.
+Decide and act without asking: commits, pushes, PRs, issues, board cards, and merges are yours; merge only on a panel pass at the exact head: three verifiers, or one for a size S change. Ask me once, at the end, only for the hard stops in deep-mode's Autonomy section (deploys, deleting what you didn't create, history rewrites on shared branches, messages outside the repo, money, secrets). Claiming an issue in someone else's project is the one thing you ask about before starting.
 
 Request: $ARGUMENTS

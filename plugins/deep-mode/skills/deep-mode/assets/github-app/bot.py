@@ -36,6 +36,7 @@ import shutil
 import stat
 import subprocess
 import sys
+import threading
 import time
 import traceback
 import uuid
@@ -47,6 +48,8 @@ import brand  # noqa: E402
 import ghapp  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pr-agent"))
 import pr_agent_local  # noqa: E402  (its sealed `omp -p`: no tools, no files, no project config)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "loop"))
+import loop as goal_loop  # noqa: E402  (find_bash, run_limited: a time-limited command whose tree is killed)
 
 B = brand.BRAND
 NAME = B["name"]
@@ -61,13 +64,25 @@ TASK_NAME = B["autostartId"]
 LAUNCHD_LABEL = f"dev.{TASK_NAME}"
 DEFAULTS = {"author": {"agent": "omp"}, "reviewer": {"agent": "omp"},
             "verifiers": [{"agent": "omp"}, {"agent": "omp"}, {"agent": "omp"}],
-            "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": B["mention"]}
+            "autonomousMerge": True, "maxRounds": 3, "interval": 120, "mention": B["mention"], "parallelRepos": 4}
 ACPX_CONFIG = Path.home() / ".acpx" / "config.json"
 SIGNATURE = f"**{NAME} "
 SEVERITIES = ("P0", "P1", "P2")
 AGENT_TIMEOUT = 3600
 CHECK_WAIT = 1800
 MISSING_LOOKS = 3  # cycles a required check may stay unreported, with nothing running, after the wait
+REPO_CHECK_MINUTES = 30  # time limit for the base branch's `check` command (.deep-mode.json)
+# A size S diff (SKILL.md Route step 3) gets a light panel of one verifier: at most this many changed lines in
+# this many files, and no path that touches auth, secrets, permissions, migrations, CI, or agent config.
+LIGHT_PANEL_LINES, LIGHT_PANEL_FILES = 30, 2
+SENSITIVE_PATH = re.compile(r"auth|login|password|secret|credential|token|permission|security|migration|"
+                            r"(^|/)\.github/|(^|/)\.gitlab-ci\.yml$|(^|/)jenkinsfile$|pipelines?\.ya?ml$|"
+                            r"(^|/)\.(circleci|buildkite|husky)/|(^|/)\.env|(^|/)\.(omp|claude|codex|agents|cursor|"
+                            r"gemini|windsurf|kiro|pi)/|(^|/)(agents|claude|gemini|skill)\.md$|(^|/)\.(cursor|windsurf|"
+                            r"cline)rules$|mcp\.json$|(^|/)\.deep-mode\.json$", re.I)
+# A label that asks for the full panel on a diff the bot would size S, for what paths can't show (a change to
+# input parsing at a trust boundary).
+FULL_PANEL_LABELS = frozenset({"full-panel"})
 LIST_LIMIT = 100_000  # open PRs or issues listed per repo per cycle: gh pages through all of them
 MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for a new push or comment
 MERGE_SETTLE = 60  # seconds a merge read-back polls for MERGED before calling the merge not done
@@ -115,6 +130,37 @@ SEALED_NOTE = ("You have no tools and no files: everything you can check is in t
                "in the text below, and say so when a point depends on code you cannot see.")
 
 
+# Repos are polled in parallel worker threads. A worker holds BIG whenever it runs Python, so bot state is only
+# ever touched by one thread, and lets go of it while it waits on a subprocess, a sleep, or a sealed model call.
+BIG = threading.Lock()
+_holding = threading.local()
+# Set on Ctrl-C: each worker stops at its next blocking call instead of finishing its whole repo cycle.
+STOP = threading.Event()
+
+
+class Stopped(BaseException):
+    """The bot is shutting down. A BaseException, so no `except Exception` records it as an item error."""
+
+
+def unlocked(fn, *args, **kwargs):
+    """Run a blocking call with BIG released when this thread holds it, so other repos' workers can go on."""
+    if not getattr(_holding, "big", False):
+        return fn(*args, **kwargs)
+    _holding.big = False
+    BIG.release()
+    try:
+        return fn(*args, **kwargs)
+    finally:
+        BIG.acquire()
+        _holding.big = True
+        if STOP.is_set():
+            raise Stopped()
+
+
+def pause(seconds: float) -> None:
+    unlocked(time.sleep, seconds)
+
+
 class Blocked(Exception):
     """A conversation stopped at a gate; the message says why."""
 
@@ -134,9 +180,9 @@ def log(message: str) -> None:
 
 
 def run(cmd, cwd=None, stdin=None, check=True, timeout=600):
-    proc = subprocess.run([str(c) for c in cmd], cwd=cwd, input=stdin, capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=timeout, creationflags=NO_WINDOW,
-                          **({} if stdin is not None else {"stdin": subprocess.DEVNULL}))
+    proc = unlocked(subprocess.run, [str(c) for c in cmd], cwd=cwd, input=stdin, capture_output=True, text=True,
+                    encoding="utf-8", errors="replace", timeout=timeout, creationflags=NO_WINDOW,
+                    **({} if stdin is not None else {"stdin": subprocess.DEVNULL}))
     if check and proc.returncode:
         detail = (proc.stderr or proc.stdout).strip()[-800:]
         raise RuntimeError(f"{' '.join(str(c) for c in cmd[:5])} exited {proc.returncode}: {detail}")
@@ -523,6 +569,8 @@ def load_bot_config(write: bool = True) -> dict:
         if not isinstance(cfg["verifiers"], list) or not cfg["verifiers"]:
             raise ValueError("verifiers must be a non-empty list")
         cfg["verifiers"] = [as_role(v) for v in cfg["verifiers"]]
+        if not isinstance(cfg["parallelRepos"], int) or cfg["parallelRepos"] < 1:
+            raise ValueError("parallelRepos must be a positive integer")
     except ValueError as err:
         raise SystemExit(f"{BOT_CONFIG}: {err}") from None
     return cfg
@@ -578,7 +626,8 @@ class Identity:
             if repo not in self.installs:
                 self.installs[repo] = ghapp.installation_for(self.app, repo)
             token = ghapp.installation_token(self.app, self.installs[repo])
-            ghapp.request("POST", f"/repos/{repo}/issues/{number}/comments", token, {"body": body}, bearer=False)
+            unlocked(ghapp.request, "POST", f"/repos/{repo}/issues/{number}/comments", token, {"body": body},
+                     bearer=False)
         else:
             run(["gh", "api", "-X", "POST", f"repos/{repo}/issues/{number}/comments", "--input", "-"],
                 stdin=json.dumps({"body": body}))
@@ -608,17 +657,63 @@ def base_config(clone: Path, branch: str) -> dict:
     return data if isinstance(data, dict) else {"autonomousMerge": False}
 
 
+def norm_path(path) -> str:
+    return os.path.normcase(os.path.realpath(path))
+
+
+def worktree_holders(clone: Path, branch: str) -> list:
+    """Paths of the worktrees that have `branch` checked out. `--porcelain -z` needs git 2.36 or later."""
+    holders, path = [], None
+    for field in run(["git", "worktree", "list", "--porcelain", "-z"], cwd=clone).stdout.split("\0"):
+        if field.startswith("worktree "):
+            path = field[len("worktree "):]
+        elif field == f"branch refs/heads/{branch}" and path:
+            holders.append(path)
+    return holders
+
+
+def free_branch(clone: Path, branch: str, keep: Path) -> None:
+    """Release `branch` from every worktree but `keep`, so `-B branch` can reset it. A holder under the bot's
+    worktrees dir is detached, keeping its HEAD commit and uncommitted changes; any other holder (a user's
+    worktree, the main clone) is left alone and raises. Raises unless the branch reads back free."""
+    root, keep, errors = norm_path(WORK / "worktrees"), norm_path(keep), []
+    for holder in worktree_holders(clone, branch):
+        held = norm_path(holder)
+        if held == keep:
+            continue
+        try:
+            ours = held != root and os.path.commonpath([held, root]) == root
+        except ValueError:  # another drive
+            ours = False
+        if not ours:
+            raise RuntimeError(f"`{branch}` is checked out at {Path(holder)}, outside the bot's worktrees "
+                               f"({Path(root)}); release it there")
+        proc = run(["git", "checkout", "--detach", "--quiet"], cwd=holder, check=False)
+        if proc.returncode:
+            errors.append(f"{Path(holder)}: {(proc.stderr or proc.stdout).strip()[-300:]}")
+        else:
+            log(f"{clone.name}: detached {Path(holder)} to free `{branch}`")
+    still = [str(Path(h)) for h in worktree_holders(clone, branch) if norm_path(h) != keep]
+    if still:
+        raise RuntimeError(f"`{branch}` is still checked out at {', '.join(still)}: {'; '.join(errors)}")
+
+
 def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
-    """Check `ref` out at `path` (the bot's own scratch worktree): on `branch` reset to ref, or detached."""
+    """Check `ref` out at `path` (the bot's own scratch worktree): on `branch` reset to ref, or detached.
+    Another bot worktree holding `branch` is detached first (free_branch)."""
     if not (path / ".git").exists():
         shutil.rmtree(path, ignore_errors=True)
         git(clone, "worktree", "prune")
         path.parent.mkdir(parents=True, exist_ok=True)
+        if branch:
+            free_branch(clone, branch, path)
         git(clone, "worktree", "add", "--force", *(["-B", branch] if branch else ["--detach"]), path, ref)
         return path
     run(["git", "merge", "--abort"], cwd=path, check=False)
     git(path, "reset", "--hard", "--quiet")
     git(path, "clean", "-fdq")
+    if branch:
+        free_branch(clone, branch, path)
     git(path, "checkout", "--force", "--quiet", *(["-B", branch, ref] if branch else ["--detach", ref]))
     return path
 
@@ -723,6 +818,21 @@ def checks_running(contexts: list, checks: list, required: list, pinned: dict) -
         any("pending" in seen for apps in pinned.values() for seen in apps.values())
 
 
+def diff_size(numstat: str) -> dict:
+    """Changed lines and files from `git diff --numstat`, and whether the diff is size S (a light panel): at most
+    LIGHT_PANEL_LINES lines in LIGHT_PANEL_FILES files, no binary file, no SENSITIVE_PATH."""
+    lines, files, small = 0, 0, True
+    for row in filter(str.strip, numstat.split("\0")):  # `--numstat -z --no-renames`: a rename is a delete and an add
+        added, deleted, path = row.strip("\n").split("\t", 2)
+        files += 1
+        if not (added.isdigit() and deleted.isdigit()) or SENSITIVE_PATH.search(path.replace("\\", "/")):
+            small = False
+        else:
+            lines += int(added) + int(deleted)
+    small = small and 0 < files <= LIGHT_PANEL_FILES and lines <= LIGHT_PANEL_LINES
+    return {"lines": lines, "files": files, "small": small}
+
+
 def is_held(labels) -> bool:
     return any((label.get("name") or "").lower() in HOLD_LABELS for label in labels or [])
 
@@ -813,6 +923,7 @@ class Item:
         self.key = f"{repo}#{kind}:{number}"
         self.tag = f"{slug(repo)}-{kind}{number}"
         self.transcript = WORK / "logs" / slug(repo) / f"{kind}-{number}.md"
+        self.sessions = {}  # session name -> the acpx command prefix (agent, model, cwd) that opened it
 
     def note(self, text: str) -> None:
         self.transcript.parent.mkdir(parents=True, exist_ok=True)
@@ -847,6 +958,7 @@ class Item:
         base = [acpx, "--cwd", cwd] + (["--model", role["model"]] if role.get("model") else [])
         if session:
             run(base + [agent, "sessions", "ensure", "--name", session], timeout=600)
+            self.sessions[session] = base + [agent, "sessions"]
         cmd = base + [perms, "--non-interactive-permissions", "deny", "--timeout", str(AGENT_TIMEOUT),
                       "--format", "quiet", agent]
         cmd += (["prompt", "-s", session] if session else ["exec"]) + ["--file", prompt_file]
@@ -875,9 +987,9 @@ class Item:
         self.note(f"PROMPT -> {role_label(role)} (sealed: no tools)\n\n{prompt}")
         log(f"{self.key}: {role_label(role)} turn (sealed: no tools)")
         try:
-            model = role.get("model") or pr_agent_local.omp_default_model()
-            reply, _ = pr_agent_local.omp_complete([{"role": "user", "content": prompt}], model,
-                                                   pr_agent_local.omp_oauth_credentials(model))
+            model = role.get("model") or unlocked(pr_agent_local.omp_default_model)
+            reply, _ = unlocked(lambda: pr_agent_local.omp_complete(
+                [{"role": "user", "content": prompt}], model, pr_agent_local.omp_oauth_credentials(model)))
         except SystemExit as err:  # pr_agent_local reports a setup problem by exiting
             raise RuntimeError(str(err)) from None
         # pr_agent_local puts a word joiner after each @ of the prompt so omp attaches no file; drop the echoes.
@@ -886,6 +998,20 @@ class Item:
         if not reply:
             raise RuntimeError(f"{role_label(role)} sealed turn returned nothing")
         return reply
+
+    def close_sessions(self, names) -> None:
+        """Close named sessions this item opened (acpx closes per cwd; `sessions prune` would delete them).
+        Only for one-off sessions: discussion sessions keep their context across cycles. Failures are logged."""
+        for name in names:
+            prefix = self.sessions.pop(name, None)
+            if not prefix:
+                continue
+            try:
+                proc = run(prefix + ["close", name], check=False, timeout=120)
+                if proc.returncode:
+                    raise RuntimeError(f"exit {proc.returncode}: {(proc.stderr or proc.stdout).strip()[-300:]}")
+            except Exception as err:
+                log(f"{self.key}: could not close session {name} ({err})")
 
 
 # ---------------------------------------------------------------- prompts
@@ -1057,6 +1183,7 @@ class PRConversation:
         trees = WORK / "worktrees" / slug(self.repo)
         self.review_tree, self.author_tree = trees / f"pr{self.n}-review", trees / f"pr{self.n}-author"
         self.verifier_trees = [trees / f"pr{self.n}-v{i}" for i in range(1, len(self.cfg["verifiers"]) + 1)]
+        self.check_tree = trees / f"pr{self.n}-check"
         self.answered, self.author_reply = set(), None
 
     def run(self) -> str:
@@ -1103,7 +1230,7 @@ class PRConversation:
                            "headRefOid,mergeStateStatus,mergeable,reviewDecision,state")
             if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                 break
-            time.sleep(5)
+            pause(5)
         self.head = view["headRefOid"]
         self.heads.add(self.head)
         return view
@@ -1181,6 +1308,8 @@ class PRConversation:
         while True:
             open_ = blocking(self.review(rounds + 1), self.answered)
             if not open_:
+                open_ = self.check_findings()  # the repo's own gate first: it costs no model calls
+            if not open_:
                 passed, tally, failures = self.panel()
                 if passed:
                     return self.land(tally)
@@ -1191,6 +1320,40 @@ class PRConversation:
                 raise Blocked(f"not converged after {rounds} round(s). Open findings:\n{lines}")
             rounds += 1
             self.answer(open_)
+
+    def repo_check(self, sha: str):
+        """Run the base branch's `check` command (.deep-mode.json, so a PR can't change its own gate) at `sha` in
+        a clean worktree. Returns (command, exit code, last output), the code None when it ran past
+        REPO_CHECK_MINUTES, or None when the repo sets no check. Only ever on the owner's own code."""
+        command = base_config(self.clone, self.base).get("check")
+        if not isinstance(command, str) or not command.strip():
+            return None
+        tree = worktree_at(self.clone, self.check_tree, sha)
+        tmp = tree / ".scratch" / "tmp"
+        tmp.mkdir(parents=True, exist_ok=True)
+        env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
+        env.update(TMPDIR=str(tmp), TMP=str(tmp), TEMP=str(tmp), PYTHONDONTWRITEBYTECODE="1")
+        bash = goal_loop.find_bash()
+        log(f"{self.it.key}: repo check `{command}` at {sha[:7]}")
+        code, output = unlocked(goal_loop.run_limited, [bash, "-c", command] if bash else command,
+                                REPO_CHECK_MINUTES, shell=not bash, cwd=tree, env=env, stdout=subprocess.PIPE,
+                                stderr=subprocess.STDOUT, creationflags=NO_WINDOW)
+        self.item["repoCheck"] = {"sha": sha, "code": code, "command": command}
+        return command, code, output.strip()[-3000:]
+
+    def check_findings(self) -> list:
+        """The repo check at the current head as a P1 finding for the author when it fails, else nothing."""
+        # The command runs the head's code with the owner's environment: only ever on the owner's own work.
+        self.require_own()
+        result = self.repo_check(self.head)
+        if result is None or result[1] == 0:
+            return []
+        command, code, output = result
+        what = f"ran past {REPO_CHECK_MINUTES} minutes" if code is None else f"exited {code}"
+        self.it.say("coordinator", "bot.py", self.head, f"The repo check `{command}` {what} at "
+                    f"`{self.head[:7]}`:\n\n```text\n{output}\n```")
+        return [{"id": "C1", "severity": "P1", "file": "", "line": 0,
+                 "claim": f"the repo check `{command}` {what}", "evidence": output[-1500:]}]
 
     def author_checkout(self) -> Path:
         """The author's worktree on the PR branch at the current head, once that head re-passes the ownership
@@ -1241,7 +1404,7 @@ class PRConversation:
             self.refresh()
             if self.head == new:
                 return
-            time.sleep(3)
+            pause(3)
         raise Blocked(f"local head `{new[:7]}` but GitHub reports `{self.head[:7]}`; someone else pushed")
 
     def sync_base(self) -> None:
@@ -1295,29 +1458,45 @@ class PRConversation:
 
     def panel(self):
         self.require_own()  # verifiers run with --approve-all: the head must still be the owner's own work
-        sha, verifiers = self.head, self.cfg["verifiers"]
-        for tree in self.verifier_trees:
-            worktree_at(self.clone, tree, sha)
+        sha, configured = self.head, self.cfg["verifiers"]
+        size = diff_size(git(self.clone, "diff", "--numstat", "-z", "--no-renames", f"origin/{self.base}...{sha}"))
+        if size["small"] and any((label.get("name") or "").lower() in FULL_PANEL_LABELS
+                                 for label in self.pr.get("labels") or []):
+            size["small"] = False
+        # A size S diff gets a light panel: one verifier, from another agent than the author's if one is configured,
+        # else another model. Everything else gets every configured verifier.
+        if size["small"]:
+            agent, model = self.author["agent"], self.author.get("model")
+            ranked = sorted(range(len(configured)), key=lambda i: (configured[i]["agent"] == agent,
+                                                                     configured[i].get("model") == model))
+            seats = ranked[:1]
+        else:
+            seats = list(range(len(configured)))
+        verifiers = [configured[i] for i in seats]
+        for i in seats:
+            worktree_at(self.clone, self.verifier_trees[i], sha)
         stat = git(self.clone, "diff", "--stat", f"origin/{self.base}...{sha}")
 
         def vote(index: int):
             agent = verifiers[index]
             try:
                 reply = self.it.ask(agent, verifier_prompt(self, index + 1, len(verifiers), stat),
-                                    self.verifier_trees[index], "--approve-all")
+                                    self.verifier_trees[seats[index]], "--approve-all")
             except Exception as err:  # a verifier that cannot run is a FAIL vote, not a crash
                 reply = f"The verifier could not run: {err}\n\n```json\n{{\"vote\":\"FAIL\",\"evidence\":\"did not run\"}}\n```"
             return reply, *parse_vote(reply)
 
         with concurrent.futures.ThreadPoolExecutor(len(verifiers)) as pool:
-            results = list(pool.map(vote, range(len(verifiers))))
+            results = unlocked(lambda: list(pool.map(vote, range(len(verifiers)))))
         for i, (reply, _, _) in enumerate(results, 1):
             self.it.say(f"verifier {i}", verifiers[i - 1], sha, reply)
         votes = [v for _, v, _ in results]
-        passed = panel_passed(votes)
+        passed = votes == ["PASS"] if size["small"] else panel_passed(votes)
         tally = f"{votes.count('PASS')}/{len(votes)}"
+        kind = (f"Light panel (size S: {size['lines']} changed lines in {size['files']} file(s))"
+                if size["small"] else "Panel")
         lines = "\n".join(f"- verifier {i} ({role_label(verifiers[i - 1])}): {v}" for i, v in enumerate(votes, 1))
-        self.it.say("panel", "bot.py", sha, f"Panel {'PASS' if passed else 'not done'} at `{sha[:7]}`: "
+        self.it.say("panel", "bot.py", sha, f"{kind} {'PASS' if passed else 'not done'} at `{sha[:7]}`: "
                     f"{tally} PASS.\n\n{lines}")
         self.item.update(panelSha=sha if passed else None, panelTally=tally)
         failures = [{"id": f"V{i}", "severity": "P1", "file": "", "line": 0,
@@ -1336,7 +1515,7 @@ class PRConversation:
                                "headRefOid,mergeStateStatus,mergeable,reviewDecision,labels")
                 if view["mergeStateStatus"] != "UNKNOWN" and view["mergeable"] != "UNKNOWN":
                     break
-                time.sleep(5)
+                pause(5)
             checks, required = pr_checks(self.repo, self.n), pr_checks(self.repo, self.n, required=True)
             pinned = {name: app_checks(self.repo, view["headRefOid"], name, apps)
                       for name, apps in pinned_rules.items()}
@@ -1344,7 +1523,7 @@ class PRConversation:
             if not pending or time.time() > deadline:
                 break
             log(f"{self.it.key}: waiting for required checks")
-            time.sleep(30)
+            pause(30)
         head = view["headRefOid"]
         # A base that is neither the trunk nor a protected branch is a stack parent's branch: merging into it would
         # land the child before its parent, or into a branch that already merged.
@@ -1393,6 +1572,17 @@ class PRConversation:
                 self.it.say("coordinator", "bot.py", facts["head"], "Not merging. Panel " + tally + " PASS at `"
                             + (sha or "")[:7] + "`, but:\n" + "\n".join(f"- {r}" for r in reasons))
             return status
+        # The repo check must have passed at this exact head with the command the base sets now (it ran before the
+        # panel; a resumed item, or a base that changed its check, runs it again).
+        command = base_config(self.clone, self.base).get("check")
+        if (self.item.get("repoCheck") or {}) != {"sha": sha, "code": 0, "command": command}:
+            result = self.repo_check(sha)
+            if result is not None and result[1] != 0:
+                command, code, output = result
+                what = f"ran past {REPO_CHECK_MINUTES} minutes" if code is None else f"exited {code}"
+                self.it.say("coordinator", "bot.py", sha, f"Not merging: the repo check `{command}` {what} at "
+                            f"`{sha[:7]}`.\n\n```text\n{output}\n```\nA new push or an owner comment restarts it.")
+                return "blocked"
         checks = ", ".join(f"`{c['name']}` {c.get('bucket')}" for c in facts["required"]) or "none required"
         # Saved before `gh pr merge`: a closed PR is never listed again, so whatever fails after GitHub accepts
         # the merge (the reply, the read-back, the note, the trunk check), repo_cycle resumes from this record.
@@ -1423,7 +1613,7 @@ class PRConversation:
             view = gh_json("pr", "view", str(self.n), "-R", self.repo, "--json", "state,headRefOid,mergeCommit")
             if view["state"] == "MERGED" or time.monotonic() >= deadline:
                 return view
-            time.sleep(3)
+            pause(3)
 
     def finish_merge(self, settle: bool) -> str:
         """After `gh pr merge`: confirm MERGED, then the merge note, then the trunk check. Each step is recorded,
@@ -1453,11 +1643,22 @@ class PRConversation:
         return status
 
     def trunk_check(self, merged: str) -> str:
-        """pr-conversation step 8: the repo's checks on the new trunk. Red opens a revert PR, which the next
-        cycle runs this conversation on."""
-        agent = self.cfg["verifiers"][0]
+        """pr-conversation step 8: the repo's checks on the new trunk. With a `check` command in the base
+        branch's .deep-mode.json the bot runs it itself; otherwise a verifier agent runs the documented checks.
+        Red opens a revert PR, which the next cycle runs this conversation on."""
         git(self.clone, "fetch", "origin", "--quiet", f"+refs/heads/{self.base}:refs/remotes/origin/{self.base}",
             timeout=1800)
+        result = self.repo_check(merged)
+        if result is not None:
+            command, code, output = result
+            if code is None:  # no verdict is not a red trunk: say so, revert nothing
+                self.it.say("coordinator", "bot.py", merged, f"The trunk check `{command}` at `{merged[:7]}` ran past "
+                            f"{REPO_CHECK_MINUTES} minutes. Run it on `{self.base}` by hand.")
+                return "merged"
+            self.it.say("trunk check", "bot.py", merged, f"`{command}` exited {code} at `{merged[:7]}`.\n\n"
+                        f"```text\n{output[-1500:]}\n```")
+            return "merged" if code == 0 else self.revert_red(merged, f"`{command}` exited {code}:\n{output}")
+        agent = self.cfg["verifiers"][0]
         tree = worktree_at(self.clone, self.verifier_trees[0], merged)
         try:
             reply = self.it.ask(agent, trunk_prompt(self, merged), tree, "--approve-all")
@@ -1475,8 +1676,11 @@ class PRConversation:
             return "merged"
         if vote == "PASS":
             return "merged"
+        return self.revert_red(merged, str(data.get("evidence") or "no parseable vote"))
+
+    def revert_red(self, merged: str, evidence: str) -> str:
         try:
-            url = self.open_revert(merged, str(data.get("evidence") or "no parseable vote"))
+            url = self.open_revert(merged, evidence)
         except Exception as err:
             self.it.say("coordinator", "bot.py", merged, f"Trunk is red after `{merged[:7]}`, and opening a revert "
                         f"PR failed ({err}). Revert it by hand.")
@@ -1545,7 +1749,8 @@ class IssueConversation:
             if self.bot.live_turns:
                 self.it.say("author", self.author, sha, self.turn(self.author, plan_prompt(self)))
             return "dry-run"
-        author_session, reviewer_session, build_session = issue_sessions(self.it.tag, implement)
+        sessions = issue_sessions(self.it.tag, implement)
+        author_session, reviewer_session, _ = sessions
         plan = self.turn(self.author, plan_prompt(self), author_session)
         self.it.say("author", self.author, sha, plan)
         critique = self.turn(self.reviewer, critique_prompt(self, plan), reviewer_session)
@@ -1558,9 +1763,11 @@ class IssueConversation:
         self.it.say("author", self.author, sha, answer)
         if not implement:
             return "discussed"
-        return self.implement(f"Plan:\n{plan}\n\nReview:\n{critique}\n\nAnswer:\n{answer}", build_session)
+        return self.implement(f"Plan:\n{plan}\n\nReview:\n{critique}\n\nAnswer:\n{answer}", sessions)
 
-    def implement(self, discussion: str, session: str) -> str:
+    def implement(self, discussion: str, sessions: tuple) -> str:
+        """Build on the issue branch in the impl tree and open its PR. `sessions` are the build's one-off
+        (author, reviewer, implement) session names from issue_sessions."""
         branch = f"{B['branchPrefix']}/issue-{self.n}"
         existing = gh_json("pr", "list", "-R", self.repo, "--head", branch, "--state", "open", "--json", "url") or []
         if existing:
@@ -1581,7 +1788,8 @@ class IssueConversation:
         tree = worktree_at(self.clone, self.tree.with_name(f"issue{self.n}-impl"),
                            f"origin/{branch}" if on_remote else f"origin/{self.default}", branch=branch)
         old = git(tree, "rev-parse", "HEAD")
-        reply = self.it.ask(self.author, implement_prompt(self, branch, discussion), tree, "--approve-all", session)
+        reply = self.it.ask(self.author, implement_prompt(self, branch, discussion), tree, "--approve-all",
+                            sessions[2])
         new = git(tree, "rev-parse", "HEAD")
         if int(git(tree, "rev-list", "--count", f"origin/{self.default}..HEAD")) == 0:
             self.it.say("coordinator", "bot.py", new, "The author made no commits, so no PR was opened.\n\n" + reply)
@@ -1598,10 +1806,26 @@ class IssueConversation:
                 f"author ({role_label(self.author)}) after a plan review with {role_label(self.reviewer)} in #{self.n}.")
         url = gh("pr", "create", "-R", self.repo, "--base", self.default, "--head", branch, "--title", title,
                  "--body-file", "-", stdin=body, cwd=self.clone).strip()
+        self.release(tree, sessions, branch)
         self.item["implemented"] = True
         self.it.say("coordinator", "bot.py", new,
                     f"Implemented on `{branch}` and opened {url}; the next cycle runs the PR conversation on it.")
         return "implemented"
+
+    def release(self, tree: Path, sessions: tuple, branch: str) -> None:
+        """Once the PR is open: close the build's one-off sessions, then detach the impl tree so the PR
+        conversation can check `branch` out. Detaching keeps the tree's files. Failures are only logged: the PR
+        is open either way, and the next worktree_at on `branch` detaches the tree again or fails loudly."""
+        try:
+            self.it.close_sessions(sessions)
+        except Exception as err:
+            log(f"{self.it.key}: could not close the build sessions ({err})")
+        try:
+            proc = run(["git", "checkout", "--detach", "--quiet"], cwd=tree, check=False)
+            if proc.returncode:
+                raise RuntimeError((proc.stderr or proc.stdout).strip()[-300:])
+        except Exception as err:
+            log(f"{self.it.key}: could not detach {tree} from `{branch}` ({err})")
 
 
 # ---------------------------------------------------------------- the cycle
@@ -1633,11 +1857,34 @@ class Bot:
         log(f"cycle as {self.ident.describe()}, events since {since or 'the beginning (backlog)'}"
             f"{', DRY RUN' if self.dry else ''}")
         repos = [self.args.repo] if self.args.repo else self.ident.repos()
-        for repo in repos:
+
+        def one(repo: str) -> None:
+            BIG.acquire()
+            _holding.big = True
             try:
                 self.repo_cycle(repo, since)
+            except Stopped:
+                log(f"{repo}: stopped")
             except Exception as err:
                 log(f"{repo}: {err}")
+            finally:
+                _holding.big = False
+                BIG.release()
+
+        # Repos run side by side, each one item at a time, so one long conversation never stalls the others.
+        pool = concurrent.futures.ThreadPoolExecutor(max(1, min(self.cfg["parallelRepos"], len(repos))))
+        futures = [pool.submit(one, repo) for repo in repos]
+        try:
+            # Wait in short slices: on Windows a plain wait on the pool never sees Ctrl-C.
+            while concurrent.futures.wait(futures, timeout=0.5)[1]:
+                pass
+        except KeyboardInterrupt:
+            STOP.set()  # workers stop at their next blocking call; queued repos never start
+            pool.shutdown(wait=False, cancel_futures=True)
+            raise
+        pool.shutdown()
+        for future in futures:
+            future.result()
         if not self.dry:
             self.state["lastCycle"] = now_iso()
             self.save()
@@ -1841,11 +2088,24 @@ def cmd_watch(args) -> None:
             time.sleep(args.interval or (bot.cfg["interval"] if bot else DEFAULTS["interval"]))
 
 
+def stable_script() -> Path:
+    """This file by a path that survives plugin upgrades. An omp plugin install lives in a versioned cache folder
+    (`.../cache/plugins/<marketplace>___<plugin>___<version>/`) and is linked from `~/.omp/plugins/node_modules/
+    <plugin>`; autostart must use the link, or the next upgrade leaves the task pointing at a deleted folder."""
+    here = Path(__file__).resolve()
+    plugin_root = here.parents[4]  # <plugin>/skills/<skill>/assets/github-app/bot.py
+    link = Path.home() / ".omp" / "plugins" / "node_modules" / plugin_root.name.split("___")[1] \
+        if plugin_root.name.count("___") == 2 else None
+    if link and link.exists() and link.resolve() == plugin_root:
+        return link / here.relative_to(plugin_root)
+    return here
+
+
 def autostart_command() -> list:
     exe = Path(sys.executable)
     if os.name == "nt" and exe.with_name("pythonw.exe").is_file():
         exe = exe.with_name("pythonw.exe")  # no console window at logon; log() writes LOGS/bot.log
-    return [str(exe), str(Path(__file__).resolve()), "watch"]
+    return [str(exe), str(stable_script()), "watch"]
 
 
 def launchd_plist() -> Path:

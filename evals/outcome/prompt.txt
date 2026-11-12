@@ -1,0 +1,1 @@
+A friend uses billsplit for group dinners and sent me this: we split a $100 bill three ways and it told each of us $33.33. That only adds up to $99.99, so we came up a cent short. And $200 three ways says $66.67 each, which is $200.01. The shares should always add up to exactly the total. Can you fix it?

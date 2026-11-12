@@ -352,7 +352,7 @@ def update_manifests(out: Path, d: dict) -> None:
         data = json.loads(runtime.read_text(encoding="utf-8"))
         data.update(name=d["slug"], description=d["description"], homepage=d["homepage"], mention=d["botTrigger"],
                     branchPrefix=d["slug"], repoConfigFile=f".{d['slug']}.json", configDirName=d["slug"],
-                    autostartId=f"{d['slug']}-bot")
+                    autostartId=f"{d['slug']}-bot", repo=d["repo"])
         write_json(runtime, data)
 
 

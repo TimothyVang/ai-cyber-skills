@@ -11,3 +11,5 @@
 - **Plain speech.** 27 say what it does, not how it feels: name the mechanism or number; if a sentence can't become an instruction, fact, or number, or could appear unchanged in another project's docs, cut it. 28 split dense sentences, one idea each. 29 active voice; name the actor. 30 cut adverbs, use the number or a stronger verb. 31 plain word (use, help, many, if). 32 no mannered prose: aphorisms, rhetorical fragments, personified code, figurative verbs. 33 no over-compression: whole sentences with articles and verbs; spell out arrows and abbreviations.
 
 **Hard rule.** Meaning survives; only the tells go.
+
+**Done when** a rescan of the text finds none of the tells above and every fact in the original is still there.
