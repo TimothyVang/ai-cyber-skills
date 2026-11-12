@@ -570,6 +570,39 @@ def worktree_at(clone: Path, path: Path, ref: str, branch: str = None) -> Path:
     return path
 
 
+# What an agent CLI loads from the folder it starts in: instructions, settings, hooks, skills, MCP servers, env files.
+# Compared in lower case, since Windows and macOS resolve `.OMP` to `.omp`.
+AGENT_CONFIG_DIRS = frozenset({".omp", ".pi", ".claude", ".codex", ".agents", ".agent", ".cursor", ".gemini",
+                               ".opencode", ".windsurf", ".devin", ".kiro", ".vscode"})
+AGENT_CONFIG_FILES = frozenset({"agents.md", "agents.override.md", "claude.md", "claude.local.md", "gemini.md",
+                                ".mcp.json", "mcp.json", ".cursorrules", ".clinerules", ".windsurfrules",
+                                "opencode.json", "opencode.jsonc", ".deep-mode.json"})
+AGENT_CONFIG_GITHUB = ("copilot-instructions.md", "skills", "instructions", "plugin")
+
+
+def is_agent_config(path: str) -> bool:
+    parts = path.lower().split("/")
+    if any(part in AGENT_CONFIG_DIRS for part in parts):
+        return True
+    if parts[-1] in AGENT_CONFIG_FILES or parts[-1].startswith(".env"):
+        return True
+    return any(part == ".github" and nxt in AGENT_CONFIG_GITHUB for part, nxt in zip(parts, parts[1:]))
+
+
+def pin_agent_config(tree: Path, base_ref: str) -> None:
+    """Someone else's PR must not configure the agent that reviews it: a hook, MCP server, or env file in the
+    checkout would run on this machine. Replace every agent-config path in `tree` with the base branch's copy, or
+    with nothing when the base has none. The PR's versions still reach the reviewer as diff text."""
+    for path in git(tree, "ls-files", "-z").split("\0"):
+        if path and is_agent_config(path):
+            (tree / path).unlink(missing_ok=True)
+    trusted = [path for path in git(tree, "ls-tree", "-r", "-z", "--name-only", base_ref).split("\0")
+               if path and is_agent_config(path)]
+    if trusted:
+        git(tree, "--literal-pathspecs", "checkout", "--quiet", base_ref, "--pathspec-from-file=-",
+            "--pathspec-file-nul", stdin="\0".join(trusted))
+
+
 def branch_rules(repo: str, base: str, is_admin: bool):
     """From branch protection plus rulesets: the required status-check names, the ones tied to a GitHub App
     ({name: [app ids]}), the other rules an admin merge would bypass besides the required review (BENIGN_RULES
@@ -1007,6 +1040,8 @@ class PRConversation:
     def review(self, round_no: int) -> list:
         self.refresh()
         worktree_at(self.clone, self.review_tree, self.head)
+        if not self.own:
+            pin_agent_config(self.review_tree, f"origin/{self.base}")
         stat = git(self.clone, "diff", "--stat", f"origin/{self.base}...{self.head}")
         diff = git(self.clone, "diff", f"origin/{self.base}...{self.head}")
         if len(diff) > MAX_DIFF:

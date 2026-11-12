@@ -7,7 +7,7 @@ hooks:
     - matcher: "Write|Edit|NotebookEdit"
       hooks:
         - type: command
-          command: 'for f in "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/deep-mode/assets/contain/claude_guard.py" "$HOME/.claude/skills/deep-mode/assets/contain/claude_guard.py"; do if [ -f "$f" ]; then if command -v python >/dev/null 2>&1; then exec python "$f"; fi; exec python3 "$f"; fi; done; exit 0'
+          command: 'for f in "${CLAUDE_PLUGIN_ROOT:-/nonexistent}/skills/deep-mode/assets/contain/claude_guard.py" "$HOME/.claude/skills/deep-mode/assets/contain/claude_guard.py"; do if [ -f "$f" ]; then for py in python3 python; do if "$py" -c "import sys; sys.exit(sys.version_info < (3, 8))" >/dev/null 2>&1; then exec "$py" "$f"; fi; done; echo "deep-mode write guard: no Python 3.8+ on PATH, so writes are not fenced" >&2; exit 1; fi; done; exit 0'
 ---
 
 # Deep mode

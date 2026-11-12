@@ -15,13 +15,16 @@ A goal file is Markdown with frontmatter (one `key: value` per line):
                                               both; codex has none)
     stall_after: 3                           (stop after N iterations that changed neither the check output nor
                                               the working tree)
+    iteration_minutes: 60                    (time limit for one harness run; its process tree is killed after it)
+    check_minutes: 15                        (time limit for one run of the check)
     harness_args: --model sonnet             (extra flags for the harness, split like a shell)
 
 Each iteration runs the harness headless in the project root on the user's subscription (API-key variables are
 removed from the child's environment), then runs the check. Logs go to <root>/.scratch/goals/<slug>/: trail.tsv plus
-one <run>-iteration-N.log per iteration. --dry-run prints the harness command and runs nothing. Exit codes: 0 done,
-2 iteration cap, 3 stalled, 4 the agent changed the goal's frontmatter or a protected file, 5 the harness exited
-nonzero (omp exits 3 at its cost cap), 1 error.
+one <run>-iteration-N.log per iteration. The harness reads its prompt from stdin. --dry-run prints the harness
+command and the prompt and runs nothing. Exit codes: 0 done, 2 iteration cap, 3 stalled, 4 the agent changed the
+goal's frontmatter or a protected file, 5 the harness exited nonzero (omp exits 3 at its cost cap) or the harness or
+the check ran past its time limit, 1 error.
 """
 import argparse
 import hashlib
@@ -29,6 +32,7 @@ import os
 import re
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -37,6 +41,7 @@ API_KEY_VARS = ("ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "OPENAI_API_KEY", "
 REQUIRED = ("goal", "check", "protect", "max_iterations")
 COST_FLAGS = {"omp": "--max-cost", "claude": "--max-budget-usd"}
 CACHE_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
+TIME_LIMITS = {"iteration_minutes": "60", "check_minutes": "15"}  # frontmatter keys and their defaults
 PROMPT = (
     "Work toward the goal in {goal_file}. Read it first, then the trail of earlier iterations in {trail} if it exists. "
     "Do the next smallest verifiable step toward the goal, run its check (`{check}`), and commit progress you would keep. "
@@ -66,6 +71,12 @@ def parse(goal_path):
         raise SystemExit(f"{goal_path}: max_iterations must be a positive integer")
     if not fields.get("stall_after", "3").isdigit() or int(fields.get("stall_after", "3")) < 1:
         raise SystemExit(f"{goal_path}: stall_after must be a positive integer")
+    for key, default in TIME_LIMITS.items():
+        try:
+            if float(fields.get(key, default)) <= 0:
+                raise ValueError
+        except ValueError:
+            raise SystemExit(f"{goal_path}: {key} must be a positive number of minutes")
     return fields, hashlib.sha256(match.group(1).encode()).hexdigest()
 
 
@@ -164,11 +175,42 @@ def find_bash():
     return None
 
 
-def run_check(command, root):
+def run_limited(argv, minutes, stdin_text=None, **popen):
+    """Run argv to the end, or kill its whole process tree after `minutes`. Returns (exit code, stdout); the exit
+    code is None when the time limit was hit."""
+    proc = subprocess.Popen(argv, stdin=subprocess.DEVNULL if stdin_text is None else subprocess.PIPE, text=True,
+                            encoding="utf-8", errors="replace", start_new_session=os.name != "nt", **popen)
+    try:
+        out = proc.communicate(stdin_text, timeout=float(minutes) * 60)[0]
+        return proc.returncode, out or ""
+    except subprocess.TimeoutExpired:
+        if os.name == "nt":
+            subprocess.run(["taskkill", "/T", "/F", "/PID", str(proc.pid)], capture_output=True)
+        else:
+            os.killpg(proc.pid, signal.SIGKILL)
+        return None, proc.communicate()[0] or ""
+
+
+def clear_caches(root, protect):
+    """Delete tool caches under the protected paths before the check runs. They are left out of the protect hash
+    because checks write them, so a forged tests/__pycache__/*.pyc could otherwise stand in for a test."""
+    for path in protect:
+        for folder, dirs, _ in os.walk(os.path.join(root, path)):
+            for name in [d for d in dirs if d in CACHE_PARTS]:
+                shutil.rmtree(os.path.join(folder, name), ignore_errors=True)
+                dirs.remove(name)
+
+
+def run_check(command, root, protect, minutes):
+    """Returns (exit code, last 4000 characters of output). Exit code 124 means the check ran past its time limit."""
+    clear_caches(root, protect)
     bash = find_bash()
-    argv = [bash, "-c", command] if bash else command
-    proc = subprocess.run(argv, shell=not bash, cwd=root, capture_output=True, text=True, encoding="utf-8", errors="replace")
-    return proc.returncode, (proc.stdout + proc.stderr)[-4000:]
+    code, output = run_limited([bash, "-c", command] if bash else command, minutes, shell=not bash, cwd=root,
+                               env={**os.environ, "PYTHONDONTWRITEBYTECODE": "1"},
+                               stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    if code is None:
+        return 124, f"check ran past {minutes} minutes and was stopped\n{output[-3000:]}"
+    return code, output[-4000:]
 
 
 def cost_cap(fields, harness, goal_path):
@@ -186,14 +228,16 @@ def cost_cap(fields, harness, goal_path):
     return cost
 
 
-def harness_command(fields, harness, prompt, cost):
+def harness_command(fields, harness, cost):
+    """The prompt is not in the command: every harness reads it from stdin. On Windows npm installs a harness as a
+    .cmd shim, and cmd.exe would parse quotes and & in an argument (the prompt carries the check command)."""
     extra = shlex.split(fields.get("harness_args", ""))
     if harness == "omp":
-        cmd = ["omp", "-p", "--no-title", "--max-cost", cost, *extra, prompt]
+        cmd = ["omp", "-p", "--no-title", "--max-cost", cost, *extra]
     elif harness == "claude":
-        cmd = ["claude", "-p", "--permission-mode", "acceptEdits", "--max-budget-usd", cost, *extra, prompt]
+        cmd = ["claude", "-p", "--permission-mode", "acceptEdits", "--max-budget-usd", cost, *extra]
     elif harness == "codex":
-        cmd = ["codex", "exec", "--sandbox", "workspace-write", *extra, prompt]
+        cmd = ["codex", "exec", "--sandbox", "workspace-write", *extra, "-"]
     else:
         raise SystemExit(f"unknown harness {harness!r}; use omp, claude, or codex")
     if not shutil.which(cmd[0]):
@@ -230,10 +274,12 @@ def main():
         return PROMPT.format(goal_file=goal_rel, trail=trail_rel, check=fields["check"], protect=protect_text, i=i, n=limit)
 
     if opts.action == "run" and opts.dry_run:
-        print(" ".join(shlex.quote(part) for part in harness_command(fields, harness, prompt(1), cost)))
+        print(" ".join(shlex.quote(part) for part in harness_command(fields, harness, cost)))
+        print(f"prompt on stdin:\n{prompt(1)}")
         return 0
 
-    code, output = run_check(fields["check"], root)
+    limits = {key: fields.get(key, default) for key, default in TIME_LIMITS.items()}
+    code, output = run_check(fields["check"], root, protect, limits["check_minutes"])
     if opts.action == "check":
         print(f"goal ok: {fields['goal']}\nprotected: {protect_text}\n"
               f"check exit {code}{' (already done)' if code == 0 else ''}\n{output.strip()}")
@@ -260,11 +306,16 @@ def main():
 
     last_output, unchanged = output, 0
     for i in range(1, limit + 1):
-        cmd = harness_command(fields, harness, prompt(i), cost)
+        cmd = harness_command(fields, harness, cost)
         before = workspace_state(root, own)
         started = time.time()
         with open(os.path.join(log_dir, f"{run_id}-iteration-{i}.log"), "x", encoding="utf-8", errors="replace") as log:
-            harness_exit = subprocess.run(cmd, cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL).returncode
+            harness_exit, _ = run_limited(cmd, limits["iteration_minutes"], prompt(i), cwd=root, env=env, stdout=log,
+                                          stderr=subprocess.STDOUT)
+        if harness_exit is None:
+            print(f"iteration {i}: the harness ran past {limits['iteration_minutes']} minutes and was stopped. Log: "
+                  f"{os.path.relpath(log.name, root)}")
+            return 5
         progressed = workspace_state(root, own) != before
         if parse(opts.goal)[1] != digest:
             print(f"iteration {i}: the agent changed the goal's frontmatter; stopping")
@@ -274,13 +325,16 @@ def main():
             changed = sorted(rel for rel in guard.keys() | current.keys() if guard.get(rel) != current.get(rel))
             print(f"iteration {i}: the agent changed protected files ({', '.join(changed[:5])}); stopping")
             return 4
-        code, output = run_check(fields["check"], root)
+        code, output = run_check(fields["check"], root, protect, limits["check_minutes"])
         with open(trail, "a", encoding="utf-8") as handle:
             handle.write(f"{time.strftime('%Y-%m-%dT%H:%M:%S')}\t{run_id}\t{i}\t{harness}\t{harness_exit}\t{code}\t{time.time() - started:.0f}\n")
         print(f"iteration {i}: harness exit {harness_exit}, check exit {code}")
         if code == 0:
             print("goal met")
             return 0
+        if code == 124:
+            print(f"the check ran past {limits['check_minutes']} minutes; stopping")
+            return 5
         if harness_exit != 0:
             print(f"harness exited {harness_exit} (a cost cap, auth, or terminal failure); stopping. Log: "
                   f"{os.path.relpath(log.name, root)}")

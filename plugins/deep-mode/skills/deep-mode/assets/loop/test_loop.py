@@ -16,12 +16,17 @@ from pathlib import Path
 LOOP = Path(__file__).resolve().parent / "loop.py"
 
 FAKE = """
-import json, os, sys
+import json, os, sys, time
 action = os.environ.get("FAKE_ACTION", "noop")
 record = os.environ.get("FAKE_RECORD")
 if record:
     with open(record, "w", encoding="utf-8") as handle:
-        json.dump({"env": dict(os.environ), "argv": sys.argv[1:], "cwd": os.getcwd()}, handle)
+        json.dump({"env": dict(os.environ), "argv": sys.argv[1:], "cwd": os.getcwd(), "stdin": sys.stdin.read()}, handle)
+if action == "hang":
+    time.sleep(120)
+elif action == "forge-cache":
+    os.makedirs("tests/__pycache__", exist_ok=True)
+    open("tests/__pycache__/test_x.cpython-313.pyc", "w").close()
 if action == "done":
     open("ok.txt", "w").close()
 elif action == "progress":
@@ -33,7 +38,7 @@ elif action == "tamper-goal":
 elif action == "tamper-protect":
     with open("check.sh", "a") as handle:
         handle.write("exit 0\\n")
-elif action == "fail":
+if action == "fail":
     sys.exit(3)
 """
 
@@ -153,6 +158,37 @@ class LoopCase(unittest.TestCase):
         self.assertEqual(Path(seen["cwd"]).resolve(), self.repo)
         self.assertEqual(Path(seen["env"]["TMPDIR"]).resolve(), self.repo / ".scratch" / "tmp")
         self.assertIn("--max-cost", seen["argv"])
+
+    def test_the_prompt_travels_on_stdin_not_in_the_command(self):
+        # On Windows the harness is a .cmd shim: cmd.exe would run `& echo INJECTED` if the prompt were an argument.
+        self.goal(check='sh ./check.sh || { echo "a" & echo INJECTED >/dev/null; false; }', max_iterations=1)
+        record = self.tmp / "seen.json"
+        run = self.loop("run", "goals/g.md", FAKE_RECORD=str(record))
+        self.assertEqual(run.returncode, 2, run.stdout + run.stderr)
+        seen = json.loads(record.read_text(encoding="utf-8"))
+        self.assertIn("echo INJECTED", seen["stdin"])
+        self.assertIn("goals/g.md", seen["stdin"])
+        self.assertFalse([arg for arg in seen["argv"] if "INJECTED" in arg or "goals/g.md" in arg])
+
+    def test_a_hung_harness_is_stopped_and_exits_5(self):
+        self.goal(iteration_minutes=0.03)
+        run = self.loop("run", "goals/g.md", action="hang")
+        self.assertEqual(run.returncode, 5, run.stdout + run.stderr)
+        self.assertIn("ran past 0.03 minutes", run.stdout)
+
+    def test_a_hung_check_is_stopped_and_exits_5(self):
+        self.goal(check="sleep 120", check_minutes=0.02, protect="none")
+        run = self.loop("run", "goals/g.md")
+        self.assertEqual(run.returncode, 5, run.stdout + run.stderr)
+        self.assertIn("check ran past 0.02 minutes", run.stdout)
+
+    def test_caches_under_protected_paths_are_cleared_before_the_check(self):
+        (self.repo / "tests").mkdir()
+        (self.repo / "tests" / "test_x.py").write_text("", encoding="utf-8")
+        self.goal(protect="check.sh tests", max_iterations=1)
+        run = self.loop("run", "goals/g.md", action="forge-cache")
+        self.assertEqual(run.returncode, 2, run.stdout + run.stderr)
+        self.assertFalse((self.repo / "tests" / "__pycache__").exists())
 
 
 if __name__ == "__main__":
