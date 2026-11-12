@@ -1,0 +1,380 @@
+{
+  "date": "2026-11-12",
+  "skill": "plugins/deep-mode/skills/deep-mode/SKILL.md",
+  "skill_sha256": "d6c2befeae886e443fd658248c827a2fd223d8b64f0f4ddeb461fe27147d2fd2",
+  "cases_file": "evals/routing/cases.json",
+  "model_requested": "anthropic/claude-opus-5-5",
+  "models_observed": [
+    "anthropic/claude-opus-5-5"
+  ],
+  "max_cost_per_case": 0.5,
+  "scores": {
+    "cases": 20,
+    "route": 20,
+    "size": 20,
+    "both": 20,
+    "cost_usd": 6.6875
+  },
+  "results": [
+    {
+      "id": "typo-fix",
+      "request": "The quickstart in README.md says `npm run devv`. It should be `npm run dev`. Fix it.",
+      "expected": {
+        "route": "bug-fix",
+        "size": "S"
+      },
+      "answer": {
+        "route": "bug-fix",
+        "size": "S"
+      },
+      "raw": "{\"route\": \"bug-fix\", \"size\": \"S\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 1.049196,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "bug-with-cause",
+      "request": "Checkout sometimes charges the wrong total when a customer applies both a coupon and a gift card. Support has three tickets about it this week. Find out why and fix it.",
+      "expected": {
+        "route": "bug-fix",
+        "size": "M"
+      },
+      "answer": {
+        "route": "bug-fix",
+        "size": "M"
+      },
+      "raw": "{\"route\": \"bug-fix\", \"size\": \"M\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 1.04894,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "ui-feature",
+      "request": "Add a dark mode toggle to the settings page. It should remember the choice across reloads and follow the OS setting until the user picks one.",
+      "expected": {
+        "route": "feature",
+        "size": "M"
+      },
+      "answer": {
+        "route": "feature",
+        "size": "M"
+      },
+      "raw": "{\"route\": \"feature\", \"size\": \"M\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 1.0484,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "stripe-postgres-feature",
+      "request": "Add annual billing. Create a yearly price in Stripe, store each subscription's billing interval in Postgres with a migration, handle the webhook for plan changes, and show the interval on the account page.",
+      "expected": {
+        "route": "feature",
+        "size": "L"
+      },
+      "answer": {
+        "route": "feature",
+        "size": "L"
+      },
+      "raw": "{\"route\": \"feature\", \"size\": \"L\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 1.05048,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "review-pr",
+      "request": "review PR 57",
+      "expected": {
+        "route": "pr-review",
+        "size": "none"
+      },
+      "answer": {
+        "route": "pr-review",
+        "size": "none"
+      },
+      "raw": "{\"route\": \"pr-review\", \"size\": \"none\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.152665,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "land-pr",
+      "request": "PR 88 is my two-line fix to the date formatter in src/lib/dates.ts. It's open and CI is green. Land it on your own.",
+      "expected": {
+        "route": "pr-conversation",
+        "size": "S"
+      },
+      "answer": {
+        "route": "pr-conversation",
+        "size": "S"
+      },
+      "raw": "{\"route\": \"pr-conversation\", \"size\": \"S\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.155613,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "babysit-pr",
+      "request": "babysit PR 12 until it's green. CI is failing and there are two unresolved review threads.",
+      "expected": {
+        "route": "babysit",
+        "size": "M"
+      },
+      "answer": {
+        "route": "babysit",
+        "size": "M"
+      },
+      "raw": "{\"route\": \"babysit\", \"size\": \"M\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.157217,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "overnight-goal",
+      "request": "I'm going to bed. Get the whole suite passing on Windows and keep going until it's done.",
+      "expected": {
+        "route": "run-a-goal",
+        "size": "L"
+      },
+      "answer": {
+        "route": "run-a-goal",
+        "size": "L"
+      },
+      "raw": "{\"route\": \"run-a-goal\", \"size\": \"L\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.155117,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "drive-backlog",
+      "request": "drive the backlog. Work through the open issues on the roadmap and keep going.",
+      "expected": {
+        "route": "work-a-queue",
+        "size": "L"
+      },
+      "answer": {
+        "route": "work-a-queue",
+        "size": "L"
+      },
+      "raw": "{\"route\": \"work-a-queue\", \"size\": \"L\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.155997,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "autopilot-no-merge",
+      "request": "autopilot these PRs but don't merge anything: #101 add retries to the HTTP client, #102 fix date parsing in the importer, #103 bump the eslint config.",
+      "expected": {
+        "route": "work-a-queue",
+        "size": "L"
+      },
+      "answer": {
+        "route": "work-a-queue",
+        "size": "L"
+      },
+      "raw": "{\"route\": \"work-a-queue\", \"size\": \"L\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.157625,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "run-factory",
+      "request": "run the factory",
+      "expected": {
+        "route": "work-a-queue",
+        "size": "L"
+      },
+      "answer": {
+        "route": "work-a-queue",
+        "size": "L"
+      },
+      "raw": "{\"route\": \"work-a-queue\", \"size\": \"L\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.154125,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "implement-spec",
+      "request": "implement spec #4",
+      "expected": {
+        "route": "phased-build",
+        "size": "L"
+      },
+      "answer": {
+        "route": "phased-build",
+        "size": "L"
+      },
+      "raw": "{\"route\": \"phased-build\", \"size\": \"L\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.156149,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "own-migration",
+      "request": "Own this migration for the next two weeks: move every API route from REST handlers to tRPC. Keep pushing it forward across sessions.",
+      "expected": {
+        "route": "run-a-goal",
+        "size": "L"
+      },
+      "answer": {
+        "route": "run-a-goal",
+        "size": "L"
+      },
+      "raw": "{\"route\": \"run-a-goal\", \"size\": \"L\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.157409,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "how-does-it-work",
+      "request": "How does session refresh work in this app? Where does the refresh token get rotated?",
+      "expected": {
+        "route": "investigation",
+        "size": "none"
+      },
+      "answer": {
+        "route": "investigation",
+        "size": "none"
+      },
+      "raw": "{\"route\": \"investigation\", \"size\": \"none\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.152845,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "perf-regression",
+      "request": "/api/search got about 3x slower since last week's release. p95 went from 120ms to 400ms. Find out why and get it back.",
+      "expected": {
+        "route": "perf-issue",
+        "size": "M"
+      },
+      "answer": {
+        "route": "perf-issue",
+        "size": "M"
+      },
+      "raw": "{\"route\": \"perf-issue\", \"size\": \"M\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.155669,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "grill-me",
+      "request": "grill me on my plan to replace our cron jobs with a Postgres-backed job queue",
+      "expected": {
+        "route": "grill",
+        "size": "none"
+      },
+      "answer": {
+        "route": "grill",
+        "size": "none"
+      },
+      "raw": "{\"route\": \"grill\", \"size\": \"none\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.155489,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "new-app",
+      "request": "Build me a small app that tracks my reading list: add books, mark them read, and see what I read this year.",
+      "expected": {
+        "route": "prior-art",
+        "size": "L"
+      },
+      "answer": {
+        "route": "prior-art",
+        "size": "L"
+      },
+      "raw": "{\"route\": \"prior-art\", \"size\": \"L\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.154681,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "setup-for-contributors",
+      "request": "set this repo up for contributors and make some issues people can pick up",
+      "expected": {
+        "route": "project-brief",
+        "size": "M"
+      },
+      "answer": {
+        "route": "project-brief",
+        "size": "M"
+      },
+      "raw": "{\"route\": \"project-brief\", \"size\": \"M\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.156561,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "write-a-skill",
+      "request": "Write me a skill that turns our merged PR titles into CHANGELOG.md entries the way we format them.",
+      "expected": {
+        "route": "authoring-a-skill",
+        "size": "M"
+      },
+      "answer": {
+        "route": "authoring-a-skill",
+        "size": "M"
+      },
+      "raw": "{\"route\": \"authoring-a-skill\", \"size\": \"M\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.156729,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "secrets-rename",
+      "request": "Rename the env var STRIPE_KEY to STRIPE_SECRET_KEY in src/config.ts and .env.example.",
+      "expected": {
+        "route": "refactoring",
+        "size": "M"
+      },
+      "answer": {
+        "route": "refactoring",
+        "size": "M"
+      },
+      "raw": "{\"route\": \"refactoring\", \"size\": \"M\"}",
+      "model": "anthropic/claude-opus-5-5",
+      "cost": 0.156561,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    }
+  ]
+}

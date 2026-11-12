@@ -39,7 +39,7 @@ GitHub commands assume `R=<owner>/<repo>` and that every body is a file you wrot
 
 | Operation | github | local |
 |---|---|---|
-| Create | `gh issue create -R "$R" --title "<t>" --body-file <f> --label <a>,<b>` prints the URL; the number ends it. | Next free four-digit number `NNNN` in `docs/deep-mode/issues/`; write `NNNN-<slug>.md` in the local format below. |
+| Create | `gh issue create -R "$R" --title "<t>" --body-file <f> --label <a>,<b>` prints the URL; the number ends it. | Reserve the next number `NNNN` (Local numbers, below), then write `NNNN-<slug>.md` in the local format below. |
 | Read | `gh issue view <n> -R "$R" --json number,title,body,labels,author,comments,state` | Read the file. |
 | Comment | `gh issue comment <n> -R "$R" --body-file <f>` | Append under `## Comments` as `### <date> <author>` then the text. |
 | Set labels | `gh issue edit <n> -R "$R" --add-label <a> --remove-label <b>` | Rewrite the `Labels:` line. |
@@ -52,6 +52,18 @@ GitHub commands assume `R=<owner>/<repo>` and that every body is a file you wrot
 `<id of m>` is the REST id, not the number: `gh api repos/$R/issues/<m> -q .id`.
 
 A ticket is **unblocked** when every issue it lists under Blocked by is closed as completed.
+
+**Local numbers.** Two sessions on different branches or worktrees must never both take one number, so a local Create reserves it before writing the file.
+- Numbers are reserved on one shared remote, the same for every clone: the `Reservations:` URL in `docs/deep-mode/tracker.md`. Remote names and push settings differ per clone, so never pick it from them. `<r>` is your remote whose URL points at that repository (`git remote -v`; `git@host:o/r.git` and `https://host/o/r` match).
+- No `Reservations:` line: no remote → skip every `<r>` step. Exactly one remote → record its URL as `Reservations: <url>` and commit that line with the issue file. Several remotes → stop and ask which repository every contributor can push to, then record it.
+- None of your remotes points at the `Reservations:` URL → stop and report. A fork alone can't reserve numbers that other forks see; ask for push access to that repository, or switch the repo to the github kind.
+- Fetch first: `git fetch <r> '+refs/deep-mode/issues/*:refs/deep-mode/issues/*' '+refs/heads/*:refs/remotes/<r>/*'`. The explicit branch refspec fetches every branch on `<r>`, even in a clone whose config fetches only one.
+- In use: every `NNNN` of a file in `docs/deep-mode/issues/` in the working tree or on any ref (`git ls-tree --name-only <ref> docs/deep-mode/issues/` for each ref `git for-each-ref --format='%(refname)' refs/heads refs/remotes` lists), and every `refs/deep-mode/issues/NNNN` ref.
+- Make a token only this session can make, a blob with no history: `o=$(printf 'issue NNNN %s %s\n' "$(date +%s%N)" "$RANDOM$RANDOM$RANDOM" | git hash-object -w --stdin)`. Never point the ref at `HEAD`: two clones at one commit would make the same object, and pushing it would publish local-only commits.
+- Reserve the next number above every one in use: `git update-ref refs/deep-mode/issues/NNNN "$o" ''`. It fails when the ref exists, and every worktree of a clone shares it, so of two racing sessions only one wins. The loser takes the next number.
+- With a remote, also `git push --force-with-lease=refs/deep-mode/issues/NNNN: <r> refs/deep-mode/issues/NNNN`, then `git ls-remote <r> refs/deep-mode/issues/NNNN`. The number is yours only when that prints `$o`. Another object means another clone holds it: take the next number.
+- It prints nothing after a failed push → the push failed for another reason, usually no write access to `<r>`. Delete the local ref (`git update-ref -d refs/deep-mode/issues/NNNN`), stop, and report it the same way. Never retry with the next number, and never reserve on another remote instead.
+- A reserved number is never reused, even when its file is never written.
 
 ## Local issue format
 

@@ -31,6 +31,7 @@ Files it may write:
 
    Kind: github | local | other
    Repo: <owner/name, or none>
+   Reservations: <local kind: URL of the one remote every contributor pushes to, or none>
    Triage external PRs: no
 
    ## Labels

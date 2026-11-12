@@ -94,13 +94,19 @@ You coordinate; ticket owners write the code. The tickets are a graph, not a lis
 ### Steps
 
 1. **Load the graph.** Read the spec (issue and `docs/specs/<slug>.md`) and every ticket with its Blocked by lines, per the **tracker** technique (`references/techniques/tracker.md`). Record the graph, the integration branch, and each ticket's owner and state in one notes file a cold start can find, as Run a goal, Program scale step 1 describes (`references/playbooks/run-a-goal.md`).
-   Done when the notes file lists the integration branch and every ticket with its blockers, owner, and state.
+   - Local tracker → take the integration branch from the Tickets evidence (Tickets step 5 picks it), never a guess or the spec issue body. Read the spec and every issue file from that branch's tip (`git show <branch>:<path>`), not from the working tree.
+   - Required at that tip: every ticket file, plus `docs/specs/<slug>.md` and the spec issue file when the input was a spec. Never copy issue files across branches or rewrite them. Record the checked SHA in the notes file.
+   - Uncommitted edits to those paths count wherever they sit: run `git -C <path> status --porcelain -- <those paths>` in your checkout and in every worktree whose `git worktree list --porcelain` entry reads `branch refs/heads/<integration branch>`.
+   - A missing file, or any output from those status runs → stop, name the paths and worktrees, and send the fix back to Spec step 5 or Tickets step 5.
+   Done when the notes file lists the integration branch and every ticket with its blockers, owner, and state (local tracker: and the checked SHA).
 2. **Explore once** (optional). Tickets that share unknown code → one `scout` pass that returns file pointers, conventions, and test commands. Save its report beside the notes file and give owners the path, not a pasted copy.
    Done when the scout report sits beside the notes file, or no two tickets share unknown code.
 3. **Integration branch.** Use `spec/<slug>` when the Spec playbook created it; else create it off the default branch. When the repo has a remote, push it with an explicit refspec. Without a remote, every push and PR step below is skipped. Worktrees share one `.git`, so local branches are enough.
+   - Local tracker → use the branch step 1 checked; never create one here.
    Done when `git rev-parse --verify <branch>` succeeds and, with a remote, `git ls-remote origin <branch>` lists it.
 4. **Start the frontier.** One fresh default `task` owner per frontier ticket, each in its own worktree on branch `ticket/<n>-<slug>` cut from the integration branch tip, under the shared-`.git` rules in Run a goal, Program scale step 3. At most about ten at once. Each kickoff names the spec path, the ticket, the notes paths, its allowed files, and these duties:
    - Confirm the worktree's base is the current integration tip; reset onto it if not.
+   - Local tracker → `git diff --exit-code <integration tip> -- <ticket file>` prints nothing, so the ticket built is the committed one; else stop and report.
    - Build with the Feature or Bug fix playbook's steps (`references/playbooks/feature.md`, `references/playbooks/bug-fix.md`) and commit on the ticket branch, but skip their Opening a PR and Shipping steps. No ticket PR and no push to the default branch. A ticket reaches trunk only through step 5's merge and step 7's single PR.
    - Write the ticket's Done when as failing checks first per the **tdd** technique (`references/techniques/tdd.md`) where a cheap seam exists.
    - Prove each Done when item on the real surface.
@@ -111,11 +117,12 @@ You coordinate; ticket owners write the code. The tickets are a graph, not a lis
    No PR exists yet, because Opening a PR hands every PR straight to pr-conversation, which would land a partial build.
    Done when the ticket's merge commit is on the integration branch and the repo's checks pass there.
 6. **Move the frontier.** After each merge, comment the merge SHA on the ticket, recompute the frontier, and start owners for newly unblocked tickets. A ticket that grows past one session is split with the Tickets playbook's rules and the graph updated.
+   - Local tracker → write the merge-SHA comment in the integration worktree and commit that ticket file alone (`git commit -m <msg> -- <ticket file>`) before starting new owners, so their worktrees carry it. Push when there is a remote.
    Done when the ticket has its merge-SHA comment and every newly unblocked ticket has an owner.
 7. **Close the build.** When every ticket is merged:
+   - Local tracker → first set each ticket, and the spec when there is one, to `Status: closed` with its closing comment in the integration worktree. Commit those files alone (`git commit -m <msg> -- <files>`) and push when there is a remote, so the review, the fix pass, and the panel all run on a head that holds the closes.
    - Run pr-review on the integration branch against the default branch, with the spec as the claim, so its Spec findings check every user story and Done when item.
    - One fresh owner fixes every finding in one pass on the integration branch.
-   - Local tracker → set each ticket and the spec to `Status: closed` on the integration branch, so the close lands with the code.
    - With a remote, open one PR from the integration branch to the default branch through Opening a PR (`references/playbooks/opening-a-pr.md`), with `Closes #<spec>` and one `Closes #<ticket>` line per ticket in its body. It lands through the **pr-conversation** technique (`references/techniques/pr-conversation.md`) on a **panel** pass (`references/techniques/panel.md`) at its head.
    - No remote → after a panel pass at the integration tip, run `git merge --no-ff spec/<slug>` in a clean worktree of the default branch and rerun the checks there. A red result is undone with `git revert -m 1 <merge sha>`.
    - Done when the final PR is merged (no remote: the local merge is on the default branch) on a panel pass at its head, and the checks on the new trunk pass.
