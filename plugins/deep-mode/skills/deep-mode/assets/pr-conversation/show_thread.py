@@ -207,12 +207,16 @@ def prose_answers(lines: list[str], limit=140) -> list[str]:
 
 def untable(lines: list[str]) -> list[str]:
     """Markdown tables as gist lines: the header and its |---| rule dropped, an answer row kept for the
-    answer patterns, any other row's cells joined into text."""
+    answer patterns, any other row's cells joined into text. A |---| line is the rule only as the second
+    line of a table; further down it is a body row of dashes."""
+    def rule(i: int) -> bool:
+        return (1 <= i < len(lines) and bool(TABLE_RULE.match(lines[i])) and lines[i - 1].startswith("|")
+                and not (i >= 2 and lines[i - 2].startswith("|")))
     out = []
     for i, line in enumerate(lines):
         if not line.startswith("|") or ANSWER_ROW.match(line):
             out.append(line)
-        elif not (TABLE_RULE.match(line) or (i + 1 < len(lines) and TABLE_RULE.match(lines[i + 1]))):
+        elif not (rule(i) or rule(i + 1)):
             cells = [c.strip().replace("\\|", "|") for c in CELL_SPLIT.split(line.strip("|"))]
             if text := " · ".join(c for c in cells if c):
                 out.append(text)

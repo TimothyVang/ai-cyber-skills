@@ -110,6 +110,8 @@ class ProseAnswers(unittest.TestCase):
                 "| Check | Result |\n| --- | --- |\n| tests | 41 pass \\| 0 fail |\n\n---\n")
         self.assertEqual(st.gist(body, "reviewer"), ["tests · 41 pass | 0 fail"])
         self.assertEqual(st.untable(["| a | b |", "---", "text"]), ["a · b", "---", "text"])
+        self.assertEqual(st.untable(["| Check | Result |", "|---|---|", "| lint | ok |", "| - | - |", "| tests | 41 |"]),
+                         ["lint · ok", "- · -", "tests · 41"])
 
 
 class Voices(unittest.TestCase):
