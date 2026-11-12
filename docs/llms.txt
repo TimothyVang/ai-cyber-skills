@@ -12,6 +12,7 @@ Key facts:
 - Conflicts are resolved by merging the base into the head. Never rebase or force-push.
 - Install the bots: `git clone https://github.com/TimothyVang/deep-mode`, `cd deep-mode/plugins/deep-mode/skills/deep-mode`, `py -3 assets/github-app/install.py`.
 - Install the skills: `omp plugin marketplace add TimothyVang/deep-mode` then `omp plugin install deep-mode@deep-mode`; in Claude Code, `/plugin marketplace add TimothyVang/deep-mode` and `/plugin install deep-mode@deep-mode`.
+- White-label: one `brand.json` and `py -3 scripts/whitelabel.py --brand <file> --out <dir>` rebrand everything: the product name and logo, colors, commands, skills, the bot and its GitHub App, the docs site, the README, images, and the SEO and llms files. LICENSE and NOTICE stay, with your copyright line added. `install.py --brand <name>` is a shortcut that renames only the bots.
 
 ## Docs
 
@@ -22,6 +23,7 @@ Key facts:
 - [pr-conversation technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/pr-conversation.md): the author, reviewer and verifier turns over ACP, the panel, and every merge gate
 - [issue-conversation technique](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/references/techniques/issue-conversation.md): plan, critique and answer in the issue thread, then build on the owner's issues
 - [SKILL.md](https://github.com/TimothyVang/deep-mode/blob/main/plugins/deep-mode/skills/deep-mode/SKILL.md): the router, principles, playbooks and techniques of the deep-mode skill
+- [Rebrand guide](https://github.com/TimothyVang/deep-mode/blob/main/docs/rebrand.md): ship deep-mode as your own product with one brand file and one build command
 
 ## Code
 

@@ -17,6 +17,10 @@ Anyone can improve these skills, starting with the Ai Cyber community. Changes l
 - No line longer than 760 bytes (omp's `read` cuts long lines).
 - Marketplace and plugin manifests, and `plugins/*/hooks/hooks.json`, are valid JSON and point at real folders.
 
+## Keep it rebrandable
+
+Resellers ship this repo under their own brand with `scripts/whitelabel.py` (see `docs/rebrand.md`). When you add a name, a page section, an image or a manifest field, run `python scripts/test_whitelabel.py` and build the example brand into a folder outside the repo: `python scripts/whitelabel.py --brand brand/examples/acme.json --out ../acme-review`. It must print `OK` with 0 leftovers.
+
 ## Testing a behavior change
 
 A wording change can change what agents do. Before a PR that changes a playbook or technique, run the change on a throwaway repo with a small planted bug:
