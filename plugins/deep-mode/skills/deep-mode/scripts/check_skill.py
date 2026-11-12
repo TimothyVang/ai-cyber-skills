@@ -1,7 +1,8 @@
 """Validate a skill folder: frontmatter, referenced files, and skill:// links.
 
 Usage: python check_skill.py <skill dir> [<skill dir> ...]
-Exits 1 and lists every problem when any check fails.
+Exits 1 and lists every problem when any check fails. A link to a skill that is neither in this repo nor installed
+here is printed as a note, not a problem: it may be a global skill this machine lacks (skill://tdd).
 """
 
 import json
@@ -35,7 +36,7 @@ def installed_skills(skill_dir: Path) -> tuple[dict[str, Path], bool]:
     return found, True
 
 
-def check(skill_dir: Path, skills: dict[str, Path], listed: bool = True) -> list[str]:
+def check(skill_dir: Path, skills: dict[str, Path], listed: bool = True, notes: list | None = None) -> list[str]:
     problems = []
     entry = skill_dir / "SKILL.md"
     if not entry.exists():
@@ -48,8 +49,8 @@ def check(skill_dir: Path, skills: dict[str, Path], listed: bool = True) -> list
         for n, line in enumerate(doc.read_text(encoding="utf-8").splitlines(), 1):
             links = LINK.findall(line)
             for link in links:
-                if link.split("/")[0] not in skills and listed:
-                    problems.append(f"{doc.relative_to(skill_dir)}:{n}: skill://{link} is not installed")
+                if link.split("/")[0] not in skills and listed and notes is not None:
+                    notes.append(f"note: {doc.relative_to(skill_dir)}:{n}: skill://{link} is not installed here")
             for name, rel in FILE_LINK.findall(line):
                 if name in skills and skills[name] != Path() and not (skills[name] / rel).exists():
                     problems.append(f"{doc.relative_to(skill_dir)}:{n}: skill://{name}/{rel} does not exist")
@@ -71,12 +72,12 @@ def main() -> int:
     if len(sys.argv) < 2:
         print(__doc__)
         return 2
-    problems = []
+    problems, notes = [], []
     for arg in sys.argv[1:]:
         skill_dir = Path(arg).expanduser().resolve()
-        problems += check(skill_dir, *installed_skills(skill_dir))
-    for problem in problems:
-        print(problem)
+        problems += check(skill_dir, *installed_skills(skill_dir), notes=notes)
+    for line in notes + problems:
+        print(line)
     print("ok" if not problems else f"{len(problems)} problem(s)")
     return 1 if problems else 0
 

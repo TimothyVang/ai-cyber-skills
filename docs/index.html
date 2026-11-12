@@ -54,7 +54,7 @@
     {"@type": "Question", "name": "What is deep-mode?",
      "acceptedAnswer": {"@type": "Answer", "text": "deep-mode is an open-source MIT plugin for coding agents. It ships PR and issue bots that run on your own GitHub App and subscription, and a skill set that takes work from idea to spec, tickets, code and a merged PR. Every result is proven on the real app and checked by a three-agent verifier panel."}},
     {"@type": "Question", "name": "How do the deep-mode PR bots work?",
-     "acceptedAnswer": {"@type": "Answer", "text": "A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote, and a gate in code merges your own PR at the voted head."}},
+     "acceptedAnswer": {"@type": "Answer", "text": "A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR, and a coordinator posts every turn to the thread as your app until no P0 or P1 finding is open. Three verifiers then vote (one, who must pass it, for a small change), and a gate in code merges your own PR at the voted head."}},
     {"@type": "Question", "name": "Does deep-mode need an API key?",
      "acceptedAnswer": {"@type": "Answer", "text": "No. Each agent CLI uses its own subscription login, for example Claude Code with Claude.ai or Codex with ChatGPT. Every call counts against that subscription's usage."}},
     {"@type": "Question", "name": "Which agents and harnesses does deep-mode work with?",

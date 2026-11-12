@@ -1873,13 +1873,18 @@ class Bot:
 
         # Repos run side by side, each one item at a time, so one long conversation never stalls the others.
         pool = concurrent.futures.ThreadPoolExecutor(max(1, min(self.cfg["parallelRepos"], len(repos))))
+        futures = [pool.submit(one, repo) for repo in repos]
         try:
-            list(pool.map(one, repos))
+            # Wait in short slices: on Windows a plain wait on the pool never sees Ctrl-C.
+            while concurrent.futures.wait(futures, timeout=0.5)[1]:
+                pass
         except KeyboardInterrupt:
             STOP.set()  # workers stop at their next blocking call; queued repos never start
             pool.shutdown(wait=False, cancel_futures=True)
             raise
         pool.shutdown()
+        for future in futures:
+            future.result()
         if not self.dry:
             self.state["lastCycle"] = now_iso()
             self.save()
