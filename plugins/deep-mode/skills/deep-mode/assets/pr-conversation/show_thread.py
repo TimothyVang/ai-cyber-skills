@@ -33,8 +33,11 @@ VERDICT = re.compile(r"(VERDICT:\s*(?:NOT )?DONE|^`?(?:panel|conversation):\s*[^
 # An author's prose answers (threads without the JSON reply): "3. **Empty pane: fixed.** ...",
 # "| <finding> | **fixed**: ... |", "| <finding> | **fixed in `<sha>`**. ... |" or "... is **fixed**: ..."
 ANSWER_ITEM = re.compile(r"^\s*(?:\d+[.)]|[-*])\s*\*\*(.+?)[:.]?\s+(fixed|dismissed)\.?\*\*\s*(.*)$", re.I)
-ANSWER_ROW = re.compile(r"^\|\s*(.+?)\s*\|\s*\*\*(fixed|dismissed)(?: in `?[0-9a-f]{7,40}`?)?\*\*[:.]?\s*(.*?)\s*\|?$", re.I)
+# The finding cell holds no pipe and ends on a non-space: a free (.+?) backtracked cubically on a run of spaces.
+ANSWER_ROW = re.compile(r"^\|\s*([^|]*[^\s|])\s*\|\s*\*\*(fixed|dismissed)(?: in `?[0-9a-f]{7,40}`?)?\*\*[:.]?\s*(.*?)\s*\|?$", re.I)
 ANSWER_INLINE = re.compile(r"\*\*(fixed|dismissed)(?: in `?[0-9a-f]{7,40}`?)?\*\*", re.I)
+TABLE_RULE = re.compile(r"^\|\s*:?-+:?\s*(?:\|\s*:?-+:?\s*)*\|?$")  # a markdown table's |---|:--:| row (not a --- rule)
+CELL_SPLIT = re.compile(r"(?<!\\)\|")
 MODELED = re.compile(r"^(\S+) \((.+)\)$")
 # acpx agent names, and bot.py, which signs the panel and coordinator; any other label is a review lens.
 AGENTS = {"omp", "claude", "codex", "gemini", "cursor", "copilot", "opencode", "qwen", "kimi", "droid",
@@ -203,6 +206,24 @@ def prose_answers(lines: list[str], limit=140) -> list[str]:
     return out
 
 
+def untable(lines: list[str]) -> list[str]:
+    """Markdown tables as gist lines: the header and its |---| rule dropped, an answer row kept for the
+    answer patterns, any other row's cells joined into text. A |---| line is the rule only as the second
+    line of a table; further down it is a body row of dashes."""
+    def rule(i: int) -> bool:
+        return (1 <= i < len(lines) and bool(TABLE_RULE.match(lines[i])) and lines[i - 1].startswith("|")
+                and not (i >= 2 and lines[i - 2].startswith("|")))
+    out = []
+    for i, line in enumerate(lines):
+        if not line.startswith("|") or ANSWER_ROW.match(line):
+            out.append(line)
+        elif not (rule(i) or rule(i + 1)):
+            cells = [c.strip().replace("\\|", "|") for c in CELL_SPLIT.split(line.strip("|"))]
+            if text := " · ".join(c for c in cells if c):
+                out.append(text)
+    return out
+
+
 def gist(body: str, kind: str = "", limit=140, objects=None) -> list[str]:
     if kind == "pr-agent" and "PR Reviewer Guide" in body:  # its focus-area titles, or its all-clear line
         if "Recommended focus areas" in body:
@@ -216,7 +237,7 @@ def gist(body: str, kind: str = "", limit=140, objects=None) -> list[str]:
     if structured:
         return structured
     # Lines are cut to MAX_LINE: the answer patterns backtrack quadratically on a long run of spaces.
-    lines = [line.strip()[:MAX_LINE] for line in clean(body).splitlines() if line.strip()]
+    lines = untable([line.strip()[:MAX_LINE] for line in clean(body).splitlines() if line.strip()])
     found = [f"{m.group(1)}: {clip(m.group(2).replace('**', ''), limit)}" for line in lines if (m := FINDING.match(line))]
     verdict = next((m.group(1) for line in lines if (m := VERDICT.search(line))), None)
     if found:
