@@ -15,7 +15,7 @@ Files it may write:
 
 1. **Look** (read-only). `git remote -v`; `gh repo view --json nameWithOwner,hasIssuesEnabled,viewerPermission`; `gh label list --json name --limit 200`.
    Check for `docs/deepmodebot/tracker.md`, `AGENTS.md`, `CLAUDE.md`, `GLOSSARY.md`, `docs/adr/`, `CODING_STANDARDS.md`, `CONTRIBUTING.md`, lint and format configs, and monorepo signals (workspace files, several packages with their own `src/`).
-   Done when each file above is noted present or absent and the three commands' output is in hand.
+   Done when each file above is noted present or absent and the three commands' output is in hand. Rule files present → run Process conflicts (below) before step 2.
 2. **Pick the tracker kind** (decide; don't ask, per SKILL.md Autonomy):
    - GitHub remote, issues enabled, and write permission → `github`.
    - No forge remote, or the user said local → `local` (`docs/deepmodebot/issues/`).
@@ -64,9 +64,36 @@ Files it may write:
 10. **Resume the request.** When setup ran because the user asked for Spec, Tickets, Phased build, or Triage, run that playbook now, in the same session.
    Don't wait for the setup PR to merge: each flow detects the tracker on its own, and Setup has already created the labels. Done when that playbook has started, or no flow routed here.
 
+## Process conflicts
+
+A repo's rule files can set their own process: who merges, how many reviewers, a custom queue runner, "agents never merge", "one verifier is enough". Agents read those files every session, so without this check they follow the repo's process and deepmodebot's gates switch off without anyone saying so. Setup step 7 only adds a pointer section and never touches the rest of the file, so setup alone leaves the conflict in place. This check runs whenever deepmodebot starts in a repo (SKILL.md Route step 1), not only at setup.
+
+**Deepmodebot takes priority.** Where a repo rule and deepmodebot disagree on process, follow deepmodebot from the start of the session, before any file changes. Domain rules are the exception and always win (step 1). Rewriting the files so they stop disagreeing is what needs the owner's two yeses (step 3).
+
+1. **Find conflicts** (read-only). Read `AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `.cursor/rules/`, `.github/copilot-instructions.md`, `CONTRIBUTING.md`, and any doc or script they name as the workflow.
+   List each process rule that contradicts deepmodebot with its `file:line`, what it says, what deepmodebot does instead, and the gate that is lost. Example: `AGENTS.md:31` "Hadi merges. Agents never merge." Deepmodebot merges on a panel pass at the exact head. Lost: the panel gate, because a person clicks merge on one verifier's say-so.
+   Domain rules are not conflicts: spend limits, contact bans, data handling, naming, legal and safety holds. They always stand, and deepmodebot obeys them.
+   An ADR in `docs/adr/` in which the owner chose the repo's process for a rule is the one way a repo rule beats deepmodebot. Follow it, and don't ask about that rule again.
+   Done when the conflict list is written, or it says none.
+2. **Tell the user before any work.** In plain words, name each conflicting repo rule, say deepmodebot overrides it this session, and what changes for them (for example, "the agent merges after the panel passes, instead of waiting for you").
+   Done when the message names every conflict and what deepmodebot does instead.
+3. **Ask the owner, twice, then overwrite.** Overwriting the old rules is the goal; the two yeses only confirm it. Rewriting rule files is a hard stop (SKILL.md Autonomy) and needs two separate yeses from someone with `ADMIN` or `MAINTAIN` in `gh repo view --json viewerPermission`.
+   - Ask in plain text in the chat, not a form or picker, and end your turn after each question so the user answers it on its own. Only a reply of `yes` counts; anything else is a no.
+   - First prompt: show the conflict list and the exact proposed diff to each file, then end with "Deepmodebot will overwrite these rules in <files>. Reply yes to continue."
+   - Second prompt, only after that yes: name every file to be rewritten and every rule being removed, say the old text stays in git history and an ADR, then end with "Reply yes again to confirm the overwrite."
+   - A no at either prompt leaves the files as they are, and deepmodebot still overrides them each session (step 5).
+   - The user lacks that permission → open the change as a PR for the owner. Deepmodebot still overrides the rules meanwhile.
+   - Done when both replies are recorded, or one was not yes.
+4. **Overwrite** on two yeses. Replace each conflicting process rule with a pointer to deepmodebot ("Work runs the deepmodebot way. Start with `/deep`. A PR merges only on a panel pass at its exact head."). Retire scripts and docs that only implemented the old process, following the repo's own rule for superseded files. Keep every domain rule word for word.
+   Record the change as an ADR (domain-model format) with how to reverse it, and ship it through Opening a PR (`references/playbooks/opening-a-pr.md`).
+   Done when the PR is open and a re-read of every rule file finds no conflict.
+5. **On a no**, leave the files as they are, record the choice in an ADR so later sessions don't ask again, and keep following deepmodebot. Each final reply names the repo rules it overrode. Only an owner who says the repo's process should win, recorded in an ADR (step 1), turns deepmodebot off for that rule.
+   Done when the ADR exists.
+
 ## Gates
 
-- Never overwrite an existing glossary, ADR, standards file, or user section. Merge into them.
+- Never overwrite an existing glossary, ADR, standards file, or user section. Merge into them. The one exception is a process takeover the owner approved twice (Process conflicts).
+- A domain rule (spend, contact, data, legal, safety) is never removed or loosened by a takeover.
 - Labels are created, never renamed or deleted.
 - A tracker of kind `github` must answer `gh issue list -R <repo> --limit 1` before the file says so. If it can't, use `local` and say why.
 
