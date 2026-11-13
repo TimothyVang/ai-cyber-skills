@@ -7,11 +7,12 @@ snowflake id date and the fxtwitter public API (post exists, real text, real aut
 
 Claude's WebSearch cannot return reddit.com pages, so Reddit runs in two steps: Claude names the
 subreddits where the topic is discussed, then the archive lists those subreddits' posts in the window
-and only posts whose titles match the topic are kept.
+and only posts whose titles match the topic are kept. A post counts as verified only when its title holds
+every topic word, whichever command found it.
 
 Usage:
   python social.py reddit-find "<topic>" [--days 30] [--subs a,b] [--comments 5]
-  python social.py reddit-thread <url>... [--comments 8]
+  python social.py reddit-thread <url>... --topic "<topic>" [--comments 8]
   python social.py x-find "<topic>" [--days 30]
   python social.py x-post <url>...
 Add --md for a Markdown evidence list instead of JSON.
@@ -323,7 +324,9 @@ def tokens(text):
 
 
 def topic_words(topic):
-    words = {w for w in tokens(topic) if len(w) >= 3 and w not in STOPWORDS}
+    """Stopwords are dropped before stemming, so "does" and "this" never become "doe" and "thi"."""
+    raw = re.findall(r"[a-z0-9]+", (topic if isinstance(topic, str) else "").lower())
+    words = {stem(w) for w in raw if len(w) >= 3 and w not in STOPWORDS}
     return words or tokens(topic)
 
 
@@ -331,6 +334,14 @@ def title_match(title, words):
     """Share of the topic's words that appear in the title (0.0 to 1.0)."""
     found = tokens(title)
     return len(words & found) / len(words) if words else 0.0
+
+
+def topic_label(label, title, words):
+    """An archive-verified post stays verified only when its title holds every topic word."""
+    if label != "verified":
+        return label
+    found = len(words & tokens(title))
+    return label if words and found == len(words) else f"topic unconfirmed: title has {found} of {len(words)} topic words"
 
 
 def post_date(post):
@@ -403,9 +414,9 @@ def add_comments(items, n):
                 item["comments_error"] = one_line(str(cerr), 120)
 
 
-def reddit_items(urls, days, comments):
-    """Check Reddit thread URLs someone already has against the archive."""
-    since = window_start(days)
+def reddit_items(urls, days, comments, topic):
+    """Check Reddit thread URLs someone already has against the archive and the topic."""
+    since, words = window_start(days), topic_words(topic)
     parsed = {}
     for u in urls:
         p = parse_reddit_url(u)
@@ -425,6 +436,8 @@ def reddit_items(urls, days, comments):
             item["label"] = f"unverified: archive answered with an error ({lookup_error})"
         items.append(item)
     add_comments(items, comments)
+    for item in items:
+        item["label"] = topic_label(item["label"], item.get("title"), words)
     items.sort(key=lambda i: (i["label"] != "verified", -num(i.get("score"))))
     return items
 
@@ -481,8 +494,8 @@ def reddit_find(topic, days, subs, comments):
             label = label_reddit(p, since)
             if str(p.get("subreddit") or "").lower() != sub.lower():
                 label = "unverified: archive returned another subreddit"
-            elif m < 1.0 and label == "verified":
-                label = f"partial match: title has {len(words & tokens(p.get('title')))} of {len(words)} topic words"
+            else:
+                label = topic_label(label, p.get("title"), words)
             items.append(reddit_item(p, label))
     add_comments(items, comments)
     items.sort(key=lambda i: (i["label"] != "verified", -num(i.get("score"))))
@@ -569,6 +582,7 @@ def main(argv=None):
     a.add_argument("--subs", help="comma-separated subreddits; skips asking claude for them")
     a.add_argument("--comments", type=int, default=0)
     a = sub.add_parser("reddit-thread"); a.add_argument("urls", nargs="+"); a.add_argument("--comments", type=int, default=8)
+    a.add_argument("--topic", required=True, help="the topic the threads must match, as given to reddit-find")
     a.add_argument("--days", type=int, default=NO_WINDOW_DAYS)
     a = sub.add_parser("x-find"); a.add_argument("topic"); a.add_argument("--days", type=int, default=30)
     a.add_argument("--limit", type=int, default=10)
@@ -598,7 +612,7 @@ def main(argv=None):
         items, sub_notes = reddit_find(args.topic, args.days, valid, args.comments)
         notes.extend(sub_notes)
     elif args.cmd == "reddit-thread":
-        items = reddit_items(args.urls, args.days, args.comments)
+        items = reddit_items(args.urls, args.days, args.comments, args.topic)
     elif args.cmd == "x-find":
         found, err = run_claude(x_prompt(args.topic, args.days, args.limit))
         notes.append(f"discovery via claude failed: {err}" if err else f"discovery: claude returned {len(found)} candidates")

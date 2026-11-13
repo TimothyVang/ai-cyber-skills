@@ -77,6 +77,9 @@ class Parsing(unittest.TestCase):
         x402 = social.topic_words("x402 agent payments")
         self.assertEqual(social.title_match("Open-source x402 payment infrastructure for AI agents", x402), 1.0)
         self.assertEqual(social.title_match(["not", "a", "string"], words), 0.0)
+        asked = social.topic_words("What does this Cursor pricing mean?")
+        self.assertEqual(asked, {"cursor", "pricing", "mean"})
+        self.assertEqual(social.title_match("Cursor pricing: what does it mean", asked), 1.0)
 
 
 class Labels(unittest.TestCase):
@@ -95,15 +98,27 @@ class Labels(unittest.TestCase):
 
     def test_archive_error_is_not_reported_as_missing_thread(self):
         with mock.patch.object(social, "get_json", return_value=({"data": None, "error": "bad field"}, None)):
-            [item] = social.reddit_items(["https://www.reddit.com/r/ClaudeAI/comments/1xti4sx/"], days=30, comments=0)
+            [item] = social.reddit_items(["https://www.reddit.com/r/ClaudeAI/comments/1xti4sx/"], days=30, comments=0,
+                                         topic="cursor pricing")
         self.assertIn("archive lookup failed", item["label"])
 
     def test_reddit_subreddit_comes_from_archive_not_url(self):
-        post = {"id": "1xti4sx", "subreddit": "ClaudeAI", "title": "t", "score": 5, "num_comments": 6, "created_utc": time.time()}
+        post = {"id": "1xti4sx", "subreddit": "ClaudeAI", "title": "Cursor pricing", "score": 5, "num_comments": 6,
+                "created_utc": time.time()}
         with mock.patch.object(social, "get_json", return_value=({"data": [post]}, None)):
-            [item] = social.reddit_items(["https://www.reddit.com/r/WrongSub/comments/1xti4sx/"], days=30, comments=0)
+            [item] = social.reddit_items(["https://www.reddit.com/r/WrongSub/comments/1xti4sx/"], days=30, comments=0,
+                                         topic="cursor pricing")
         self.assertEqual((item["subreddit"], item["label"]), ("ClaudeAI", "verified"))
         self.assertIn("/r/ClaudeAI/", item["url"])
+
+    def test_thread_check_cannot_verify_an_off_topic_title(self):
+        post = {"id": "1xti4sx", "subreddit": "cursor", "title": "Cursor tab completion", "created_utc": time.time()}
+        with mock.patch.object(social, "get_json", return_value=({"data": [post]}, None)):
+            [item] = social.reddit_items(["https://www.reddit.com/r/cursor/comments/1xti4sx/"], days=30, comments=0,
+                                         topic="Cursor pricing")
+        self.assertEqual(item["label"], "topic unconfirmed: title has 1 of 2 topic words")
+        with self.assertRaises(SystemExit):
+            social.main(["reddit-thread", "https://www.reddit.com/r/cursor/comments/1xti4sx/"])
 
     def test_x_labels_without_network(self):
         future_id = (int(dt.datetime(2030, 1, 1, tzinfo=UTC).timestamp() * 1000) - social.SNOWFLAKE_EPOCH_MS) << 22
@@ -171,7 +186,7 @@ class RedditFind(unittest.TestCase):
             items, notes = social.reddit_find("Cursor pricing", 30, ["ClaudeAI"], comments=0)
         self.assertEqual({i["title"]: i["label"] for i in items},
                          {"cursor pricing update": "verified",
-                          "Cursor tab completion": "partial match: title has 1 of 2 topic words"})
+                          "Cursor tab completion": "topic unconfirmed: title has 1 of 2 topic words"})
         self.assertIn("1 titles matched every topic word, 1 matched some", notes[0])
 
     def test_hostile_rows_never_verify_or_crash(self):

@@ -68,4 +68,5 @@ The run pointed `TMPDIR` into the project, a git repo. `x-find` still started it
 - One run per cell. A second run could size or route differently.
 - The planted bug is a factual one. The timeout task exercises steps 1 to 3 and 6 to 7, not the researcher fan-out in steps 4 and 5.
 - The social task depends on live archives and search, so a rerun will see different posts.
-- `reddit-thread` checks that a thread exists inside the window; it does not check the topic. Relevance of a re-checked thread is the agent's judgment.
+- At `1fe232b`, `reddit-thread` checked only that a thread exists inside the window, not its topic, so relevance of a re-checked thread was the agent's judgment. 18 of the 25 cited threads were `partial match` leads re-checked this way.
+- After this run, `reddit-thread` was changed to require `--topic` and apply the same every-topic-word title rule, and the `partial match` label became `topic unconfirmed`. With `--topic "Cursor pricing"`, those 18 threads would now be `topic unconfirmed`, not `verified`.
