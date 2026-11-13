@@ -26,13 +26,13 @@ The deliverable is one cited Markdown file in the repo. The reading runs in back
 8. **Commit it** with the work it feeds, or alone with `docs(research): <slug>`. Link the file from the issue, spec, or ticket that asked.
    Done when the file is committed and linked from the asker.
 
-## Reddit and X on your subscriptions
+## Reddit and X on your Claude subscription
 
-`python <this skill>/assets/research/social.py backends` lists the installed CLIs and whether codex and grok are logged in. Searches run on the user's CLI logins (codex, claude, grok), never on an API key. Each child gets search only, an allowlisted environment, and an empty folder outside the repo. Logging in (`codex login`, `grok login`) is the user's step. omp is not used: a probe showed it could not be held to search only.
+`<this skill>/assets/research/social.py` searches through a headless `claude -p` on the user's own login, never an API key. The child gets WebSearch only, no MCP, no hooks, an allowlisted environment, and an empty folder outside the repo.
 
-- **Reddit:** `social.py reddit-find "<topic>" --cli codex --days 30 --comments 5`. Claude's web search answered reddit.com with HTTP 400 when measured on 2026-11-12, so the tool refuses `--cli claude` here. `reddit-thread <url>` checks threads you already have. `reddit-sub <sub> "<query>"` searches one subreddit when the archive's search is up.
-- **X:** `social.py x-find "<topic>" --days 30` searches through claude, or `--cli codex`; both find a handful of posts. `--cli grok` searches X natively on the user's Grok plan once they run `grok login`; its lockdown is not yet audited here. `x-post <url>` checks one post.
-- Cite only items marked `verified`: a Reddit thread found in the arctic-shift archive inside the window, or an X post whose id dates inside the window and that fxtwitter loads. Quote the fetched text, never the search model's summary of it.
+- **Reddit:** `social.py reddit-find "<topic>" --days 30 --comments 5`. Claude's web search answered reddit.com with HTTP 400 when measured on 2026-11-12, so Claude names the subreddits (or pass `--subs a,b`), and the arctic-shift archive lists their posts in the window; only titles matching the topic are kept. Each subreddit's note says how far back the scan reached; a busy subreddit may cover only the last few days, so say that in the file. `reddit-thread <url>` checks threads you already have.
+- **X:** `social.py x-find "<topic>" --days 30` finds a handful of posts through Claude's web search. `x-post <url>` checks one post.
+- Cite only items marked `verified`: a Reddit post found in the archive inside the window, or an X post whose id dates inside the window and that fxtwitter loads with its text and author. Quote the fetched text, never the search model's summary of it.
 
 ## Notes format (researchers)
 

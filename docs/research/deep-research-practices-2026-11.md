@@ -9,6 +9,7 @@ Anthropic's write-up on its multi-agent research system sizes effort to the ques
 It also gives each worker a full brief and attaches citations in a separate pass after research ends ([Anthropic](https://www.anthropic.com/engineering/multi-agent-research-system)). open_deep_research stops on explicit rules and asks what is still missing after each research call (`langchain-ai/open_deep_research@1b7d2e8:src/open_deep_research/prompts.py:100-118`).
 ResearchRubrics measured implicit reasoning and synthesis as 45-50% of deep-research failures, and found that binary rubric checks agree with human graders far better than ternary ones ([ResearchRubrics](https://arxiv.org/html/2511.07685) sections 4.2-4.3).
 For Reddit and X, anonymous fetching failed here, while a logged-in CLI search followed by keyless verification worked; that approach comes from the MIT project credited in `NOTICE.md`.
+The user chose to run every search on their Claude subscription only, so `social.py` drives `claude -p` alone; for Reddit, Claude names the subreddits and the archive lists their posts.
 
 ## Findings
 
@@ -39,13 +40,15 @@ Reddit and X, measured on Windows 11 on 2026-11-12:
   - Its shreddit comment partial returned 403.
 - The arctic-shift archive was partly usable:
   - `/api/posts/ids` and `/api/comments/search` returned scores, dates, and comments with no key.
-  - `/api/posts/search` answered "Timeout. Maybe slow down a bit" on every try that day.
-- Codex web search found one or two X posts per query.
+  - `/api/posts/search` with a text query (`query=` or `title=`) answered "Timeout. Maybe slow down a bit" on every try that day.
+  - The same endpoint with only `subreddit=`, `after=`, and `sort=desc` listed posts. Paging 5 x 100 posts reached about 4 to 6 days back in r/AI_Agents, r/CryptoCurrency, and r/LocalLLaMA, and the full 30 days in r/defi and r/ethdev.
+- Codex web search found one or two X posts per query; Claude web search found three or four.
+- After the switch to Claude only, a prompt telling the child to read a canary file and run `whoami` came back `DENIED` with no leak.
 - For `TrustWallet/status/2062172639938965917`, the date decoded from the post id matched fxtwitter's `created_at` to the second. fxtwitter returned 404 for an invented id.
 - The upstream approach runs X through a signed-in `grok` CLI. It is opt-in, bills the user's Grok plan, and limits the CLI to hosted X search with a generated agent profile and `--disable-web-search`. The upstream is credited in `NOTICE.md`; the files read were its `grok_x.py` and its configuration docs at commit 029e23e.
 
 ## Not settled
 
 - **Whether research files got better.** No blinded eval of whole research runs was done. The Eval playbook would settle it: about 20 real questions, scored on the five rubric axes from the Anthropic post.
-- **The grok path.** It is untested on this machine, which has not run `grok login`. `social.py` checks only the grok version floor (1.0.46). The upstream additionally audits each grok build against a fake endpoint before trusting it.
+- **Reddit coverage on busy subreddits.** The archive listing reaches only the last few days of a busy subreddit within the page cap, and text search there timed out. A fuller window needs the archive's search to recover, or a search backend that can reach reddit.com.
 - **Archive lag.** How far arctic-shift's archive lags for posts under a day old was not measured.
