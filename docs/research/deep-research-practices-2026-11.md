@@ -29,6 +29,9 @@ Reddit and X, measured on Windows 11 on 2026-11-12:
 - Child isolation, from three review panels on PR #68:
   - `codex exec -s read-only -c features.shell_tool=false -c mcp_servers={}` still loaded MCP tools from `~/.codex/config.toml` plugins and ran the user's hooks.
   - Adding `--ignore-user-config` removed the MCP tools and the hooks. With that flag, an injected `whoami` and an injected file read both failed.
+  - Built-in ChatGPT app connectors (Gmail, Drive, Calendar) and `view_image` survived `--ignore-user-config`. A child ran a Calendar call and read a local image canary. `-c features.apps=false -c features.view_image=false` removed both, and web search still worked.
+  - What remains in the codex child: its `exec` code host, which web search needs and which reached no shell or file read in probes; `apply_patch` under the read-only sandbox; subagent spawning; and image generation.
+  - The claude child ran the user's hooks and handed them the prompt until `--settings '{"disableAllHooks":true}'` was added.
   - `omp -p --tools=web_search --no-context-files --no-rules --no-skills --no-extensions` still read a local canary file and loaded about 200 imported MCP tools, so `social.py` refuses omp.
   - `claude -p --tools WebSearch` exposed only WebSearch.
 - Reddit's own endpoints were unreachable anonymously:

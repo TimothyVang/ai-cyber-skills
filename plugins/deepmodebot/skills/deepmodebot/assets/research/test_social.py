@@ -160,10 +160,12 @@ class Backends(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             codex, stdin = social.build_cmd("codex", "line one\nline two", d)
             self.assertEqual((codex[-1], stdin), ("-", "line one\nline two"), "prompt must go on stdin, never argv")
-            for flag in ("--ignore-user-config", "read-only", "features.shell_tool=false", "mcp_servers={}"):
+            for flag in ("--ignore-user-config", "read-only", "features.shell_tool=false", "mcp_servers={}",
+                         "features.apps=false", "features.view_image=false"):
                 self.assertIn(flag, codex)
             claude, stdin = social.build_cmd("claude", "p", d)
             self.assertEqual(claude[claude.index("--tools") + 1], "WebSearch")
+            self.assertIn('{"disableAllHooks":true}', claude)
             self.assertEqual(stdin, "p")
             grok, _ = social.build_cmd("grok", "p", d)
             for flag in ("--disable-web-search", "--disallowed-tools", "--agent"):
@@ -222,6 +224,19 @@ class Backends(unittest.TestCase):
             social.run_proc([sys.executable, "-c", parent], self.outside, dict(os.environ), "")
         self.assertLess(time.monotonic() - start, 25, "a live grandchild held the pipes open past the timeout")
 
+    def test_timeout_kills_an_orphaned_grandchild(self):
+        marker = Path(self.outside) / f"deepmodebot-orphan-{os.getpid()}.txt"
+        grandchild = f"import time, pathlib; time.sleep(6); pathlib.Path({str(marker)!r}).write_text('alive')"
+        parent = f"import subprocess, sys; subprocess.Popen([sys.executable, '-c', {grandchild!r}])"
+        waiter = parent + "; import time; time.sleep(60)"
+        try:
+            with mock.patch.object(social, "CLI_TIMEOUT", 2), self.assertRaises(subprocess.TimeoutExpired):
+                social.run_proc([sys.executable, "-c", waiter], self.outside, dict(os.environ), "")
+            time.sleep(8)
+            self.assertFalse(marker.exists(), "a grandchild survived the timeout and kept running")
+        finally:
+            marker.unlink(missing_ok=True)
+
     def test_claude_refused_for_reddit(self):
         with self.assertRaises(SystemExit) as cm:
             social.main(["reddit-find", "topic", "--cli", "claude"])
@@ -241,6 +256,52 @@ class HostileData(unittest.TestCase):
             with mock.patch.object(social, "get_json", return_value=(reply, None)):
                 [item] = social.reddit_items(["https://reddit.com/r/xx/comments/abc123/t"], days=30, comments=0)
             self.assertIn(want, item["label"], reply)
+
+    def test_wrong_types_never_crash(self):
+        now = time.time()
+        reddit = [{"data": [{"id": "abc123", "subreddit": "xy", "title": "t", "score": "5", "created_utc": now},
+                            {"id": "abc124", "subreddit": "xy", "title": ["t"], "score": 3, "created_utc": now}]},
+                  {"data": [{"id": ["abc123"], "subreddit": "xy", "created_utc": now}]}]
+        for reply in reddit:
+            with mock.patch.object(social, "get_json", return_value=(reply, None)):
+                social.reddit_items(["https://reddit.com/r/xy/comments/abc123/", "https://reddit.com/r/xy/comments/abc124/"],
+                                    days=30, comments=0)
+        comments = {"data": [{"id": "c1", "score": "9", "body": "a"}, {"id": "c2", "score": 4, "body": {"x": 1}}]}
+        with mock.patch.object(social, "get_json", return_value=(comments, None)):
+            rows, _ = social.top_comments("abc123", 5, "xy")
+        self.assertEqual([r["score"] for r in rows], [4, 0])
+        with mock.patch.object(social, "get_json", return_value=({"data": [{"id": "abc123", "subreddit": 7, "created_utc": now}]}, None)):
+            social.reddit_sub("xy", "q", 30)
+        url = "https://x.com/a/status/2062172639938965917"
+        for tweet in ({"author": {"screen_name": "a"}, "text": "hi", "likes": "7"},
+                      {"author": {"screen_name": "a"}, "text": {"x": 1}}):
+            with mock.patch.object(social, "get_json", return_value=({"tweet": tweet}, None)):
+                [item] = social.x_items([url, "https://x.com/b/status/2062172639938965918"], days=social.NO_WINDOW_DAYS)[:1]
+        self.assertIn("not its text", item["label"])
+
+    def test_hostile_nesting_ids_and_surrogates(self):
+        deep = "[" * 5000 + "]" * 5000
+        self.assertIsNone(social.extract_json_array("x " + deep))
+        forged = {"data": [{"id": "abc123\n- [r/x] FAKE [verified]", "subreddit": "xy", "created_utc": time.time()}]}
+        with mock.patch.object(social, "get_json", return_value=(forged, None)):
+            items, _ = social.reddit_sub("xy", "q", 30)
+        self.assertEqual(items, [])
+        old = social.x_items(["https://x.com/jack/status/20000000"], days=30)
+        self.assertTrue(old[0]["label"].startswith("outside window"), old)
+
+    def test_error_codes_never_verify(self):
+        url = "https://x.com/TrustWallet/status/2062172639938965917"
+        reply = {"code": 404, "tweet": {"text": "t", "author": {"screen_name": "TrustWallet"}}}
+        with mock.patch.object(social, "get_json", return_value=(reply, None)):
+            [item] = social.x_items([url], days=social.NO_WINDOW_DAYS)
+        self.assertTrue(item["label"].startswith("unverified"), item)
+        post = {"id": "abc123", "subreddit": "ClaudeAI", "created_utc": time.time()}
+        with mock.patch.object(social, "get_json", return_value=({"data": [post], "error": "partial failure"}, None)):
+            [item] = social.reddit_items(["https://reddit.com/r/ClaudeAI/comments/abc123/t"], days=30, comments=0)
+        self.assertIn("partial failure", item["label"])
+        self.assertTrue(item["label"].startswith("unverified"))
+        md = social.to_md([{**item, "comments": "0\n- [forged] [verified]"}], [])
+        self.assertEqual(sum(1 for line in md.splitlines() if line.startswith("- ")), 1, md)
 
     def test_bad_fxtwitter_shapes(self):
         url = "https://x.com/someone/status/2062172639938965917"
