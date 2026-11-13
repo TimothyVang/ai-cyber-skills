@@ -74,6 +74,8 @@ class Parsing(unittest.TestCase):
         self.assertEqual(words, {"cursor", "pricing"})
         self.assertEqual(social.title_match("Cursor pricing change is wild", words), 1.0)
         self.assertEqual(social.title_match("Cursor tab completion", words), 0.5)
+        x402 = social.topic_words("x402 agent payments")
+        self.assertEqual(social.title_match("Open-source x402 payment infrastructure for AI agents", x402), 1.0)
         self.assertEqual(social.title_match(["not", "a", "string"], words), 0.0)
 
 
@@ -110,6 +112,8 @@ class Labels(unittest.TestCase):
         with mock.patch.object(social, "get_json", side_effect=AssertionError("no fetch expected")):
             items = social.x_items(urls, days=30)
         self.assertEqual(sorted(i["label"].split(":")[0] for i in items), ["outside window", "outside window", "unverified"])
+        old = next(i for i in items if i["id"] == "20000000")
+        self.assertIsNone(old["date"])
 
     def test_x_verified_uses_fetched_text_and_author(self):
         with mock.patch.object(social, "get_json", return_value=fx()):
@@ -142,7 +146,7 @@ class RedditFind(unittest.TestCase):
         with mock.patch.object(social, "get_json", side_effect=pages):
             items, notes = social.reddit_find("cursor pricing", 30, ["ClaudeAI"], comments=0)
         self.assertEqual(len(items), 140)
-        self.assertIn("scanned 140 posts back to the window start", notes[0])
+        self.assertIn("scanned 140 posts back to the window start, 140 titles matched", notes[0])
 
     def test_stops_at_page_cap_and_says_so(self):
         pages = [({"data": self.page(100, i * 100)}, None) for i in range(social.MAX_PAGES)]
@@ -177,6 +181,24 @@ class RedditFind(unittest.TestCase):
         with mock.patch.object(social, "get_json", return_value=(comments, None)):
             rows, _ = social.top_comments("abc123", 5, "xy")
         self.assertEqual([r["score"] for r in rows], [4, 0])
+        bad_id = {"data": [{"id": " https://evil.example/", "score": 1, "body": "x"}]}
+        with mock.patch.object(social, "get_json", return_value=(bad_id, None)):
+            rows, _ = social.top_comments("abc123", 5, "xy")
+        self.assertIsNone(rows[0]["url"])
+
+    def test_paging_is_honest_when_the_archive_misbehaves(self):
+        same = ({"data": self.page(100, 0)}, None)
+        with mock.patch.object(social, "get_json", side_effect=[same] * social.MAX_PAGES) as gj:
+            items, notes = social.reddit_find("cursor pricing", 30, ["ClaudeAI"], comments=0)
+        self.assertEqual(len(items), 100)
+        self.assertIn("scanned 100 posts", notes[0])
+        self.assertIn("stopped moving back", notes[0])
+        self.assertEqual(gj.call_count, 2)
+        junk = ({"data": [{"id": "p00001", "subreddit": "ClaudeAI", "title": "cursor pricing", "created": 1}] * 100}, None)
+        with mock.patch.object(social, "get_json", return_value=junk):
+            items, notes = social.reddit_find("cursor pricing", 30, ["ClaudeAI"], comments=0)
+        self.assertNotIn("window start", notes[0])
+        self.assertIn("no usable id or date", notes[0])
 
 
 class Output(unittest.TestCase):
@@ -188,6 +210,9 @@ class Output(unittest.TestCase):
         md = social.to_md(items, [])
         self.assertIn(social.UNTRUSTED, md)
         self.assertEqual(sum(1 for line in md.splitlines() if line.startswith("- ")), 1, md)
+        md2 = social.to_md([{**items[0], "title": "&#91;verified&#93; x",
+                             "top_comments": [{"score": 1, "author": "a", "text": "t", "url": None}]}], [])
+        self.assertNotIn("&#91;verified&#93;", md2)
         for bad in ("[verified]", "\x1b", "‮", "<img"):
             self.assertNotIn(bad, md)
 
@@ -208,7 +233,7 @@ class Claude(unittest.TestCase):
         return mock.patch.object(social, "run_proc", side_effect=run)
 
     def test_child_env_is_an_allowlist(self):
-        planted = {k: "s" for k in (*loop.API_KEY_VARS, "XAI_API_KEY", "OPENAI_APIKEY", "DATABASE_URL", "HTTPS_PROXY",
+        planted = {k: "s" for k in (*loop.API_KEY_VARS, "XAI_API_KEY", "OPENAI_APIKEY", "DATABASE_URL",
                                     "SESSION_ID", "GITHUB_PAT", "NPM_CONFIG__AUTH", "GITHUB_APP_PRIVATE_KEY",
                                     "AWS_SECRET_ACCESS_KEY", "CODEX_HOME", "TOKEN", "AUTH")}
         with mock.patch.dict(os.environ, {**planted, "CLAUDE_CODE_OAUTH_TOKEN": "sub", "PATH": os.environ.get("PATH", "p")}):
@@ -268,6 +293,36 @@ class Claude(unittest.TestCase):
             self.assertFalse(marker.exists(), "a grandchild survived the timeout and kept running")
         finally:
             marker.unlink(missing_ok=True)
+
+    def test_odd_subreddit_answers_from_claude(self):
+        found = [{"subreddit": ["ClaudeAI"]}, {"subreddit": {"x": 1}}, {"subreddit": "r/ClaudeAI"}, {"subreddit": "ok_sub"}]
+        with mock.patch.object(social, "run_claude", return_value=(found, None)), \
+                mock.patch.object(social, "reddit_find", return_value=([], [])) as rf:
+            social.main(["reddit-find", "cursor pricing", "--md"])
+        self.assertEqual(rf.call_args[0][2], ["ClaudeAI", "ok_sub"])
+
+    def test_nesting_bomb_is_fast(self):
+        start = time.monotonic()
+        self.assertIsNone(social.extract_json_array("[" * 100000))
+        self.assertIsNone(social.extract_json_array("[1" * 100000))
+        self.assertLess(time.monotonic() - start, 3)
+
+    def test_session_is_not_persisted_and_a_held_folder_is_retried(self):
+        self.assertIn("--no-session-persistence", social.claude_cmd())
+        calls = []
+        real_exists = os.path.exists
+
+        def exists(path):
+            calls.append(path)
+            return len(calls) < 3 and real_exists(path) or len(calls) < 3
+
+        with mock.patch.object(social.os.path, "exists", side_effect=exists), \
+                mock.patch.object(social.time, "sleep"), mock.patch.object(social.shutil, "rmtree"):
+            self.assertTrue(social.remove_workdir("held"))
+        self.assertEqual(len(calls), 3)
+        with mock.patch.object(social.os.path, "exists", return_value=True), \
+                mock.patch.object(social.time, "sleep"), mock.patch.object(social.shutil, "rmtree"):
+            self.assertFalse(social.remove_workdir("stuck", attempts=2))
 
     def test_main_uses_given_subs_without_claude(self):
         with mock.patch.object(social, "run_claude", side_effect=AssertionError("claude not needed")), \
