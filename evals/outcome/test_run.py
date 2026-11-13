@@ -1,7 +1,10 @@
-"""Unit tests for run.py's contamination scan and judge-reply parsing. No model calls, no files written."""
+"""Outcome parsing, contamination and evidence-preservation regressions. No model calls."""
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run  # noqa: E402
@@ -73,6 +76,44 @@ class ParseScores(unittest.TestCase):
                 scores, error = run.parse_scores(reply, ["A"], 3)
                 self.assertIsNone(scores)
                 self.assertTrue(error)
+
+
+class RunIsolation(unittest.TestCase):
+    def test_run_names_cannot_escape_scratch(self):
+        for value in ("../outside", "/outside", "C:/outside", "", "one/two"):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                run.task_paths("kitty", value)
+
+    def test_separate_runs_do_not_reuse_evidence_paths(self):
+        first, second = run.task_paths("kitty", "first"), run.task_paths("kitty", "second")
+        self.assertNotEqual(first.key, second.key)
+        self.assertNotEqual(first.pack, second.pack)
+        self.assertEqual(first.project, second.project)
+
+    def test_setup_refuses_to_overwrite_previous_results(self):
+        run.SCRATCH.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=run.SCRATCH) as work, mock.patch.object(run, "SCRATCH", Path(work)):
+            paths = run.task_paths("kitty", "preserve")
+            paths.runs.mkdir()
+            paths.key.write_text('{"evidence":"keep"}', encoding="utf-8")
+            args = SimpleNamespace(task="kitty", run_id="preserve", per_variant=1)
+            with self.assertRaises(SystemExit):
+                run.setup(args)
+            self.assertEqual(paths.key.read_text(encoding="utf-8"), '{"evidence":"keep"}')
+
+    def test_judge_refuses_to_overwrite_previous_attempt(self):
+        run.SCRATCH.mkdir(exist_ok=True)
+        with tempfile.TemporaryDirectory(dir=run.SCRATCH) as work, mock.patch.object(run, "SCRATCH", Path(work)):
+            paths = run.task_paths("kitty", "preserve")
+            paths.pack.mkdir(parents=True)
+            previous = paths.runs / "judge-1"
+            previous.mkdir(parents=True)
+            evidence = previous / "events.jsonl"
+            evidence.write_text('{"evidence":"keep"}', encoding="utf-8")
+            args = SimpleNamespace(task="kitty", run_id="preserve", reparse=False, dry_run=False)
+            with self.assertRaises(SystemExit):
+                run.judge(args)
+            self.assertEqual(evidence.read_text(encoding="utf-8"), '{"evidence":"keep"}')
 
 
 if __name__ == "__main__":

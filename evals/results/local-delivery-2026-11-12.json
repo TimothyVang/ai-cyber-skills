@@ -1,0 +1,1435 @@
+{
+  "observed_date": "2026-11-12",
+  "limits": [
+    "Development fixtures, not a general benchmark",
+    "Dollar-valued usage estimates, not subscription invoices",
+    "Concurrent shared-host elapsed times",
+    "Raw receipts retained locally; digests do not substitute for public audit"
+  ],
+  "experiments": [
+    {
+      "run_id": "delivery",
+      "source_sha256": "74912d4ea5f63e42a010a9ee63e5d99807e74e361f8fd78329a2a69b0dde67e7",
+      "candidates": {
+        "1": {
+          "label": "N",
+          "variant": "deep-mode",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 1.9218,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 319,
+          "tool_calls": 44,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "2": {
+          "label": "J",
+          "variant": "plain",
+          "ref": null,
+          "cost": 0.9609,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 231,
+          "tool_calls": 26,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "3": {
+          "label": "H",
+          "variant": "plain",
+          "ref": null,
+          "cost": 0.8739,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 155,
+          "tool_calls": 24,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "4": {
+          "label": "K",
+          "variant": "previous",
+          "ref": "37717c2cec9b4cc8c3750f0b34728506824b5698",
+          "cost": 4.0656,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 3,
+          "wall_seconds": 311,
+          "tool_calls": 82,
+          "process_finished": false,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "5": {
+          "label": "M",
+          "variant": "plain",
+          "ref": null,
+          "cost": 1.0136,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 191,
+          "tool_calls": 28,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "6": {
+          "label": "E",
+          "variant": "deep-mode",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 1.9712,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 315,
+          "tool_calls": 39,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": [
+            "main eval: ../SKILL.md"
+          ]
+        },
+        "7": {
+          "label": "I",
+          "variant": "plain",
+          "ref": null,
+          "cost": 1.0335,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 225,
+          "tool_calls": 26,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "8": {
+          "label": "L",
+          "variant": "previous",
+          "ref": "37717c2cec9b4cc8c3750f0b34728506824b5698",
+          "cost": 4.2023,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 3,
+          "wall_seconds": 323,
+          "tool_calls": 93,
+          "process_finished": false,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "9": {
+          "label": "B",
+          "variant": "previous",
+          "ref": "37717c2cec9b4cc8c3750f0b34728506824b5698",
+          "cost": 4.3422,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 3,
+          "wall_seconds": 333,
+          "tool_calls": 93,
+          "process_finished": false,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "10": {
+          "label": "A",
+          "variant": "deep-mode",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 2.2377,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 392,
+          "tool_calls": 51,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "11": {
+          "label": "O",
+          "variant": "deep-mode",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 2.1051,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 414,
+          "tool_calls": 50,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "12": {
+          "label": "C",
+          "variant": "plain",
+          "ref": null,
+          "cost": 0.9016,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 196,
+          "tool_calls": 28,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "13": {
+          "label": "G",
+          "variant": "previous",
+          "ref": "37717c2cec9b4cc8c3750f0b34728506824b5698",
+          "cost": 4.1426,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 3,
+          "wall_seconds": 306,
+          "tool_calls": 81,
+          "process_finished": false,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "14": {
+          "label": "F",
+          "variant": "deep-mode",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 2.1603,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 358,
+          "tool_calls": 49,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "15": {
+          "label": "D",
+          "variant": "previous",
+          "ref": "37717c2cec9b4cc8c3750f0b34728506824b5698",
+          "cost": 4.0798,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 3,
+          "wall_seconds": 364,
+          "tool_calls": 82,
+          "process_finished": false,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        }
+      }
+    },
+    {
+      "run_id": "delivery-v2",
+      "source_sha256": "68bc078300f1daa3109153911eabc3193c86bd699e9c2e63add998750de47dbf",
+      "candidates": {
+        "1": {
+          "label": "N",
+          "variant": "deep-mode",
+          "ref": "4a3d4a382e002ac10352e872ab036b74805edc12",
+          "cost": 1.4583,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 242,
+          "tool_calls": 32,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "2": {
+          "label": "J",
+          "variant": "plain",
+          "ref": null,
+          "cost": 0.8655,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 170,
+          "tool_calls": 24,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "3": {
+          "label": "H",
+          "variant": "plain",
+          "ref": null,
+          "cost": 1.0084,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 216,
+          "tool_calls": 27,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "4": {
+          "label": "K",
+          "variant": "previous",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 2.2312,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 384,
+          "tool_calls": 49,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "5": {
+          "label": "M",
+          "variant": "plain",
+          "ref": null,
+          "cost": 0.7719,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 144,
+          "tool_calls": 24,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "6": {
+          "label": "E",
+          "variant": "deep-mode",
+          "ref": "4a3d4a382e002ac10352e872ab036b74805edc12",
+          "cost": 1.6552,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 228,
+          "tool_calls": 34,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "7": {
+          "label": "I",
+          "variant": "plain",
+          "ref": null,
+          "cost": 0.9754,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 218,
+          "tool_calls": 29,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "8": {
+          "label": "L",
+          "variant": "previous",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 1.6384,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 240,
+          "tool_calls": 37,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "9": {
+          "label": "B",
+          "variant": "previous",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 1.7438,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 324,
+          "tool_calls": 43,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "10": {
+          "label": "A",
+          "variant": "deep-mode",
+          "ref": "4a3d4a382e002ac10352e872ab036b74805edc12",
+          "cost": 1.3653,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 236,
+          "tool_calls": 34,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "11": {
+          "label": "O",
+          "variant": "deep-mode",
+          "ref": "4a3d4a382e002ac10352e872ab036b74805edc12",
+          "cost": 1.6372,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 248,
+          "tool_calls": 42,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "12": {
+          "label": "C",
+          "variant": "plain",
+          "ref": null,
+          "cost": 0.9923,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 180,
+          "tool_calls": 27,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "13": {
+          "label": "G",
+          "variant": "previous",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 1.8605,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 326,
+          "tool_calls": 45,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "14": {
+          "label": "F",
+          "variant": "deep-mode",
+          "ref": "4a3d4a382e002ac10352e872ab036b74805edc12",
+          "cost": 1.6271,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 260,
+          "tool_calls": 35,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        },
+        "15": {
+          "label": "D",
+          "variant": "previous",
+          "ref": "052a4c5dcde7caa96c7120d55f57291aa7ba9a77",
+          "cost": 1.7376,
+          "models": [
+            "openai-codex/gpt-6-astra"
+          ],
+          "requested_model": "openai-codex/gpt-6-astra",
+          "exit": 0,
+          "wall_seconds": 358,
+          "tool_calls": 44,
+          "process_finished": true,
+          "hidden": {
+            "passed": 19,
+            "total": 19,
+            "exit": 0,
+            "failed": [],
+            "passing": [
+              "exact amounts split a cost unevenly",
+              "the payer can be left out of an exact split",
+              "exact amounts that add up are accepted even where floating point sums drift",
+              "exact amounts that do not add up are refused and nothing is saved",
+              "percentages split a cost",
+              "percentage shares are rounded so they add up to the total",
+              "percentages that add up to 100 are accepted even where floating point sums drift",
+              "percentages that do not add up to 100 are refused and nothing is saved",
+              "names in a split are case-insensitive like everywhere else",
+              "people first named in a split join the tab",
+              "list still works with split expenses on the tab",
+              "--among still splits evenly",
+              "a ledger saved by the current version still works",
+              "settle says who pays whom and changes nothing",
+              "settle evens out a total that does not divide evenly",
+              "settle evens out a rounded percentage split",
+              "settle evens out a busy tab in few payments",
+              "settle on a tab that is already even prints no payments",
+              "after everyone pays what settle says, nothing is left to settle"
+            ]
+          },
+          "git": {
+            "unmerged_branches": [],
+            "extra_worktrees": 0,
+            "uncommitted": true
+          },
+          "outside_paths": []
+        }
+      }
+    }
+  ]
+}

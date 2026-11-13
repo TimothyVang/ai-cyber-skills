@@ -78,6 +78,8 @@ A skill or playbook change is proven by running an agent with it (see "Testing a
 
 Passing tests alone are not proof. Show the behavior.
 
+For the evaluation CLIs, use [.omp/skills/verify-deepmodebot/SKILL.md](.omp/skills/verify-deepmodebot/SKILL.md) and its feature map. Run its doctor before capturing real agent journeys. Preserve failed attempts and distinguish helper tests from actual model execution.
+
 ## 6. Open the PR
 
 Use the PR template. Every PR must have:
@@ -116,14 +118,14 @@ Everything above works by hand: post the claim comment, run the overlap check, f
 - Every playbook and technique has a `Done when` completion criterion.
 - The reference skills (`agent-harnesses`, `secrets-and-auth`, `software-architecture`, `cloud-devsecops`, `domain-rules`, `frontend-ui`) carry `metadata.as-of` in their frontmatter: the date their facts were checked. The check notes any over 120 days old; recheck the facts and restamp.
 - Marketplace and plugin manifests, and `plugins/*/hooks/hooks.json`, are valid JSON and point at real folders.
-- No upstream project or author names outside `LICENSE*` and `NOTICE*` files. The list is `BANNED` in `scripts/check.py`; attribution lives in `NOTICE.md`.
+- No upstream project or author names outside `LICENSE*`, `NOTICE*`, the trending catalog and the attributed `evals/workflows/` comparison inventory. Product-facing copy stays under this project's brand.
 - The README's playbook, principle, and technique counts match the folders, and `docs/llms-full.txt` matches the files it embeds (`python scripts/check.py --fix` rewrites it).
 - In deepmodebot's `SKILL.md`, the rules above `## Routes` fit in 20,000 bytes (about 5,000 tokens), which is what Claude Code keeps of a skill after it compacts a long session. Put lookup tables below that heading and long detail in `references/`.
 - Every Python file parses, and every `test_*.py` folder passes (`assets/contain`, `assets/loop`, `assets/github-app`, `assets/git-guardrails`, `assets/pr-conversation`, `assets/research`, `scripts`). The tests need `git` and `bash`; the omp hook cases also need `bun` and are skipped without it. The check takes about two minutes.
 
 This repo's `.deepmodebot.json` names `python scripts/check.py` as its `check`, so the GitHub App bot runs it on every own PR before the panel, at the head it merges, and on trunk after the merge.
 
-`evals/` holds the routing test and the outcome eval, with their committed results (`evals/README.md`). Rerun them after a change to routing or to how a playbook works, and commit the new results beside the old.
+`evals/` holds routing, delivery, review-quality and workflow-coverage suites (`evals/README.md`). Rerun the affected suite after a behavior change and commit a report with its limits. Preserve the underlying raw artifacts.
 
 ## Keep it rebrandable
 

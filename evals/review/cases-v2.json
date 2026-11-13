@@ -1,0 +1,200 @@
+{
+  "schema": 1,
+  "notice": "Exact source-file Git diffs at pinned upstream repairs with eight context lines. Bug cases reverse each repair; clean controls apply it forward. These constructed regression reviews are not the original bug-introducing PRs. Target source is never executed.",
+  "cases": [
+    {
+      "id": "pytest-indirect-fixture-param-regression",
+      "split": "calibration",
+      "kind": "bug",
+      "project": "pytest",
+      "license": "MIT",
+      "source_url": "https://github.com/pytest-dev/pytest/commit/3a85b5ead0753e50b7689c489235237acfa7b94e",
+      "commit": "3a85b5ead0753e50b7689c489235237acfa7b94e",
+      "context": {
+        "repository": "pytest",
+        "base": "3a85b5ead0753e50b7689c489235237acfa7b94e",
+        "head": "0233593bcfe500f6f89e2801679d1279e1f79b2e"
+      },
+      "cause": "Removing a precedence guard lets fixture-level params collide with an indirect @pytest.mark.parametrize override.",
+      "impact": "Collection fails with duplicate parametrization instead of testing the explicitly selected fixture value.",
+      "expected_bugs": [
+        "indirect-overrides-fixture-params"
+      ],
+      "pair": "pytest-fixture-override",
+      "diff": "diff --git a/src/_pytest/fixtures.py b/src/_pytest/fixtures.py\nindex f4ca2ea..c60823e 100644\n--- a/src/_pytest/fixtures.py\n+++ b/src/_pytest/fixtures.py\n@@ -59,17 +59,16 @@ from _pytest.deprecated import check_ispytest\n from _pytest.deprecated import CLASS_FIXTURE_INSTANCE_METHOD\n from _pytest.deprecated import FIXTURE_BASEID_DEPRECATED\n from _pytest.deprecated import FIXTURE_GETFIXTUREVALUE_DURING_TEARDOWN\n from _pytest.deprecated import FIXTURE_NODEID_DEPRECATED\n from _pytest.deprecated import FIXTUREDEF_HAS_LOCATION_DEPRECATED\n from _pytest.deprecated import PARSEFACTORIES_NODEID_DEPRECATED\n from _pytest.deprecated import YIELD_FIXTURE\n from _pytest.main import Session\n-from _pytest.mark import Mark\n from _pytest.mark import ParameterSet\n from _pytest.mark.structures import MarkDecorator\n from _pytest.outcomes import fail\n from _pytest.outcomes import skip\n from _pytest.outcomes import TEST_OUTCOME\n from _pytest.pathlib import absolutepath\n from _pytest.pathlib import bestrelpath\n from _pytest.scope import HIGH_SCOPES\n@@ -1894,33 +1893,20 @@ class FixtureManager:\n             key=sort_by_scope,\n             reverse=True,\n         )\n \n         return fixturenames_closure, arg2fixturedefs\n \n     def pytest_generate_tests(self, metafunc: Metafunc) -> None:\n         \"\"\"Generate new tests based on parametrized fixtures used by the given metafunc\"\"\"\n-\n-        def get_parametrize_mark_argnames(mark: Mark) -> Sequence[str]:\n-            args, _ = ParameterSet._parse_parametrize_args(*mark.args, **mark.kwargs)\n-            return args\n-\n         for argname in metafunc.fixturenames:\n             # Get the FixtureDefs for the argname.\n             fixture_defs = metafunc._arg2fixturedefs.get(argname, ())\n \n-            # If the test itself parametrizes using this argname, give it\n-            # precedence.\n-            if any(\n-                argname in get_parametrize_mark_argnames(mark)\n-                for mark in metafunc.definition.iter_markers(\"parametrize\")\n-            ):\n-                continue\n-\n             # In the common case we only look at the fixture def with the\n             # closest scope (last in the list). But if the fixture overrides\n             # another fixture, while requesting the super fixture, keep going\n             # in case the super fixture is parametrized (#1953).\n             for fixturedef in reversed(fixture_defs):\n                 # Fixture is parametrized, apply it and stop.\n                 if fixturedef.params is not None:\n                     metafunc.parametrize(\n",
+      "source_file": "src/_pytest/fixtures.py",
+      "input_direction": "reverse-repair"
+    },
+    {
+      "id": "pytest-indirect-fixture-param-clean",
+      "split": "calibration",
+      "kind": "clean",
+      "project": "pytest",
+      "license": "MIT",
+      "source_url": "https://github.com/pytest-dev/pytest/pull/14597",
+      "commit": "3a85b5ead0753e50b7689c489235237acfa7b94e",
+      "context": {
+        "repository": "pytest",
+        "base": "0233593bcfe500f6f89e2801679d1279e1f79b2e",
+        "head": "3a85b5ead0753e50b7689c489235237acfa7b94e"
+      },
+      "cause": "Restores direct parametrization precedence and adds a regression test.",
+      "impact": "Indirect test parameters override fixture defaults without duplicate parametrization.",
+      "expected_bugs": [],
+      "pair": "pytest-fixture-override",
+      "diff": "diff --git a/src/_pytest/fixtures.py b/src/_pytest/fixtures.py\nindex c60823e..f4ca2ea 100644\n--- a/src/_pytest/fixtures.py\n+++ b/src/_pytest/fixtures.py\n@@ -59,16 +59,17 @@ from _pytest.deprecated import check_ispytest\n from _pytest.deprecated import CLASS_FIXTURE_INSTANCE_METHOD\n from _pytest.deprecated import FIXTURE_BASEID_DEPRECATED\n from _pytest.deprecated import FIXTURE_GETFIXTUREVALUE_DURING_TEARDOWN\n from _pytest.deprecated import FIXTURE_NODEID_DEPRECATED\n from _pytest.deprecated import FIXTUREDEF_HAS_LOCATION_DEPRECATED\n from _pytest.deprecated import PARSEFACTORIES_NODEID_DEPRECATED\n from _pytest.deprecated import YIELD_FIXTURE\n from _pytest.main import Session\n+from _pytest.mark import Mark\n from _pytest.mark import ParameterSet\n from _pytest.mark.structures import MarkDecorator\n from _pytest.outcomes import fail\n from _pytest.outcomes import skip\n from _pytest.outcomes import TEST_OUTCOME\n from _pytest.pathlib import absolutepath\n from _pytest.pathlib import bestrelpath\n from _pytest.scope import HIGH_SCOPES\n@@ -1893,20 +1894,33 @@ class FixtureManager:\n             key=sort_by_scope,\n             reverse=True,\n         )\n \n         return fixturenames_closure, arg2fixturedefs\n \n     def pytest_generate_tests(self, metafunc: Metafunc) -> None:\n         \"\"\"Generate new tests based on parametrized fixtures used by the given metafunc\"\"\"\n+\n+        def get_parametrize_mark_argnames(mark: Mark) -> Sequence[str]:\n+            args, _ = ParameterSet._parse_parametrize_args(*mark.args, **mark.kwargs)\n+            return args\n+\n         for argname in metafunc.fixturenames:\n             # Get the FixtureDefs for the argname.\n             fixture_defs = metafunc._arg2fixturedefs.get(argname, ())\n \n+            # If the test itself parametrizes using this argname, give it\n+            # precedence.\n+            if any(\n+                argname in get_parametrize_mark_argnames(mark)\n+                for mark in metafunc.definition.iter_markers(\"parametrize\")\n+            ):\n+                continue\n+\n             # In the common case we only look at the fixture def with the\n             # closest scope (last in the list). But if the fixture overrides\n             # another fixture, while requesting the super fixture, keep going\n             # in case the super fixture is parametrized (#1953).\n             for fixturedef in reversed(fixture_defs):\n                 # Fixture is parametrized, apply it and stop.\n                 if fixturedef.params is not None:\n                     metafunc.parametrize(\n",
+      "source_file": "src/_pytest/fixtures.py",
+      "input_direction": "forward-repair"
+    },
+    {
+      "id": "requests-empty-body-framing",
+      "split": "calibration",
+      "kind": "bug",
+      "project": "requests",
+      "license": "Apache-2.0",
+      "source_url": "https://github.com/psf/requests/pull/7217",
+      "commit": "818d92764bd7035a0450d7b4e52ec9fc6d07abb6",
+      "context": {
+        "repository": "requests",
+        "base": "818d92764bd7035a0450d7b4e52ec9fc6d07abb6",
+        "head": "da9113c0466850a425e554630a732ec1f7d045fc"
+      },
+      "issue_url": "https://github.com/psf/requests/issues/6122",
+      "cause": "Falsy length 0 is treated as unknown, leaving a known-empty body without Content-Length.",
+      "impact": "The HTTP adapter may frame the empty request as chunked and send a terminating chunk that servers can parse as a second malformed request.",
+      "expected_bugs": [
+        "known-empty-body-misframed",
+        "conflicting-transfer-encoding-content-length"
+      ],
+      "pair": "requests-empty-body",
+      "diff": "diff --git a/src/requests/models.py b/src/requests/models.py\nindex 14e8740..2d043f5 100644\n--- a/src/requests/models.py\n+++ b/src/requests/models.py\n@@ -570,23 +570,19 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):\n                 self.headers[\"Content-Type\"] = content_type\n \n         self.body = body\n \n     def prepare_content_length(self, body):\n         \"\"\"Prepare Content-Length header based on request method and body\"\"\"\n         if body is not None:\n             length = super_len(body)\n-            if length is not None and \"Transfer-Encoding\" not in self.headers:\n-                # Set Content-Length for any known length, including 0.\n-                # A length of 0 is valid (e.g. data={'foo': None} encodes\n-                # to an empty body) and must be sent to avoid falling back\n-                # to Transfer-Encoding: chunked, which can cause servers\n-                # to misinterpret the terminating chunk as a new request.\n-                # Skip if Transfer-Encoding is already set (e.g. for streams).\n+            if length:\n+                # If length exists, set it. Otherwise, we fallback\n+                # to Transfer-Encoding: chunked.\n                 self.headers[\"Content-Length\"] = builtin_str(length)\n         elif (\n             self.method not in (\"GET\", \"HEAD\")\n             and self.headers.get(\"Content-Length\") is None\n         ):\n             # Set Content-Length to 0 for methods that can have a body\n             # but don't provide one. (i.e. not GET or HEAD)\n             self.headers[\"Content-Length\"] = \"0\"\n",
+      "source_file": "src/requests/models.py",
+      "input_direction": "reverse-repair"
+    },
+    {
+      "id": "requests-empty-body-framing-clean",
+      "split": "calibration",
+      "kind": "bug",
+      "project": "requests",
+      "license": "Apache-2.0",
+      "source_url": "https://github.com/psf/requests/pull/7217",
+      "commit": "818d92764bd7035a0450d7b4e52ec9fc6d07abb6",
+      "context": {
+        "repository": "requests",
+        "base": "da9113c0466850a425e554630a732ec1f7d045fc",
+        "head": "818d92764bd7035a0450d7b4e52ec9fc6d07abb6"
+      },
+      "cause": "Sets Content-Length for known body lengths including zero, except when Transfer-Encoding is already declared.",
+      "impact": "Empty payloads are framed with Content-Length: 0 while explicitly chunked streams retain transfer encoding.",
+      "expected_bugs": [
+        "unknown-length-body-declared-empty"
+      ],
+      "pair": "requests-empty-body",
+      "diff": "diff --git a/src/requests/models.py b/src/requests/models.py\nindex 2d043f5..14e8740 100644\n--- a/src/requests/models.py\n+++ b/src/requests/models.py\n@@ -570,19 +570,23 @@ class PreparedRequest(RequestEncodingMixin, RequestHooksMixin):\n                 self.headers[\"Content-Type\"] = content_type\n \n         self.body = body\n \n     def prepare_content_length(self, body):\n         \"\"\"Prepare Content-Length header based on request method and body\"\"\"\n         if body is not None:\n             length = super_len(body)\n-            if length:\n-                # If length exists, set it. Otherwise, we fallback\n-                # to Transfer-Encoding: chunked.\n+            if length is not None and \"Transfer-Encoding\" not in self.headers:\n+                # Set Content-Length for any known length, including 0.\n+                # A length of 0 is valid (e.g. data={'foo': None} encodes\n+                # to an empty body) and must be sent to avoid falling back\n+                # to Transfer-Encoding: chunked, which can cause servers\n+                # to misinterpret the terminating chunk as a new request.\n+                # Skip if Transfer-Encoding is already set (e.g. for streams).\n                 self.headers[\"Content-Length\"] = builtin_str(length)\n         elif (\n             self.method not in (\"GET\", \"HEAD\")\n             and self.headers.get(\"Content-Length\") is None\n         ):\n             # Set Content-Length to 0 for methods that can have a body\n             # but don't provide one. (i.e. not GET or HEAD)\n             self.headers[\"Content-Length\"] = \"0\"\n",
+      "source_file": "src/requests/models.py",
+      "input_direction": "forward-repair"
+    },
+    {
+      "id": "requests-stringio-byte-length",
+      "split": "calibration",
+      "kind": "bug",
+      "project": "requests",
+      "license": "Apache-2.0",
+      "source_url": "https://github.com/psf/requests/pull/7201",
+      "commit": "0406663e1b802bb839aca40e9f6ea89d0c9255ef",
+      "context": {
+        "repository": "requests",
+        "base": "0406663e1b802bb839aca40e9f6ea89d0c9255ef",
+        "head": "0c2bbe73982a70623fb81bf16b2507ea0ca80b99"
+      },
+      "issue_url": "https://github.com/psf/requests/issues/6917",
+      "cause": "StringIO.tell() reports character position, not UTF-8 byte offset.",
+      "impact": "Content-Length is too short for multi-byte text and can violate HTTP framing expectations; partial reads also require measuring only remaining text and restoring position.",
+      "expected_bugs": [
+        "stringio-content-length-counts-characters"
+      ],
+      "pair": "requests-stringio-length",
+      "diff": "diff --git a/src/requests/utils.py b/src/requests/utils.py\nindex 5d5035a..4d3039b 100644\n--- a/src/requests/utils.py\n+++ b/src/requests/utils.py\n@@ -181,40 +181,23 @@ def super_len(o):\n             # instance, we don't know what the length is, so set it to zero and\n             # let requests chunk it instead.\n             if total_length is not None:\n                 current_position = total_length\n         else:\n             if hasattr(o, \"seek\") and total_length is None:\n                 # StringIO and BytesIO have seek but no usable fileno\n                 try:\n-                    if isinstance(o, io.StringIO):\n-                        # StringIO.tell() returns the character\n-                        # position, not the byte offset.  Read the\n-                        # remaining text and encode it to measure the\n-                        # true byte length for Content-Length.\n-                        start = current_position or 0\n-                        o.seek(start)\n-                        total_length = len(o.read().encode(\"utf-8\"))\n-\n-                        # Reset current_position so the returned value\n-                        # is just total_length (the remaining bytes).\n-                        current_position = 0\n-\n-                        # seek back to original position to support\n-                        # partially read file-like objects\n-                        o.seek(start)\n-                    else:\n-                        # seek to end of file\n-                        o.seek(0, 2)\n-                        total_length = o.tell()\n-\n-                        # seek back to current position to support\n-                        # partially read file-like objects\n-                        o.seek(current_position or 0)\n+                    # seek to end of file\n+                    o.seek(0, 2)\n+                    total_length = o.tell()\n+\n+                    # seek back to current position to support\n+                    # partially read file-like objects\n+                    o.seek(current_position or 0)\n                 except OSError:\n                     total_length = 0\n \n     if total_length is None:\n         total_length = 0\n \n     return max(0, total_length - current_position)\n \n",
+      "source_file": "src/requests/utils.py",
+      "input_direction": "reverse-repair"
+    },
+    {
+      "id": "requests-stringio-byte-length-clean",
+      "split": "calibration",
+      "kind": "bug",
+      "project": "requests",
+      "license": "Apache-2.0",
+      "source_url": "https://github.com/psf/requests/pull/7201",
+      "commit": "0406663e1b802bb839aca40e9f6ea89d0c9255ef",
+      "context": {
+        "repository": "requests",
+        "base": "0c2bbe73982a70623fb81bf16b2507ea0ca80b99",
+        "head": "0406663e1b802bb839aca40e9f6ea89d0c9255ef"
+      },
+      "cause": "Measures remaining StringIO text after UTF-8 encoding and restores the original position.",
+      "impact": "The returned length is the remaining byte count, not character count.",
+      "expected_bugs": [
+        "stringio-legacy-transport-byte-length"
+      ],
+      "pair": "requests-stringio-length",
+      "diff": "diff --git a/src/requests/utils.py b/src/requests/utils.py\nindex 4d3039b..5d5035a 100644\n--- a/src/requests/utils.py\n+++ b/src/requests/utils.py\n@@ -181,23 +181,40 @@ def super_len(o):\n             # instance, we don't know what the length is, so set it to zero and\n             # let requests chunk it instead.\n             if total_length is not None:\n                 current_position = total_length\n         else:\n             if hasattr(o, \"seek\") and total_length is None:\n                 # StringIO and BytesIO have seek but no usable fileno\n                 try:\n-                    # seek to end of file\n-                    o.seek(0, 2)\n-                    total_length = o.tell()\n-\n-                    # seek back to current position to support\n-                    # partially read file-like objects\n-                    o.seek(current_position or 0)\n+                    if isinstance(o, io.StringIO):\n+                        # StringIO.tell() returns the character\n+                        # position, not the byte offset.  Read the\n+                        # remaining text and encode it to measure the\n+                        # true byte length for Content-Length.\n+                        start = current_position or 0\n+                        o.seek(start)\n+                        total_length = len(o.read().encode(\"utf-8\"))\n+\n+                        # Reset current_position so the returned value\n+                        # is just total_length (the remaining bytes).\n+                        current_position = 0\n+\n+                        # seek back to original position to support\n+                        # partially read file-like objects\n+                        o.seek(start)\n+                    else:\n+                        # seek to end of file\n+                        o.seek(0, 2)\n+                        total_length = o.tell()\n+\n+                        # seek back to current position to support\n+                        # partially read file-like objects\n+                        o.seek(current_position or 0)\n                 except OSError:\n                     total_length = 0\n \n     if total_length is None:\n         total_length = 0\n \n     return max(0, total_length - current_position)\n \n",
+      "source_file": "src/requests/utils.py",
+      "input_direction": "forward-repair"
+    },
+    {
+      "id": "django-mysql-alias-hash-sql-injection",
+      "split": "holdout",
+      "kind": "bug",
+      "project": "django",
+      "license": "BSD-3-Clause",
+      "source_url": "https://github.com/django/django/commit/41b43c74bda19753c757036673ea9db74acf494a",
+      "commit": "41b43c74bda19753c757036673ea9db74acf494a",
+      "context": {
+        "repository": "django",
+        "base": "41b43c74bda19753c757036673ea9db74acf494a",
+        "head": "6c82b0bc91fc650891b0b411ac4a5a86cf0cf3e8"
+      },
+      "issue_url": "https://www.djangoproject.com/weblog/2025/sep/03/security-releases/",
+      "cause": "The forbidden-column-alias pattern omits #, a comment delimiter for MySQL/MariaDB.",
+      "impact": "A crafted alias passed via queryset keyword arguments can inject SQL on MySQL/MariaDB; Django identifies this as CVE-2025-59681.",
+      "expected_bugs": [
+        "mysql-hash-comment-alias-injection"
+      ],
+      "pair": "django-alias-injection",
+      "diff": "diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py\nindex 84950d4..39ecab2 100644\n--- a/django/db/models/sql/query.py\n+++ b/django/db/models/sql/query.py\n@@ -46,22 +46,22 @@ from django.db.models.sql.where import AND, OR, ExtraWhere, NothingNode, WhereNo\n from django.utils.deprecation import RemovedInDjango70Warning, django_file_prefixes\n from django.utils.functional import cached_property\n from django.utils.regex_helper import _lazy_re_compile\n from django.utils.tree import Node\n \n __all__ = [\"Query\", \"RawQuery\"]\n \n # RemovedInDjango70Warning: When the deprecation ends, replace with:\n-# Quotation marks ('\"`[]), whitespace characters, semicolons, percent signs,\n-# hashes, or inline SQL comments are forbidden in column aliases.\n-# FORBIDDEN_ALIAS_PATTERN = _lazy_re_compile(r\"['`\\\"\\]\\[;\\s]|%|#|--|/\\*|\\*/\")\n-# Quotation marks ('\"`[]), whitespace characters, semicolons, hashes, or inline\n+# Quotation marks ('\"`[]), whitespace characters, semicolons, percent signs\n+# or inline SQL comments are forbidden in column aliases.\n+# FORBIDDEN_ALIAS_PATTERN = _lazy_re_compile(r\"['`\\\"\\]\\[;\\s]|%|--|/\\*|\\*/\")\n+# Quotation marks ('\"`[]), whitespace characters, semicolons, or inline\n # SQL comments are forbidden in column aliases.\n-FORBIDDEN_ALIAS_PATTERN = _lazy_re_compile(r\"['`\\\"\\]\\[;\\s]|#|--|/\\*|\\*/\")\n+FORBIDDEN_ALIAS_PATTERN = _lazy_re_compile(r\"['`\\\"\\]\\[;\\s]|--|/\\*|\\*/\")\n \n # Inspired from\n # https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\n EXPLAIN_OPTIONS_PATTERN = _lazy_re_compile(r\"[\\w-]+\")\n \n \n def get_field_names_from_opts(opts):\n     if opts is None:\n@@ -1217,22 +1217,21 @@ class Query(BaseExpression):\n         if \"%\" in alias:\n             warnings.warn(\n                 \"Using percent signs in a column alias is deprecated.\",\n                 category=RemovedInDjango70Warning,\n                 skip_file_prefixes=django_file_prefixes(),\n             )\n         if FORBIDDEN_ALIAS_PATTERN.search(alias):\n             raise ValueError(\n-                \"Column aliases cannot contain whitespace characters, hashes, \"\n+                \"Column aliases cannot contain whitespace characters, quotation marks, \"\n                 # RemovedInDjango70Warning: When the deprecation ends, replace\n                 # with:\n-                # \"quotation marks, semicolons, percent signs, or SQL \"\n-                # \"comments.\"\n-                \"quotation marks, semicolons, or SQL comments.\"\n+                # \"semicolons, percent signs, or SQL comments.\"\n+                \"semicolons, or SQL comments.\"\n             )\n \n     def add_annotation(self, annotation, alias, select=True):\n         \"\"\"Add a single annotation expression to the Query.\"\"\"\n         self.check_alias(alias)\n         annotation = annotation.resolve_expression(self, allow_joins=True, reuse=None)\n         if select:\n             self.append_annotation_mask([alias])\n",
+      "source_file": "django/db/models/sql/query.py",
+      "input_direction": "reverse-repair"
+    },
+    {
+      "id": "django-mysql-alias-hash-sql-injection-clean",
+      "split": "holdout",
+      "kind": "clean",
+      "project": "django",
+      "license": "BSD-3-Clause",
+      "source_url": "https://github.com/django/django/commit/41b43c74bda19753c757036673ea9db74acf494a",
+      "commit": "41b43c74bda19753c757036673ea9db74acf494a",
+      "context": {
+        "repository": "django",
+        "base": "6c82b0bc91fc650891b0b411ac4a5a86cf0cf3e8",
+        "head": "41b43c74bda19753c757036673ea9db74acf494a"
+      },
+      "cause": "Adds the MySQL/MariaDB # comment delimiter to forbidden alias characters.",
+      "impact": "The crafted comment marker is rejected before reaching SQL compilation.",
+      "expected_bugs": [],
+      "pair": "django-alias-injection",
+      "diff": "diff --git a/django/db/models/sql/query.py b/django/db/models/sql/query.py\nindex 39ecab2..84950d4 100644\n--- a/django/db/models/sql/query.py\n+++ b/django/db/models/sql/query.py\n@@ -46,22 +46,22 @@ from django.db.models.sql.where import AND, OR, ExtraWhere, NothingNode, WhereNo\n from django.utils.deprecation import RemovedInDjango70Warning, django_file_prefixes\n from django.utils.functional import cached_property\n from django.utils.regex_helper import _lazy_re_compile\n from django.utils.tree import Node\n \n __all__ = [\"Query\", \"RawQuery\"]\n \n # RemovedInDjango70Warning: When the deprecation ends, replace with:\n-# Quotation marks ('\"`[]), whitespace characters, semicolons, percent signs\n-# or inline SQL comments are forbidden in column aliases.\n-# FORBIDDEN_ALIAS_PATTERN = _lazy_re_compile(r\"['`\\\"\\]\\[;\\s]|%|--|/\\*|\\*/\")\n-# Quotation marks ('\"`[]), whitespace characters, semicolons, or inline\n+# Quotation marks ('\"`[]), whitespace characters, semicolons, percent signs,\n+# hashes, or inline SQL comments are forbidden in column aliases.\n+# FORBIDDEN_ALIAS_PATTERN = _lazy_re_compile(r\"['`\\\"\\]\\[;\\s]|%|#|--|/\\*|\\*/\")\n+# Quotation marks ('\"`[]), whitespace characters, semicolons, hashes, or inline\n # SQL comments are forbidden in column aliases.\n-FORBIDDEN_ALIAS_PATTERN = _lazy_re_compile(r\"['`\\\"\\]\\[;\\s]|--|/\\*|\\*/\")\n+FORBIDDEN_ALIAS_PATTERN = _lazy_re_compile(r\"['`\\\"\\]\\[;\\s]|#|--|/\\*|\\*/\")\n \n # Inspired from\n # https://www.postgresql.org/docs/current/sql-syntax-lexical.html#SQL-SYNTAX-IDENTIFIERS\n EXPLAIN_OPTIONS_PATTERN = _lazy_re_compile(r\"[\\w-]+\")\n \n \n def get_field_names_from_opts(opts):\n     if opts is None:\n@@ -1217,21 +1217,22 @@ class Query(BaseExpression):\n         if \"%\" in alias:\n             warnings.warn(\n                 \"Using percent signs in a column alias is deprecated.\",\n                 category=RemovedInDjango70Warning,\n                 skip_file_prefixes=django_file_prefixes(),\n             )\n         if FORBIDDEN_ALIAS_PATTERN.search(alias):\n             raise ValueError(\n-                \"Column aliases cannot contain whitespace characters, quotation marks, \"\n+                \"Column aliases cannot contain whitespace characters, hashes, \"\n                 # RemovedInDjango70Warning: When the deprecation ends, replace\n                 # with:\n-                # \"semicolons, percent signs, or SQL comments.\"\n-                \"semicolons, or SQL comments.\"\n+                # \"quotation marks, semicolons, percent signs, or SQL \"\n+                # \"comments.\"\n+                \"quotation marks, semicolons, or SQL comments.\"\n             )\n \n     def add_annotation(self, annotation, alias, select=True):\n         \"\"\"Add a single annotation expression to the Query.\"\"\"\n         self.check_alias(alias)\n         annotation = annotation.resolve_expression(self, allow_joins=True, reuse=None)\n         if select:\n             self.append_annotation_mask([alias])\n",
+      "source_file": "django/db/models/sql/query.py",
+      "input_direction": "forward-repair"
+    }
+  ],
+  "label_revision": {
+    "previous_corpus_sha256": "22a69865842836c4c25478a925191ef6c5e242d988d4c62ffc659149fe01ca6a",
+    "reason": "Calibration review discovered three additional source-supported regressions. Historical IDs ending clean are retained for provenance, not clean labels. Cases now contain six bug inputs and two controls. Same source patches and prompt, no holdout-label change.",
+    "evidence": "../../.scratch/evidence/review-label-probes.json",
+    "legacy_transport_source": "https://raw.githubusercontent.com/urllib3/urllib3/1.26.20/src/urllib3/connection.py",
+    "stdlib_inherited_readable_bytes_hex": [
+      "e9"
+    ],
+    "limitation": "Source-function and inherited stdlib transport proof, not a full Requests network exchange."
+  }
+}

@@ -1,9 +1,9 @@
 # Evals
 
-Two evals check whether the deepmodebot skill does what it claims.
-They live at the repo root, not in the plugin, so installs never ship them.
-Every run writes its results to `evals/results/`, and those files are committed.
-A later change to the skill reruns the same eval, and the new file sits next to the old one for comparison.
+Four suites distinguish routing, delivery outcomes, review quality and workflow coverage.
+They live at the repo root, not in the installed plugin.
+Raw runs stay in contained `.scratch/` directories; reviewed publication reports live in `evals/results/`.
+Retain the raw evidence behind a report. Never replace a failed attempt with a rerun under the same ID.
 
 ## Routing
 
@@ -37,6 +37,23 @@ Measures whether installing deepmodebot changes how well an agent does a real co
 It follows the Eval playbook (`plugins/deepmodebot/skills/deepmodebot/references/playbooks/eval.md`) and its blinding gates.
 Each task in `outcome/tasks/` is a small project, a request in a user's words, a rubric, and hidden checks the candidates never see.
 `billsplit` is a one-file bug fix. `kitty` is a medium feature with rounding and integration traps.
-The hidden checks passed are the primary score. Two blinded judges from different model families score the rubric as a second view.
+Hidden checks are the primary score. Two explicitly selected, blinded judges add a second view. Record whether they come from different model families; two models from one family are not cross-family validation.
 Design, tasks, and how to rerun are in `outcome/README.md`.
 Each run writes a results file in `results/` with notes per candidate, both judges' verdicts, and a recommendation.
+
+## Review quality
+
+[review/README.md](review/README.md) defines historical bug cases, clean controls, a split held apart before execution and explicit finding adjudication.
+It compares the diff-only and source-context paths with the same model and settings.
+Both paths use production `pr_agent_local.SYSTEM` and its `flatten` user-message envelope.
+Each run records `system_prompt_sha256`; retain the saved prompts and command metadata to identify the transport actually tested.
+Earlier runs without this envelope are not measurements of the repaired transport.
+Public historical patches may have appeared in training. Results do not establish superiority over another review product without a matched run of that product.
+
+## Workflow coverage
+
+[workflows/README.md](workflows/README.md) maps pinned upstream inventories to local routes, explicit gaps and captured journeys.
+Representative planning, review, architecture and fresh-session handoff runs produce inspectable artifacts.
+`collect` reruns trusted artifact checks in a fresh `collected-checks-*` directory and binds their evidence to the captured scenario.
+It does not accept previously supplied success flags as proof. A complete, evidence-backed assessment is still required.
+A mapped route is not a passed workflow; a passed example is not complete feature parity.

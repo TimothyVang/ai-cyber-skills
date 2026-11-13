@@ -2,6 +2,8 @@
 
 Use when: ending any playbook that lands code. Opening the PR is part of the work, not a step to ask about (SKILL.md Autonomy).
 
+First apply SKILL.md's delivery-target rule. A local S/M edit ends with verified changes in the starting working tree, a diff review and a proof report, not this publishing procedure. Leave it uncommitted. A request to open a PR or land code always takes the applicable lane below.
+
 ## Size S lane
 
 A size S change takes a shorter lane to merge. The diff decides the size, not the author's opinion.
@@ -9,7 +11,7 @@ A size S change takes a shorter lane to merge. The diff decides the size, not th
 A **local S fix** never takes this lane. It is an S change for a repo with no remote, or one the user said they will review.
 "Open a PR, I'll review it" is not one: a PR means a push, so it takes this lane.
 Restate it in one line, fix it, add a test that fails without the fix when the change has behavior, and prove it once on the real artifact.
-It lands on no branch. Leave it uncommitted, or commit it on a fresh non-default branch, which still lands nowhere. Never commit it to the default branch, push it, or merge it, so it needs no panel.
+It lands on no branch. Leave it uncommitted in the starting working tree. Never commit it to the default branch, push it, or merge it, so it needs no panel.
 It reads no other reference file, spawns no subagent, keeps no decision log, and creates no verify skill.
 Done when the test fails on the old code and passes on the fix (or the change has no behavior to test), and the reply shows one real run's command and output.
 

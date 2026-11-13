@@ -1,5 +1,5 @@
 ---
-description: "One command for everything: fix, build, review a PR, contribute to a project, set up a project for helpers, start a new app, run a software factory, drive a kanban board, chart a big effort, or grill a plan. deepmodebot routes it, sizes it, proves it, lands it on a panel pass (one verifier for a small change, three otherwise; none for a small local fix), and reports."
+description: "One command for fixing, building, reviewing, planning and shipping. deepmodebot routes and sizes the task, proves it on the real artifact, and reports. Ordinary local work stays uncommitted for review; publication uses an exact-head verifier gate."
 argument-hint: "<anything: a task, a PR number, 'what can I work on', 'start a new app that ...', 'drive the board', 'grill me on ...'>"
 ---
 
@@ -7,10 +7,10 @@ Read `skill://deepmodebot` and follow its **Route** section first: look around, 
 
 Keep every write inside the project root, per deepmodebot's **Contain the work** section: scratch and temp files in `.scratch/`, worktrees in `.worktrees/`, never system temp or folders outside the repo. No repo yet → create a named one first.
 
-For a large or medium task, read the matched playbook's file and copy its steps into your todo list. For a small one, take the fast path. Read only the principle and technique files you apply. A small fix with no remote, or one I said I'll review, lands on no branch: no commit to the default branch, no push, no merge. Fix it, add a test that fails without the fix when it has behavior, prove it with one real run, then report. It needs no panel. "Open a PR, I'll review it" means a push, so it takes the panel.
+Read the matched playbook for a medium or large task; small tasks use the fast path. Follow its local-delivery or publication path and read only references that change the work. With no remote or an explicit request for local review, ordinary small and medium work stays uncommitted in the starting tree. Prove it through the real app or CLI and review the diff. Risky work keeps the full checks. "Open a PR, I'll review it" is publication and needs the panel.
 
-If the repo has a verify skill (`.omp/skills/verify-<app>/`, `.claude/skills/verify-<app>/`, or `.agents/skills/verify-<app>/`), use it for proof. If it has none, the task is medium or large, it changes user-visible behavior, and the app runs locally, I pre-authorize running `skill://create-verification-skill` first; say you did.
+Reuse an existing project verification skill when present. Otherwise exercise the real app or CLI directly and retain its output. Create a reusable verification skill only when I ask for one or repeated journeys justify it, not as a prerequisite for an ordinary local task. Do not replace runtime proof with unit tests alone.
 
-Decide and act without asking: commits, pushes, PRs, issues, board cards, and merges are yours; merge only on a panel pass at the exact head: three verifiers, or one for a size S change. Ask me once, at the end, only for the hard stops in deepmodebot's Autonomy section (deploys, deleting what you didn't create, history rewrites on shared branches, messages outside the repo, money, secrets). Claiming an issue in someone else's project is the one thing you ask about before starting.
+Decide and act without asking within the requested delivery target. Publication includes commits, pushes, PRs and merges on an exact-head panel pass. Local delivery does not silently become publication. Ask once at the end only for deepmodebot's hard stops. Claiming an issue in someone else's project still needs permission before starting.
 
 Request: $ARGUMENTS

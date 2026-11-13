@@ -1,0 +1,4 @@
+{
+  "notes.txt": "My unfinished request: cancel(bookings, booking_id, owner) receives a dictionary keyed by booking ID. Each value is a mutable record with owner and Boolean active fields. It should mark an active booking inactive only for its owner and return True. Wrong owner, absent ID or already inactive returns False without mutation. Keep my unrelated display_title change with the Tool library prefix. I have not run tests. Leave my note untouched.\n",
+  "reservations.py": "def display_title(tool):\n    return \"Tool library: \" + tool\n\ndef cancel(bookings, booking_id, owner):\n    return False\n"
+}
