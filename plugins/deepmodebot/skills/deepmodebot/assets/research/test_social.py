@@ -80,6 +80,10 @@ class Parsing(unittest.TestCase):
         asked = social.topic_words("What does this Cursor pricing mean?")
         self.assertEqual(asked, {"cursor", "pricing", "mean"})
         self.assertEqual(social.title_match("Cursor pricing: what does it mean", asked), 1.0)
+        gpt5 = social.topic_words("GPT-5 pricing")
+        self.assertEqual(gpt5, {"gpt", "5", "pricing"})
+        self.assertLess(social.title_match("GPT-4 pricing", gpt5), 1.0)
+        self.assertEqual(social.title_match("GPT-5 pricing is out", gpt5), 1.0)
 
 
 class Labels(unittest.TestCase):
@@ -119,6 +123,18 @@ class Labels(unittest.TestCase):
         self.assertEqual(item["label"], "topic unconfirmed: title has 1 of 2 topic words")
         with self.assertRaises(SystemExit):
             social.main(["reddit-thread", "https://www.reddit.com/r/cursor/comments/1xti4sx/"])
+
+    def test_rechecks_default_to_the_find_window(self):
+        old = {"id": "1xti4sx", "subreddit": "cursor", "title": "Cursor pricing", "created_utc": time.time() - 100 * 86400}
+        runs = [(["reddit-thread", "https://www.reddit.com/r/cursor/comments/1xti4sx/", "--topic", "Cursor pricing"],
+                 mock.patch.object(social, "get_json", return_value=({"data": [old]}, None))),
+                (["x-post", f"https://x.com/someone/status/{REAL_X_ID}"],
+                 mock.patch.object(social, "get_json", side_effect=AssertionError("no fetch expected")))]
+        for argv, archive in runs:
+            with archive, mock.patch.object(social, "emit") as emit:
+                social.main(argv)
+            [item] = emit.call_args[0][0]
+            self.assertTrue(item["label"].startswith("outside window"), (argv, item))
 
     def test_x_labels_without_network(self):
         future_id = (int(dt.datetime(2030, 1, 1, tzinfo=UTC).timestamp() * 1000) - social.SNOWFLAKE_EPOCH_MS) << 22

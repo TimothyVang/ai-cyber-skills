@@ -12,9 +12,10 @@ every topic word, whichever command found it.
 
 Usage:
   python social.py reddit-find "<topic>" [--days 30] [--subs a,b] [--comments 5]
-  python social.py reddit-thread <url>... --topic "<topic>" [--comments 8]
+  python social.py reddit-thread <url>... --topic "<topic>" [--days 30] [--comments 8]
   python social.py x-find "<topic>" [--days 30]
-  python social.py x-post <url>...
+  python social.py x-post <url>... [--days 30]
+Every command's window defaults to the last 30 days; pass the brief's window to all of them.
 Add --md for a Markdown evidence list instead of JSON.
 
 The approach is adapted from an MIT-licensed project credited in NOTICE.md.
@@ -42,6 +43,7 @@ FXTWITTER = "https://api.fxtwitter.com"
 SNOWFLAKE_EPOCH_MS = 1288834974657
 SNOWFLAKE_START = dt.datetime(2010, 11, 4, tzinfo=dt.timezone.utc)
 CLI_TIMEOUT = 300
+DEFAULT_DAYS = 30
 NO_WINDOW_DAYS = 36500
 PAGE_SIZE = 100
 MAX_PAGES = 5
@@ -324,9 +326,10 @@ def tokens(text):
 
 
 def topic_words(topic):
-    """Stopwords are dropped before stemming, so "does" and "this" never become "doe" and "thi"."""
+    """Stopwords are dropped before stemming, so "does" and "this" never become "doe" and "thi".
+    Words with a digit are kept at any length, so "GPT-5" needs the "5" and never matches "GPT-4"."""
     raw = re.findall(r"[a-z0-9]+", (topic if isinstance(topic, str) else "").lower())
-    words = {stem(w) for w in raw if len(w) >= 3 and w not in STOPWORDS}
+    words = {stem(w) for w in raw if (len(w) >= 3 or any(c.isdigit() for c in w)) and w not in STOPWORDS}
     return words or tokens(topic)
 
 
@@ -578,15 +581,15 @@ def emit(items, notes, md):
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
-    a = sub.add_parser("reddit-find"); a.add_argument("topic"); a.add_argument("--days", type=int, default=30)
+    a = sub.add_parser("reddit-find"); a.add_argument("topic"); a.add_argument("--days", type=int, default=DEFAULT_DAYS)
     a.add_argument("--subs", help="comma-separated subreddits; skips asking claude for them")
     a.add_argument("--comments", type=int, default=0)
     a = sub.add_parser("reddit-thread"); a.add_argument("urls", nargs="+"); a.add_argument("--comments", type=int, default=8)
     a.add_argument("--topic", required=True, help="the topic the threads must match, as given to reddit-find")
-    a.add_argument("--days", type=int, default=NO_WINDOW_DAYS)
-    a = sub.add_parser("x-find"); a.add_argument("topic"); a.add_argument("--days", type=int, default=30)
+    a.add_argument("--days", type=int, default=DEFAULT_DAYS)
+    a = sub.add_parser("x-find"); a.add_argument("topic"); a.add_argument("--days", type=int, default=DEFAULT_DAYS)
     a.add_argument("--limit", type=int, default=10)
-    a = sub.add_parser("x-post"); a.add_argument("urls", nargs="+"); a.add_argument("--days", type=int, default=NO_WINDOW_DAYS)
+    a = sub.add_parser("x-post"); a.add_argument("urls", nargs="+"); a.add_argument("--days", type=int, default=DEFAULT_DAYS)
     for p in sub.choices.values():
         p.add_argument("--md", action="store_true")
     args = ap.parse_args(argv)
