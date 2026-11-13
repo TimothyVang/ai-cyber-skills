@@ -203,12 +203,18 @@ def read_result(stdout):
     return result, None
 
 
-def in_git_repo(path):
+def outside_git_repo(path):
+    """True only when git ran and said `path` is in no repository. A missing git, a timeout, or any other answer
+    counts as inside, so a failed check never puts the child in a project folder. GIT_* variables are dropped so
+    GIT_DIR or GIT_CEILING_DIRECTORIES cannot steer the answer, and the C locale keeps git's message in English."""
+    env = {k: v for k, v in os.environ.items() if not k.upper().startswith("GIT_")}
+    env.update(LC_ALL="C", LANGUAGE="C")
     try:
-        return subprocess.run(["git", "-C", str(path), "rev-parse", "--is-inside-work-tree"],
-                              capture_output=True, text=True, timeout=15).stdout.strip() == "true"
+        r = subprocess.run(["git", "-C", str(path), "rev-parse", "--is-inside-work-tree"], env=env,
+                           capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=15)
     except (OSError, subprocess.TimeoutExpired):
         return False
+    return r.returncode != 0 and "not a git repository" in r.stderr.lower()
 
 
 def outside_dir():
@@ -217,9 +223,9 @@ def outside_dir():
     candidates = [tempfile.gettempdir(), os.path.join(os.environ.get("LOCALAPPDATA", ""), "Temp"),
                   os.environ.get("SystemRoot", "") and os.path.join(os.environ["SystemRoot"], "Temp"), "/tmp", "/var/tmp"]
     for c in candidates:
-        if c and os.path.isdir(c) and not in_git_repo(c):
+        if c and os.path.isdir(c) and outside_git_repo(c):
             return c
-    raise SystemExit("social.py: no temp folder outside a git repo; the search child would load repo agent config")
+    raise SystemExit("social.py: no temp folder that git confirms is outside every repo; the search child would load repo agent config")
 
 
 def kill_tree(proc):
@@ -463,16 +469,20 @@ def reddit_find(topic, days, subs, comments):
     for sub in subs:
         posts, oldest, err = list_subreddit(sub, since)
         reached = "the window start" if oldest is not None and oldest <= since else (oldest.date().isoformat() if oldest else "nothing")
-        matched = [p for p in posts if title_match(p.get("title"), words) >= 0.5]
-        notes.append(f"r/{sub}: scanned {len(posts)} posts back to {reached}, {len(matched)} titles matched the topic"
-                     + (f"; archive error: {err}" if err else ""))
-        for p in matched:
+        scored = [(p, title_match(p.get("title"), words)) for p in posts]
+        matched = [(p, m) for p, m in scored if m >= 0.5]
+        full = sum(1 for _, m in matched if m == 1.0)
+        notes.append(f"r/{sub}: scanned {len(posts)} posts back to {reached}, {full} titles matched every topic word, "
+                     f"{len(matched) - full} matched some" + (f"; archive error: {err}" if err else ""))
+        for p, m in matched:
             if p["id"] in seen:
                 continue
             seen.add(p["id"])
             label = label_reddit(p, since)
             if str(p.get("subreddit") or "").lower() != sub.lower():
                 label = "unverified: archive returned another subreddit"
+            elif m < 1.0 and label == "verified":
+                label = f"partial match: title has {len(words & tokens(p.get('title')))} of {len(words)} topic words"
             items.append(reddit_item(p, label))
     add_comments(items, comments)
     items.sort(key=lambda i: (i["label"] != "verified", -num(i.get("score"))))

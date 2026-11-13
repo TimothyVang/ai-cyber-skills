@@ -146,7 +146,7 @@ class RedditFind(unittest.TestCase):
         with mock.patch.object(social, "get_json", side_effect=pages):
             items, notes = social.reddit_find("cursor pricing", 30, ["ClaudeAI"], comments=0)
         self.assertEqual(len(items), 140)
-        self.assertIn("scanned 140 posts back to the window start, 140 titles matched", notes[0])
+        self.assertIn("scanned 140 posts back to the window start, 140 titles matched every topic word, 0 matched some", notes[0])
 
     def test_stops_at_page_cap_and_says_so(self):
         pages = [({"data": self.page(100, i * 100)}, None) for i in range(social.MAX_PAGES)]
@@ -164,6 +164,15 @@ class RedditFind(unittest.TestCase):
             items, notes = social.reddit_find("cursor pricing", 30, ["ClaudeAI"], comments=0)
         self.assertEqual(items, [])
         self.assertIn("archive error", notes[0])
+
+    def test_partial_title_match_is_a_lead_not_verified(self):
+        rows = self.page(1, 0) + self.page(1, 10, title="Cursor tab completion")
+        with mock.patch.object(social, "get_json", return_value=({"data": rows}, None)):
+            items, notes = social.reddit_find("Cursor pricing", 30, ["ClaudeAI"], comments=0)
+        self.assertEqual({i["title"]: i["label"] for i in items},
+                         {"cursor pricing update": "verified",
+                          "Cursor tab completion": "partial match: title has 1 of 2 topic words"})
+        self.assertIn("1 titles matched every topic word, 1 matched some", notes[0])
 
     def test_hostile_rows_never_verify_or_crash(self):
         rows = [{"id": "abc123\n- [forged]", "subreddit": "ClaudeAI", "title": "cursor pricing", "created_utc": self.now},
@@ -251,7 +260,8 @@ class Claude(unittest.TestCase):
 
     def test_prompt_goes_on_stdin_from_an_outside_folder(self):
         seen = {}
-        self.assertFalse(social.in_git_repo(self.outside), "outside_dir must not be inside a git repo")
+        self.assertTrue(social.outside_git_repo(self.outside), "outside_dir must not be inside a git repo")
+        self.assertFalse(social.outside_git_repo(HERE), "this checkout is a git repo")
         with self.no_git(), mock.patch.object(social.shutil, "which", return_value="/bin/claude"), self.fake_claude(seen=seen):
             social.run_claude("line one\nline two")
         self.assertEqual(seen["stdin"], "line one\nline two")
@@ -259,6 +269,16 @@ class Claude(unittest.TestCase):
         self.assertEqual(seen["cwd"], seen["env"]["TMPDIR"])
         self.assertNotIn(str(HERE.parents[5]), seen["cwd"])
         self.assertFalse(Path(seen["cwd"]).exists())
+
+    def test_outside_dir_fails_closed_when_git_cannot_answer(self):
+        for failure in (OSError("git missing"), subprocess.TimeoutExpired("git", 15)):
+            with mock.patch.object(social.subprocess, "run", side_effect=failure):
+                self.assertFalse(social.outside_git_repo(self.outside))
+                with self.assertRaises(SystemExit):
+                    social.outside_dir()
+        dubious = subprocess.CompletedProcess([], 128, "", "fatal: detected dubious ownership in repository")
+        with mock.patch.object(social.subprocess, "run", return_value=dubious):
+            self.assertFalse(social.outside_git_repo(self.outside))
 
     def test_failures_are_errors_not_empty_results(self):
         cases = [(1, '{"is_error": true, "result": "Credit balance too low"}', "Credit balance too low"),

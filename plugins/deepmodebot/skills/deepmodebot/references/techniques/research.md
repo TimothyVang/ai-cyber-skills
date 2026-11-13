@@ -30,9 +30,9 @@ The deliverable is one cited Markdown file in the repo. The reading runs in back
 
 `<this skill>/assets/research/social.py` searches through a headless `claude -p` on the user's own login, never an API key. The child gets WebSearch only, no MCP, no hooks, an allowlisted environment, and an empty folder outside the repo.
 
-- **Reddit:** `social.py reddit-find "<topic>" --days 30 --comments 5`. Claude's web search answered reddit.com with HTTP 400 when measured on 2026-11-12, so Claude names the subreddits (or pass `--subs a,b`), and the arctic-shift archive lists their posts in the window; only titles matching the topic are kept. Each subreddit's note says how far back the scan reached; a busy subreddit may cover only the last few days, so say that in the file. `reddit-thread <url>` checks threads you already have.
+- **Reddit:** `social.py reddit-find "<topic>" --days 30 --comments 5`. Claude's web search answered reddit.com with HTTP 400 when measured on 2026-11-12, so Claude names the subreddits (or pass `--subs a,b`), and the arctic-shift archive lists their posts in the window. A title holding every topic word can be `verified`; one holding at least half is listed as a `partial match` lead, never evidence. Each subreddit's note says how far back the scan reached; a busy subreddit may cover only the last few days, so say that in the file. `reddit-thread <url>` checks threads you already have.
 - **X:** `social.py x-find "<topic>" --days 30` finds a handful of posts through Claude's web search. `x-post <url>` checks one post.
-- Cite only items marked `verified`: a Reddit post found in the archive inside the window, or an X post whose id dates inside the window and that fxtwitter loads with its text and author. Quote the fetched text, never the search model's summary of it.
+- Cite only items marked `verified`: a Reddit post found in the archive inside the window whose title holds every topic word, or an X post whose id dates inside the window and that fxtwitter loads with its text and author. Quote the fetched text, never the search model's summary of it.
 
 ## Notes format (researchers)
 
