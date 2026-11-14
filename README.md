@@ -29,7 +29,7 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | `deep-stack` skill | Stack picks and a ship loop: a default software stack and the decision rules behind it for any app (web, CLI, desktop, mobile, AI agent, data/ML, security tooling), an agent-driven UI design workflow, and a per-task loop of worktree, build, recorded evidence and reviewed PR. |
 | Verification skills | `create-verification-skill` builds a per-repo `verify-<app>` skill (a control CLI plus a feature map) so agents can drive your app and capture proof. `maintain-verification-skill` keeps it accurate as the app changes. |
 | `project-brief` and `contribute` | A maintainer publishes a newcomer brief, claimable tasks as issues, a roadmap and templates. A contributor's agent finds an unclaimed task that doesn't overlap open PRs, claims it, builds it through deepmodebot, and opens a PR. |
-| Trending catalog | `plugins/deepmodebot/skills/deepmodebot/scripts/trending.py` keeps a digest of new and trending repos that deepmodebot searches before building anything. |
+| Repository catalog | `plugins/deepmodebot/skills/deepmodebot/scripts/trending.py` searches new/trending repositories and dated reference choices, including analyst topics and material reuse cautions. |
 | Harness references | Cited, dated guides (checked 2026-11-11) for using omp, Claude Code, and Codex, the MCP, ACP, A2A, and WebMCP protocols, and portable AI-native conventions (`AGENTS.md`, Agent Skills, plugin marketplaces). A cross-harness map translates every omp tool and path deepmodebot names into Claude Code and Codex. In `plugins/deepmodebot/skills/agent-harnesses/`. |
 | Agent SDK workspace | [Install and use Antigravity, Claude Agent, Codex, and omp SDKs](plugins/deepmodebot/skills/agent-harnesses/references/sdks.md), with pinned optional dependencies and no-model smoke commands. CLI subscription logins and SDK authentication are separate contracts. |
 | Contained work | The agent works only inside the project's repo. Scratch and temp files go in `.scratch/`, worktrees in `.worktrees/` (both git-ignored), never system temp or folders outside the repo. With no repo it creates a named one first. A guard enforces this in Claude Code and omp; Codex's sandbox does it natively. |
@@ -244,7 +244,9 @@ Contributor, after installing the plugin:
 
 `plugins/deepmodebot/skills/deepmodebot/scripts/trending.py` keeps the catalog current with no scheduler. The published copy lives in this repo's `trending/`, outside the plugin, so a daily refresh never changes what installs ship.
 
-`find <terms>` keeps a copy in the user's project at `.scratch/trending/`: a missing or day-old copy is replaced by the published one, or rebuilt with `update` when that is old too (about a minute; uses `GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`). `find --no-refresh` skips that.
+`find <terms>` keeps a per-project copy under `.scratch/trending/`. A missing, day-old or different-reference-revision copy is replaced by a matching published catalog or rebuilt with `update` (using `GITHUB_TOKEN`, `GH_TOKEN`, or `gh auth token`). `find --no-refresh` skips refresh. This is on-demand updating, not a logon task.
+
+The bundled [reference library](plugins/deepmodebot/skills/deepmodebot/assets/repo-references.json) adds dated, source-linked project choices to keyword search. License cautions are not truncated with descriptions. Inspect exact upstream code, asset, model and enterprise terms before adopting anything. [Startup references](plugins/deepmodebot/skills/deepmodebot/references/startup-ideas.md) separate ideas and anecdotes from validated demand or production readiness.
 
 `catalog.json` keeps every repo seen in the last 120 days with first-seen date and star growth; `README.md` is the digest agents read. Refresh the published copy with `python plugins/deepmodebot/skills/deepmodebot/scripts/trending.py update --out trending` and commit it.
 

@@ -118,7 +118,7 @@ Everything above works by hand: post the claim comment, run the overlap check, f
 - Every playbook and technique has a `Done when` completion criterion.
 - The reference skills (`agent-harnesses`, `secrets-and-auth`, `software-architecture`, `cloud-devsecops`, `domain-rules`, `frontend-ui`) carry `metadata.as-of` in their frontmatter: the date their facts were checked. The check notes any over 120 days old; recheck the facts and restamp.
 - Marketplace and plugin manifests, and `plugins/*/hooks/hooks.json`, are valid JSON and point at real folders.
-- No upstream project or author names outside `LICENSE*`, `NOTICE*`, the trending catalog and the attributed `evals/workflows/` comparison inventory. Product-facing copy stays under this project's brand.
+- No upstream branding outside `LICENSE*`, `NOTICE*`, the trending catalog, the attributed `evals/workflows/` inventory and the exact cited-reference data exceptions in `scripts/check.py`. Those exceptions preserve real source identities, not product-facing branding.
 - The README's playbook, principle, and technique counts match the folders, and `docs/llms-full.txt` matches the files it embeds (`python scripts/check.py --fix` rewrites it).
 - In deepmodebot's `SKILL.md`, the rules above `## Routes` fit in 20,000 bytes (about 5,000 tokens), which is what Claude Code keeps of a skill after it compacts a long session. Put lookup tables below that heading and long detail in `references/`.
 - Every Python file parses, and every `test_*.py` folder passes (`assets/contain`, `assets/loop`, `assets/github-app`, `assets/git-guardrails`, `assets/pr-conversation`, `scripts`). The tests need `git` and `bash`; the omp hook cases also need `bun` and are skipped without it. The check takes about two minutes.

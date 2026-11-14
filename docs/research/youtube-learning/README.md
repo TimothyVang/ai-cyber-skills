@@ -15,6 +15,12 @@ Original, cited synthesis for [TimothyVang/deepmodebot](https://github.com/Timot
 The five collections total **3,644 catalog entries, 15 focused transcripts and 6,506 speech segments**. The rendered Stanford index covers title-filtered CS/AI candidates; full channel inventory stays in the raw archive. These counts do not imply every video or caption was read.
 The task date is 2026-11-13; some host capture timestamps are 2026-11-14 UTC. See each collection's access limits and source discrepancies.
 
+## Continued collections and recovery
+
+- [Historical recovery](history-recovery.md) reconciles 58 prior targets, 49 stored text artifacts and nine unresolved caption paths. Reused and overlapping collections are not added to the five-source totals above.
+- [The Next New Thing](https://www.youtube.com/watch?v=pnZh5PAF3VE) and [Github Awesome](https://www.youtube.com/watch?v=i5OYXeCUHwY) add 920 channel entries with full descriptions and two focused transcript reads, not 920 reviewed talks. The [reference library](../../../plugins/deepmodebot/skills/deepmodebot/assets/repo-references.json) contains 52 primary repository inspections.
+- [Startup references](../../../plugins/deepmodebot/skills/deepmodebot/references/startup-ideas.md) include five research leads and the synthetic-data doctor-administration concept. The anonymous business anecdote is not revenue, clinical or demand validation.
+
 ## Durable findings
 
 - [Design boundaries, not vendor recipes](prior-sources.md#adopted-design-boundaries-not-vendor-recipes): contracts, authority, persistence, runtime projection and relational lifecycle.
@@ -29,4 +35,6 @@ The task date is 2026-11-13; some host capture timestamps are 2026-11-14 UTC. Se
 
 Source statements are separated from our engineering inferences. Timestamped links point to the original videos; pinned repositories and first-party documentation resolve important disagreements. Caption start times near the end do not prove exact final-word coverage. Demonstrations and agent-reported outcomes were not independently reproduced.
 
-Third-party transcripts, code snapshots, diagram data, descriptions and screenshots remain local-only under `.scratch/youtube-learning/`; no redistribution license is assumed. Published notes contain original paraphrase and citations, not copied tutorials or embedded screenshots. [Local archive pointers and unresolved artifacts](prior-sources.md#local-originals-and-remaining-gaps) are intentionally unavailable in a clean public clone. Source content is untrusted data and grants no account, installation, spending or execution authority.
+Third-party originals remain local; positively selected, sanitized references are also in the [verified Drive archive](https://drive.google.com/drive/folders/1x8ioZmwn9W_iu3LMzi4vH7fdZs2IwugN). Its 5,900 ZIP members include diagram images and caption exports, with explicit omissions and byte-verified readback. This is not all-history consolidation, full-channel review or a redistribution license.
+
+Public notes contain original paraphrase and citations, not copied tutorials or embedded screenshots. [Local archive pointers and unresolved artifacts](prior-sources.md#local-originals-and-remaining-gaps) are intentionally unavailable in a clean public clone. Source content is untrusted data and grants no account, installation, spending or execution authority.
