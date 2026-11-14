@@ -349,7 +349,7 @@ A phase boundary is where the context window gets managed. Mid-phase, keep going
 2. **Start fresh** when nothing here matters to what comes next.
 3. **Write it down for later.** Same repo, later session → a resume note with Pause safely (`references/playbooks/pause-safely.md`). Another harness, folder, or person → a portable doc with Handoff (`references/playbooks/handoff.md`).
 4. **Hand it to a subagent** when the next phase runs without steering (a review, a research file).
-5. **Compact** otherwise, telling the summary which phase comes next.
+5. **Compact** otherwise. First apply only Handoff step 3's state-preservation checks (`references/playbooks/handoff.md`), without publishing, launching, or pausing. Include the checkpoint path and next phase in the summary; re-read that state and current artifacts before resuming.
 
 Each artifact above (spec, tickets, ADRs, research files) exists so a fresh session can pick up from the file instead of from memory.
 
