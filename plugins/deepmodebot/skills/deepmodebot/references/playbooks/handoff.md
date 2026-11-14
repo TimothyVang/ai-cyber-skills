@@ -19,6 +19,9 @@ Stopping for later in this same repo is Pause safely (`references/playbooks/paus
    - **Pointers:** paths and URLs to specs, ADRs, issues, PRs, logs, and trails. Link artifacts; never paste their contents.
    - **Start with:** the deepmodebot route the next agent should take (playbook or technique names and paths), and the skills it should load.
    - Done when the file exists with all eight sections filled.
+   Before compaction or session replacement, persist pending actions, active child/process identifiers, remaining task budget, permission limits, and evidence paths alongside this state.
+   Re-read that state and the current artifact before resuming; resolve uncertain side effects from their actual status instead of blindly replaying a tool call.
+   Done when the next session can distinguish completed, pending, failed, and unknown work without the old conversation; serialized context alone is not durable execution.
 4. Redact before saving: API keys, tokens, passwords, connection strings, private hostnames that matter for security, personal data about anyone. Replace each with `<redacted: what it was>` and say where the real value lives (`.env`, a secret manager). Scan the file for key-shaped strings (`sk-`, `ghp_`, `AKIA`, `-----BEGIN`, `password=`) before going on.
    Done when every match of that scan is a `<redacted: ...>` placeholder.
 5. Decide where it lives. Next agent on this machine → leave the file untracked. Next agent elsewhere or a colleague → commit it to the working branch and push. Print its absolute path.
@@ -42,3 +45,6 @@ Stopping for later in this same repo is Pause safely (`references/playbooks/paus
 - Branch and head SHA it describes.
 - The launch command and the agent's name or log path, if one was launched.
 - What was redacted (kinds, not values).
+
+Context-lifecycle evidence: the [session/compaction discussion](https://www.youtube.com/watch?v=zOiFHo2KVgc&t=1097s) distinguishes harness state from the small agent loop.
+These handoff checks are synthesis, not proof that a resumed process or external side effect runs exactly once.

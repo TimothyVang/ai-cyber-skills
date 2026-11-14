@@ -25,6 +25,13 @@ Inspect the newly collected `checks.json`, its capture and scenario bindings, an
 Verify capture `input_snapshot` chains and schema-version-2 result metadata. Older unbound passes remain invalid.
 Inspect candidate code before executing probes; environment scrubbing is not a host sandbox.
 
+## Source-backed procedure probes
+
+For changes motivated by video research, attach the affected procedure to an isolated `omp -p` planning request with explicit model and time/usage caps.
+Exercise nested delegation without enforceable child limits, an unknown migration outcome at handoff, tenant-scoped request design, load-test write limits, and incomplete integration consent.
+Keep raw events, command, exit, and full answer under `.scratch/`; inspect the answer against each intended decision before marking it passed.
+These planning probes show instruction following only. They do not prove child cancellation, migration recovery, cloud setup, load capacity, or a productivity improvement.
+
 ## Gotchas
 
 An inventory mapping is not runtime proof. The collector checks artifacts, but those checks do not establish every claim in a human assessment. Platform-only integrations remain explicit gaps. Do not infer that every upstream workflow or harness works from representative journeys.
