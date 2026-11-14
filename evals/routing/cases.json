@@ -142,6 +142,20 @@
       "route": "refactoring",
       "size": "M",
       "note": "Tiny and two files, but it touches secrets, so it is not S."
+    },
+    {
+      "id": "reddit-sentiment",
+      "request": "What are people on Reddit and X saying about Cursor's new pricing? Keep the write-up in the repo so we can cite it in the pricing ADR.",
+      "route": "research",
+      "size": "none",
+      "note": "Community-source research that should outlive the chat. Read-only: it writes a cited docs file, not behavior."
+    },
+    {
+      "id": "channel-archive",
+      "request": "Archive every video and its transcript from this YouTube channel into the repo: https://www.youtube.com/@example",
+      "route": "scrape",
+      "size": "L",
+      "note": "Near miss for reddit-sentiment: bulk archiving is scrape, not research. It writes many files over a long run, so L, not read-only."
     }
   ]
 }

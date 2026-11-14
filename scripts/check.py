@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parent.parent
 MAX_LINE_BYTES = 760  # omp read truncates lines at 768 characters
 BANNED = re.compile(
     r"(?<![a-z0-9])[pr]stack(?![a-z0-9])|poteto|lauren\s+tan|cursor/plugins|pocock|ras\s*mic"
-    r"|cloud\s*x\s*berry|greptile|code\s*rabbit|james\s+clements",
+    r"|cloud\s*x\s*berry|greptile|code\s*rabbit|james\s+clements|last30days|van\s+horn|mvanhorn",
     re.I,
 )
 WHITE_LABEL_EXEMPT = {Path("scripts/check.py"), Path("trending"), Path("evals/workflows")}
