@@ -1,0 +1,326 @@
+{
+  "scope": "Routing labels only; runs retain their own skill hash. Initial size miss and clarified rerun are preserved, not combined into a same-head perfect score.",
+  "runs": [
+    {
+      "capture": "ecosystem-routes.json",
+      "report": {
+        "date": "2026-11-13",
+        "skill": "plugins/deepmodebot/skills/deepmodebot/SKILL.md",
+        "skill_sha256": "a69823ef58bfb673f4bdc12dc333b5a77519aed368f0fc98214eae8dbe9f7d01",
+        "cases_file": "evals/routing/ecosystems.json",
+        "model_requested": "openai-codex/gpt-6-astra",
+        "models_observed": [
+          "openai-codex/gpt-6-astra"
+        ],
+        "max_cost_per_case": 1.0,
+        "scores": {
+          "cases": 9,
+          "route": 9,
+          "size": 8,
+          "both": 8,
+          "cost_usd": 4.841
+        },
+        "results": [
+          {
+            "id": "choose-capabilities",
+            "request": "Choose tools and skills for diagnosing our LangGraph worker in Docker Compose. Explain the selection and permission boundaries only; change nothing.",
+            "expected": {
+              "route": "tool-routing",
+              "size": "none"
+            },
+            "answer": {
+              "route": "tool-routing",
+              "size": "none"
+            },
+            "raw": "{\"route\":\"tool-routing\",\"size\":\"none\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.6421,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "automatic-router-design",
+            "request": "Design an automatic tool router for our agent's Docker and Kubernetes capabilities. Return design notes only; do not implement it.",
+            "expected": {
+              "route": "tool-routing",
+              "size": "none"
+            },
+            "answer": {
+              "route": "tool-routing",
+              "size": "none"
+            },
+            "raw": "{\"route\":\"tool-routing\",\"size\":\"none\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64209,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "own-goal-improvement",
+            "request": "Improve your own reusable goal and next-iteration prompt for this worker. Update two instruction files only, keeping the existing check, permissions and finite caps.",
+            "expected": {
+              "route": "self-authoring",
+              "size": "M"
+            },
+            "answer": {
+              "route": "self-authoring",
+              "size": "M"
+            },
+            "raw": "{\"route\":\"self-authoring\",\"size\":\"M\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64339,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "own-skill-improvement",
+            "request": "Improve your own skill for bounded repair loops. Edit only the existing SKILL.md and its supporting reference; leave executable code unchanged.",
+            "expected": {
+              "route": "self-authoring",
+              "size": "M"
+            },
+            "answer": {
+              "route": "self-authoring",
+              "size": "M"
+            },
+            "raw": "{\"route\":\"self-authoring\",\"size\":\"M\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.644,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "framework-research",
+            "request": "Research LangChain, LangGraph, Deep Agents and LangSmith using official docs and write a cited decision note in this repo.",
+            "expected": {
+              "route": "research",
+              "size": "M"
+            },
+            "answer": {
+              "route": "research",
+              "size": "M"
+            },
+            "raw": "{\"route\":\"research\",\"size\":\"M\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64509,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "container-research",
+            "request": "Gather the Docker, OCI and Kubernetes ecosystem docs and write a compact cited reference in this repo. No deployments.",
+            "expected": {
+              "route": "research",
+              "size": "M"
+            },
+            "answer": {
+              "route": "research",
+              "size": "M"
+            },
+            "raw": "{\"route\":\"research\",\"size\":\"M\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64651,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "graph-bug-near-miss",
+            "request": "Our LangGraph node raises KeyError when optional notes are absent. Fix that node and its regression case; the cause is in those two files.",
+            "expected": {
+              "route": "bug-fix",
+              "size": "M"
+            },
+            "answer": {
+              "route": "bug-fix",
+              "size": "S"
+            },
+            "raw": "{\"route\":\"bug-fix\",\"size\":\"S\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64397,
+            "error": null,
+            "route_ok": true,
+            "size_ok": false
+          },
+          {
+            "id": "cluster-question-near-miss",
+            "request": "Why does readiness differ from liveness for this Kubernetes worker? Explain from its manifests. Change nothing and do not contact a cluster.",
+            "expected": {
+              "route": "investigation",
+              "size": "none"
+            },
+            "answer": {
+              "route": "investigation",
+              "size": "none"
+            },
+            "raw": "{\"route\":\"investigation\",\"size\":\"none\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.166394,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "unrelated-typo-near-miss",
+            "request": "Fix one README typo: change 'recieve' to 'receive'. No other edits.",
+            "expected": {
+              "route": "bug-fix",
+              "size": "S"
+            },
+            "answer": {
+              "route": "bug-fix",
+              "size": "S"
+            },
+            "raw": "{\"route\":\"bug-fix\",\"size\":\"S\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.167414,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          }
+        ]
+      }
+    },
+    {
+      "capture": "ecosystem-size-clarified.json",
+      "report": {
+        "date": "2026-11-13",
+        "skill": "plugins/deepmodebot/skills/deepmodebot/SKILL.md",
+        "skill_sha256": "a69823ef58bfb673f4bdc12dc333b5a77519aed368f0fc98214eae8dbe9f7d01",
+        "cases_file": "evals/routing/ecosystems.json",
+        "model_requested": "openai-codex/gpt-6-astra",
+        "models_observed": [
+          "openai-codex/gpt-6-astra"
+        ],
+        "max_cost_per_case": 1.0,
+        "scores": {
+          "cases": 1,
+          "route": 1,
+          "size": 1,
+          "both": 1,
+          "cost_usd": 0.6434
+        },
+        "results": [
+          {
+            "id": "graph-bug-near-miss",
+            "request": "Our LangGraph node raises KeyError when optional notes are absent. Fix that node and its regression case; the cause is in those two files and the required patch is about 60 lines.",
+            "expected": {
+              "route": "bug-fix",
+              "size": "M"
+            },
+            "answer": {
+              "route": "bug-fix",
+              "size": "M"
+            },
+            "raw": "{\"route\":\"bug-fix\",\"size\":\"M\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64341,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          }
+        ]
+      }
+    },
+    {
+      "capture": "expanded-routes.json",
+      "report": {
+        "date": "2026-11-13",
+        "skill": "plugins/deepmodebot/skills/deepmodebot/SKILL.md",
+        "skill_sha256": "b5aa377619ca6ac11dda1cba438d67187dacef510cb3452bcbdb3768082dd926",
+        "cases_file": "evals/routing/ecosystems.json",
+        "model_requested": "openai-codex/gpt-6-astra",
+        "models_observed": [
+          "openai-codex/gpt-6-astra"
+        ],
+        "max_cost_per_case": 1.0,
+        "scores": {
+          "cases": 4,
+          "route": 4,
+          "size": 4,
+          "both": 4,
+          "cost_usd": 2.0986
+        },
+        "results": [
+          {
+            "id": "goal-consensus",
+            "request": "Review my vague goal with three independent agents and a two-of-three vote before looping. Explain the planning procedure only; do not create artifacts or execute a loop.",
+            "expected": {
+              "route": "goal-review",
+              "size": "none"
+            },
+            "answer": {
+              "route": "goal-review",
+              "size": "none"
+            },
+            "raw": "{\"route\":\"goal-review\",\"size\":\"none\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64294,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "goal-grilling",
+            "request": "Grill the goal before looping: discuss whether my vague outcome can become quantitative milestones. This is a read-only planning conversation, no file edits or implementation.",
+            "expected": {
+              "route": "goal-review",
+              "size": "none"
+            },
+            "answer": {
+              "route": "goal-review",
+              "size": "none"
+            },
+            "raw": "{\"route\":\"goal-review\",\"size\":\"none\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64292,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "local-copy-updates",
+            "request": "Show how to auto-update local Deepmode copies from upstream while preserving forks. Explain the mechanism; make no changes.",
+            "expected": {
+              "route": "github-app",
+              "size": "none"
+            },
+            "answer": {
+              "route": "github-app",
+              "size": "none"
+            },
+            "raw": "{\"route\":\"github-app\",\"size\":\"none\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.167084,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          },
+          {
+            "id": "sdk-research",
+            "request": "Research the official AI SDK docs and write a source-linked comparison for typed Python and streaming TypeScript apps. Produce two short research documents; do not install packages or call models.",
+            "expected": {
+              "route": "research",
+              "size": "M"
+            },
+            "answer": {
+              "route": "research",
+              "size": "M"
+            },
+            "raw": "{\"route\":\"research\",\"size\":\"M\"}",
+            "model": "openai-codex/gpt-6-astra",
+            "cost": 0.64566,
+            "error": null,
+            "route_ok": true,
+            "size_ok": true
+          }
+        ]
+      }
+    }
+  ]
+}

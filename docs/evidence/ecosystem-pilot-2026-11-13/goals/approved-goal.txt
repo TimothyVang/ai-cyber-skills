@@ -1,0 +1,61 @@
+---
+goal: 'Invoice exports return a list of exact, case-sensitive identifiers without duplicates, preserving first-occurrence order and caller input.'
+check: 'python acceptance.py'
+check_minutes: '1'
+constraints: 'Only worker.py and the goal Markdown body may be edited during an authorized repair. Preserve acceptance.py, all goal frontmatter, input identifiers, their first-occurrence order and caller input. No new files, dependencies, credentials, services, network calls, publishing, deployments or nested loops. Planning is draft-only and may not run acceptance or the worker; execution requires a separate launch. The existing runner may write its own audit logs under .scratch. Never fabricate acceptance output or weaken the oracle.'
+iteration_minutes: '3'
+max_cost_usd: '1'
+max_iterations: '2'
+protect: 'acceptance.py'
+stall_after: '1'
+harness: 'omp'
+harness_args: '--model openai-codex/gpt-6-astra'
+---
+# Reviewed goal
+
+Planning approval is not execution authorization or runtime proof.
+Before launch, the operator must inspect this draft and separately authorize loop.py run.
+When invoked by that authorized runner, implement this goal within the fixed contract.
+Do not repeat planning approval or request the same launch authorization again.
+Outside that authorized run, do not execute this goal.
+
+## Quantitative success criteria
+
+### c1: acceptance_errors
+Target: equals 0 errors
+Measurement: Read errors from the unchanged acceptance runner's final summary after its assertions compare actual worker results with fixed expectations.
+Evidence: Existing runner's acceptance transcript and audit logs
+Population: All eight fixed consumer cases, including existing input-preservation and list-output checks; workload: Unchanged acceptance suite: empty input, one ID, repeated single ID, nonalphabetical first-occurrence order, three unique IDs, case-sensitive identifiers, interleaved duplicates, and multiple later repeats.; samples: 1
+Anti-gaming: Keep the oracle and workload unchanged; use assertions against the real worker, not worker-printed success claims; require c2 and c3 concurrently.
+Baseline: 5
+Baseline evidence/milestone: Supplied project evidence and parent command transcript: work_done=8 errors=5.
+
+### c2: completed_cases
+Target: equals 8 cases
+Measurement: Read work_done from the unchanged acceptance runner's final summary for the same run used by c1.
+Evidence: Existing runner's acceptance transcript and audit logs
+Population: Eight required consumer cases; workload: The same unchanged eight-case acceptance suite used by c1.; samples: 1
+Anti-gaming: No skipped, substituted, duplicated, or reduced cases; completion alone cannot establish success without c1 and c3.
+Baseline: 8
+Baseline evidence/milestone: Supplied project evidence and parent command transcript: work_done=8 errors=5.
+
+### c3: acceptance_process_exit
+Target: equals 0 exit code
+Measurement: Read the actual acceptance process exit status captured by the existing runner for the same run used by c1 and c2.
+Evidence: Existing runner's process-status record and acceptance transcript
+Population: One acceptance process invocation; workload: The same unchanged eight-case acceptance suite used by c1.; samples: 1
+Anti-gaming: Use the captured process status, not a printed exit claim; require all eight cases completed with zero errors.
+Baseline: 1
+Baseline evidence/milestone: Supplied project evidence and parent command transcript report baseline exit 1.
+
+## Milestones
+
+### m1: Worker-only stable deduplication verified after separate launch
+Dependencies: none
+Criteria: c1, c2, c3
+Acceptance: qualifying_acceptance_runs equals 1 runs
+Measurement: Count the verification run as qualifying only when its runner-captured evidence jointly records errors=0, work_done=8, and process exit 0.
+Evidence: Existing runner's acceptance transcript, process-status record, and audit logs
+Population: One verification run; workload: The unchanged eight-case acceptance suite exercising the real worker, including input-preservation and list-output checks.; samples: 1
+Anti-gaming: No oracle or workload changes, skipped checks, or fabricated output. Success requires actual assertion results from the same run; this draft grants no execution authority.
+Budget estimate: 1 iterations; $1; 3 minutes

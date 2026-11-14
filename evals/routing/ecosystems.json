@@ -1,0 +1,101 @@
+{
+  "context": "The user owns a nonempty Python service repo with a GitHub remote. It uses LangGraph, a Docker Compose development stack and Kubernetes manifests. It has an existing spec, no GLOSSARY.md, no docs/adr/, no factory.json. Nothing asks for deployment or installation unless the request says so.",
+  "cases": [
+    {
+      "id": "choose-capabilities",
+      "request": "Choose tools and skills for diagnosing our LangGraph worker in Docker Compose. Explain the selection and permission boundaries only; change nothing.",
+      "route": "tool-routing",
+      "size": "none"
+    },
+    {
+      "id": "automatic-router-design",
+      "request": "Design an automatic tool router for our agent's Docker and Kubernetes capabilities. Return design notes only; do not implement it.",
+      "route": "tool-routing",
+      "size": "none"
+    },
+    {
+      "id": "own-goal-improvement",
+      "request": "Improve your own reusable goal and next-iteration prompt for this worker. Update two instruction files only, keeping the existing check, permissions and finite caps.",
+      "route": "self-authoring",
+      "size": "M"
+    },
+    {
+      "id": "own-skill-improvement",
+      "request": "Improve your own skill for bounded repair loops. Edit only the existing SKILL.md and its supporting reference; leave executable code unchanged.",
+      "route": "self-authoring",
+      "size": "M"
+    },
+    {
+      "id": "framework-research",
+      "request": "Research LangChain, LangGraph, Deep Agents and LangSmith using official docs and write a cited decision note in this repo.",
+      "route": "research",
+      "size": "M"
+    },
+    {
+      "id": "container-research",
+      "request": "Gather the Docker, OCI and Kubernetes ecosystem docs and write a compact cited reference in this repo. No deployments.",
+      "route": "research",
+      "size": "M"
+    },
+    {
+      "id": "graph-bug-near-miss",
+      "request": "Our LangGraph node raises KeyError when optional notes are absent. Fix that node and its regression case; the cause is in those two files and the required patch is about 60 lines.",
+      "route": "bug-fix",
+      "size": "M"
+    },
+    {
+      "id": "cluster-question-near-miss",
+      "request": "Why does readiness differ from liveness for this Kubernetes worker? Explain from its manifests. Change nothing and do not contact a cluster.",
+      "route": "investigation",
+      "size": "none"
+    },
+    {
+      "id": "unrelated-typo-near-miss",
+      "request": "Fix one README typo: change 'recieve' to 'receive'. No other edits.",
+      "route": "bug-fix",
+      "size": "S"
+    },
+    {
+      "id": "goal-consensus",
+      "request": "Review my vague goal with three independent agents and a two-of-three vote before looping. Explain the planning procedure only; do not create artifacts or execute a loop.",
+      "route": "goal-review",
+      "size": "none"
+    },
+    {
+      "id": "goal-grilling",
+      "request": "Grill the goal before looping: discuss whether my vague outcome can become quantitative milestones. This is a read-only planning conversation, no file edits or implementation.",
+      "route": "goal-review",
+      "size": "none"
+    },
+    {
+      "id": "local-copy-updates",
+      "request": "Show how to auto-update local Deepmode copies from upstream while preserving forks. Explain the mechanism; make no changes.",
+      "route": "github-app",
+      "size": "none"
+    },
+    {
+      "id": "sdk-research",
+      "request": "Research the official AI SDK docs and write a source-linked comparison for typed Python and streaming TypeScript apps. Produce two short research documents; do not install packages or call models.",
+      "route": "research",
+      "size": "M"
+    },
+    {
+      "id": "sibling-message-routing",
+      "request": "Explain how our implementation agents can talk to each other: address a real sibling question, distinguish native recipient IDs from ACP sessions, and keep final reviewers blind. Procedure only; do not dispatch agents or edit files.",
+      "route": "agent-collaboration",
+      "size": "none"
+    },
+    {
+      "id": "record-replay-visual-panel",
+      "request": "Explain how to record and replay the full browser E2E workflow, then give three independent agents the same screenshots and sampled video frames for a two-of-three visual review. Procedure only; do not run capture, call models or change files.",
+      "route": "visual-e2e",
+      "size": "none"
+    },
+    {
+      "id": "editable-workflow-evidence",
+      "request": "Explain how to turn our recorded journey into portable editable workflow diagrams and inspect an SVG import in Penpot. Distinguish editable shapes from embedded screenshot pixels and generated files from proven imports. Advice only; no edits, uploads or tool installation.",
+      "route": "open-design-evidence",
+      "size": "none"
+    }
+  ]
+}

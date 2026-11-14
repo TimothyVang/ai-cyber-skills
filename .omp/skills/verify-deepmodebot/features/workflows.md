@@ -33,6 +33,16 @@ Keep raw events, command, exit, and full answer under `.scratch/`; inspect the a
 These planning probes show instruction following only. They do not prove child cancellation, migration recovery, cloud setup, load capacity, or a productivity improvement.
 For compaction-pointer changes, start with only the workflow map loaded and allow local read/write tools. Confirm the raw trace opens Handoff through that pointer and a real checkpoint preserves unknown work without publishing, launching, or pausing.
 
+## Ecosystem routing and bounded goals
+
+Run `python scripts/eval_routing.py --cases evals/routing/ecosystems.json --model <explicit-model> --out .scratch/evidence/ecosystem-routes.json`.
+Inspect each route and size result; the runner's exit code alone does not assert every route matched.
+The cases cover tool selection, self-authoring, LangGraph research/debugging, container research, Kubernetes near-misses, goal consensus, local updates and AI SDK research.
+For domain selection and self-prompt changes, run isolated before/after agent sessions with the applicable local references and only local file tools.
+Use an organic task that produces a goal file for a LangGraph worker in a named Compose project or Kubernetes namespace.
+Inspect opened reference paths, fixed scope/check/caps, retained unknown effect status and the next bounded action in the delivered goal.
+Run the emitted goal through `loop.py run <goal.md> --dry-run`; prose review alone misses unsupported YAML lists in the runner's flat frontmatter format.
+Keep raw command/events/answers under `.scratch/evidence/`; a live planning run is not proof of SDK execution, container isolation or cluster rollout.
 
 ## Software-factory source-map probes
 

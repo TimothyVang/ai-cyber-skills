@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "state": "approved_draft",
+  "draft": true,
+  "executed": false,
+  "model": "openai-codex/gpt-6-astra",
+  "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+  "max_rounds": 2,
+  "rounds": [
+    {
+      "round": 1,
+      "candidate_sha256": "d7a0d496d073d012a66678e116860eb39f23f61f3703db4b7ca7b6bcdbf40408",
+      "votes": [
+        {
+          "candidate_sha256": "d7a0d496d073d012a66678e116860eb39f23f61f3703db4b7ca7b6bcdbf40408",
+          "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+          "lens": "intent_fidelity",
+          "vote": "approve",
+          "reasons": [
+            "The goal preserves exact, case-sensitive identifiers, first-occurrence order, caller input, and list output while removing duplicates through a worker-only repair.",
+            "All three baselines match supplied evidence; success requires unchanged assertions covering all eight cases and captured process status, not model judgment or printed claims.",
+            "The bounded milestone respects the contract limits and explicitly requires a separate execution launch; this plan grants no execution authority."
+          ],
+          "questions": [],
+          "evidence_requests": []
+        },
+        {
+          "candidate_sha256": "d7a0d496d073d012a66678e116860eb39f23f61f3703db4b7ca7b6bcdbf40408",
+          "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+          "lens": "measurement_validity",
+          "vote": "approve",
+          "reasons": [
+            "Baselines of 5 errors, 8 completed cases, and exit status 1 are explicitly supported by supplied evidence.",
+            "Acceptance requires zero errors, all eight unchanged cases completed, and runner-captured exit status 0 from the same run; fixed assertions check actual worker results rather than self-reported success.",
+            "One deterministic run is supported by the evidence. Verification remains conditional on a separate execution launch; this vote provides neither runtime proof nor authorization."
+          ],
+          "questions": [],
+          "evidence_requests": []
+        },
+        {
+          "candidate_sha256": "d7a0d496d073d012a66678e116860eb39f23f61f3703db4b7ca7b6bcdbf40408",
+          "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+          "lens": "feasibility_safety",
+          "vote": "approve",
+          "reasons": [
+            "The worker-only milestone is bounded to one iteration, three minutes and $1, and explicitly requires a separate execution launch.",
+            "Baselines match supplied observations; success requires unchanged real-worker assertions, all eight cases completed, and captured exit status zero in the same run—not printed claims or reviewer judgment.",
+            "The goal preserves exact case-sensitive identifiers, first-occurrence order, caller input and list output without requiring external services or additional files."
+          ],
+          "questions": [],
+          "evidence_requests": []
+        }
+      ],
+      "decision": "approve",
+      "minority_report": []
+    }
+  ],
+  "questions": [],
+  "evidence_requests": [],
+  "goal_sha256": "835c0c6b53f5249107ab186d65900eeaebf530c223805eead6f95fcc33a20a5f"
+}

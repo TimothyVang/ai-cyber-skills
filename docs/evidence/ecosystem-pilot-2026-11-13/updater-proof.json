@@ -1,0 +1,17 @@
+{
+  "command": "bot.py update",
+  "exit": 0,
+  "canonical": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+  "clean_main_fast_forwarded_in_first_invocation": true,
+  "native_full_tree_matches_pinned_canonical": true,
+  "native_changed_files": 4,
+  "foreign_origin_preserved": true,
+  "dirty_checkout_preserved": true,
+  "feature_branch_preserved": true,
+  "scope": "Real public CLI and GitHub/Git network, isolated HOME/config/cache. An empty bare Git boundary prevents this project-local fixture HOME from inheriting the outer working tree; it is not itself a working tree.",
+  "initial_trials": "Nested fixture correctly refused native adoption. An attempted GIT_CEILING_DIRECTORIES correction was scrubbed by the updater. No product guard was removed; an actual bare repository boundary corrected only the fixture layout.",
+  "limitations": [
+    "Foreign-origin fixture uses example.invalid; it is not an observed remote GitHub fork.",
+    "This does not activate the already-running older watcher."
+  ]
+}

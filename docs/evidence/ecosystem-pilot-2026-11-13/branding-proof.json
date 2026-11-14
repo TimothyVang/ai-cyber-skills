@@ -1,0 +1,17 @@
+{
+  "entrypoint": "scripts.whitelabel.build",
+  "arguments": {
+    "brand": "brand/examples/acme.json",
+    "media": false,
+    "check": false
+  },
+  "result": [],
+  "identical_evidence_files": 446,
+  "validation": "The built distribution's own E2E loader accepted all three copied bundles, including the retained failed capture.",
+  "bundle_sha256": {
+    "recording": "553835daf1cbed0f638b43be7eaa65a7490f0c70d0df3f721f056a1457ba4289",
+    "replay": "c2393e388b486d7fa266158f5b583c12ae07dc886a354b2e1aa624bc88d24fb7",
+    "popup-negative": "9a6a976c831b3920812d9923c707a0d17d52701beb15c951df0b822dd765fe20"
+  },
+  "limits": "Media rendering and the built distribution's full check were not run in this API proof. This receipt was created after the copy and is not included in identical_evidence_files."
+}

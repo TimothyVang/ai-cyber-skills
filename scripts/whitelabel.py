@@ -6,8 +6,8 @@
 The source brand is `brand/brand.json`. The build copies every file, replaces the source brand's names with
 the new brand's (longest token first) in text and in paths, rethemes the site, re-renders the images, and
 rewrites the plugin, marketplace, bot and SEO metadata. LICENSE and NOTICE files keep their bytes; the root
-LICENSE and NOTICE.md get the new brand's copyright line appended. A last pass fails the build if any source
-name is left anywhere outside LICENSE* and NOTICE*, then runs the copy's own scripts/check.py.
+LICENSE and NOTICE.md get the new brand's copyright line appended. Immutable docs/evidence/ paths and bytes
+also remain upstream observations. A last pass rejects other source-name leftovers, then runs the copy's checks.
 
 Re-running into the same --out rebuilds it from scratch, so the result is the same each time. Needs Python 3.10+,
 Pillow, and agg and gifski on PATH for the images.
@@ -35,6 +35,7 @@ OWN_RUN_FILES = {".md", ".html", ".txt", ".json", ".xml", ".svg"}
 # The upstream's own artifacts: the capture of its real PR thread, the script that composes it, and the
 # screenshots of its site in the rebrand guide. A branded copy drops them.
 UPSTREAM_ONLY = ("docs/images/pr-19-thread.gif", "scripts/media/pr19_thread.py", "docs/images/rebrand-")
+IMMUTABLE_EVIDENCE = "docs/evidence/"
 DEMO_ALT = ("Illustrated walk-through of a PR conversation: kickoff, conflict merge, review, answer, re-review, "
             "a three-verifier panel, and the merge gate.")
 DEMO_CAPTION = "How a PR moves through the bots. Every turn is a comment in the PR thread, and only a panel pass merges it."
@@ -177,7 +178,7 @@ def find_leftovers(root: Path, pattern: re.Pattern) -> list:
     found = []
     for path in sorted(root.rglob("*"), key=lambda p: p.relative_to(root).as_posix()):
         rel = path.relative_to(root).as_posix()
-        if SKIP_DIRS & set(rel.split("/")):
+        if SKIP_DIRS & set(rel.split("/")) or rel.startswith(IMMUTABLE_EVIDENCE):
             continue
         if pattern.search(rel):
             found.append(f"{rel}: name in path")
@@ -410,12 +411,12 @@ def build(brand_file, out, src_root: Path = ROOT, media: bool = True, check: boo
     for rel in files:
         if rel.startswith(UPSTREAM_ONLY):
             continue
-        new_rel = rb.path(rel)
+        new_rel = rel if rel.startswith(IMMUTABLE_EVIDENCE) else rb.path(rel)
         if new_rel in targets:
             raise BrandError(f"{rel} and {targets[new_rel]} both become {new_rel}")
         targets[new_rel] = rel
         data = (src_root / rel).read_bytes()
-        if not is_legal(rel) and b"\0" not in data:
+        if not is_legal(rel) and not rel.startswith(IMMUTABLE_EVIDENCE) and b"\0" not in data:
             try:
                 data = rb.file_text(rel, data.decode("utf-8")).encode("utf-8")
             except UnicodeDecodeError:

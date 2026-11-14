@@ -22,6 +22,7 @@ Both sites come from the same source. The right one is the output of `py -3 scri
 ## What stays
 
 - **License notices.** Every `LICENSE*` and `NOTICE*` file keeps its exact bytes, because the MIT license requires the copyright and permission notice in every copy. The root `LICENSE` and `NOTICE.md` get one addition at the end: your copyright line for the rebrand. `NOTICE.md` also maps its upstream paths to your renamed ones.
+- **Recorded evidence.** `docs/evidence/` keeps its original paths and bytes, including source names, screenshots and cryptographic seals. These are canonical upstream observations, not proof that the rebranded distribution has run. Rewriting them would falsify provenance or invalidate hashes.
 - **Behavior.** The gates, the verifier panel, the agents, the playbooks and the skills work the same. Only names, colors and images change.
 - **Companion repos.** A few references cite the upstream author's other repos (frontend, cloud-devsecops, softwarefactory). They point at your account after the build, so fork those repos too or drop the references.
 
@@ -67,7 +68,7 @@ The build:
 2. Writes your brand file, logo and favicon into `brand/` and the site, and updates the plugin, marketplace and bot manifests. The README shows `brand/logo.svg` at the top, and the site's nav shows `docs/images/logo.svg`.
 3. Rethemes the site, rewrites its SEO tags and JSON-LD, and rebuilds `llms-full.txt`.
 4. Re-renders the images with `scripts/media/render.py`.
-5. Verifies. It fails if `deepmodebot`, `Deepmodebot`, `DEEPMODEBOT` or the upstream author's name is left anywhere, in any case and in any path, outside `LICENSE*` and `NOTICE*`. Then it runs the copy's own `scripts/check.py`.
+5. Verifies. It rejects source-brand names left outside license notices and immutable `docs/evidence/` observations. Then it runs the copy's own `scripts/check.py`.
 
 It prints `OK: built ../acme-review, 0 leftovers` on success. `--out` must be outside this repo (or under its `.scratch/`). Each run rebuilds the folder from scratch and keeps its `.git`, so the same inputs give the same copy. The build marks its output with `brand/.whitelabel-build` and only empties a folder that has that file, so it refuses a non-empty folder it did not build and deletes nothing there. `--brand` can be the built copy's own `brand/brand.json`.
 

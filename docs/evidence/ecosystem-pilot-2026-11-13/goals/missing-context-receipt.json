@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "state": "needs_context",
+  "draft": true,
+  "executed": false,
+  "model": "openai-codex/gpt-6-astra",
+  "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+  "max_rounds": 2,
+  "rounds": [
+    {
+      "round": 1,
+      "candidate_sha256": "281a96dbd215e913b377e3cd72e012f1d127bea7ad003cd576de9d1396f277b9",
+      "votes": [
+        {
+          "candidate_sha256": "281a96dbd215e913b377e3cd72e012f1d127bea7ad003cd576de9d1396f277b9",
+          "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+          "lens": "intent_fidelity",
+          "vote": "needs_context",
+          "reasons": [
+            "The candidate correctly defers format selection, but the intended consumer remains unresolved. That preference determines export requirements; the existing regression check cannot establish workflow suitability."
+          ],
+          "questions": [
+            {
+              "question": "Should this export primarily serve accountants using spreadsheets or API clients?",
+              "recommendation": "Choose UTF-8 CSV for accountants or structured JSON for API clients; prioritize one audience rather than implementing both."
+            }
+          ],
+          "evidence_requests": []
+        },
+        {
+          "candidate_sha256": "281a96dbd215e913b377e3cd72e012f1d127bea7ad003cd576de9d1396f277b9",
+          "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+          "lens": "measurement_validity",
+          "vote": "needs_context",
+          "reasons": [
+            "The intended consumer is unresolved, so measurable export acceptance criteria cannot yet be grounded. The candidate correctly avoids fabricated measurements; the protected check establishes regression safety, not export suitability."
+          ],
+          "questions": [
+            {
+              "question": "Should the export prioritize accountants using spreadsheets or API clients?",
+              "recommendation": "Choose UTF-8 CSV for accountants or structured JSON for API clients; prioritize one audience before defining export acceptance criteria."
+            }
+          ],
+          "evidence_requests": []
+        },
+        {
+          "candidate_sha256": "281a96dbd215e913b377e3cd72e012f1d127bea7ad003cd576de9d1396f277b9",
+          "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+          "lens": "feasibility_safety",
+          "vote": "needs_context",
+          "reasons": [
+            "The intended consumer remains unresolved; CSV versus JSON materially changes implementation and acceptance criteria. The candidate correctly avoids inventing that preference, and the existing regression check cannot establish export suitability."
+          ],
+          "questions": [
+            {
+              "question": "Should the export primarily serve accountants using spreadsheets or API clients?",
+              "recommendation": "Choose UTF-8 CSV for accountants or structured JSON for API clients; prioritize one consumer group rather than implementing both."
+            }
+          ],
+          "evidence_requests": []
+        }
+      ],
+      "decision": "needs_context",
+      "minority_report": []
+    }
+  ],
+  "questions": [
+    {
+      "question": "Should the export serve accountants using spreadsheets (UTF-8 CSV) or API clients (structured JSON)?",
+      "recommendation": "Choose CSV for accountants or JSON for API clients; prioritize one consumer group rather than implementing both."
+    },
+    {
+      "question": "Should this export primarily serve accountants using spreadsheets or API clients?",
+      "recommendation": "Choose UTF-8 CSV for accountants or structured JSON for API clients; prioritize one audience rather than implementing both."
+    },
+    {
+      "question": "Should the export prioritize accountants using spreadsheets or API clients?",
+      "recommendation": "Choose UTF-8 CSV for accountants or structured JSON for API clients; prioritize one audience before defining export acceptance criteria."
+    },
+    {
+      "question": "Should the export primarily serve accountants using spreadsheets or API clients?",
+      "recommendation": "Choose UTF-8 CSV for accountants or structured JSON for API clients; prioritize one consumer group rather than implementing both."
+    }
+  ],
+  "evidence_requests": [],
+  "goal_sha256": null
+}

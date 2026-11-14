@@ -1,0 +1,49 @@
+{
+  "checkedAt": "2026-11-14T05:34:11Z",
+  "copies": {
+    "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\.omp\\agent\\skills\\deepmodebot": {
+      "backup": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\.cache\\deepmodebot\\bot\\local-updates\\backups\\85681a5ccc65463e9fad42b281db6bb1",
+      "kind": "copy",
+      "origin": "https://github.com/TimothyVang/deepmodebot.git",
+      "prefix": "plugins/deepmodebot/skills/deepmodebot",
+      "sha": "6b00c9303eca4a856144af63dff3dc28149dbe69"
+    },
+    "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\deepmodebot": {
+      "kind": "checkout",
+      "origin": "https://github.com/TimothyVang/deepmodebot.git",
+      "sha": "6b00c9303eca4a856144af63dff3dc28149dbe69"
+    }
+  },
+  "remoteSha": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+  "targets": [
+    {
+      "action": "current",
+      "kind": "checkout",
+      "path": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\deepmodebot"
+    },
+    {
+      "action": "preserved",
+      "kind": "checkout",
+      "path": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\code\\deep-mode",
+      "reason": "not on main; feature branches are preserved"
+    },
+    {
+      "action": "preserved",
+      "kind": "checkout",
+      "path": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\foreign-origin",
+      "reason": "origin is a fork or unknown source (canonical upstream does not override origin)"
+    },
+    {
+      "action": "preserved",
+      "kind": "checkout",
+      "path": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\dirty-checkout",
+      "reason": "dirty checkout; tracked edits or unknown untracked files are preserved"
+    },
+    {
+      "action": "synchronized",
+      "kind": "copy",
+      "path": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\.omp\\agent\\skills\\deepmodebot"
+    }
+  ],
+  "updatedAt": "2026-11-14T05:34:14Z"
+}

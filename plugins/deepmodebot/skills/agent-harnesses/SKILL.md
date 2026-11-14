@@ -1,6 +1,6 @@
 ---
 name: agent-harnesses
-description: "Cited, dated facts for using and scripting omp, Claude Code, Codex, and Antigravity SDKs: installation, embedding, config paths, flags, hooks, skills, headless runs, permissions, and MCP/ACP/A2A protocols. Use when installing SDKs, building agent applications, or configuring, scripting, or comparing an agent harness or protocol."
+description: "Cited, dated facts for omp, Claude Code, Codex and Antigravity SDKs; harness installation, embedding, configuration, hooks, permissions and delegation; MCP, ACP, A2A and WebMCP; LangChain, LangGraph, Deep Agents and LangSmith. Use for SDK or framework selection, agent applications, middleware routing, checkpoint/replay, memory, evals, deployment and bounded loops."
 metadata:
   as-of: "2026-11-13"
 ---
@@ -21,6 +21,8 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 | `references/ai-native-tooling.md` | Portable `AGENTS.md` and Agent Skills, plugin and marketplace formats, other harnesses (Gemini, Antigravity, Cursor, Copilot, OpenCode, Amp, Goose, Zed, Devin, Kiro), browser automation, docs for agents, orchestrators |
 | `references/self-authoring.md` | Writing prompts, commands, or skills from inside a session; native goal and loop modes (`/goal`, `/loop`, ralph-loop, `/autoresearch`); headless loop flags and cost caps; skill spec and validation; self-modification risks |
 | `references/delegation-efficiency.md` | Whether to delegate; which model and effort per task type in omp, Claude Code, and Codex; current model line-ups and prices; subscription limits; caching and token-saving; spend caps |
+| `references/langchain-ecosystem.md` | Choosing `create_agent` / `createAgent`, `StateGraph` or Deep Agents; Python/TS version boundaries; tools vs skills vs subagents; middleware routing; persistence, interrupts/replay, MCP adapters, LangSmith evals/deployment; applying patterns to bounded loops without an SDK |
+| `references/ai-sdk-selection.md` | Choosing an AI SDK by application: typed Python, TypeScript streaming UI, agent runtime, coding harness, durable graph or Microsoft/Gemini integration; auth, telemetry and verification tradeoffs |
 
 ## Cross-harness map
 

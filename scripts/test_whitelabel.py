@@ -1,4 +1,5 @@
 """Edge cases of the white-label build. Run: py -3 scripts/test_whitelabel.py"""
+import hashlib
 import json
 import sys
 import tempfile
@@ -147,6 +148,31 @@ class Build(unittest.TestCase):
     def build(self, brand_file=None):
         return whitelabel.build(brand_file or self.dst_file, self.out, src_root=self.src, media=False, check=False,
                                 log=lambda *_: None)
+
+    def test_recorded_evidence_keeps_paths_bytes_and_digest_after_rebranding(self):
+        refs = Path("plugins") / SRC["slug"] / "skills" / SRC["mainSkillName"] / "references"
+        for name in ("flows.md", "techniques/github-app.md", "techniques/pr-conversation.md",
+                     "techniques/issue-conversation.md"):
+            target = self.src / refs / name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes((ROOT / refs / name).read_bytes())
+        rel = "docs/evidence/deepmodebot-pilot/observed.txt"
+        payload = b"deepmodebot: PR #19, original observation\r\n"
+        source = self.src / rel
+        source.parent.mkdir(parents=True)
+        source.write_bytes(payload)
+        digest = hashlib.sha256(payload).hexdigest().encode()
+        source.with_suffix(".sha256").write_bytes(digest + b"\r\n")
+        adjacent = self.src / "docs/evidenceology/deepmodebot.txt"
+        adjacent.parent.mkdir(parents=True)
+        adjacent.write_bytes(b"deepmodebot")
+
+        self.assertEqual(self.build(), [])
+        copied = self.out / rel
+        self.assertEqual(copied.read_bytes(), payload)
+        self.assertEqual(copied.with_suffix(".sha256").read_bytes(), digest + b"\r\n")
+        self.assertEqual(hashlib.sha256(copied.read_bytes()).hexdigest().encode(), digest)
+        self.assertEqual((self.out / "docs/evidenceology/zeta-review.txt").read_bytes(), b"Zeta Review")
 
     def test_license_bytes_stay_and_the_copyright_line_is_appended_once(self):
         self.assertEqual(self.build(), [])

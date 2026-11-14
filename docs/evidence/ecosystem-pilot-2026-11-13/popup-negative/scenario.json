@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "intent": "Negative containment pilot: opening a second tab must fail single-tab recording, never combine popup screenshots with original-tab video.",
+  "allowed_origins": ["http://127.0.0.1:18991"],
+  "steps": [
+    {"id": "open-boundary", "action": {"type": "open", "url": "http://127.0.0.1:18991/popup"}, "expected": {"text": [{"selector": "h1", "equals": "Popup boundary fixture"}]}},
+    {"id": "open-popup", "action": {"type": "click", "selector": "#popup"}, "expected": {"text": [{"selector": "h1", "equals": "Invoice export"}]}}
+  ]
+}

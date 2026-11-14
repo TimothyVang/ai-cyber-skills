@@ -1,0 +1,14 @@
+{
+  "query": "SELECT ids_json, source_count FROM exports WHERE id = 1",
+  "observed_row": [
+    "[\"inv-2\", \"inv-1\", \"inv-3\"]",
+    4
+  ],
+  "snapshot_sha256": "ca4f4b2ec0d3b76e6d620a96d2d72f64eb3bd28ff6ee411d3559d62dadae6ccd",
+  "fixture_source_sha256": {
+    "server.py": "be9078ae63fc04196879856f301852e10fb66f170b6e8ece3764fe0aea2c4c05",
+    "worker.py": "98fa959927d70683dbbb9a55cc45fc7ee373deaff164c3f6387dedda3f402455",
+    "scenario.json": "0a180ad4fe0b328534c35e99ac0824d9116e5e60ad56a1c8e5954734baef497f"
+  },
+  "scope": "Snapshot of the real local fixture after record/replay; synthetic identifiers only. Not evidence of a production database."
+}

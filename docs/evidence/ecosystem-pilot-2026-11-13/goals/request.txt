@@ -1,0 +1,1 @@
+Make invoice exports stop repeating invoices without shuffling my original order. Keep the existing identifiers exactly as entered. Improve the worker only; do not change the acceptance check or add services. Draft a bounded measurable goal first; this planning call must not execute it.

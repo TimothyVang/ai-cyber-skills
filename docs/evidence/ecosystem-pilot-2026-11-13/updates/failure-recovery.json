@@ -1,0 +1,23 @@
+{
+  "method": "Real public CLI and canonical network; isolated home; actual Windows file handle permits reads/writes but denies delete-sharing, then handle release and recovery. No production installation changed.",
+  "setup_observation": "Initial SKILL.md was unchanged; selected a changed reference. The first ZIP export inherited CRLF conversion and was safely refused with exit 0. A separate candidate was exported with per-command core.autocrlf=false and its complete inventory matched canonical Git blobs before the fault run. No global Git settings changed.",
+  "prior_preservation_exit": 0,
+  "blocked_file": "references/README.md",
+  "source_sha": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+  "baseline_sha": "5284bbc654c5f0e8acfe819bade6e7902cfe4668",
+  "command": [
+    "C:\\Users\\newbi\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+    "-B",
+    "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\plugins\\deepmodebot\\skills\\deepmodebot\\assets\\github-app\\bot.py",
+    "update"
+  ],
+  "failure_exit": 1,
+  "blocked_file_unchanged": true,
+  "recovery_exit": 0,
+  "recovered_file_count": 140,
+  "complete_content_matches_pinned_source": true,
+  "source_files": {
+    "bot.py": "4bec5fc284ef100edc645e1f42ed3da738c433851dc43cf72b3756f489c8c12a",
+    "local_updates.py": "f99dea004a600fb6f31ba4270bca37f79629da2440c12be635956e099277ad03"
+  }
+}

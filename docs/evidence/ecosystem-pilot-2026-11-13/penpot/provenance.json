@@ -1,0 +1,73 @@
+{
+  "version": "2.18",
+  "compose_sha256": "a87b696d2e309fc4b1a52cf04300f64510f5d847de944c1c17b284d8bd0e8d0b",
+  "import": "Actual image-upload control accepted generated workflow.svg; six workflow screenshots rendered.",
+  "edited_shape": {
+    "id": "0e1e7373-dc1c-800e-8008-f15db29eee57",
+    "type": "rect",
+    "width_before": 984,
+    "width_exported": 1000.0000000000001,
+    "height": 350
+  },
+  "native_sha256": "16bb378f9b527f05a318f04ee2e724cce772809fdef82f8b5cb5407a47c78a60",
+  "raw_svg_sha256": "b445bc5cb01f993fe77231a4f22eb542c445a71c4686cd11d1049ccfaadfe80c",
+  "portable_svg_sha256": "9928e194f92e9ae257f7fd529dfe38434bedfd0e44e1269b32c0db5bf6a4e2ad",
+  "portable_derivation": "Retained raw native SVG separately. Replaced 12 local HTTP image references using matching media IDs and unmodified PNG bytes from the native .penpot archive; rendered the derivative in real Chrome.",
+  "embedded_media": [
+    {
+      "member": "objects/a07046bf-c849-4154-ae8c-60b40e223557.png",
+      "sha256": "edac3d8f8847e83108ce8eaa839e75aedffd3be6b548815e6e601334e7730286"
+    },
+    {
+      "member": "objects/a07046bf-c849-4154-ae8c-60b40e223557.png",
+      "sha256": "edac3d8f8847e83108ce8eaa839e75aedffd3be6b548815e6e601334e7730286"
+    },
+    {
+      "member": "objects/96e52461-e3ae-419a-8980-bcde7591ed1d.png",
+      "sha256": "cd7b52c26966b1d880197eea95099bd0765466c5e2c4e8d4f50c62ba5182e489"
+    },
+    {
+      "member": "objects/96e52461-e3ae-419a-8980-bcde7591ed1d.png",
+      "sha256": "cd7b52c26966b1d880197eea95099bd0765466c5e2c4e8d4f50c62ba5182e489"
+    },
+    {
+      "member": "objects/b6441221-763e-4433-af4d-f9ef47118af5.png",
+      "sha256": "b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949"
+    },
+    {
+      "member": "objects/b6441221-763e-4433-af4d-f9ef47118af5.png",
+      "sha256": "b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949"
+    },
+    {
+      "member": "objects/b6441221-763e-4433-af4d-f9ef47118af5.png",
+      "sha256": "b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949"
+    },
+    {
+      "member": "objects/b6441221-763e-4433-af4d-f9ef47118af5.png",
+      "sha256": "b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949"
+    },
+    {
+      "member": "objects/04e980cd-622e-40a9-bfad-a364320d078c.png",
+      "sha256": "7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a"
+    },
+    {
+      "member": "objects/04e980cd-622e-40a9-bfad-a364320d078c.png",
+      "sha256": "7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a"
+    },
+    {
+      "member": "objects/04e980cd-622e-40a9-bfad-a364320d078c.png",
+      "sha256": "7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a"
+    },
+    {
+      "member": "objects/04e980cd-622e-40a9-bfad-a364320d078c.png",
+      "sha256": "7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a"
+    }
+  ],
+  "limitations": [
+    "SVG text imported as svg-raw, not native rich text.",
+    "The native SVG export has localhost image references and is not standalone.",
+    "agent-browser native download reported canceled; managed Chrome downloaded the actual Penpot native and SVG files. Cause of the native download failure was not isolated.",
+    "Edit video is supplementary, not the independently reviewed invoice replay.",
+    "No interaction prototype or general design-tool compatibility claim."
+  ]
+}

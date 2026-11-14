@@ -1,0 +1,1 @@
+{"success":true,"data":{"launched":true,"lifecycle":{"effectiveLaunch":{"browserLaunched":true,"engine":"chrome","launchHash":4767793089079400358},"launched":true,"relaunchedBrowser":false,"restartedBackground":false,"restoreStatus":"not_configured","reused":false,"saveStatus":"not_attempted"},"relaunchedBrowser":false},"error":null}

@@ -1,1 +1,4 @@
 * text=auto eol=lf
+
+# Recorded evidence is content-addressed; preserve original bytes on every OS.
+docs/evidence/** -text

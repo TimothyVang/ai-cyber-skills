@@ -77,7 +77,7 @@ Work two tracks at once: the tactical one (land the next unit) and the strategic
    Done when about ten workers are in flight, or every remaining unit is running or done.
 8. When new work needs a worker's checkout, uncommitted changes, or running process, message that worker (`write agent://<id>`, which also revives it) or spawn a fresh worker pointed at its worktree/branch. There is no fork. Never message a worker just to check on it.
    Done when the tracker shows the new work under the worker holding that state, or under a fresh worker on its worktree.
-9. Give each PR a **panel** (`references/techniques/panel.md`): three verifiers that didn't author it (one, the light panel, for a size S PR), default `task` agents (they must run the app and prove behavior; `reviewer` is read-only and only reviews a diff), on different model families when available.
+9. Give every PR a **panel** (`references/techniques/panel.md`): exactly three verifiers who did not author it, default `task` agents that can prove real behavior, using different authorized model families when available. All three valid responses are required; at least two must pass.
    The owner merges only on a panel pass at the current head. That pass includes a pr-review round in PR mode on the current head with no P0/P1 open and every P2 fixed or dismissed with a reason; the review is evidence, never a substitute for the panel's live proof.
    Done when every merged PR has a panel pass and a pr-review line at its merge head in the tracker.
 10. Supervise by artifacts. Read the diff or artifact, not only the summary. Green CI is an input, not a verdict; behavioral work needs more than a type check. A new push needs a new verdict and a new pr-review round.

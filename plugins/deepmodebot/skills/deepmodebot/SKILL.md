@@ -27,12 +27,13 @@ It owns process precedence, domain-rule and maintainer exceptions, owner decisio
 In a repo the user cannot push to, its maintainers' process stands.
 
 **2. Pick the route** from the table in the Routes section below. First match wins.
+For tool selection, use **tool-routing** (`references/techniques/tool-routing.md`).
 
 **3. Size it**, then follow that size's rules. Re-size if the work turns out bigger.
 
 | Size | Looks like | How to run it |
 |---|---|---|
-| **S** | At most 30 changed lines in at most 2 files, nothing about auth, secrets, permissions, trust-boundary parsing, migrations, CI, or agent config | Restate in one line, fix, add a test that fails without the fix when it has behavior, prove it once on the real artifact. A **local S fix** (no remote, or the user said they will review it) reads no reference file and lands on no branch: no commit to the default branch, no push, no merge. Any of those three takes the S lane (`references/playbooks/opening-a-pr.md`) and its light panel. No other subagents, architect, or decision log. |
+| **S** | At most 30 changed lines in at most 2 files, no auth, secrets, permissions, trust-boundary parsing, migrations, CI, or agent config | Restate, fix, add a behavior-sensitive regression when needed, and prove the real artifact. A **local S fix** (no remote, or user review) stays uncommitted: no push or merge. Publication takes the S lane (`references/playbooks/opening-a-pr.md`) and the same three-reviewer, two-of-three panel as every PR. No extra planning agents or decision log. |
 | **M** | A few files, one feature or bug with a cause to find | The matched playbook. Implement directly when one owner suffices. For local delivery, use the local-edit rule below; publication takes Opening a PR. |
 | **L** | Cross-cutting, new module, many files, risky, or long-running | The full playbook with subagents, architect where shapes differ, and a show-me-your-work trail. |
 
@@ -91,7 +92,7 @@ For size **S**, only the one-line restate, the Scope ledger, proving it on the r
 
 - **Your own PRs land on their own.** Once every review finding is fixed or dismissed, linked issues are answered, the panel passes, and required checks are green, the **pr-conversation** technique merges the user's own PR. No separate ask.
 - **Landing means a panel pass.** Nothing lands on the default branch or a branch others build on until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. A verified, uncommitted local S/M edit is complete without landing.
-  - For size S, the light panel (one verifier, another model family when available) is that pass. Local S/M edits need no shipping panel; their real-behavior proof and diff review remain required.
+  - Every publication needs all three valid independent responses and at least two passes. Local S/M edits need no shipping panel; real-behavior proof and diff review remain required.
   - Push your own PR branch so the panel can check it. Your own green runs are evidence the panel reproduces, never a substitute.
   - Then push to the shared branch, or merge with `gh pr merge --match-head-commit <sha>`, run the checks on the new trunk, and open a revert PR if it went red.
 - **Decisions are yours.** The user prefers the agent decide. Make every product, design, scope, and preference call yourself. Pick the option that is reversible, smallest, and consistent with the codebase and the user's stated goal.
@@ -125,7 +126,7 @@ Step 2 of Route. First match wins.
 | "review since <ref>", "review my branch against the spec / coding standards" | **pr-review** in local mode (`references/techniques/pr-review.md`) |
 | "land / finish / merge this PR on your own", "bots talk it out in the PR", "no human approval", or your own PR once it is open | **pr-conversation** technique (`references/techniques/pr-conversation.md`) |
 | "have the bots plan / discuss / implement this issue", "@deepmodebot implement" | **issue-conversation** technique (`references/techniques/issue-conversation.md`) |
-| "install deepmodebot on my repos", "run the bots on their own", "AI review on my own subscription", or start, stop, or opt a repo out of the bots | **github-app** technique (`references/techniques/github-app.md`) |
+| "install deepmodebot on my repos", "run the bots on their own", "auto-update local Deepmode copies", "AI review on my own subscription", or start, stop, or opt a repo out of the bots | **github-app** technique (`references/techniques/github-app.md`) |
 | "check on / babysit / get green" a PR | Babysit playbook |
 | "help on / contribute to / what can I work on" a project, or a repo the user can't push to that has a brief | `skill://contribute` |
 | "set up / publish this project for contributors", "make issues for helpers" | `skill://project-brief` |
@@ -137,6 +138,7 @@ Step 2 of Route. First match wins.
 | "write the spec", "turn this into a spec", "spec it up" | Spec playbook |
 | "break this into tickets", "split the spec into issues", "make tickets for this" | Tickets playbook |
 | "implement the spec", "build spec #N", "build all the tickets on one branch" | Phased build playbook, build mode |
+| "turn this vague goal into measurable milestones", "review my goal with three agents", "grill the goal before looping" | **goal-review** technique (`references/techniques/goal-review.md`), then Self-authoring for the bounded artifact |
 | "grill with docs", "record the decisions", or "grill me" in a repo with `GLOSSARY.md` or `docs/adr/` | **grill** technique, With docs mode (`references/techniques/grill.md`) |
 | "grill me / grill this plan / stress-test this idea" | **grill** technique (`references/techniques/grill.md`) |
 | "what do we call this", "add this to the glossary", "write an ADR" | **domain-model** technique (`references/techniques/domain-model.md`) |
@@ -150,6 +152,11 @@ Step 2 of Route. First match wins.
 | A decision needs knowledge only one other person has: "write questions for the client", "make a questionnaire" | **questionnaire** technique (`references/techniques/questionnaire.md`) |
 | "wait, what?", "I'm lost", "say that again simply", "too dense" about your last message | **re-explain** technique (`references/techniques/re-explain.md`) |
 | "hand this off", "write a handoff", "continue in a new session", "start a background agent on the rest" | Handoff playbook |
+| "choose / route tools or skills", "design an automatic tool router" | **tool-routing** technique (`references/techniques/tool-routing.md`) |
+| "let agents talk to each other", "coordinate siblings", "route an ACP message" | **agent-collaboration** technique (`references/techniques/agent-collaboration.md`) |
+| "record / replay the full E2E workflow", "three agents review the video", "visual acceptance evidence" | **visual-e2e** technique (`references/techniques/visual-e2e.md`) |
+| "Penpot", "open-source Figma alternative", "editable workflow diagrams linked to recordings" | **open-design-evidence** technique (`references/techniques/open-design-evidence.md`) |
+| "write / improve your own prompt, skill, goal, or loop", "make yourself able to X", a workflow done the same way twice | Self-authoring playbook |
 | Writing or editing a skill | Authoring a skill playbook (its first step reads the **writing-for-agents** technique) |
 | Writing or editing `AGENTS.md`, `CLAUDE.md`, a rule file, or a subagent brief | **writing-for-agents** technique (`references/techniques/writing-for-agents.md`) |
 | "block dangerous git commands", "add git safety hooks", "stop the agent from force-pushing" | **git-guardrails** technique (`references/techniques/git-guardrails.md`) |
@@ -163,7 +170,6 @@ Step 2 of Route. First match wins.
 | "run pr-agent / describe, review, improve this PR with PR-Agent" | **pr-agent** technique (`references/techniques/pr-agent.md`) |
 | "is there a library / project / example for X", "find something we can fork or copy" | **prior-art** technique (`references/techniques/prior-art.md`) |
 | A new app, an empty repo, "start / build me <app>", "what stack" | **prior-art** first (newest repos to copy or learn from), then `skill://deep-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
-| "write / improve your own prompt, skill, goal, or loop", "make yourself able to X", a workflow done the same way twice | Self-authoring playbook |
 | Anything else | The Playbooks table below |
 
 ## Running without the human
@@ -267,10 +273,12 @@ Read the entry file before designing, building, or reviewing in that area, then 
 | UI code of any kind: components, motion, color, accessibility, chat or agent UI | `skill://frontend-ui` |
 | Stack choice, an agent-driven UI design workflow, recording UI proof without a verify skill | `skill://deep-stack` |
 | Using, configuring, or scripting omp, Claude Code, or Codex; MCP, ACP, skills, plugins, hooks; which model and effort to delegate to | `skill://agent-harnesses` |
+| LangChain, LangGraph, Deep Agents, LangSmith, agent middleware, checkpointing or framework tool routing | `skill://agent-harnesses/references/langchain-ecosystem.md` |
+| "best AI SDK", SDK selection for typed Python, streaming TypeScript, agent runtimes or harness embedding | `skill://agent-harnesses/references/ai-sdk-selection.md` |
 | Secrets, `.env`, passwords, logins, MFA, OAuth, agent authentication, a suspected leak | `skill://secrets-and-auth` |
 | Repo layout, domain vocabulary and data model, database, backend infrastructure | `skill://software-architecture` |
 | Agents and LLMs, AWS networking, backend code, a language's traps, DevOps, debugging practice | `skill://domain-rules` |
-| Cloud accounts, IAM, policy, pipelines, IaC, local cloud emulators | `skill://cloud-devsecops` |
+| Docker, Compose, container images/runtimes, Kubernetes, Helm/Kustomize, cloud accounts, IAM, pipelines, IaC or local cloud emulators | `skill://cloud-devsecops` |
 | Picking browser automation, sandboxes, harnesses, or orchestrators | `references/README.md` |
 
 ## Habits worth keeping

@@ -1,0 +1,116 @@
+{
+  "method": "Real public CLI, canonical GitHub identity/network and actual Git merge failure caused by a fixture-owned index.lock. Only the owned lock was removed before recovery. No production installation changed.",
+  "source_sha": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+  "baseline_sha": "5284bbc654c5f0e8acfe819bade6e7902cfe4668",
+  "command": [
+    "C:\\Users\\newbi\\AppData\\Local\\Microsoft\\WindowsApps\\PythonSoftwareFoundation.Python.3.13_qbz5n2kfra8p0\\python.exe",
+    "-B",
+    "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\plugins\\deepmodebot\\skills\\deepmodebot\\assets\\github-app\\bot.py",
+    "update"
+  ],
+  "failure_exit": 1,
+  "head_after_failure": "5284bbc654c5f0e8acfe819bade6e7902cfe4668",
+  "tracked_diff_after_failure_exit": 0,
+  "recovery_exit": 0,
+  "head_after_recovery": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+  "setup_and_observation_commands": [
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "clone",
+        "--config",
+        "core.longpaths=true",
+        "--config",
+        "core.autocrlf=false",
+        "--no-checkout",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\.cache\\deepmodebot\\bot\\local-updates\\canonical.git",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\src\\deepmodebot"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "Cloning into 'C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\src\\deepmodebot'...\ndone.\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "-C",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\src\\deepmodebot",
+        "remote",
+        "set-url",
+        "origin",
+        "https://github.com/TimothyVang/deepmodebot.git"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "-C",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\src\\deepmodebot",
+        "checkout",
+        "-B",
+        "main",
+        "5284bbc654c5f0e8acfe819bade6e7902cfe4668"
+      ],
+      "exit": 0,
+      "stdout": "Your branch is behind 'origin/main' by 1 commit, and can be fast-forwarded.\n  (use \"git pull\" to update your local branch)\n",
+      "stderr": "Reset branch 'main'\n"
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "-C",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\src\\deepmodebot",
+        "rev-parse",
+        "HEAD"
+      ],
+      "exit": 0,
+      "stdout": "5284bbc654c5f0e8acfe819bade6e7902cfe4668\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "-C",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\src\\deepmodebot",
+        "diff",
+        "--exit-code",
+        "5284bbc654c5f0e8acfe819bade6e7902cfe4668",
+        "--"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "-C",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\src\\deepmodebot",
+        "rev-parse",
+        "HEAD"
+      ],
+      "exit": 0,
+      "stdout": "6b00c9303eca4a856144af63dff3dc28149dbe69\n",
+      "stderr": ""
+    }
+  ],
+  "source_files": {
+    "bot.py": "3af7e013b307a40374a3fc357ee543ca49302d47989f861bf2f7a6e06c8c7140",
+    "local_updates.py": "85083b679de78936159e3cb1ba8392b0f539a147a1efa02945a3f78ef5047ceb"
+  }
+}

@@ -22,7 +22,7 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | Piece | What it does |
 |---|---|
 | `/deep <anything>` | One command routes and sizes the task, proves the result on the real app, and reports its decisions. Ordinary local work stays in your starting tree for review. Publishing follows the review and verifier-panel gates. |
-| `deepmodebot` skill | 29 playbooks, 24 principles and 43 techniques, indexed in its `SKILL.md`. Every task is proven on the real artifact and merges only on a verifier panel pass. |
+| `deepmodebot` skill | 29 playbooks, 24 principles and 48 techniques, indexed in its `SKILL.md`. Every task is proven on the real artifact and merges only on a verifier panel pass. |
 | PR and issue bots | Install your own private GitHub App on your repos and a poller on your machine runs the bots: it reviews and lands your own PRs, resolves their merge conflicts, and plans and builds the issues you open. See [GitHub App bots](#github-app-bots). |
 | PR review | `/deepmodebot:review-pr <PR number>` reviews correctness, security, spec and standards, keeps findings backed by code or execution, and posts a comment-only review. No hosted review service is required. Prompts and source context still reach your configured model provider. |
 | Land a PR | `/deepmodebot:land-pr <PR number>` finishes and merges your own PR with no human: a reviewer bot posts findings in the PR thread, the author bot answers each with a fix or a reason, three verifier bots vote on the final head, and on a pass it merges. It never merges over a failing check. You see each turn in the session as it lands, drawn as an 8-bit frame right in the chat (each bot a sprite, each turn a dialog box), or watch the whole conversation play live as an 8-bit battle screen in your terminal; `/deepmodebot:pr-thread <PR or issue URL>` shows any bot conversation later. |
@@ -38,8 +38,9 @@ A real run, not a mock-up: the bots took [PR #19](https://github.com/TimothyVang
 | Self-authoring | deepmodebot writes and revises its own bounded loop prompts from observed failures. `assets/loop/loop.py` supplies the mutable working plan and latest check diagnostics, with exact prompt snapshots and complete check logs; shortened diagnostics link to their full log. The objective, constraints, acceptance check, protected files and finite caps stay fixed; plan-only edits do not prevent a stall stop. Runs use omp, Claude Code or Codex. Interactive sessions can use native `/goal`. |
 | Language ports | A behavior inventory, protected consumer tests and a representative pilot precede bulk translation. Preserve architecture unless the target runtime boundary requires a change; a port need not delete valid branches or reduce reader load. Parity and completeness are checked separately, including release builds, callbacks and lifecycle semantics. Copilot and Bun's Rust migration accounts inform the workflow without prescribing Rust or one cutover strategy. Parallel work has explicit integration and build owners. |
 | Efficient delegation | When a subagent pays for itself, which model tier and reasoning effort fits each task (search, mechanical edits, features, hard design, review, long runs, summaries) in omp, Claude Code, and Codex, how subscription limits are metered, and how to cut token use. In `plugins/deepmodebot/skills/agent-harnesses/references/delegation-efficiency.md`, checked 2026-11-11. |
+| Supporting capabilities | [Agent collaboration](plugins/deepmodebot/skills/deepmodebot/references/techniques/agent-collaboration.md), [visual E2E recording and review](plugins/deepmodebot/skills/deepmodebot/references/techniques/visual-e2e.md), and [editable design evidence](plugins/deepmodebot/skills/deepmodebot/references/techniques/open-design-evidence.md) support the task's primary playbook; they do not replace ordinary research, debugging or implementation intent. |
 
-The agent makes reversible product and design decisions and handles commits, PRs and merges when publication is in scope. Ordinary small or medium local work stays uncommitted in the starting tree, with runtime proof and diff review. Publication requires three skeptical verifiers and at least two evidence-backed passes, or one passing verifier for an eligible small change.
+The agent makes reversible product and design decisions and handles commits, PRs and merges when publication is in scope. Ordinary small or medium local work stays uncommitted in the starting tree, with runtime proof and diff review. Publication requires exactly three independent valid verifier responses and at least two evidence-backed passes, at the same final head.
 It still asks before deploys, deleting things it did not create, rewriting shared history, outside messages, spending money, using secrets only you have, or writing outside the project.
 
 ## Measured behavior
@@ -54,6 +55,10 @@ Reported usage is a harness estimate, not a subscription invoice. The small, dev
 Read the [paired review results and label corrections](evals/results/review-quality-2026-11-12.md)
 and [captured workflow outcomes](evals/results/workflow-coverage-2026-11-12.md).
 The review holdout contains one bug/control pair. The four exercised journeys do not prove the whole mapped inventory.
+
+The [six-step invoice pilot](docs/evidence/ecosystem-pilot-2026-11-13/README.md) exercised a synthetic app through browser, loopback HTTP, SQLite and fresh readback. Recording and replay each passed 6/6 steps.
+Three native image-review contexts each received all eight images (six screenshots and two sampled frames): all responses were valid, with two approvals and one revision request. Images alone do not prove persistence; the evidence index separates SQL proof and visual dissent.
+A separate local Penpot run imported the workflow, edited one native rectangle and exported `.penpot` plus SVG. Text remained raw SVG; a labeled derivative embeds local-server media for portability. No interaction prototype or native-file re-import is claimed.
 
 ## The software factory
 
@@ -214,7 +219,7 @@ py -3 assets/github-app/bot.py watch                                # poll in th
 - **Others' PRs:** review comments only, never merges or code execution. The reviewer receives the diff and a bounded packet of changed source files and direct local imports from Git objects. The packet names omissions; it is not whole-repository analysis.
 - **Issues:** the bots plan and critique in the thread. On an issue you opened, or after you comment `@deepmodebot implement`, they build it and open a PR that closes it.
 - **Agents and models:** each role in `bot.json` is `{"agent": "omp", "model": "<optional>"}`. Put the author on a Claude model and the reviewer on a GPT model in omp, and one harness gives you cross-family review.
-- **Updates:** a bot run from the omp plugin checks between cycles, at most hourly and right after it merges into this repo. When `main` moved it upgrades the plugin, and it restarts itself when its own code changed. `bot.py update` checks now. `"autoUpdate": false` in `bot.json` turns it off. A bot run from a git clone never updates; pull it yourself.
+- **Updates:** the watcher synchronizes eligible canonical checkouts, proven native skill copies and the omp plugin between cycles, at most hourly by default. Forks, dirty trees, feature branches and unknown provenance are preserved. `bot.py update` checks now; `--dry-run` previews. `"autoUpdate": false` disables polling. Existing older installations need one update and watcher restart; see the provenance, backup and handover rules in [GitHub App bots](plugins/deepmodebot/skills/deepmodebot/references/techniques/github-app.md).
 - **Opt out:** a base-branch `.deepmodebot.json` with `"bot": false` skips the repo, and `"autonomousMerge": false` stops it at merge-ready.
 
 ![The PR conversation: kickoff, conflict merge, review and answer rounds over ACP mirrored to the thread, a three-verifier panel, and the merge gate](docs/images/pr-conversation.svg)
@@ -260,7 +265,7 @@ deepmodebot is MIT licensed, and its brand kit lets you ship it as your own prod
 py -3 scripts/whitelabel.py --brand brand/examples/acme.json --out ../acme-review
 ```
 
-The build renames the plugin, commands, skills, the bot and its GitHub App, rethemes the site, re-renders the images, and updates the SEO and llms files. It fails if any old name is left. LICENSE and NOTICE stay, with your copyright line added. See [the rebrand guide](docs/rebrand.md).
+The build renames the plugin, commands, skills, bot and GitHub App, rethemes the site, re-renders images, and updates SEO and llms files. It rejects old names outside license notices and immutable upstream evidence. LICENSE and NOTICE retain attribution, with your copyright line added. See [the rebrand guide](docs/rebrand.md).
 
 ## Contribute
 
@@ -278,7 +283,7 @@ Full rules, including how to do it by hand: [CONTRIBUTING.md](CONTRIBUTING.md). 
 
 **What is deepmodebot?** An open-source MIT plugin for coding agents. It combines a self-hosted PR and issue bot with workflows for planning, implementation, review and delivery. Local work requires runtime proof; published changes also pass the verifier gate.
 
-**How do the PR bots work?** A poller on your machine checks the repos where your app is installed. An author agent and a reviewer agent, each an ACP agent reached through acpx, keep a session per PR. A coordinator passes each turn between them and posts it to the thread as your app, until no P0 or P1 finding is open. Three verifiers then vote (one, who must pass it, for a small change), and a gate in code merges your own PR at the voted head.
+**How do the PR bots work?** A poller checks repos where your app is installed. An author and reviewer exchange ACP-backed turns in the PR thread until no P0/P1 remains and every P2 is answered. Exactly three independent verifiers then assess the same head; all responses must be valid and at least two must pass. Deterministic repository, ownership and merge gates still apply.
 
 **Does it need an API key?** No. Supported agent CLIs use existing subscription logins, and calls count against their usage. This is not offline inference: prompts and source context can reach the configured model provider.
 
@@ -289,7 +294,7 @@ Full rules, including how to do it by hand: [CONTRIBUTING.md](CONTRIBUTING.md). 
 **Has it merged a real PR on its own?** Yes. [PR #19](https://github.com/TimothyVang/deepmodebot/pull/19) went through 5 cycles: a conflict merge, review rounds, two failed panels that caught real bugs, then a 2/3 panel pass and a squash merge by the bot.
 
 **Can I white-label an AI code review GitHub App?** Yes. deepmodebot is MIT licensed and ships a brand kit, so you can sell it as your own product. Write one `brand.json` with your name, slug, command and skill names, bot trigger, colors, logo and URLs, then run `py -3 scripts/whitelabel.py --brand <file> --out <dir>`. It builds a full copy under your brand: the product name and logo, the site colors, the commands and skills, the bot and its GitHub App, the docs site, the README, the images, and the SEO and llms files.
-A last check fails the build if any old name is left. LICENSE and NOTICE stay as they are, with your copyright line added. `install.py --brand <name>` is a shortcut that renames only the bots. See [the rebrand guide](docs/rebrand.md).
+A last check rejects old names outside license notices and immutable `docs/evidence/` observations. Those observations are not proof of a rebranded run. LICENSE and NOTICE retain attribution, with your copyright line added. `install.py --brand <name>` renames only the bots. See [the rebrand guide](docs/rebrand.md).
 
 ## License
 

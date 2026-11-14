@@ -1,0 +1,1 @@
+{"success":true,"data":{"lifecycle":{"effectiveLaunch":{"browserLaunched":true,"engine":"chrome","launchHash":4767793089079400358},"launched":false,"relaunchedBrowser":false,"restartedBackground":false,"restoreStatus":"not_configured","reused":true,"saveStatus":"not_attempted"},"url":"http://127.0.0.1:18991/popup"},"error":null}
