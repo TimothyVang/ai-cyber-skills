@@ -4,7 +4,7 @@
 
 Five live `omp -p` planning probes exercised the source-backed procedures. These are instruction-following observations, not a controlled improvement comparison or a demonstration of production operations.
 
-The new changes add task-wide nested-delegation limits to `coworkers` and explicit pending/unknown action state to `handoff`. Existing source-backed additions to `architect`, `benchmark-checklist`, `coworkers`, and `wizard` were exercised too. No routing, description, or default-stack change was made.
+The new changes add task-wide nested-delegation limits to `coworkers` and explicit pending/unknown action state to `handoff`. Existing source-backed additions to `architect`, `benchmark-checklist`, `coworkers`, and `wizard` were exercised too. The normal `flows` compaction path now reaches Handoff's state-preservation step without its publishing or launch steps. No main route-table, description, or default-stack change was made.
 
 ## Commands and retained evidence
 

@@ -31,6 +31,7 @@ For changes motivated by video research, attach the affected procedure to an iso
 Exercise nested delegation without enforceable child limits, an unknown migration outcome at handoff, tenant-scoped request design, load-test write limits, and incomplete integration consent.
 Keep raw events, command, exit, and full answer under `.scratch/`; inspect the answer against each intended decision before marking it passed.
 These planning probes show instruction following only. They do not prove child cancellation, migration recovery, cloud setup, load capacity, or a productivity improvement.
+For compaction-pointer changes, start with only the workflow map loaded and allow local read/write tools. Confirm the raw trace opens Handoff through that pointer and a real checkpoint preserves unknown work without publishing, launching, or pausing.
 
 ## Gotchas
 
