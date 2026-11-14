@@ -239,6 +239,8 @@ def update(args):
             seen_in.update(alias_previous.get("seen_in", []))
             if alias_previous and (not previous or alias_previous["first_seen"] < previous["first_seen"]):
                 previous = alias_previous
+            if not reference_ready and alias in references:
+                references.setdefault(key, references.pop(alias))
         fresh["first_seen"] = previous.get("first_seen", stamp)
         fresh["stars_first_seen"] = previous.get("stars_first_seen", fresh["stars"])
         fresh["last_seen"] = stamp

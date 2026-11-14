@@ -87,6 +87,28 @@ class ReferenceDiscoveryTests(unittest.TestCase):
         self.assertEqual(entry["seen_in"], ["earlier-source", "other-source", "reference-library"])
         self.assertIn(self.reference["caution"], (self.out / "README.md").read_text(encoding="utf-8"))
 
+    def test_source_failure_keeps_reference_searchable_after_repository_rename(self):
+        previous = self.entry("old-owner/component")
+        previous["reference"] = self.reference
+        self.write_catalog({"updated": "2026-11-14", "sources": {}, "reference_revision": "previous",
+                            "repos": {"old-owner/component": previous}})
+
+        def unavailable(found, token):
+            raise ValueError("malformed reference JSON")
+
+        def other_source(found, token):
+            catalog.add(found, "old-owner/component", "other-source", self.repository("new-owner/component"))
+
+        output = io.StringIO()
+        with patch.object(catalog, "SOURCES", [("reference-library", unavailable), ("other-source", other_source)]), \
+                patch.object(catalog, "github_token", return_value=None), \
+                contextlib.redirect_stdout(output), contextlib.redirect_stderr(io.StringIO()):
+            catalog.update(argparse.Namespace(out=self.out))
+            catalog.find(argparse.Namespace(out=self.out, terms=["doctor admin"], limit=20, no_refresh=True))
+        self.assertIn("[new-owner/component]", output.getvalue())
+        self.assertIn(self.reference["caution"], output.getvalue())
+        self.assertTrue(catalog.is_stale(catalog.load_catalog(self.out / "catalog.json")))
+
 
 if __name__ == "__main__":
     unittest.main()
