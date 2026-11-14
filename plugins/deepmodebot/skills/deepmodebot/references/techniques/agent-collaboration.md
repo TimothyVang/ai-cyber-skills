@@ -75,6 +75,6 @@ Native task messaging is a real capability, but instructions alone do not enforc
 
 - Native task schema and lifecycle: [omp task docs](https://github.com/can1357/oh-my-pi/blob/main/docs/tools/task.md), checked against installed `omp://tools/task.md` and this session's `task`/`write` schemas.
 - ACP identities: [session setup](https://agentclientprotocol.com/protocol/v1/session-setup.md); typed turns and completion: [prompt turn](https://agentclientprotocol.com/protocol/v1/prompt-turn.md).
-- Pinned upstream comparison: repo `docs/research/mattpocock-skills.md`. Its phase-boundary synthesis is guidance, not a new runtime feature.
+- Pinned upstream comparison: repo `docs/research/community-skills-review.md`. Its phase-boundary synthesis is guidance, not a new runtime feature.
 
 **Done when** the needed fact reached its actual owner, the response is retained with evidence, ownership remains intact, and final reviewers stayed blind through vote lock. Tool availability without an observed exchange is not an execution proof.

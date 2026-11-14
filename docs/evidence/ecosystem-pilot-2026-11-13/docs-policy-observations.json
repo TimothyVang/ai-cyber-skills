@@ -1,0 +1,21 @@
+{
+  "initial_screenshot_limit": "docs-policy-wide.png and docs-policy-compact.png were captured before smooth scrolling completed and show other sections; they are not visual proof of the policy paragraph.",
+  "verified_screenshots": ["docs-policy-wide-settled.png", "docs-policy-compact-settled.png"],
+  "positioning": "Instant scroll to center; the complete policy paragraph was inside the viewport at both widths before capture.",
+  "keyboard_observation": "Evidence navigation reached #evidence; Tab focused Read the experiment and corrections with outline-style auto. Link destinations were inspected without visiting external sites.",
+  "surface": "http://127.0.0.1:18993/",
+  "browser": "owned Chrome with project-local profile",
+  "views": [
+    {
+      "width": 1280,
+      "overflow": false,
+      "policy": "The coordinator posts a kickoff. When the branch conflicts with its base, the author merges the base into the head and pushes; it never rebases or force-pushes. The reviewer returns evidence-backed findings. The author fixes each finding or dismisses it with proof. They repeat until no P0/P1 remains and every P2 is answered, for at most three rounds; an owner's @deepmodebot continue starts more. The repository check then runs. Exactly three independent verifier agents assess the same final head in separate worktrees. All three responses must be valid and at least two must pass, regardless of change size. A majority never overrides a failed deterministic gate."
+    },
+    {
+      "width": 390,
+      "overflow": false,
+      "policy": "The coordinator posts a kickoff. When the branch conflicts with its base, the author merges the base into the head and pushes; it never rebases or force-pushes. The reviewer returns evidence-backed findings. The author fixes each finding or dismisses it with proof. They repeat until no P0/P1 remains and every P2 is answered, for at most three rounds; an owner's @deepmodebot continue starts more. The repository check then runs. Exactly three independent verifier agents assess the same final head in separate worktrees. All three responses must be valid and at least two must pass, regardless of change size. A majority never overrides a failed deterministic gate."
+    }
+  ],
+  "scope": "Existing styling preserved; factual quorum copy changed. External evidence links inspected without visiting them."
+}

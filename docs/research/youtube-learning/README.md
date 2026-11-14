@@ -10,9 +10,10 @@ Original, cited synthesis for [TimothyVang/deepmodebot](https://github.com/Timot
 | A Life Engineered | Focused collection complete, 2026-11-12 | 304 public catalog entries; 3 transcripts plus companion guide. [Synthesis](prior-sources.md#adopted-bounded-operations-and-informed-review). |
 | Jimmy Denero | Focused collection complete, 2026-11-12 | 2 public catalog entries; both transcripts; 13 local-only PNG frames. [Synthesis](prior-sources.md#adopted-scoped-orchestration-and-domain-learning). |
 | [Joel Hooks](https://www.youtube.com/@joelhooks), including [requested video](https://youtu.be/zOiFHo2KVgc) | Focused collection complete; host capture timestamps 2026-11-14 UTC | 38 public videos; no shorts/streams tabs; 3 transcripts, 1,322 segments. [Synthesis and coverage](joel-hooks.md). |
+| [Stanford Online](https://www.youtube.com/@stanfordonline), including [CS329Z lecture 5](https://www.youtube.com/watch?v=q0Q-Hy8TTps) | CS/AI-focused collection | 3,139 listed channel items; 1,668 title-filtered CS/AI candidates; 4 transcripts, 2,368 speech segments; 22 local screenshots and 15 separate source image exports. [Sources and limits](stanford-online.md). |
 
-The four collections total **505 catalog entries, 11 focused transcripts and 4,138 segments**. “Complete” describes the chosen public-catalog/focused-reading scope, not all channel captions or restricted uploads.
-The task date is 2026-11-13; Joel's host capture timestamps are 2026-11-14 UTC. See the [prior-source coverage table](prior-sources.md#coverage-and-evidence) and [Joel collection](joel-hooks.md) for access and metadata limits.
+The five collections total **3,644 catalog entries, 15 focused transcripts and 6,506 speech segments**. The rendered Stanford index covers title-filtered CS/AI candidates; full channel inventory stays in the raw archive. These counts do not imply every video or caption was read.
+The task date is 2026-11-13; some host capture timestamps are 2026-11-14 UTC. See each collection's access limits and source discrepancies.
 
 ## Durable findings
 
@@ -22,6 +23,7 @@ The task date is 2026-11-13; Joel's host capture timestamps are 2026-11-14 UTC. 
 - [Reject unsupported claims](prior-sources.md#rejected-or-unresolved-claims): tutorial shortcuts, absolute security assurances and unmeasured speed/revenue claims.
 - [Existing technique provenance](prior-sources.md#existing-technique-provenance): the narrow additions already present in `architect`, `benchmark-checklist`, `coworkers` and `wizard`.
 - [Observed procedure probes](verification.md): five live planning responses and the operational guarantees they do not establish.
+- [CS/AI foundations and engineering tradeoffs](stanford-online.md): agent components, attention and context, tool boundaries, workflow control, durable orchestration, and evaluation limits.
 
 ## Evidence and reuse boundaries
 

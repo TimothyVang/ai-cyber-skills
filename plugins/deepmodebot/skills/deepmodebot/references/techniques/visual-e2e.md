@@ -62,7 +62,8 @@ The [2026-11-13 invoice pilot](../../../../../../docs/evidence/ecosystem-pilot-2
 Each of three native image-review contexts received eight actual images: six screenshots and two sampled frames. All three responses were valid; two approved and one requested revision. Dissent noted that images alone do not prove backend/persistence, the initial sample was white, and the timing clocks were not aligned.
 Actual HTML video playback reached `ended: true`, with duration 1.6 seconds at 1280×720. Uniform samples are not per-frame coverage.
 A native popup negative failed closed upstream with a network-control auto-attach timeout. That observation is not an isolated proof of the wrapper's tab-count guard.
-The generated SVG rendered with six step groups and six embedded images. Penpot import remains unproven; see [design evidence](open-design-evidence.md) for that separate boundary.
+The generated SVG rendered with six step groups and six embedded images. A separate local Penpot import/edit/export is now retained; see [design evidence](open-design-evidence.md) for native-layer and portability limits.
+Done when the requested journey and pinned replay pass their deterministic checks, all three independent visual responses are valid with at least two approvals, dissent remains visible, and retained artifacts support every claimed outcome.
 
 ## Sources and maintenance
 

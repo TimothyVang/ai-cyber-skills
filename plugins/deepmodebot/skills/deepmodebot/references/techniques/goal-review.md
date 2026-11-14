@@ -42,8 +42,8 @@ All fields below except `stall_after` are required. Unknown keys are rejected. N
 
 ```json
 {
-  "check": "python scripts/check_consumer_cases.py",
-  "protect": ["scripts/check_consumer_cases.py", "fixtures/consumer-cases.json", "absent:conftest.py"],
+  "check": "python acceptance.py",
+  "protect": ["acceptance.py", "absent:conftest.py"],
   "constraints": "Change implementation only; preserve all consumer cases; no network, installs, deployment, nested loops or changes to the oracle",
   "max_iterations": 4,
   "max_cost_usd": 1,
@@ -52,6 +52,10 @@ All fields below except `stall_after` are required. Unknown keys are rejected. N
   "stall_after": 2
 }
 ```
+
+This example assumes the selected project root contains `acceptance.py` and the implementation `worker.py`.
+The [pilot oracle](../../../../../../docs/evidence/ecosystem-pilot-2026-11-13/goals/acceptance.py) and [baseline worker](../../../../../../docs/evidence/ecosystem-pilot-2026-11-13/goals/worker-before.py) provide a runnable eight-case fixture when copied into a new disposable directory, with the worker named `worker.py`.
+Never run an implementation goal against the immutable evidence archive itself.
 
 Protected entries are project-relative literal paths, not globs. Existing entries must exist. `absent:path` must not exist, including through a symlink. Paths resolving outside the root are rejected. Use the string `"none"` only when the operator's check reads nothing the implementation agent can edit. An empty array is not a substitute.
 

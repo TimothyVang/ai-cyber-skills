@@ -90,7 +90,7 @@ A queue of PRs is built and verified with full autonomy, one owner per PR. In mo
    Not clean without the live lane, nor before you audit the merge-ready report's receipts. Before merge-ready, the root runs the pr-review technique in PR mode on the head being verified, with no P0/P1 open and every P2 fixed or dismissed with a reason. A review line for an older SHA needs a fresh round.
    The verdict is a **panel** (`references/techniques/panel.md`) at that head, given the swarm's receipts and review line. Require all three valid independent responses and at least two evidence-backed passes, regardless of PR size.
    Done when the panel at that head has voted, holding the swarm's receipts and a review line for that head with no P0/P1 open.
-9. Re-verify by size of change: new behavior, a redesign, or a large new diff → another full swarm; a rebase, conflict resolution, or minor fix → one verifier at the new head; wording-only → none.
+9. Scale targeted reproduction by the change: new behavior, a redesign, or a large new diff → another full swarm; a rebase, conflict resolution, or minor fix → one targeted reproduction lane; wording-only → no extra reproduction lane. This never reduces the mandatory three-person panel at each new head.
    `references/playbooks/shipping.md`'s patch-id rule can carry a lane's result into the receipts, but every new head needs its own green CI, its own pr-review round, and its own panel.
    Done when every new head has green CI, its own pr-review round, and its own panel.
 10. Block a PR only for a problem you can show: a failing run at the head or a doc line the PR made wrong. A problem the base (trunk or the PR below) already has doesn't block unless the PR copies or newly reaches it. Only a user-facing bug, a failed gate, or a wrong shipped doc blocks; everything else is a follow-up.
@@ -141,6 +141,8 @@ Catch the operator up in plain words, opening with what waits on them (or that n
 Issues become merged PRs through a fixed pipeline. You operate the factory; it does the jobs. Every job's spec, hidden tests, code, reviews and merge come from its pipeline, never from you.
 
 The factory is the `factory` CLI (source: `github.com/TimothyVang/softwarefactory`). It is the lever (`references/principles/build-the-lever.md`). A program sequences the stages, runs the gate, and merges, so its files are the proof a reviewer reruns. `factory --help` lists the commands; `factory.json` and the CLI's README are the source of truth for config.
+
+Choosing a different runner or improving this pipeline → read `references/factory-landscape.md` first. It maps candidate GitHub factories to missing capabilities and acceptance experiments. This is prior art, not authority to import their deployment or auto-merge permissions; the steps below still govern a `factory.json` run.
 
 ### Steps
 

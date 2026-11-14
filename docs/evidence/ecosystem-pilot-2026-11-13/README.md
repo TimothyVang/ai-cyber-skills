@@ -1,6 +1,7 @@
 # Ecosystem and workflow pilot — 2026-11-13
 
 This is one synthetic local invoice-export pilot, not a general quality benchmark. Runs continued into 2026-11-14. Public artifacts contain synthetic invoice identifiers; private credentials, raw model thoughts/events and OAuth metadata are excluded.
+These receipts belong to canonical `TimothyVang/deepmodebot`. Rebranded distributions retain them unchanged as upstream observations, not proof that the new distribution has run.
 
 ## Observed results
 
@@ -51,3 +52,10 @@ The goal fixture's original evidence records five failing cases in an eight-case
 - This updater receipt uses an isolated home and real canonical upstream. It does not establish activation of the workstation's production watcher.
 
 The research, routing and implementation are separate from these measured outcomes. A two-of-three vote does not override a failed deterministic check, a missing artifact, a fork/dirty-copy guard, or an explicit user requirement.
+
+## Additional receipts
+
+- [Native agent mailbox exchange](agent-message-receipt.json): observed two-way scoped clarification, with local-history and portability limits.
+- [Rendered public quorum policy](docs-policy-observations.json): wide and compact views, no horizontal overflow, keyboard focus and inspected link destinations. Settled screenshots are explicitly distinguished from premature smooth-scroll captures.
+- `.gitattributes` disables text normalization for this evidence tree. Recorded bytes, including original CRLF logs, must survive Git publication unchanged; normalizing them would invalidate artifact hashes.
+- [Rebrand preservation proof](branding-proof.json): the actual builder preserved every existing evidence file's path and bytes; the built distribution's own loader validated all three sealed bundles. This is not a media-rendering or model-backed rebrand test.

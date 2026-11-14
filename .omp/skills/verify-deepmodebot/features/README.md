@@ -15,5 +15,16 @@ These entries cover the surfaces changed in this work. They do not claim product
 For changes to `docs/index.html`, serve only `docs/` on a loopback address in a named, owned service.
 Open a managed browser with relay disabled. Follow the Evidence navigation link and inspect the section at wide and compact widths.
 Check keyboard focus, overflow and evidence-link destinations without visiting external sites.
+For PR-policy copy, inspect the visible conversation paragraph and FAQ structured data: exactly three valid responses, at least two passes, same head, no size exception, and no override of deterministic gates.
 Save screenshots under `.scratch/evidence/`, then close the owned tab and service.
 Local rendering and destination inspection do not prove that unpublished reports are available on the public site.
+For evidence packaging changes, exercise the real `whitelabel.build` API with `media=False, check=False` into a new `.scratch/` directory, then validate copied E2E bundles using that distribution's own loader. Existing evidence paths and bytes must remain unchanged; these receipts are upstream observations, not proof of a rebranded run.
+
+## Optional agent SDK workspace
+
+Follow the SDK workspace entry in [agent-harnesses](../../../../plugins/deepmodebot/skills/agent-harnesses/SKILL.md) to copy the source-only kit into a fresh `.scratch/sdk-runtime/` and install its dependencies there.
+Run the venv's `python -m pip check`, `python check_antigravity.py`, and `bun check.ts` from that workspace.
+Expect Antigravity custom-tool dispatch, Codex native version output, omp in-memory message storage, and a Claude SDK native initialization handshake without sending a prompt.
+Capture commands and outputs under `.scratch/evidence/`. Report platform, package versions, and any failures.
+These checks do not verify model inference, provider authentication, Antigravity runtime startup, or permission enforcement during model turns.
+Model-backed examples require separate approved provider/data/spend boundaries; do not silently turn a local installation check into an agent run.

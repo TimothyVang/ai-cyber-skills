@@ -1,0 +1,74 @@
+{
+  "date": "2026-11-13",
+  "skill": "plugins/deepmodebot/skills/deepmodebot/SKILL.md",
+  "skill_sha256": "44c225b130011b26794189a11229e3ccbda38118b02162fbcc54301ff071fcad",
+  "cases_file": "evals/routing/ecosystems.json",
+  "model_requested": "openai-codex/gpt-6-astra",
+  "models_observed": [
+    "openai-codex/gpt-6-astra"
+  ],
+  "max_cost_per_case": 0.5,
+  "scores": {
+    "cases": 3,
+    "route": 3,
+    "size": 3,
+    "both": 3,
+    "cost_usd": 0.9877
+  },
+  "results": [
+    {
+      "id": "sibling-message-routing",
+      "request": "Explain how our implementation agents can talk to each other: address a real sibling question, distinguish native recipient IDs from ACP sessions, and keep final reviewers blind. Procedure only; do not dispatch agents or edit files.",
+      "expected": {
+        "route": "agent-collaboration",
+        "size": "none"
+      },
+      "answer": {
+        "route": "agent-collaboration",
+        "size": "none"
+      },
+      "raw": "{\"route\":\"agent-collaboration\",\"size\":\"none\"}",
+      "model": "openai-codex/gpt-6-astra",
+      "cost": 0.169984,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "record-replay-visual-panel",
+      "request": "Explain how to record and replay the full browser E2E workflow, then give three independent agents the same screenshots and sampled video frames for a two-of-three visual review. Procedure only; do not run capture, call models or change files.",
+      "expected": {
+        "route": "visual-e2e",
+        "size": "none"
+      },
+      "answer": {
+        "route": "visual-e2e",
+        "size": "none"
+      },
+      "raw": "{\"route\":\"visual-e2e\",\"size\":\"none\"}",
+      "model": "openai-codex/gpt-6-astra",
+      "cost": 0.64703,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    },
+    {
+      "id": "editable-workflow-evidence",
+      "request": "Explain how to turn our recorded journey into portable editable workflow diagrams and inspect an SVG import in Penpot. Distinguish editable shapes from embedded screenshot pixels and generated files from proven imports. Advice only; no edits, uploads or tool installation.",
+      "expected": {
+        "route": "open-design-evidence",
+        "size": "none"
+      },
+      "answer": {
+        "route": "open-design-evidence",
+        "size": "none"
+      },
+      "raw": "{\"route\":\"open-design-evidence\",\"size\":\"none\"}",
+      "model": "openai-codex/gpt-6-astra",
+      "cost": 0.170734,
+      "error": null,
+      "route_ok": true,
+      "size_ok": true
+    }
+  ]
+}

@@ -117,4 +117,4 @@ Done when the next prompt has one evidence-backed action, the original check and
 - The Eval verdict when one ran; the frozen skill/evidence identity and all three locked review receipts; checked vote count and dissent.
 - The promotion level actually reached, unresolved limitations and removal/revert path.
 
-Workflow comparison and pinned sources (2026-11-13): repo `docs/research/mattpocock-skills.md`. Existing grill, writing-for-agents, retro, panel and loop mechanisms remain the owners; no foreign skill bundle is installed.
+Workflow comparison and pinned sources (2026-11-13): repo `docs/research/community-skills-review.md`. Existing grill, writing-for-agents, retro, panel and loop mechanisms remain the owners; no foreign skill bundle is installed.

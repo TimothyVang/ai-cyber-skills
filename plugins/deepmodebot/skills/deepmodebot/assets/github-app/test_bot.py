@@ -1477,7 +1477,7 @@ class AutostartPathTest(unittest.TestCase):
                 self.skipTest("cannot make a directory link here")
             script = home / "src/plugins/deepmodebot/skills/deepmodebot/assets/github-app/bot.py"
             with mock.patch.object(bot, "__file__", str(script)), mock.patch.object(Path, "home", return_value=home):
-                self.assertIsNone(bot.omp_install())  # the watcher never updates a checkout
+                self.assertIsNone(bot.omp_install())  # checkout updates use local-copy discovery, not omp-install discovery
                 found = bot.omp_install(anywhere=True)
             self.assertEqual((found["marketplace"], found["plugin"]), ("deepmodebot", "deepmodebot"))
             self.assertEqual(found["assets"], link / "skills/deepmodebot/assets")

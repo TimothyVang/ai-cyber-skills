@@ -28,7 +28,7 @@ Roles come from `~/.config/deepmodebot/bot.json`. Each is `{"agent": "<acpx agen
 |---|---|---|---|
 | author | `author` | persistent, per PR | conflict merges, fixes, a reply to every finding |
 | reviewer | `reviewer` | persistent, per PR, read-only | findings |
-| verifier 1 to 3 | `verifiers` (three entries) | one-shot each, own worktree | a vote (for a size S diff only one: another agent than the author's if configured, else another model) |
+| verifier 1 to 3 | `verifiers` (exactly three entries) | fresh independent context and detached worktree each | one valid evidence-backed vote each, all three required at the same head |
 | panel | none (the coordinator) | none | the tally and the head it covers |
 | coordinator | none | none | the kickoff, status, the merge note |
 
