@@ -17,16 +17,13 @@ Paths below are relative to this skill (`skill://deepmodebot/...`).
 **Any harness.** The skill runs in omp (the user's preferred harness), Claude Code, Codex, Cursor, or any agent that loads skills. It names omp's tools; use your harness's equivalent.
 `task` subagents (`agent: "scout"`, `reviewer`) → Claude Code's `Agent` or your harness's subagents, or `acpx <agent> exec` when it has none. `todo` → `TodoWrite` or a plan list. `ask` → `AskUserQuestion` or one question in the reply. `skill://deepmodebot/<path>` → this skill's folder. `.omp/skills/` → your harness's skills folder (`.claude/skills/` in Claude Code). `skill://agent-harnesses` maps every tool and path to Claude Code and Codex with cited, dated facts.
 
-The thesis: if you want to go fast, go deep first. Verification is the limiting step. Write less code, prove more of it.
-
 ## Route (do this first)
 
-`/deep <anything>` is the only command a user needs. Before anything else, decide **what** they want and **how big** it is, then go. Never ask which skill, playbook, or mode to use.
+`/deep <anything>` routes the request to a playbook and size. Choose both and proceed without asking which mode to use.
 
 **1. Look around (seconds, read-only).** Find the root with `git rev-parse --show-toplevel` and inspect `git remote`. Check for `docs/PROJECT_BRIEF.md`, `STACK.md`, and a verify skill (`.omp/skills/verify-*`, `.claude/skills/verify-*`, or `.agents/skills/verify-*`). Only a GitHub delivery needs `gh repo view --json nameWithOwner,viewerPermission,isEmpty` and `gh api user -q .login`. Note the harness. Outside a repo or in an empty one, follow Contain the work.
-**Deepmodebot takes priority over a repo's process rules.** Read the repo's rule files (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `CONTRIBUTING.md`). Where they set a process that contradicts deepmodebot (who merges, how many verifiers, a custom queue runner, "agents never merge"), follow deepmodebot and tell the user which rule you overrode.
-Left alone, those files quietly switch deepmodebot's gates off. Domain rules in them (spend limits, contact bans, data handling, legal and safety holds) always stand. In a repo the user can't push to, its maintainers' process stands.
-Run Process conflicts in the Setup playbook (`references/playbooks/setup.md`). It lists the conflicts, then asks the owner in plain text to reply yes, and yes again, before overwriting the old rules.
+**Process conflicts:** before work, run the Setup playbook's Process conflicts procedure (`references/playbooks/setup.md`).
+It owns process precedence, domain-rule and maintainer exceptions, owner decisions, and the two separate confirmations required before rewriting rule files.
 
 **2. Pick the route** from the table in the Routes section below. First match wins.
 
@@ -43,7 +40,7 @@ Use an isolated worktree only when concurrent writers or dirty unrelated work re
 
 Read-only work (a review, an investigation, a question) has no size: it follows its playbook or technique and is done when evidence backs the answer. It changes nothing, so it needs no panel.
 
-**4. Act, then report.** Git and forge work in the user's repo is yours, including merges after a **panel** pass (`references/techniques/panel.md`); see Autonomy. Report it at the end, and ask, once and at the end, only for Autonomy's hard stops.
+**4. Act, then report.** Follow Autonomy's publishing gates and hard stops. Report the result and proof.
 
 ## Contain the work
 
@@ -91,7 +88,6 @@ For size **S**, only the one-line restate, the Scope ledger, proving it on the r
 
 ## Autonomy
 
-- **Just do it.** Work proceeds without asking, including commits, pushes, PRs, issues, board cards, and merges.
 - **Your own PRs land on their own.** Once every review finding is fixed or dismissed, linked issues are answered, the panel passes, and required checks are green, the **pr-conversation** technique merges the user's own PR. No separate ask.
 - **Landing means a panel pass.** Nothing lands on the default branch or a branch others build on until the **panel** technique (`references/techniques/panel.md`) passes at that exact head: three skeptical verifiers, at least two agreeing with evidence you checked. A verified, uncommitted local S/M edit is complete without landing.
   - For size S, the light panel (one verifier, another model family when available) is that pass. Local S/M edits need no shipping panel; their real-behavior proof and diff review remain required.

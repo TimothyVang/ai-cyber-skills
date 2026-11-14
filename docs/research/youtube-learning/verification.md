@@ -33,3 +33,11 @@ The source archive preserves incomplete caption endpoints, restricted metadata a
 ## Why prose belongs here
 
 These additions guide judgment across harnesses and task types. A universal runtime mechanism is not supplied by this documentation change. The nested-delegation rule explicitly requires an enforceable harness bound or inline work; it does not substitute a prompt for enforcement. Existing project-specific types, tests and runtime caps remain authoritative.
+
+## Repository-gate correction
+
+The initial full check failed. The inherited main-skill preamble was 20,795 bytes before `## Routes`, above the existing 20,000-byte limit. Windows process tests also rejected temp paths outside the integration worktree.
+
+The preamble now points to the existing Setup process-conflict procedure instead of duplicating that policy, and removes repeated autonomy prose. Policy, exceptions, confirmations, route rows, and size criteria remain in their existing owners.
+
+The corrected gate invocation is `TMPDIR="$PWD/.scratch/tmp" TMP="$PWD/.scratch/tmp" TEMP="$PWD/.scratch/tmp" python scripts/check.py` after creating that directory. Final gate and narrow routing results belong to the PR evidence; the initial failure is retained rather than reported as a pass.
