@@ -9,7 +9,7 @@ Stopping for later in this same repo is Pause safely (`references/playbooks/paus
    Done when the focus is one sentence with a done-when check (a command and its expected result).
 2. Make the work reachable: commit finished units on the working branch and push it, so the next agent reads the branch instead of a description of it. Half-done edits get a `wip:` commit (say so in the document). Skip pushing only when the repo has no remote.
    Done when `git status --porcelain` prints nothing and the remote branch head equals local `HEAD` (or the repo has no remote).
-3. Write `docs/handoffs/<YYYY-MM-DD>-<slug>.md` (outside a repo: the current folder) with these sections, each as short as it can be:
+3. Prepare `docs/handoffs/<YYYY-MM-DD>-<slug>.md` (outside a repo: the current folder) with the sections below. Apply step 4's redaction and key-shaped-string scan to its contents before writing this document or any compaction checkpoint.
    - **Goal:** the user's goal and the problem, in your own words (**in-your-own-words**, `references/techniques/in-your-own-words.md`).
    - **Next session's focus:** from step 1, with its done-when check (a command and its expected result).
    - **State:** repo, branch, head SHA, open PRs and their status, what is verified and how, what is not.
