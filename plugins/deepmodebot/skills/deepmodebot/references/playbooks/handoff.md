@@ -9,7 +9,7 @@ Stopping for later in this same repo is Pause safely (`references/playbooks/paus
    Done when the focus is one sentence with a done-when check (a command and its expected result).
 2. Make the work reachable: commit finished units on the working branch and push it, so the next agent reads the branch instead of a description of it. Half-done edits get a `wip:` commit (say so in the document). Skip pushing only when the repo has no remote.
    Done when `git status --porcelain` prints nothing and the remote branch head equals local `HEAD` (or the repo has no remote).
-3. Write `docs/handoffs/<YYYY-MM-DD>-<slug>.md` (outside a repo: the current folder) with these sections, each as short as it can be:
+3. Prepare `docs/handoffs/<YYYY-MM-DD>-<slug>.md` (outside a repo: the current folder) with the sections below. Apply step 4's redaction and key-shaped-string scan to its contents before writing this document or any compaction checkpoint.
    - **Goal:** the user's goal and the problem, in your own words (**in-your-own-words**, `references/techniques/in-your-own-words.md`).
    - **Next session's focus:** from step 1, with its done-when check (a command and its expected result).
    - **State:** repo, branch, head SHA, open PRs and their status, what is verified and how, what is not.
@@ -19,6 +19,9 @@ Stopping for later in this same repo is Pause safely (`references/playbooks/paus
    - **Pointers:** paths and URLs to specs, ADRs, issues, PRs, logs, and trails. Link artifacts; never paste their contents.
    - **Start with:** the deepmodebot route the next agent should take (playbook or technique names and paths), and the skills it should load.
    - Done when the file exists with all eight sections filled.
+   Before compaction or session replacement, persist pending actions, active child/process identifiers, remaining task budget, permission limits, and evidence paths alongside this state.
+   Re-read that state and the current artifact before resuming; resolve uncertain side effects from their actual status instead of blindly replaying a tool call.
+   Done when the next session can distinguish completed, pending, failed, and unknown work without the old conversation; serialized context alone is not durable execution.
 4. Redact before saving: API keys, tokens, passwords, connection strings, private hostnames that matter for security, personal data about anyone. Replace each with `<redacted: what it was>` and say where the real value lives (`.env`, a secret manager). Scan the file for key-shaped strings (`sk-`, `ghp_`, `AKIA`, `-----BEGIN`, `password=`) before going on.
    Done when every match of that scan is a `<redacted: ...>` placeholder.
 5. Decide where it lives. Next agent on this machine → leave the file untracked. Next agent elsewhere or a colleague → commit it to the working branch and push. Print its absolute path.
@@ -42,3 +45,6 @@ Stopping for later in this same repo is Pause safely (`references/playbooks/paus
 - Branch and head SHA it describes.
 - The launch command and the agent's name or log path, if one was launched.
 - What was redacted (kinds, not values).
+
+Context-lifecycle evidence: the [session/compaction discussion](https://www.youtube.com/watch?v=zOiFHo2KVgc&t=1097s) distinguishes harness state from the small agent loop.
+These handoff checks are synthesis, not proof that a resumed process or external side effect runs exactly once.
