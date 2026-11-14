@@ -36,7 +36,7 @@ For compaction-pointer changes, start with only the workflow map loaded and allo
 
 ## Software-factory source-map probes
 
-For changes to `references/factory-landscape.md` or its pointers, run a bounded, tool-less planning probe with the actual reference attached.
+For changes to the software-factory source map (`factory-landscape.md` in the main deepmodebot skill's reference library) or its pointers, run a bounded, tool-less planning probe with the actual reference attached.
 Ask for local subscription-authenticated candidates, stale-worker fencing and holdout-isolation experiments, a no-Actions decision about `gh-aw`, a correction of Attractor-as-runtime claims, and whether upstream deployment permissions transfer.
 Keep the prompt, raw events, command, exit, and full answer under `.scratch/`.
 Pass only when candidates match the source map, the answer requests runtime/license verification, Attractor remains a specification, and existing merge/deployment permissions remain unchanged.
