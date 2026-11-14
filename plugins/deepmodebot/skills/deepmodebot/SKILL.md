@@ -24,6 +24,7 @@ Paths below are relative to this skill (`skill://deepmodebot/...`).
 **1. Look around (seconds, read-only).** Find the root with `git rev-parse --show-toplevel` and inspect `git remote`. Check for `docs/PROJECT_BRIEF.md`, `STACK.md`, and a verify skill (`.omp/skills/verify-*`, `.claude/skills/verify-*`, or `.agents/skills/verify-*`). Only a GitHub delivery needs `gh repo view --json nameWithOwner,viewerPermission,isEmpty` and `gh api user -q .login`. Note the harness. Outside a repo or in an empty one, follow Contain the work.
 **Process conflicts:** before work, run the Setup playbook's Process conflicts procedure (`references/playbooks/setup.md`).
 It owns process precedence, domain-rule and maintainer exceptions, owner decisions, and the two separate confirmations required before rewriting rule files.
+In a repo the user cannot push to, its maintainers' process stands.
 
 **2. Pick the route** from the table in the Routes section below. First match wins.
 
