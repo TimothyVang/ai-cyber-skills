@@ -1,0 +1,537 @@
+{
+  "schema_version": 1,
+  "state": "approved",
+  "accepted": true,
+  "bundle_sha256": "c2393e388b486d7fa266158f5b583c12ae07dc886a354b2e1aa624bc88d24fb7",
+  "transport": "native-omp-image-attachments",
+  "reviews": [
+    {
+      "lens": "intent-and-workflow",
+      "state": "valid",
+      "vote": {
+        "schema_version": 1,
+        "bundle_sha256": "c2393e388b486d7fa266158f5b583c12ae07dc886a354b2e1aa624bc88d24fb7",
+        "lens": "intent-and-workflow",
+        "vision_available": true,
+        "vote": "revise",
+        "steps": [
+          {
+            "id": "open-export",
+            "verdict": "approve",
+            "findings": [
+              "The Invoice export heading, empty identifier field, zero count, and save button are visible."
+            ],
+            "evidence_refs": [
+              "step:open-export"
+            ]
+          },
+          {
+            "id": "enter-repeated-identifiers",
+            "verdict": "approve",
+            "findings": [
+              "The field contains inv-2, inv-1, inv-2, inv-3 in order; the status reports 4 identifiers entered."
+            ],
+            "evidence_refs": [
+              "step:enter-repeated-identifiers"
+            ]
+          },
+          {
+            "id": "submit-export",
+            "verdict": "approve",
+            "findings": [
+              "The save button remains visible, and a success summary and View saved export link appear."
+            ],
+            "evidence_refs": [
+              "step:submit-export"
+            ]
+          },
+          {
+            "id": "await-persisted-result",
+            "verdict": "revise",
+            "findings": [
+              "The visible summary reports 3 unique invoices from 4 identifiers, with a saved-export link.",
+              "This confirms the displayed success state, not the required HTTP-to-SQLite persistence journey. Supply correlated request, database-write, and readback evidence."
+            ],
+            "evidence_refs": [
+              "step:await-persisted-result"
+            ]
+          },
+          {
+            "id": "open-saved-export",
+            "verdict": "approve",
+            "findings": [
+              "Saved invoice export shows 3 unique invoices from 4 identifiers and lists inv-2, inv-1, inv-3 once each in first-appearance order."
+            ],
+            "evidence_refs": [
+              "step:open-saved-export"
+            ]
+          },
+          {
+            "id": "reopen-persisted-export",
+            "verdict": "approve",
+            "findings": [
+              "The screenshot assigned to reopening shows the same count and ordered identifiers; the visible result matches the previous saved view."
+            ],
+            "evidence_refs": [
+              "step:reopen-persisted-export"
+            ]
+          }
+        ],
+        "images": [
+          {
+            "ref": "step:open-export",
+            "finding": "Empty invoice-entry form with a visible save button and synthetic-data notice."
+          },
+          {
+            "ref": "step:enter-repeated-identifiers",
+            "finding": "Focused textarea displays four lines, including repeated inv-2; the count is four."
+          },
+          {
+            "ref": "step:submit-export",
+            "finding": "Populated form displays the saved confirmation and saved-export link."
+          },
+          {
+            "ref": "step:await-persisted-result",
+            "finding": "The same saved confirmation remains visible beneath the save button."
+          },
+          {
+            "ref": "step:open-saved-export",
+            "finding": "Saved-result page displays the numbered list inv-2, inv-1, inv-3."
+          },
+          {
+            "ref": "step:reopen-persisted-export",
+            "finding": "Saved-result page again displays the identical three-item list and count."
+          },
+          {
+            "ref": "frame:0",
+            "finding": "Entirely white frame; no application content is visible."
+          },
+          {
+            "ref": "frame:1",
+            "finding": "Saved-result page is visible with the correct count and ordered three-item list."
+          }
+        ],
+        "limitations": [
+          "All eight images are readable or observably blank; no tools or live execution were available.",
+          "Screenshots support the bounded synthetic UI workflow, but do not independently establish HTTP requests, SQLite storage, fresh readback, or replay execution.",
+          "Only two timeline samples are supplied; they omit entry and submission states. Step screenshots provide those states separately.",
+          "Timeline alignment is unexplained: frame:1 at 1000 ms shows the saved result, while step timestamps place initial opening at 907–1162 ms and saved-result opening at 1763–2033 ms. Reconcile the clocks before claiming timeline coverage.",
+          "Identical saved-view screenshots establish matching visible content, not an independently observable reopen transition. Browser URLs are not visible."
+        ]
+      }
+    },
+    {
+      "lens": "layout-and-legibility",
+      "state": "valid",
+      "vote": {
+        "schema_version": 1,
+        "bundle_sha256": "c2393e388b486d7fa266158f5b583c12ae07dc886a354b2e1aa624bc88d24fb7",
+        "lens": "layout-and-legibility",
+        "vision_available": true,
+        "vote": "approve",
+        "steps": [
+          {
+            "id": "open-export",
+            "verdict": "approve",
+            "findings": [
+              "Clear heading, instructions, labeled empty input, count, and save button; no visible clipping or overlap."
+            ],
+            "evidence_refs": [
+              "step:open-export"
+            ]
+          },
+          {
+            "id": "enter-repeated-identifiers",
+            "verdict": "approve",
+            "findings": [
+              "All four identifiers are readable on separate lines, including repeated inv-2; the focus outline and four-entry count are visible."
+            ],
+            "evidence_refs": [
+              "step:enter-repeated-identifiers"
+            ]
+          },
+          {
+            "id": "submit-export",
+            "verdict": "approve",
+            "findings": [
+              "The save button remains visible; the success summary and underlined saved-export link fit clearly beneath it."
+            ],
+            "evidence_refs": [
+              "step:submit-export"
+            ]
+          },
+          {
+            "id": "await-persisted-result",
+            "verdict": "approve",
+            "findings": [
+              "The summary clearly states three unique invoices from four identifiers, with the saved-export link unobstructed."
+            ],
+            "evidence_refs": [
+              "step:await-persisted-result"
+            ]
+          },
+          {
+            "id": "open-saved-export",
+            "verdict": "approve",
+            "findings": [
+              "The saved-result heading, count, and numbered list are readable; inv-2, inv-1, inv-3 appear once each in first-appearance order."
+            ],
+            "evidence_refs": [
+              "step:open-saved-export"
+            ]
+          },
+          {
+            "id": "reopen-persisted-export",
+            "verdict": "approve",
+            "findings": [
+              "The reopened-result screenshot shows the same readable count and ordered identifiers without layout changes."
+            ],
+            "evidence_refs": [
+              "step:reopen-persisted-export"
+            ]
+          }
+        ],
+        "images": [
+          {
+            "ref": "step:open-export",
+            "finding": "Centered white panel has consistent left alignment and generous spacing around the empty input and save control."
+          },
+          {
+            "ref": "step:enter-repeated-identifiers",
+            "finding": "Four input lines fit fully inside the outlined textarea; the count and button remain clearly separated."
+          },
+          {
+            "ref": "step:submit-export",
+            "finding": "Success text and the underlined navigation link appear above the footer divider without overlap."
+          },
+          {
+            "ref": "step:await-persisted-result",
+            "finding": "The saved confirmation is fully readable and the expanded panel remains within the viewport."
+          },
+          {
+            "ref": "step:open-saved-export",
+            "finding": "A prominent saved-export heading sits above a well-spaced three-item numbered list and return link."
+          },
+          {
+            "ref": "step:reopen-persisted-export",
+            "finding": "The saved page retains the same three-item list, count, and unclipped footer."
+          },
+          {
+            "ref": "frame:0",
+            "finding": "Entirely blank white frame; no interface or text is visible."
+          },
+          {
+            "ref": "frame:1",
+            "finding": "Saved-export page is visible with readable heading, three identifiers, count, and return link; text is slightly softer than in step screenshots."
+          }
+        ],
+        "limitations": [
+          "Approval is limited to layout and legibility in the supplied 1280×720 images.",
+          "Timeline samples show only a blank frame and saved result, not every transition. Their 1600 ms duration and saved-page frame at 1000 ms do not align directly with the supplied step timestamps; timing cannot be reconciled from these images.",
+          "Screenshots support the visible deduplication result but cannot independently prove HTTP transport, SQLite persistence, replay execution, or a fresh read on reopening.",
+          "Smaller footer text is readable at the supplied resolution; other viewport sizes and transient states are not shown."
+        ]
+      }
+    },
+    {
+      "lens": "state-and-continuity",
+      "state": "valid",
+      "vote": {
+        "schema_version": 1,
+        "bundle_sha256": "c2393e388b486d7fa266158f5b583c12ae07dc886a354b2e1aa624bc88d24fb7",
+        "lens": "state-and-continuity",
+        "vision_available": true,
+        "vote": "approve",
+        "steps": [
+          {
+            "id": "open-export",
+            "verdict": "approve",
+            "findings": [
+              "Invoice export opens with an empty identifier field, zero count, and visible save button."
+            ],
+            "evidence_refs": [
+              "step:open-export"
+            ]
+          },
+          {
+            "id": "enter-repeated-identifiers",
+            "verdict": "approve",
+            "findings": [
+              "The field contains inv-2, inv-1, inv-2, inv-3 in order; the count updates to four."
+            ],
+            "evidence_refs": [
+              "step:enter-repeated-identifiers"
+            ]
+          },
+          {
+            "id": "submit-export",
+            "verdict": "approve",
+            "findings": [
+              "The entered identifiers remain visible, with a successful three-from-four save summary and a saved-export link."
+            ],
+            "evidence_refs": [
+              "step:submit-export"
+            ]
+          },
+          {
+            "id": "await-persisted-result",
+            "verdict": "approve",
+            "findings": [
+              "The success summary and saved-export link remain visible without changing the input."
+            ],
+            "evidence_refs": [
+              "step:await-persisted-result"
+            ]
+          },
+          {
+            "id": "open-saved-export",
+            "verdict": "approve",
+            "findings": [
+              "Saved invoice export shows three identifiers exactly once, ordered inv-2, inv-1, inv-3, matching first appearance."
+            ],
+            "evidence_refs": [
+              "step:open-saved-export"
+            ]
+          },
+          {
+            "id": "reopen-persisted-export",
+            "verdict": "approve",
+            "findings": [
+              "The reopen screenshot preserves the saved heading, three-from-four count, and identical identifier order."
+            ],
+            "evidence_refs": [
+              "step:reopen-persisted-export"
+            ]
+          }
+        ],
+        "images": [
+          {
+            "ref": "step:open-export",
+            "finding": "Empty textarea and '0 identifiers entered' appear beneath the Invoice export heading."
+          },
+          {
+            "ref": "step:enter-repeated-identifiers",
+            "finding": "Focused textarea displays all four input lines, including the repeated inv-2."
+          },
+          {
+            "ref": "step:submit-export",
+            "finding": "Success text reads 'Export saved: 3 unique invoices from 4 identifiers.' above the saved-export link."
+          },
+          {
+            "ref": "step:await-persisted-result",
+            "finding": "The completed save state matches the submit screenshot, with no visible error."
+          },
+          {
+            "ref": "step:open-saved-export",
+            "finding": "A numbered list displays inv-2, inv-1, inv-3 beneath the saved count."
+          },
+          {
+            "ref": "step:reopen-persisted-export",
+            "finding": "The saved list and count visually match the first saved-export view."
+          },
+          {
+            "ref": "frame:0",
+            "finding": "Entirely white frame; no application content or status is visible."
+          },
+          {
+            "ref": "frame:1",
+            "finding": "Saved-export page displays the same three-from-four count and ordered identifiers as the final step screenshots."
+          }
+        ],
+        "limitations": [
+          "Approval covers visible UI states only; screenshots do not independently prove HTTP requests, SQLite persistence, or replay execution.",
+          "Two timeline samples do not show intervening transitions or independently establish reopening.",
+          "Timeline duration and step timestamps lack an explicit shared-clock mapping, preventing precise temporal alignment.",
+          "Application text is legible, but browser URLs and internal storage operations are not visible."
+        ]
+      }
+    }
+  ],
+  "minority_report": [
+    {
+      "schema_version": 1,
+      "bundle_sha256": "c2393e388b486d7fa266158f5b583c12ae07dc886a354b2e1aa624bc88d24fb7",
+      "lens": "intent-and-workflow",
+      "vision_available": true,
+      "vote": "revise",
+      "steps": [
+        {
+          "id": "open-export",
+          "verdict": "approve",
+          "findings": [
+            "The Invoice export heading, empty identifier field, zero count, and save button are visible."
+          ],
+          "evidence_refs": [
+            "step:open-export"
+          ]
+        },
+        {
+          "id": "enter-repeated-identifiers",
+          "verdict": "approve",
+          "findings": [
+            "The field contains inv-2, inv-1, inv-2, inv-3 in order; the status reports 4 identifiers entered."
+          ],
+          "evidence_refs": [
+            "step:enter-repeated-identifiers"
+          ]
+        },
+        {
+          "id": "submit-export",
+          "verdict": "approve",
+          "findings": [
+            "The save button remains visible, and a success summary and View saved export link appear."
+          ],
+          "evidence_refs": [
+            "step:submit-export"
+          ]
+        },
+        {
+          "id": "await-persisted-result",
+          "verdict": "revise",
+          "findings": [
+            "The visible summary reports 3 unique invoices from 4 identifiers, with a saved-export link.",
+            "This confirms the displayed success state, not the required HTTP-to-SQLite persistence journey. Supply correlated request, database-write, and readback evidence."
+          ],
+          "evidence_refs": [
+            "step:await-persisted-result"
+          ]
+        },
+        {
+          "id": "open-saved-export",
+          "verdict": "approve",
+          "findings": [
+            "Saved invoice export shows 3 unique invoices from 4 identifiers and lists inv-2, inv-1, inv-3 once each in first-appearance order."
+          ],
+          "evidence_refs": [
+            "step:open-saved-export"
+          ]
+        },
+        {
+          "id": "reopen-persisted-export",
+          "verdict": "approve",
+          "findings": [
+            "The screenshot assigned to reopening shows the same count and ordered identifiers; the visible result matches the previous saved view."
+          ],
+          "evidence_refs": [
+            "step:reopen-persisted-export"
+          ]
+        }
+      ],
+      "images": [
+        {
+          "ref": "step:open-export",
+          "finding": "Empty invoice-entry form with a visible save button and synthetic-data notice."
+        },
+        {
+          "ref": "step:enter-repeated-identifiers",
+          "finding": "Focused textarea displays four lines, including repeated inv-2; the count is four."
+        },
+        {
+          "ref": "step:submit-export",
+          "finding": "Populated form displays the saved confirmation and saved-export link."
+        },
+        {
+          "ref": "step:await-persisted-result",
+          "finding": "The same saved confirmation remains visible beneath the save button."
+        },
+        {
+          "ref": "step:open-saved-export",
+          "finding": "Saved-result page displays the numbered list inv-2, inv-1, inv-3."
+        },
+        {
+          "ref": "step:reopen-persisted-export",
+          "finding": "Saved-result page again displays the identical three-item list and count."
+        },
+        {
+          "ref": "frame:0",
+          "finding": "Entirely white frame; no application content is visible."
+        },
+        {
+          "ref": "frame:1",
+          "finding": "Saved-result page is visible with the correct count and ordered three-item list."
+        }
+      ],
+      "limitations": [
+        "All eight images are readable or observably blank; no tools or live execution were available.",
+        "Screenshots support the bounded synthetic UI workflow, but do not independently establish HTTP requests, SQLite storage, fresh readback, or replay execution.",
+        "Only two timeline samples are supplied; they omit entry and submission states. Step screenshots provide those states separately.",
+        "Timeline alignment is unexplained: frame:1 at 1000 ms shows the saved result, while step timestamps place initial opening at 907–1162 ms and saved-result opening at 1763–2033 ms. Reconcile the clocks before claiming timeline coverage.",
+        "Identical saved-view screenshots establish matching visible content, not an independently observable reopen transition. Browser URLs are not visible."
+      ]
+    }
+  ],
+  "limitations": [
+    "Sampled images do not prove continuous video behavior or accessibility conformance.",
+    "Uniform timeline frames are samples, not continuous semantic video understanding.",
+    "Only one pinned tab is recorded; popup and tab transitions fail rather than imply coverage.",
+    "Browser allowlist is domain-based, not a firewall; top-level exact origins are checked after steps.",
+    "No source/application revision is inferred from recorder provenance.",
+    "Hashes detect changed artifacts relative to the seal, not forgery by someone who can rewrite the entire bundle.",
+    "Actual Chrome version is not exposed by this command contract."
+  ],
+  "executed_remediations": false,
+  "vcs_actions": false,
+  "image_inventory": [
+    {
+      "ref": "step:open-export",
+      "artifact": {
+        "path": "steps/open-export.png",
+        "sha256": "edac3d8f8847e83108ce8eaa839e75aedffd3be6b548815e6e601334e7730286"
+      }
+    },
+    {
+      "ref": "step:enter-repeated-identifiers",
+      "artifact": {
+        "path": "steps/enter-repeated-identifiers.png",
+        "sha256": "cd7b52c26966b1d880197eea95099bd0765466c5e2c4e8d4f50c62ba5182e489"
+      }
+    },
+    {
+      "ref": "step:submit-export",
+      "artifact": {
+        "path": "steps/submit-export.png",
+        "sha256": "b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949"
+      }
+    },
+    {
+      "ref": "step:await-persisted-result",
+      "artifact": {
+        "path": "steps/await-persisted-result.png",
+        "sha256": "b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949"
+      }
+    },
+    {
+      "ref": "step:open-saved-export",
+      "artifact": {
+        "path": "steps/open-saved-export.png",
+        "sha256": "7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a"
+      }
+    },
+    {
+      "ref": "step:reopen-persisted-export",
+      "artifact": {
+        "path": "steps/reopen-persisted-export.png",
+        "sha256": "7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a"
+      }
+    },
+    {
+      "ref": "frame:0",
+      "at_ms": 0,
+      "artifact": {
+        "path": "frames/00000000.png",
+        "sha256": "062c4e641334f59acf54482631f0e415c1e66e206c70d8bc4315f9d4f0e3456a"
+      }
+    },
+    {
+      "ref": "frame:1",
+      "at_ms": 1000,
+      "artifact": {
+        "path": "frames/00001000.png",
+        "sha256": "7fc6ec5a3e0845d20aee4b7ba736aaa75f37d957a208d562e8b0bfb4b8ebf9ac"
+      }
+    }
+  ],
+  "original_intent": "Evaluation pilot, not a production invoice feature: enter repeated synthetic invoice identifiers, save each identifier once in first-appearance order, open the persisted export, and reopen it to verify the saved result. Prove the browser-to-HTTP-to-SQLite-to-readback journey with every step visible. This bounded pilot verifies Deepmode recording and replay, not the user's entire broader Deepmode improvement request.",
+  "majority": "approve",
+  "valid_reviewers": 3
+}

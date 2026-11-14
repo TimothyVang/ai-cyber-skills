@@ -1,0 +1,7 @@
+exit: 1
+case 3: expected ['inv-1'], got ['inv-1', 'inv-1']; input preserved=True
+case 4: expected ['inv-2', 'inv-1'], got ['inv-2', 'inv-1', 'inv-2']; input preserved=True
+case 6: expected ['INV-1', 'inv-1'], got ['INV-1', 'inv-1', 'INV-1']; input preserved=True
+case 7: expected ['x', 'y'], got ['x', 'x', 'y', 'y', 'x']; input preserved=True
+case 8: expected ['a', 'b', 'c'], got ['a', 'b', 'c', 'a', 'c']; input preserved=True
+work_done=8 errors=5

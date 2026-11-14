@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "kind": "recorded-workflow-index",
+  "source_bundle_sha256": "c2393e388b486d7fa266158f5b583c12ae07dc886a354b2e1aa624bc88d24fb7",
+  "source_state": "passed",
+  "intent": "Evaluation pilot, not a production invoice feature: enter repeated synthetic invoice identifiers, save each identifier once in first-appearance order, open the persisted export, and reopen it to verify the saved result. Prove the browser-to-HTTP-to-SQLite-to-readback journey with every step visible. This bounded pilot verifies Deepmode recording and replay, not the user's entire broader Deepmode improvement request.",
+  "penpot_import": "not-attempted",
+  "steps": [
+    {
+      "id": "open-export",
+      "index": "index.html#step-1",
+      "screenshot": "assets/edac3d8f8847e83108ce8eaa839e75aedffd3be6b548815e6e601334e7730286.png",
+      "snapshot": "assets/1604dc7f9740029ffd60c093db4d57387929037917d76599380fccabd4e9bcb2.txt"
+    },
+    {
+      "id": "enter-repeated-identifiers",
+      "index": "index.html#step-2",
+      "screenshot": "assets/cd7b52c26966b1d880197eea95099bd0765466c5e2c4e8d4f50c62ba5182e489.png",
+      "snapshot": "assets/8f21ca318e0ec96655a5757ad9ccfd2891ee5f2f4d194584bb6461bc6ef80eaf.txt"
+    },
+    {
+      "id": "submit-export",
+      "index": "index.html#step-3",
+      "screenshot": "assets/b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949.png",
+      "snapshot": "assets/cba17f314a227a0256ae25fdd1bd81839be8e4c25bfac1a123db53d13aa69a29.txt"
+    },
+    {
+      "id": "await-persisted-result",
+      "index": "index.html#step-4",
+      "screenshot": "assets/b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949.png",
+      "snapshot": "assets/cba17f314a227a0256ae25fdd1bd81839be8e4c25bfac1a123db53d13aa69a29.txt"
+    },
+    {
+      "id": "open-saved-export",
+      "index": "index.html#step-5",
+      "screenshot": "assets/7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a.png",
+      "snapshot": "assets/039e4bdbd1a58c0e58282cca15d4f9716f4b1e6542e1b515dd5c1d9bf0c65378.txt"
+    },
+    {
+      "id": "reopen-persisted-export",
+      "index": "index.html#step-6",
+      "screenshot": "assets/7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a.png",
+      "snapshot": "assets/a9df70f11b8296e82f2adb0aa3c8fc888461d72c854447c625865c545226a51b.txt"
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "assets/edac3d8f8847e83108ce8eaa839e75aedffd3be6b548815e6e601334e7730286.png",
+      "sha256": "edac3d8f8847e83108ce8eaa839e75aedffd3be6b548815e6e601334e7730286"
+    },
+    {
+      "path": "assets/1604dc7f9740029ffd60c093db4d57387929037917d76599380fccabd4e9bcb2.txt",
+      "sha256": "1604dc7f9740029ffd60c093db4d57387929037917d76599380fccabd4e9bcb2"
+    },
+    {
+      "path": "assets/cd7b52c26966b1d880197eea95099bd0765466c5e2c4e8d4f50c62ba5182e489.png",
+      "sha256": "cd7b52c26966b1d880197eea95099bd0765466c5e2c4e8d4f50c62ba5182e489"
+    },
+    {
+      "path": "assets/8f21ca318e0ec96655a5757ad9ccfd2891ee5f2f4d194584bb6461bc6ef80eaf.txt",
+      "sha256": "8f21ca318e0ec96655a5757ad9ccfd2891ee5f2f4d194584bb6461bc6ef80eaf"
+    },
+    {
+      "path": "assets/b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949.png",
+      "sha256": "b32ccb22b9a6c1dc65bdc0afb93b57b5db702a96b6621c08440422fa64b43949"
+    },
+    {
+      "path": "assets/cba17f314a227a0256ae25fdd1bd81839be8e4c25bfac1a123db53d13aa69a29.txt",
+      "sha256": "cba17f314a227a0256ae25fdd1bd81839be8e4c25bfac1a123db53d13aa69a29"
+    },
+    {
+      "path": "assets/7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a.png",
+      "sha256": "7a3ad48ef8ada451bb11c99afeeae8f5852bd8d13749299541233f13b26e2c0a"
+    },
+    {
+      "path": "assets/039e4bdbd1a58c0e58282cca15d4f9716f4b1e6542e1b515dd5c1d9bf0c65378.txt",
+      "sha256": "039e4bdbd1a58c0e58282cca15d4f9716f4b1e6542e1b515dd5c1d9bf0c65378"
+    },
+    {
+      "path": "assets/a9df70f11b8296e82f2adb0aa3c8fc888461d72c854447c625865c545226a51b.txt",
+      "sha256": "a9df70f11b8296e82f2adb0aa3c8fc888461d72c854447c625865c545226a51b"
+    },
+    {
+      "path": "assets/1552f0f478b960020cee3e7aefbcc3160aeaffb720ae701697b8f912177cc652.webm",
+      "sha256": "1552f0f478b960020cee3e7aefbcc3160aeaffb720ae701697b8f912177cc652"
+    },
+    {
+      "path": "assets/062c4e641334f59acf54482631f0e415c1e66e206c70d8bc4315f9d4f0e3456a.png",
+      "sha256": "062c4e641334f59acf54482631f0e415c1e66e206c70d8bc4315f9d4f0e3456a"
+    },
+    {
+      "path": "assets/7fc6ec5a3e0845d20aee4b7ba736aaa75f37d957a208d562e8b0bfb4b8ebf9ac.png",
+      "sha256": "7fc6ec5a3e0845d20aee4b7ba736aaa75f37d957a208d562e8b0bfb4b8ebf9ac"
+    },
+    {
+      "path": "workflow.svg",
+      "sha256": "2ea67ea10b36409c9d4f4ea33684aefbb3f1576dabdae6acf5d3f31dffcdcfb1"
+    },
+    {
+      "path": "workflow.mmd",
+      "sha256": "cbef275425746214aa7c98ef5408276fc0054273d46348fa212a4a3d339c4720"
+    },
+    {
+      "path": "index.html",
+      "sha256": "bdfe8534ada1ede3a7e83ded8c0fe2a1b8c45eeb8df63e05833adb08c2bac81e"
+    }
+  ],
+  "limitations": [
+    "Diagram previews are abbreviated; index.html retains full text.",
+    "Diagram arrows show recorded order, not proven causality.",
+    "SVG links and Mermaid click links depend on the importing renderer.",
+    "No Penpot creation, import, round-trip, or visual acceptance is claimed."
+  ]
+}

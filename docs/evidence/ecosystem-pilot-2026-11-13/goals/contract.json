@@ -1,0 +1,10 @@
+{
+  "check": "python acceptance.py",
+  "protect": ["acceptance.py"],
+  "constraints": "Only worker.py and the goal Markdown body may be edited during an authorized repair. Preserve acceptance.py, all goal frontmatter, input identifiers, their first-occurrence order and caller input. No new files, dependencies, credentials, services, network calls, publishing, deployments or nested loops. Planning is draft-only and may not run acceptance or the worker; execution requires a separate launch. The existing runner may write its own audit logs under .scratch. Never fabricate acceptance output or weaken the oracle.",
+  "max_iterations": 2,
+  "max_cost_usd": 1,
+  "iteration_minutes": 3,
+  "check_minutes": 1,
+  "stall_after": 1
+}

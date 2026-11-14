@@ -26,9 +26,21 @@ Key facts:
 - [pr-conversation technique](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/references/techniques/pr-conversation.md): the author, reviewer and verifier turns over ACP, the panel, and every merge gate
 - [issue-conversation technique](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/references/techniques/issue-conversation.md): plan, critique and answer in the issue thread, then build on the owner's issues
 - [SKILL.md](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/SKILL.md): the router, principles, playbooks and techniques of the deepmodebot skill
+- [Tool routing](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/references/techniques/tool-routing.md): select supporting skills and available capabilities without widening permissions
+- [LangChain ecosystem](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/agent-harnesses/references/langchain-ecosystem.md): LangChain, LangGraph, Deep Agents and LangSmith decisions
+- [Containers](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/cloud-devsecops/references/containers.md): Docker, Compose, image builds, runtimes and bounded local workflows
+- [Kubernetes](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/cloud-devsecops/references/kubernetes.md): workload operations, ecosystem selection and scoped operational loops
+- [AI SDK selection](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/agent-harnesses/references/ai-sdk-selection.md): use-case recommendations, execution boundaries and source-linked tradeoffs
+- [Goal review](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/references/techniques/goal-review.md): quantitative milestones, context questions and three independent ACP reviewers
+- [Agent collaboration](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/references/techniques/agent-collaboration.md): native sibling messaging, ACP session identity and blind review boundaries
+- [Visual E2E](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/references/techniques/visual-e2e.md): real recording, replay, per-step evidence and three independent native image reviewers
+- [Open design evidence](https://github.com/TimothyVang/deepmodebot/blob/main/plugins/deepmodebot/skills/deepmodebot/references/techniques/open-design-evidence.md): portable editable workflow exports, embedded raster screenshots and explicit design-tool import limits
+- [Invoice pilot evidence](https://github.com/TimothyVang/deepmodebot/blob/main/docs/evidence/ecosystem-pilot-2026-11-13/README.md): six-step synthetic browser/HTTP/SQLite journey, replay, SQL proof, visual majority and dissent; not a general benchmark
 - [Rebrand guide](https://github.com/TimothyVang/deepmodebot/blob/main/docs/rebrand.md): ship deepmodebot as your own product with one brand file and one build command
 - [Evaluations](https://github.com/TimothyVang/deepmodebot/tree/main/evals): delivery comparisons, review-quality measurements, workflow inventories and their explicit limits
 - [Local delivery results](https://github.com/TimothyVang/deepmodebot/blob/main/evals/results/local-delivery-2026-11-12.md): measured completion and artifact correctness, the cheaper plain-agent baseline, corrections and limits
+
+Tool routing and the collaboration, visual and design references supply supporting capabilities. The user's ordinary research, debugging, review or implementation intent still selects the primary playbook.
 
 ## Code
 

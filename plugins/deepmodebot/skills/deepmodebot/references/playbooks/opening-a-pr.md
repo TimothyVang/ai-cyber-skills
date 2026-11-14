@@ -15,7 +15,7 @@ It lands on no branch. Leave it uncommitted in the starting working tree. Never 
 It reads no other reference file, spawns no subagent, keeps no decision log, and creates no verify skill.
 Done when the test fails on the old code and passes on the fix (or the change has no behavior to test), and the reply shows one real run's command and output.
 
-Committing an S change to the default branch, pushing it, or merging it takes the lane below and its light panel.
+Committing an S change to the default branch, pushing it, or merging it takes the lane below and the full three-reviewer panel.
 
 Rules:
 
@@ -23,7 +23,7 @@ Rules:
 - Measure it with `git diff --numstat <base>...<head>`. Sum both number columns over every row. Count the rows for files.
 - It must touch nothing about auth, permissions, secrets or credentials, input parsing at a trust boundary, database migrations, CI workflows, or agent config.
 - Anything else is M or L and takes the Steps below in full.
-- The deepmodebot bot (`references/techniques/github-app.md`) applies the light panel by itself when a PR's diff fits S. It judges from the diff's size and paths, so it can't see input parsing at a trust boundary: give such a PR the `full-panel` label.
+- Size changes implementation ceremony, not acceptance: every PR uses exactly three independent reviewers and a two-of-three majority.
 
 Steps:
 
@@ -32,15 +32,15 @@ Steps:
 3. Prove it once on the real artifact. Done when you have one real run's command and output that shows the change working.
 4. Review your own diff yourself against the **pr-review** checklist (`references/techniques/pr-review.md`), which is its four lenses and its smell baseline. Spawn no subagents and do not run PR-Agent. Done when every finding is fixed or dismissed with a reason and you have the pr-review line for the committed head.
 5. Open the PR as in Steps 6 to 11 below. Done when `gh pr view <n> --json isDraft,url` shows `false` and the URL.
-6. Land it through the **pr-conversation** technique (`references/techniques/pr-conversation.md`) with a **light panel** (`references/techniques/panel.md`, Light panel). When the deepmodebot bot watches the repo, it runs steps 6 to 8; don't run a second conversation in the session.
-   One verifier, from a different model family when one is available, must PASS with evidence at the exact head.
-   Done when that vote is PASS at the head SHA, the required checks are green, and the repo check (a base-branch `.deepmodebot.json` `"check"`) exits 0 at that head, or the repo sets none.
+6. Land it through **pr-conversation** (`references/techniques/pr-conversation.md`) with the **panel** (`references/techniques/panel.md`). When the deepmodebot bot watches the repo, it runs steps 6 to 8; do not run a second conversation.
+   All three valid independent votes are required; at least two must PASS with evidence at the exact head.
+   Done when that panel passes, required checks are green, and the base-branch repo check exits 0 at that head, or the repo sets none.
 7. Merge with `gh pr merge <n> --match-head-commit <sha>`. Done when `gh pr view <n> --json state` prints `MERGED`.
 8. Run the trunk check on the merge commit (pr-conversation step 8). Done when the repo check passes there, or a verifier passes it when no check is set, or a revert PR is open.
 
 ## Steps
 
-The S lane above skips step 5's subagents and step 12 (PR-Agent). Its panel is the light panel.
+The S lane skips step 5's implementation-review subagents and step 12 (PR-Agent), not the three-reviewer acceptance panel.
 
 1. Check the change is ready: verified on the real surface, no hard stop (SKILL.md Autonomy) involved. Done when you have the real run's command and output and no hard stop applies.
 2. Work from a git worktree off main. Parallel `task` agents on one branch: give each exclusive files, or a separate worktree. Dirty branch with unrelated work → save it as a patch, fresh worktree, apply. Snarled worktree → reset from main, redo minimally.
@@ -81,7 +81,7 @@ The S lane above skips step 5's subagents and step 12 (PR-Agent). Its panel is t
 ## Gates
 
 - Commits, pushes, and PRs need no ask. Merges need a panel pass (`references/techniques/panel.md`): your own single PR lands through pr-conversation, and a stack through `references/playbooks/shipping.md`.
-- A size S PR (Size S lane) needs only the light panel. Every other PR needs the three-verifier panel.
+- Every PR, including size S, needs exactly three valid independent reviewer responses and at least two passes.
 - Do not babysit (watch checks, answer review) each PR of a stack. Finish the phase or stack first; then run a babysit pass (`gh pr checks --watch`, `gh pr view --json reviews,comments`, and the **pr-review** technique steps 5-7 in PR mode on the current head) once the whole stack exists. Push back when feedback drifts from intent.
 - A subagent that opens a PR posts the URL and its review line and returns without babysitting or landing, unless its brief assigns that loop.
 - pr-review is evidence, not a gate: a clean review never waives the Verification section's real runs. Never report a review for a stale head SHA; a new push needs a new round.

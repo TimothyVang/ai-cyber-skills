@@ -50,9 +50,11 @@ CACHE_PARTS = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 TIME_LIMITS = {"iteration_minutes": "60", "check_minutes": "15"}  # frontmatter keys and their defaults
 PROMPT = (
     "Work toward this fixed goal: {goal}\nGoal file: {goal_file}\nFixed constraints: {constraints}\n"
+    "This is an implementation iteration launched by the operator, not a request to draft another goal. "
     "Read the trail of earlier iterations in {trail} if it exists. "
-    "Do the next smallest verifiable step, then stop. The runner executes the check (`{check}`) after you return. "
-    "You may rewrite only the Markdown body of the goal file as your next iteration's working plan. "
+    "Change implementation within the fixed constraints to take the next smallest verifiable step, then stop. "
+    "The runner executes the check (`{check}`) after you return. "
+    "For the goal file itself, you may rewrite only its Markdown body as the next iteration's working plan. "
     "When revising it, record the observed failure, the changed approach, and the next concrete action. "
     "Revise the method, not the objective, permissions, acceptance criteria, or limits. "
     "Never edit frontmatter or protected paths ({protect}), including creating protected absent paths. "

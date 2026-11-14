@@ -1,0 +1,3 @@
+ts	run	iteration	harness	harness_exit	check_exit	seconds
+2026-11-13T21:19:20	20261113T211856-42140	1	omp	0	1	24
+2026-11-13T21:37:48	20261113T213718-37200	1	omp	0	1	30

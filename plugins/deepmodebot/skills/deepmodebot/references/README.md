@@ -11,6 +11,15 @@ Read when a task touches one of these areas and you need to know which reference
 
 **Harnesses, protocols, and AI-native tooling** (using, configuring, or scripting omp, Claude Code, or Codex; MCP, ACP, A2A, WebMCP; skills, plugins, `AGENTS.md`, hooks, sandboxes, headless runs) → read `skill://agent-harnesses`, then only the file the task touches. Those files carry the cited, dated facts (paths, flags, tool names) and the traps for deepmodebot in each harness.
 
+**LangChain ecosystem** (LangChain agents, LangGraph state and durable execution, Deep Agents skills/subagents, LangSmith evaluation and tracing) → `skill://agent-harnesses/references/langchain-ecosystem.md`.
+For automatic tool or skill selection, use `references/techniques/tool-routing.md`; domain references support the selected playbook rather than replacing its intent.
+**AI SDK selection** (which SDK fits the application, not a universal ranking) → `skill://agent-harnesses/references/ai-sdk-selection.md`.
+For vague intent, quantitative milestones and independent two-of-three goal review, use `references/techniques/goal-review.md` before authoring or launching a loop.
+
+**Agent collaboration and self-authoring** → `references/techniques/agent-collaboration.md` for actual native messages, recipient identity and bounded handoffs; `references/playbooks/self-authoring.md` for authored-skill proof and three-reviewer promotion.
+**Visual E2E recording and replay** → `references/techniques/visual-e2e.md` for pinned scenarios, per-step screenshots, video samples and three independent image reviewers. Visual majority does not replace runtime acceptance.
+**Editable workflow design** → `references/techniques/open-design-evidence.md` for portable SVG/Mermaid/HTML evidence and a real Penpot import/edit/export proof. Recorded workflow and proposed design remain separate.
+
 **Credentials and agent authentication** (sharing secrets and `.env` safely, password managers, logins and MFA for agents, credential brokers, protecting MCP servers and agent APIs, OAuth delegation, CI OIDC, secret scanning, leak response) → `skill://secrets-and-auth`. It holds the free-first picks, the rules, and the cited research, checked 2026-11-11.
 
 **Architecture: monorepos, ontology, databases, backend infrastructure** (repo layout and workspace tooling, domain vocabulary and typed models, knowledge graphs and semantic layers, choosing, organizing, or migrating a database, multi-tenancy, queues and durable workflows, API style, reliability, observability, deployment, IaC) → `skill://software-architecture`, then only the file it routes to. Cited and dated 2026-11-11; it builds on `skill://domain-rules/references/backend-system-design.md` and the model-the-domain principle rather than repeating them.
@@ -38,5 +47,7 @@ Frontend evidence and media live in the private `TimothyVang/frontend`. When you
 - Azure subscriptions, management groups, Entra ID, RBAC, Azure Policy, Defender for Cloud, Key Vault, Private Endpoints, AKS, or CI access to Azure → `skill://cloud-devsecops/references/azure.md`.
 - Google Cloud orgs or projects, IAM or service accounts, org policy, VPC Service Controls, Security Command Center, Binary Authorization, GKE, or CI access to GCP → `skill://cloud-devsecops/references/gcp.md`.
 - A CI/CD pipeline's security stages, supply chain (SBOM, signing, SLSA provenance), scanners, policy as code, container or Kubernetes hardening, or GitHub Actions hardening → `skill://cloud-devsecops/references/devsecops-pipeline.md`.
+- Docker, Compose, image builds, OCI runtimes, Podman, Testcontainers or devcontainers → `skill://cloud-devsecops/references/containers.md`.
+- Kubernetes workload operations, Helm/Kustomize, cluster-local development or GitOps → `skill://cloud-devsecops/references/kubernetes.md`.
 - Testing cloud or IaC code without a real account (Floci, LocalStack, moto, Azurite, Google emulators) → `skill://cloud-devsecops/references/local-emulators.md`. Run infra changes there first when the emulator covers the service.
 - Choosing terminal, container, Kubernetes, Terraform, or code-review tooling → `skill://cloud-devsecops/references/devops-tools.md`.

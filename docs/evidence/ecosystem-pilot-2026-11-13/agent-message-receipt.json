@@ -1,0 +1,14 @@
+{
+  "transport": "omp native agent mailbox",
+  "sender": "SkillCollaboration",
+  "recipient": "VisualEvidenceReview",
+  "observed_send": "history://SkillCollaboration entry 68: write agent://VisualEvidenceReview",
+  "observed_reply": "history://SkillCollaboration entry 91: delivered reply scoped to visual-evidence bundles, not generic visual review",
+  "result": "Actual two-way scoped clarification between running agents",
+  "limits": [
+    "History entries are local session references, not portable replay endpoints.",
+    "The summarized reply was truncated; this receipt does not reconstruct its full wording.",
+    "This proves native mailbox communication, not a standardized ACP peer-messaging extension.",
+    "Raw model thoughts and private transport metadata are not published."
+  ]
+}

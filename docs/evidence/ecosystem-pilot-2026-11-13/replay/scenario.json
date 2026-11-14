@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "intent": "Evaluation pilot, not a production invoice feature: enter repeated synthetic invoice identifiers, save each identifier once in first-appearance order, open the persisted export, and reopen it to verify the saved result. Prove the browser-to-HTTP-to-SQLite-to-readback journey with every step visible. This bounded pilot verifies Deepmode recording and replay, not the user's entire broader Deepmode improvement request.",
+  "allowed_origins": ["http://127.0.0.1:18991"],
+  "steps": [
+    {
+      "id": "open-export",
+      "action": {"type": "open", "url": "http://127.0.0.1:18991/"},
+      "expected": {"text": [{"selector": "h1", "equals": "Invoice export"}], "state": [{"selector": "#invoice-ids", "property": "visible", "equals": true}]}
+    },
+    {
+      "id": "enter-repeated-identifiers",
+      "action": {"type": "fill", "selector": "#invoice-ids", "text": "inv-2\ninv-1\ninv-2\ninv-3"},
+      "expected": {"text": [{"selector": "#input-status", "equals": "4 identifiers entered"}]}
+    },
+    {
+      "id": "submit-export",
+      "action": {"type": "click", "selector": "#export"},
+      "expected": {"state": [{"selector": "#export", "property": "visible", "equals": true}]}
+    },
+    {
+      "id": "await-persisted-result",
+      "action": {"type": "wait", "selector": "#view-export"},
+      "expected": {"text": [{"selector": "#summary", "equals": "Export saved: 3 unique invoices from 4 identifiers."}], "state": [{"selector": "#view-export", "property": "visible", "equals": true}]}
+    },
+    {
+      "id": "open-saved-export",
+      "action": {"type": "click", "selector": "#view-export"},
+      "expected": {"url": "http://127.0.0.1:18991/saved", "text": [{"selector": "h1", "equals": "Saved invoice export"}, {"selector": "#saved-count", "equals": "3 unique invoices from 4 identifiers"}, {"selector": "#invoice-list li:nth-child(1)", "equals": "inv-2"}, {"selector": "#invoice-list li:nth-child(2)", "equals": "inv-1"}, {"selector": "#invoice-list li:nth-child(3)", "equals": "inv-3"}]}
+    },
+    {
+      "id": "reopen-persisted-export",
+      "action": {"type": "open", "url": "http://127.0.0.1:18991/saved"},
+      "expected": {"text": [{"selector": "h1", "equals": "Saved invoice export"}, {"selector": "#saved-count", "equals": "3 unique invoices from 4 identifiers"}, {"selector": "#invoice-list li:nth-child(1)", "equals": "inv-2"}, {"selector": "#invoice-list li:nth-child(2)", "equals": "inv-1"}, {"selector": "#invoice-list li:nth-child(3)", "equals": "inv-3"}]}
+    }
+  ]
+}

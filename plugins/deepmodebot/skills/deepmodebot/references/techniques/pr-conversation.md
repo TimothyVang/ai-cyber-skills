@@ -9,7 +9,7 @@ Every model call runs in a harness logged in with the user's own subscription: w
 ## Who coordinates
 
 - **Unattended.** `bot.py` (`assets/github-app/bot.py`) is the coordinator. It polls, runs these steps, and enforces every gate in code.
-  It also does three things by itself. It gives a size S diff the light panel (step 6). It runs the repo check at the exact head before a merge (step 7). It runs the repo check on the merge commit as the trunk check (step 8).
+  It enforces exactly three valid verifier responses and at least two passes (step 6), runs the repo check at the exact merge head (step 7), and runs it again on the merge commit as the trunk check (step 8).
 - **In a session.** You are the coordinator. Run the same steps with the `acpx` commands below.
 
 Agents never post to GitHub. They return text; the coordinator posts it. With the deepmodebot GitHub App configured, the coordinator posts with the app's installation token, so the thread shows `<slug>[bot]`: `GH_TOKEN=$(py -3 assets/github-app/ghapp.py token --repo <owner/repo>) gh pr comment <N> -R <owner/repo> --body-file <file>`. With no app, it posts as the user's `gh`. Pushes, PR creation and merges always use the user's own `gh` and git credentials.
@@ -85,8 +85,7 @@ acpx --cwd <dir> --approve-all [--model <id>] --timeout <s> --format quiet <agen
 5. **Re-review.** The reviewer's session gets the author's reply and the new head, and reviews again. Repeat steps 3 to 5 until no P0 or P1 is open and every P2 is answered. Not converged after `maxRounds` (default 3) → post the open findings as coordinator and report the PR as blocked.
    Done when the latest review at the current head has no open P0 or P1 and every P2 answered, or the blocked comment is posted.
 6. **Panel.** Run the **panel** (`references/techniques/panel.md`) at the final head: three verifier agents, each in its own detached worktree at that SHA, run the change and return `{"vote":"PASS|FAIL","evidence":"..."}`. Collect all three votes before posting any, so none sees another's verdict.
-   Then post each vote verbatim as `verifier N`, and the tally as `panel`. PASS needs at least two. Not a pass → back to step 4 with the failures.
-   A size S diff gets the **light panel** (panel's Light panel) instead. `git diff --numstat <base>...<head>` decides S, not the author. One verifier runs, from a different model family than the author when one is available. It must PASS with evidence at the exact head.
+   Post each vote verbatim as `verifier N`, then the tally as `panel`. Require all three valid responses and at least two PASS votes, for every PR size. Missing, malformed or unavailable responses block the round; no reduced denominator or replacement reviewer shopping. Not a pass → step 4 with the findings.
    Done when every vote and the tally are posted for one head SHA.
 7. **Merge** on a pass, after every gate below holds at that exact head:
    - **Same head.** The head SHA has not changed since the panel.
@@ -130,4 +129,4 @@ Read `.deepmodebot.json` fresh from the base branch (`git fetch origin <base>`, 
 
 ## Output
 
-The PR thread is the record. In the report: `conversation: <merged|blocked> at <short sha>, <rounds> rounds, panel <k>/<n>, admin <yes|no>`, then the PR URL. `<n>` is 3, or 1 for a light panel.
+The PR thread is the record. Report `conversation: <merged|blocked> at <short sha>, <rounds> rounds, panel <k>/3, admin <yes|no>`, then the PR URL.

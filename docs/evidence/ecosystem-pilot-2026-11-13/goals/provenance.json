@@ -1,0 +1,10 @@
+{
+  "approved_goal_sha256": "835c0c6b53f5249107ab186d65900eeaebf530c223805eead6f95fcc33a20a5f",
+  "candidate_sha256": "d7a0d496d073d012a66678e116860eb39f23f61f3703db4b7ca7b6bcdbf40408",
+  "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+  "oracle_sha256": "073b7215731a7c17b355e62133690d0f9b3488740f104113021fc7fca0317453",
+  "approved_goal_retention": "Restored from the retained original compiler output in memory; bytes match the original approval receipt. The planner output file on disk had subsequently acquired a mutable working-plan section during stalled execution. That distinct version is retained as working-goal-after-stalls.txt.",
+  "worker_before_retention": "Reconstructed two-line baseline from the original supplied evidence, which explicitly states return list(invoice_ids); not recovered from Git (the fixture repository had no commit).",
+  "execution": "Separate authorized runner invocation, one iteration, harness_exit=0, check_exit=0, 31 seconds; unchanged oracle reported work_done=8 errors=0.",
+  "limits": "One deterministic fixture, not a general goal-quality benchmark. Approval receipts remain draft-only and executed=false; execution proof is separate."
+}

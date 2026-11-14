@@ -20,8 +20,8 @@ workspace of its own (<cache>/dry-run/<pid>-<id>, removed afterwards) beside a r
 prints what each triggered item would get; with --item it also runs that item's first read-only agent turn (the
 reviewer on a PR, the author's plan on an issue) and prints the reply.
 
-Updates: a watcher running from an omp plugin install upgrades that install when the brand repo's main moves
-(`autoUpdate`, `updateMinutes` in bot.json) and restarts itself when its own code changed. See `update`.
+Updates: the existing watch cycle synchronizes verified canonical local copies (`autoUpdate`, `updateMinutes`
+in bot.json), preserving forks and local edits, and restarts only when its running code changed. See `update`.
 
 Config: <CONFIG_DIR>/bot.json (defaults for missing keys; never overwritten). A repo opts out with
 `"bot": false`, and turns merging off with `"autonomousMerge": false`, in the brand's repo config file
@@ -51,10 +51,12 @@ import uuid
 from pathlib import Path
 from urllib.parse import quote
 
+sys.dont_write_bytecode = True
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import brand  # noqa: E402
 import ghapp  # noqa: E402
 import review_context  # noqa: E402
+import local_updates  # noqa: E402
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "pr-agent"))
 import pr_agent_local  # noqa: E402  (its sealed `omp -p`: no tools, no files, no project config)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "loop"))
@@ -75,7 +77,7 @@ DEFAULTS = {"author": {"agent": "omp"}, "reviewer": {"agent": "omp"},
             "verifiers": [{"agent": "omp"}, {"agent": "omp"}, {"agent": "omp"}],
             "autonomousMerge": True, "maxRounds": 3, "interval": 120,
             "mention": B.get("mention") or "@deepmodebot", "parallelRepos": 4,
-            "autoUpdate": True, "updateMinutes": 60}
+            "autoUpdate": True, "updateMinutes": 60, "localCopyPaths": []}
 UPDATE_PATH = CONFIG_DIR / "update.json"  # its own file: `bot.py update` may write it while a watcher runs
 UPDATE_TIMEOUT = 600  # seconds for each omp command of an upgrade
 LOCK_WAIT = 60  # seconds a starting watcher waits for the lock (the watcher it replaces is letting go)
@@ -89,17 +91,6 @@ AGENT_TIMEOUT = 3600
 CHECK_WAIT = 1800
 MISSING_LOOKS = 3  # cycles a required check may stay unreported, with nothing running, after the wait
 REPO_CHECK_MINUTES = 30  # time limit for the base branch's `check` command (.deepmodebot.json)
-# A size S diff (SKILL.md Route step 3) gets a light panel of one verifier: at most this many changed lines in
-# this many files, and no path that touches auth, secrets, permissions, migrations, CI, or agent config.
-LIGHT_PANEL_LINES, LIGHT_PANEL_FILES = 30, 2
-SENSITIVE_PATH = re.compile(r"auth|login|password|secret|credential|token|permission|security|migration|"
-                            r"(^|/)\.github/|(^|/)\.gitlab-ci\.yml$|(^|/)jenkinsfile$|pipelines?\.ya?ml$|"
-                            r"(^|/)\.(circleci|buildkite|husky)/|(^|/)\.env|(^|/)\.(omp|claude|codex|agents|cursor|"
-                            r"gemini|windsurf|kiro|pi)/|(^|/)(agents|claude|gemini|skill)\.md$|(^|/)\.(cursor|windsurf|"
-                            r"cline)rules$|mcp\.json$|(^|/)\.deepmodebot\.json$", re.I)
-# A label that asks for the full panel on a diff the bot would size S, for what paths can't show (a change to
-# input parsing at a trust boundary).
-FULL_PANEL_LABELS = frozenset({"full-panel"})
 LIST_LIMIT = 100_000  # open PRs or issues listed per repo per cycle: gh pages through all of them
 MAX_ATTEMPTS = 3  # an item that errors gets this many tries before it waits for a new push or comment
 MERGE_SETTLE = 60  # seconds a merge read-back polls for MERGED before calling the merge not done
@@ -340,12 +331,23 @@ def parse_responses(text: str) -> list:
 def parse_vote(text: str):
     data = json_block(text, "vote") or {}
     vote = str(data.get("vote") or "").upper()
-    return (vote if vote in ("PASS", "FAIL") else "FAIL"), str(data.get("evidence") or "no parseable vote")
+    evidence = data.get("evidence")
+    if vote not in ("PASS", "FAIL") or not isinstance(evidence, str) or not evidence.strip():
+        return "INVALID", "no parseable vote with evidence"
+    return vote, evidence
+
+
+PANEL_POLICY = "three-independent-v1"
 
 
 def panel_passed(votes: list) -> bool:
-    passes = sum(v == "PASS" for v in votes)
-    return passes >= max(2, len(votes) // 2 + 1)
+    return len(votes) == 3 and all(v in ("PASS", "FAIL") for v in votes) and votes.count("PASS") >= 2
+
+
+def current_panel(item: dict, head: str) -> bool:
+    votes = item.get("panelVotes")
+    return bool(head) and item.get("panelSha") == head and item.get("panelPolicy") == PANEL_POLICY \
+        and isinstance(votes, list) and panel_passed(votes)
 
 
 def blocking(findings: list, answered: set) -> list:
@@ -600,7 +602,8 @@ def effective_mention(stored, name: str, default: str) -> str:
 
 def load_bot_config(write: bool = True, note=None) -> dict:
     """bot.json with defaults for missing keys. Never overwrite stored configuration, even during migration."""
-    CONFIG_DIR.mkdir(parents=True, exist_ok=True)
+    if write:
+        CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     if write and not BOT_CONFIG.is_file():
         BOT_CONFIG.write_text(json.dumps(DEFAULTS, indent=2) + "\n", encoding="utf-8")
     cfg = {**DEFAULTS, **(json.loads(BOT_CONFIG.read_text(encoding="utf-8")) if BOT_CONFIG.is_file() else {})}
@@ -611,8 +614,8 @@ def load_bot_config(write: bool = True, note=None) -> dict:
              f'using {cfg["mention"]}. Remove the mention key or set a different explicit trigger.')
     try:
         cfg["author"], cfg["reviewer"] = as_role(cfg["author"]), as_role(cfg["reviewer"])
-        if not isinstance(cfg["verifiers"], list) or not cfg["verifiers"]:
-            raise ValueError("verifiers must be a non-empty list")
+        if not isinstance(cfg["verifiers"], list) or len(cfg["verifiers"]) != 3:
+            raise ValueError("verifiers must contain exactly three reviewer roles")
         cfg["verifiers"] = [as_role(v) for v in cfg["verifiers"]]
         if not isinstance(cfg["parallelRepos"], int) or cfg["parallelRepos"] < 1:
             raise ValueError("parallelRepos must be a positive integer")
@@ -621,6 +624,10 @@ def load_bot_config(write: bool = True, note=None) -> dict:
         if isinstance(cfg["updateMinutes"], bool) or not isinstance(cfg["updateMinutes"], int) \
                 or cfg["updateMinutes"] < 1:
             raise ValueError("updateMinutes must be a positive integer")
+        if not isinstance(cfg["localCopyPaths"], list) or any(
+                not isinstance(path, str) or not path.strip() or not Path(path).expanduser().is_absolute()
+                for path in cfg["localCopyPaths"]):
+            raise ValueError("localCopyPaths must be a list of absolute checkout paths (or ~/ paths)")
     except ValueError as err:
         raise SystemExit(f"{BOT_CONFIG}: {err}") from None
     return cfg
@@ -976,21 +983,6 @@ def checks_running(contexts: list, checks: list, required: list, pinned: dict) -
     return any(c.get("bucket") == "pending" for c in required) or \
         any(c.get("bucket") == "pending" for c in checks if c["name"] in contexts) or \
         any("pending" in seen for apps in pinned.values() for seen in apps.values())
-
-
-def diff_size(numstat: str) -> dict:
-    """Changed lines and files from `git diff --numstat`, and whether the diff is size S (a light panel): at most
-    LIGHT_PANEL_LINES lines in LIGHT_PANEL_FILES files, no binary file, no SENSITIVE_PATH."""
-    lines, files, small = 0, 0, True
-    for row in filter(str.strip, numstat.split("\0")):  # `--numstat -z --no-renames`: a rename is a delete and an add
-        added, deleted, path = row.strip("\n").split("\t", 2)
-        files += 1
-        if not (added.isdigit() and deleted.isdigit()) or SENSITIVE_PATH.search(path.replace("\\", "/")):
-            small = False
-        else:
-            lines += int(added) + int(deleted)
-    small = small and 0 < files <= LIGHT_PANEL_FILES and lines <= LIGHT_PANEL_LINES
-    return {"lines": lines, "files": files, "small": small}
 
 
 def is_held(labels) -> bool:
@@ -1430,7 +1422,7 @@ class PRConversation:
             parked = self.item.get("status") != "awaiting-hold" or \
                 (self.item.get("heldAt") or {}).get("base") == self.base
             if self.item.get("status") in ("awaiting-checks", "awaiting-issues", "awaiting-hold") and parked \
-                    and self.item.get("panelSha") == self.head \
+                    and current_panel(self.item, self.head) \
                     and not self.comments:
                 return self.land(self.item.get("panelTally", "?"))
             return self.converse()
@@ -1708,22 +1700,10 @@ class PRConversation:
 
     def panel(self):
         self.require_own()  # verifiers run with --approve-all: the head must still be the owner's own work
-        sha, configured = self.head, self.cfg["verifiers"]
-        size = diff_size(git(self.clone, "diff", "--numstat", "-z", "--no-renames", f"origin/{self.base}...{sha}"))
-        if size["small"] and any((label.get("name") or "").lower() in FULL_PANEL_LABELS
-                                 for label in self.pr.get("labels") or []):
-            size["small"] = False
-        # A size S diff gets a light panel: one verifier, from another agent than the author's if one is configured,
-        # else another model. Everything else gets every configured verifier.
-        if size["small"]:
-            agent, model = self.author["agent"], self.author.get("model")
-            ranked = sorted(range(len(configured)), key=lambda i: (configured[i]["agent"] == agent,
-                                                                     configured[i].get("model") == model))
-            seats = ranked[:1]
-        else:
-            seats = list(range(len(configured)))
-        verifiers = [configured[i] for i in seats]
-        for i in seats:
+        sha, verifiers = self.head, self.cfg["verifiers"]
+        if len(verifiers) != 3:
+            raise RuntimeError("a panel requires exactly three independent reviewer contexts")
+        for i in range(3):
             worktree_at(self.clone, self.verifier_trees[i], sha)
         stat = git(self.clone, "diff", "--stat", f"origin/{self.base}...{sha}")
 
@@ -1731,9 +1711,9 @@ class PRConversation:
             agent = verifiers[index]
             try:
                 reply = self.it.ask(agent, verifier_prompt(self, index + 1, len(verifiers), stat),
-                                    self.verifier_trees[seats[index]], "--approve-all")
-            except Exception as err:  # a verifier that cannot run is a FAIL vote, not a crash
-                reply = f"The verifier could not run: {err}\n\n```json\n{{\"vote\":\"FAIL\",\"evidence\":\"did not run\"}}\n```"
+                                    self.verifier_trees[index], "--approve-all")
+            except Exception as err:
+                reply = f"The verifier could not run: {err}\n\n```json\n{{\"vote\":\"INVALID\",\"evidence\":\"did not run\"}}\n```"
             return reply, *parse_vote(reply)
 
         with concurrent.futures.ThreadPoolExecutor(len(verifiers)) as pool:
@@ -1741,16 +1721,15 @@ class PRConversation:
         for i, (reply, _, _) in enumerate(results, 1):
             self.it.say(f"verifier {i}", verifiers[i - 1], sha, reply)
         votes = [v for _, v, _ in results]
-        passed = votes == ["PASS"] if size["small"] else panel_passed(votes)
+        passed = panel_passed(votes)
         tally = f"{votes.count('PASS')}/{len(votes)}"
-        kind = (f"Light panel (size S: {size['lines']} changed lines in {size['files']} file(s))"
-                if size["small"] else "Panel")
         lines = "\n".join(f"- verifier {i} ({role_label(verifiers[i - 1])}): {v}" for i, v in enumerate(votes, 1))
-        self.it.say("panel", "bot.py", sha, f"{kind} {'PASS' if passed else 'not done'} at `{sha[:7]}`: "
+        self.it.say("panel", "bot.py", sha, f"Panel {'PASS' if passed else 'not done'} at `{sha[:7]}`: "
                     f"{tally} PASS.\n\n{lines}")
-        self.item.update(panelSha=sha if passed else None, panelTally=tally)
+        self.item.update(panelSha=sha if passed else None, panelTally=tally,
+                         panelPolicy=PANEL_POLICY, panelVotes=votes)
         failures = [{"id": f"V{i}", "severity": "P1", "file": "", "line": 0,
-                     "claim": f"panel verifier {i} voted FAIL", "evidence": evidence}
+                     "claim": f"panel verifier {i} voted {v}", "evidence": evidence}
                     for i, (_, v, evidence) in enumerate(results, 1) if v != "PASS"]
         return passed, tally, failures
 
@@ -1795,6 +1774,8 @@ class PRConversation:
 
     def land(self, tally: str) -> str:
         sha = self.item.get("panelSha")
+        if not current_panel(self.item, sha):
+            raise Blocked("cached approval is not a valid three-reviewer majority; a fresh panel is required")
         # One CHECK_WAIT per head: a later cycle looks without waiting, so a slow or missing check never holds up
         # every other item for half an hour each cycle.
         waited = self.item.get("checksWaited") == sha
@@ -2430,10 +2411,8 @@ def code_hash(assets: Path) -> str:
 
 
 def upgrade_commands(install: dict) -> list:
-    """`omp plugin upgrade` reinstalls from omp's local clone of the marketplace and never fetches it; the
-    marketplace update fetches main first, so an unchanged version still gets main's latest files."""
-    return [["omp", "plugin", "marketplace", "update", install["marketplace"]],
-            ["omp", "plugin", "upgrade", install["plugin"]]]
+    """The synchronizer first fast-forwards the verified marketplace to its pinned canonical commit."""
+    return [["omp", "plugin", "upgrade", install["plugin"]]]
 
 
 def load_update_record() -> dict:
@@ -2460,27 +2439,49 @@ def save_update_record(record: dict) -> None:
             time.sleep(0.1)
 
 
-def remote_main() -> str:
-    sha = gh("api", f"repos/{B['repo']}/commits/main", "--jq", ".sha", timeout=120).strip()
-    if not re.fullmatch(r"[0-9a-f]{40}", sha):
-        raise RuntimeError(f"`gh api repos/{B['repo']}/commits/main` returned {sha[:80]!r}, not a commit")
-    return sha
+def update_install(install=None, dry: bool = False, cfg=None) -> dict:
+    """Serialize mutation and receipt persistence; a dry preview never creates a lock."""
+    if dry:
+        return _update_install(install, dry=True, cfg=cfg)
+    lock = Lock()
+    lock.path = WORK / "update.lock"
+    try:
+        lock.acquire()
+    except SystemExit:
+        return {"remote": None, "targets": [], "upgraded": False, "codeChanged": False,
+                "incomplete": [], "error": "another local-copy update is active; retry after it finishes"}
+    try:
+        save_update_record({**load_update_record(), "checkedAt": now_iso()})
+        return _update_install(install, cfg=cfg)
+    finally:
+        lock.release()
 
 
-def update_install(install: dict, dry: bool = False) -> dict:
-    """Upgrade the omp install when the brand repo's main is not the commit recorded at the last update (none
-    recorded counts as different). Raises when a command fails; the record then keeps the old commit."""
-    recorded = load_update_record().get("sha")
-    result = {"remote": remote_main(), "recorded": recorded, "commands": upgrade_commands(install),
-              "upgraded": False, "codeChanged": False}
-    if dry or result["remote"] == recorded:
-        return result
-    before = code_hash(install["assets"])
-    env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
-    for command in result["commands"]:
-        run(command, env=env, timeout=UPDATE_TIMEOUT, cwd=Path.home())
-    result.update(upgraded=True, codeChanged=code_hash(install["assets"]) != before)
-    save_update_record({**load_update_record(), "sha": result["remote"], "updatedAt": now_iso()})
+def _update_install(install=None, dry: bool = False, cfg=None) -> dict:
+    """Check every copy, even on an unchanged main. A recorded SHA is never installation evidence."""
+    cfg = cfg if cfg is not None else load_bot_config(write=False)
+    record = load_update_record()
+    assets = install["assets"] if install else Path(__file__).resolve().parent.parent
+    before = code_hash(assets)
+    commands = upgrade_commands(install) if install else []
+
+    def upgrade():
+        env = {k: v for k, v in os.environ.items() if k not in goal_loop.API_KEY_VARS}
+        for command in commands:
+            run(command, env=env, timeout=UPDATE_TIMEOUT, cwd=Path.home())
+
+    result = local_updates.synchronize(
+        Path.home(), WORK / "local-updates", cfg.get("localCopyPaths", []),
+        record.get("copies", {}), dry=dry, install=install, upgrade=upgrade)
+    result.update(recorded=record.get("sha"), commands=commands,
+                  codeChanged=not dry and code_hash(assets) != before)
+    if not dry:
+        # This is the observed remote, not a claim that every copy contains it.
+        receipt = {**load_update_record(), "copies": result["manifests"], "targets": result["targets"]}
+        if result["remote"]:
+            receipt.update(remoteSha=result["remote"], updatedAt=now_iso())
+            receipt.pop("sha", None)
+        save_update_record(receipt)
     return result
 
 
@@ -2537,75 +2538,62 @@ def restart_watcher(script: Path, lock: Lock):
 
 
 class AutoUpdate:
-    """The watcher's self-update, run only between cycles. At most every `updateMinutes`, and right after a merge
-    into the bot's own repo, it upgrades the omp install when main moved, and restarts the watcher when the bot's
-    code on disk differs from the code this process started with (an upgrade by `bot.py update` counts too)."""
+    """Synchronize local copies between watch cycles, using the existing interval and restart handover."""
 
     def __init__(self):
-        self.install, self.started, self.off = omp_install(), None, None
-        if not B.get("repo"):
-            self.install, self.off = None, "the brand names no repo to update from"
-            return
-        if not self.install:
-            self.off = f"{Path(__file__).resolve()} is not an omp plugin install (update a git checkout with git pull)"
-            return
+        self.install, self.off = omp_install(anywhere=True), None
+        running = omp_install()
+        self.script = running["script"] if running else Path(__file__).resolve()
+        self.assets = running["assets"] if running else Path(__file__).resolve().parent.parent
+        self.started = None
         try:
-            self.started = code_hash(self.install["assets"])
+            self.started = code_hash(self.assets)
         except OSError as err:
             self.off = f"the bot's code can't be read ({err})"
 
     def after_cycle(self, bot, lock: Lock):
-        """None to keep watching, else the exit code for this process (a new watcher took over). Never raises."""
+        """None to keep watching, else the exit code after handover. Never raises."""
         if bot is None or not bot.cfg["autoUpdate"]:
             return None
         if self.off:
             log(f"auto-update off: {self.off}")
-            self.off, self.install = None, None  # logged once
-            return None
-        if not self.install:
             return None
         try:
             record = load_update_record()
             if not bot.merged_self and minutes_since(record.get("checkedAt")) < bot.cfg["updateMinutes"]:
                 return None
-            save_update_record({**record, "checkedAt": now_iso()})
-            result = update_install(self.install)
-            if result["upgraded"]:
-                log(f"updated {self.install['plugin']} to {B['repo']}@{result['remote'][:7]}"
-                    f" (was {(result['recorded'] or 'unrecorded')[:10]})")
-            if code_hash(self.install["assets"]) == self.started:
+            result = update_install(self.install, cfg=bot.cfg)
+            for target in result["targets"]:
+                log(f"update {target['path']}: {target['action']}"
+                    + (f" ({target['reason']})" if target.get("reason") else ""))
+            if result.get("error"):
+                log(f"update failed: {result['error']}; the next check retries")
                 return None
-            return restart_watcher(self.install["script"], lock)
-        except Exception as err:  # never stops the bot: the next check retries
+            if any(self.assets.resolve().is_relative_to(Path(path).resolve())
+                   for path in result.get("incomplete", [])):
+                log("running installation has an incomplete update; retaining this watcher for recovery")
+                return None
+            if code_hash(self.assets) == self.started:
+                return None
+            return restart_watcher(self.script, lock)
+        except Exception as err:
             log(f"update failed: {err}; the next check in {bot.cfg['updateMinutes']} minutes retries")
             return None
 
 
 def cmd_update(args) -> None:
-    """One check-and-upgrade of the omp install now. It never restarts a watcher: a running watcher restarts
-    itself at its next update check when the bot's code changed."""
-    install = omp_install(anywhere=True)
-    here = Path(__file__).resolve()
-    if not B.get("repo"):
-        raise SystemExit("auto-update is off: the brand names no repo to update from")
-    if not install:
-        raise SystemExit(f"no omp install of this plugin found; {here} updates with git pull")
-    print(f"omp install: {install['marketplace']}/{install['plugin']} at {install['link']} -> "
-          f"{install['link'].resolve()}")
-    if install["link"].resolve() not in here.parents:
-        print(f"this copy ({here}) is not that install; a watcher updates itself only when it runs from the install")
-    result = update_install(install, dry=args.dry_run)
-    commands = " && ".join(shlex.join(c) for c in result["commands"])
-    print(f"remote {B['repo']} main: {result['remote']}")
-    print(f"recorded at the last update: {result['recorded'] or 'none'}")
-    if result["remote"] == result["recorded"]:
-        print("up to date: nothing to run")
-    elif args.dry_run:
-        print(f"would run: {commands}")
-    else:
-        print(f"ran: {commands}")
-        print("bot code changed: a running watcher restarts at its next update check" if result["codeChanged"]
-              else "bot code unchanged")
+    """Synchronize eligible local copies now; an active watcher performs its own handover."""
+    result = update_install(omp_install(anywhere=True), dry=args.dry_run)
+    print(f"canonical main: {result['remote'] or 'unavailable'}")
+    for target in result["targets"]:
+        print(f"{target['kind']} {target['path']}: {target['action']}"
+              + (f" ({target['reason']})" if target.get("reason") else ""))
+    if result.get("error"):
+        raise SystemExit(f"update unavailable: {result['error']}")
+    if args.dry_run:
+        print("dry run: no files or state changed")
+    elif result["codeChanged"]:
+        print("bot code changed: a running watcher checks its own code at the next update interval")
 
 
 def autostart_command() -> list:

@@ -1,0 +1,85 @@
+{
+  "goal": "Invoice exports return a list of exact, case-sensitive identifiers without duplicates, preserving first-occurrence order and caller input.",
+  "status": "ready",
+  "contract_sha256": "f3112899edee345d96f3d65a3c23510194cecde3576c45e06c45b125c174ab1a",
+  "criteria": [
+    {
+      "id": "c1",
+      "metric": "acceptance_errors",
+      "target": 0,
+      "direction": "equals",
+      "unit": "errors",
+      "measurement": "Read errors from the unchanged acceptance runner's final summary after its assertions compare actual worker results with fixed expectations.",
+      "evidence_source": "Existing runner's acceptance transcript and audit logs",
+      "baseline": 5,
+      "baseline_evidence": "Supplied project evidence and parent command transcript: work_done=8 errors=5.",
+      "baseline_milestone": null,
+      "denominator": "All eight fixed consumer cases, including existing input-preservation and list-output checks",
+      "workload": "Unchanged acceptance suite: empty input, one ID, repeated single ID, nonalphabetical first-occurrence order, three unique IDs, case-sensitive identifiers, interleaved duplicates, and multiple later repeats.",
+      "sample_count": 1,
+      "anti_gaming": "Keep the oracle and workload unchanged; use assertions against the real worker, not worker-printed success claims; require c2 and c3 concurrently."
+    },
+    {
+      "id": "c2",
+      "metric": "completed_cases",
+      "target": 8,
+      "direction": "equals",
+      "unit": "cases",
+      "measurement": "Read work_done from the unchanged acceptance runner's final summary for the same run used by c1.",
+      "evidence_source": "Existing runner's acceptance transcript and audit logs",
+      "baseline": 8,
+      "baseline_evidence": "Supplied project evidence and parent command transcript: work_done=8 errors=5.",
+      "baseline_milestone": null,
+      "denominator": "Eight required consumer cases",
+      "workload": "The same unchanged eight-case acceptance suite used by c1.",
+      "sample_count": 1,
+      "anti_gaming": "No skipped, substituted, duplicated, or reduced cases; completion alone cannot establish success without c1 and c3."
+    },
+    {
+      "id": "c3",
+      "metric": "acceptance_process_exit",
+      "target": 0,
+      "direction": "equals",
+      "unit": "exit code",
+      "measurement": "Read the actual acceptance process exit status captured by the existing runner for the same run used by c1 and c2.",
+      "evidence_source": "Existing runner's process-status record and acceptance transcript",
+      "baseline": 1,
+      "baseline_evidence": "Supplied project evidence and parent command transcript report baseline exit 1.",
+      "baseline_milestone": null,
+      "denominator": "One acceptance process invocation",
+      "workload": "The same unchanged eight-case acceptance suite used by c1.",
+      "sample_count": 1,
+      "anti_gaming": "Use the captured process status, not a printed exit claim; require all eight cases completed with zero errors."
+    }
+  ],
+  "milestones": [
+    {
+      "id": "m1",
+      "title": "Worker-only stable deduplication verified after separate launch",
+      "depends_on": [],
+      "criteria": [
+        "c1",
+        "c2",
+        "c3"
+      ],
+      "establishes_baseline": [],
+      "acceptance": {
+        "metric": "qualifying_acceptance_runs",
+        "target": 1,
+        "direction": "equals",
+        "unit": "runs",
+        "measurement": "Count the verification run as qualifying only when its runner-captured evidence jointly records errors=0, work_done=8, and process exit 0.",
+        "evidence_source": "Existing runner's acceptance transcript, process-status record, and audit logs",
+        "denominator": "One verification run",
+        "workload": "The unchanged eight-case acceptance suite exercising the real worker, including input-preservation and list-output checks.",
+        "sample_count": 1,
+        "anti_gaming": "No oracle or workload changes, skipped checks, or fabricated output. Success requires actual assertion results from the same run; this draft grants no execution authority."
+      },
+      "iterations": 1,
+      "cost_usd": 1,
+      "minutes": 3
+    }
+  ],
+  "questions": [],
+  "evidence_requests": []
+}
