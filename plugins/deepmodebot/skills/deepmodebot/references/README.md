@@ -19,6 +19,8 @@ Read when a task touches one of these areas and you need to know which reference
 
 **Agent tooling** (browser automation, agent sandboxes, coding-agent harnesses or multi-agent orchestrators, autoresearch loops) → read the cited landscape in `research/README.md` of a local checkout of `TimothyVang/automation-tools` before picking a tool. No checkout: `gh repo clone TimothyVang/automation-tools .scratch/refs/automation-tools` from the project root (private; skip if you can't access it). It is a 2026-11-11 snapshot tuned for omp + Orca on Windows, so recheck release dates and licenses of the tool you pick.
 
+**Software factories** (choosing a backlog-to-PR runner, comparing agent fleets, or improving dispatch, holdouts, merge gates, and recovery) → `references/factory-landscape.md`. It maps 61 GitHub projects to concrete mechanisms, license caveats, and acceptance experiments. The Work a queue playbook still owns execution and merge policy.
+
 **Engineering domain rules** come from `skill://domain-rules` (its `SKILL.md` lists sources). Read only the file the task touches, before designing or reviewing in that area:
 
 - AI agent, agent harness, multi-agent system, MCP or WebMCP, or an agent instruction file (CLAUDE.md, AGENTS.md, a skill) → `skill://domain-rules/references/agent-engineering.md`. Audit agents against all seven of its laws.
