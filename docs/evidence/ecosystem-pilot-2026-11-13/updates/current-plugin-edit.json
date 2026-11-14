@@ -1,0 +1,81 @@
+{
+  "source": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+  "marketplace_before": "d604b39ffe65eab5d7c4a3a57824a1745150ee09",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "clone",
+        "--config",
+        "core.longpaths=true",
+        "--config",
+        "core.autocrlf=false",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\current-plugin-race\\cache\\canonical.git",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\current-plugin-race\\home\\.omp\\plugins\\cache\\marketplaces\\deepmodebot"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": "Cloning into 'C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\current-plugin-race\\home\\.omp\\plugins\\cache\\marketplaces\\deepmodebot'...\ndone.\n"
+    },
+    {
+      "argv": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "-C",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\current-plugin-race\\home\\.omp\\plugins\\cache\\marketplaces\\deepmodebot",
+        "remote",
+        "set-url",
+        "origin",
+        "https://github.com/TimothyVang/deepmodebot.git"
+      ],
+      "exit": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "-c",
+        "core.hooksPath=",
+        "-C",
+        "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\current-plugin-race\\home\\.omp\\plugins\\cache\\marketplaces\\deepmodebot",
+        "checkout",
+        "-B",
+        "main",
+        "d604b39ffe65eab5d7c4a3a57824a1745150ee09"
+      ],
+      "exit": 0,
+      "stdout": "Your branch is behind 'origin/main' by 5 commits, and can be fast-forwarded.\n  (use \"git pull\" to update your local branch)\n",
+      "stderr": "Reset branch 'main'\n"
+    }
+  ],
+  "observations": {
+    "upgrade_called": false,
+    "initial_complete_canonical_inventory": true,
+    "edit_injected_after_marketplace_fetch_started": true,
+    "edit_preserved": true,
+    "edited_sha256": "19a0b7be3ecfff83c87dd31afe19581be2e28f6976e684fb2ff455730fd79660"
+  },
+  "result": {
+    "remote": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+    "targets": [
+      {
+        "path": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\current-plugin-race\\home\\current-install",
+        "kind": "plugin",
+        "marketplace_action": "fast-forwarded",
+        "action": "preserved",
+        "reason": "installed contents do not match the pinned canonical SHA; not recorded"
+      }
+    ],
+    "manifests": {},
+    "upgraded": false,
+    "incomplete": [
+      "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\current-plugin-race\\home\\current-install"
+    ]
+  },
+  "updater_sha256": "85083b679de78936159e3cb1ba8392b0f539a147a1efa02945a3f78ef5047ceb",
+  "limits": "Real canonical-network synchronize API and external editor thread; no updater/provider function patched. Installed files began at current canonical contents. No package manager or watcher was invoked."
+}

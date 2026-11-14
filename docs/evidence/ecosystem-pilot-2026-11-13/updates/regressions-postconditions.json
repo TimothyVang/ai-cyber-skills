@@ -1,0 +1,13 @@
+{
+  "command": "python -m unittest test_local_updates test_bot.AutoUpdateTest",
+  "cwd": "plugins/deepmodebot/skills/deepmodebot/assets/github-app",
+  "tests": 58,
+  "test_seconds": 103.727,
+  "exit": 0,
+  "result": "OK",
+  "scope": "Includes real Git index-lock CLI classification, already-current plugin/native revalidation, late native-file edit rejection with journal retention, and verified adoption handover. Some tests use controlled scheduling/process doubles; independent real CLI/network/editor receipts remain separate.",
+  "source_files": {
+    "bot.py": "3af7e013b307a40374a3fc357ee543ca49302d47989f861bf2f7a6e06c8c7140",
+    "local_updates.py": "85083b679de78936159e3cb1ba8392b0f539a147a1efa02945a3f78ef5047ceb"
+  }
+}

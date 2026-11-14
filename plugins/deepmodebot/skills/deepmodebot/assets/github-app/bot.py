@@ -2578,7 +2578,7 @@ class AutoUpdate:
             running = self.assets.resolve()
             inspected = [target for target in result["targets"]
                          if running.is_relative_to(Path(target["path"]).resolve())]
-            verified_actions = {"current", "fast-forwarded", "synchronized", "recovered", "upgraded"}
+            verified_actions = {"current", "adopted", "fast-forwarded", "synchronized", "recovered", "upgraded"}
             if not inspected or any(target["action"] not in verified_actions for target in inspected):
                 log("running installation was not verified by this update; retaining this watcher")
                 return None

@@ -1627,6 +1627,16 @@ class AutoUpdateTest(unittest.TestCase):
                     else:
                         bot.cmd_update(mock.Mock(dry_run=False))
 
+    def test_verified_adoption_of_running_copy_allows_handover(self):
+        updates, b = self.watcher()
+        (self.assets / "github-app/bot.py").write_text("v2", encoding="utf-8")
+        result = {"remote": self.NEW, "manifests": {}, "upgraded": False, "incomplete": [],
+                  "targets": [{"path": str(self.install["link"]), "kind": "copy", "action": "adopted"}]}
+        with mock.patch.object(bot.local_updates, "synchronize", return_value=result), self.child() as popen:
+            self.assertEqual(updates.after_cycle(b, self.lock), 0)
+        popen.assert_called_once()
+        self.assertIsNone(self.lock.fh)
+
     def test_new_bot_code_hands_over_to_a_new_watcher_once_it_holds_the_lock(self):
         updates, b = self.watcher()
         with mock.patch.object(bot, "run", side_effect=self.upgrade), self.child(), \

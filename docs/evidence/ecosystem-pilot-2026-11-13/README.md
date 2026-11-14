@@ -20,7 +20,9 @@ These receipts belong to canonical `TimothyVang/deepmodebot`. Rebranded distribu
 | Native design editor | Local Penpot 2.18 imported SVG; rectangle width changed from 984 to 1000; native archive and SVG downloaded | [Provenance](penpot/provenance.json), [native file](penpot/workflow-edited.penpot), [after edit](penpot/penpot-rectangle-after.png) |
 | Canonical update | Real GitHub identity/network; clean canonical checkout advanced and historical native copy synchronized; three negative cases unchanged | [Receipt](updater-proof.json), [CLI logs](updates/update-bare-boundary.stdout.txt), [detailed state](updates/update-receipt.json) |
 | Update failure and recovery | Real Windows handle denied replacement: CLI exit 1; handle release and retry: exit 0; all 140 files matched pinned Git blobs | [Receipt](updates/failure-recovery.json), [failure output](updates/sharing-failure.stdout.txt), [recovery output](updates/sharing-recovery.stdout.txt) |
-| Concurrent installed edit | Real canonical-network API run retained the edit and never invoked the upgrade callback | [Receipt](updates/concurrent-edit.json), [retained driver](updates/concurrent-edit-driver.py) |
+| Concurrent edit before upgrade | Real canonical-network API run retained the edit and never invoked the upgrade callback | [Receipt](updates/concurrent-edit.json), [retained driver](updates/concurrent-edit-driver.py) |
+| Git transaction failure | Actual index lock caused CLI exit 1 with unchanged tracked files; removing only the owned lock allowed exit 0 and fast-forward | [Receipt](updates/index-lock-recovery.json), [failure output](updates/index-lock-failure.stdout.txt) |
+| Concurrent edit to current install | Current canonical plugin was edited during marketplace fetch; edit retained, no canonical receipt or upgrade | [Receipt](updates/current-plugin-edit.json), [retained driver](updates/current-plugin-edit-driver.py) |
 
 ## Inspect or replay
 
@@ -64,4 +66,6 @@ The research, routing and implementation are separate from these measured outcom
 - `.gitattributes` disables text normalization for this evidence tree. Recorded bytes, including original CRLF logs, must survive Git publication unchanged; normalizing them would invalidate artifact hashes.
 - [Rebrand preservation proof](branding-proof.json): the actual builder preserved every existing evidence file's path and bytes; the built distribution's own loader validated all three sealed bundles. This is not a media-rendering or model-backed rebrand test.
 - [Rejected frozen review round](reviews/85099c4.json): all three independent native reviewers returned NOT DONE at `85099c4`, despite three successful repository gates. Updater defects, complete reports and limits are retained; these are not votes on later heads.
-- [Updater regression check](updates/regressions.json): 53 tests passed after the fixes. Process-boundary doubles in these tests are distinguished from the separate real CLI/network evidence.
+- [Historical updater regression check](updates/regressions.json): 53 tests passed at the earlier correction. Process-boundary doubles in these tests are distinguished from the separate real CLI/network evidence.
+- [Second rejected frozen round](reviews/2b16ae2.json): all three returned NOT DONE at `2b16ae2` despite successful repository gates. Actual Git failure classification and already-current installation provenance remained defective; complete reports and the additional copy-completion finding are retained.
+- [Expanded updater regression check](updates/regressions-postconditions.json): 58 tests passed after typed Git failures and final/current inventory verification were added. Controlled edit scheduling and process doubles are explicitly distinguished from live CLI/network/editor observations.

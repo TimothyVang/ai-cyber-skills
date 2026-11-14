@@ -256,6 +256,61 @@ class LocalUpdatesTest(unittest.TestCase):
         self.assertNotIn(str(install["link"]), result["manifests"])
         self.assertEqual(self.row(result, install["link"])["action"], "preserved")
 
+    def test_current_plugin_edit_during_marketplace_update_is_not_recorded(self):
+        marketplace, install = self.marketplace_install()
+        shutil.rmtree(install["link"])
+        shutil.copytree(self.remote / updates.PLUGIN, install["link"])
+        changed = install["link"] / "skills/deepmodebot/SKILL.md"
+        synchronize_checkout = updates.sync_checkout
+
+        def edit_after_fetch(path, *args, **kwargs):
+            result = synchronize_checkout(path, *args, **kwargs)
+            if path == marketplace:
+                changed.write_bytes(b"concurrent edit to current plugin\n")
+            return result
+
+        upgrade = mock.Mock()
+        with mock.patch.object(updates, "sync_checkout", side_effect=edit_after_fetch):
+            result = self.sync(install=install, upgrade=upgrade)
+        upgrade.assert_not_called()
+        self.assertEqual(changed.read_bytes(), b"concurrent edit to current plugin\n")
+        self.assertNotIn(str(install["link"]), result["manifests"])
+        self.assertIn(str(install["link"]), result["incomplete"])
+
+    def test_current_native_edit_during_historical_verification_is_not_adopted(self):
+        shutil.rmtree(self.native)
+        shutil.copytree(self.skill, self.native)
+        historical = updates.Source.historical
+
+        def edit_after_history(source, prefix, files):
+            result = historical(source, prefix, files)
+            if prefix == self.prefix:
+                (self.native / "SKILL.md").write_bytes(b"edit during historical lookup\n")
+            return result
+
+        with mock.patch.object(updates.Source, "historical", new=edit_after_history):
+            result = self.sync()
+        self.assertEqual((self.native / "SKILL.md").read_bytes(), b"edit during historical lookup\n")
+        self.assertEqual(self.row(result, self.native)["action"], "preserved")
+        self.assertNotIn(str(self.native), result["manifests"])
+
+    def test_late_edit_to_an_already_replaced_file_blocks_canonical_receipt(self):
+        replace = updates.os.replace
+        changed = self.native / "assets/github-app/bot.py"
+
+        def edit_earlier_file(source, destination):
+            result = replace(source, destination)
+            if Path(destination) == self.native / "new.txt":
+                changed.write_bytes(b"operator edit after this file was replaced\n")
+            return result
+
+        with mock.patch.object(updates.os, "replace", side_effect=edit_earlier_file):
+            result = self.sync()
+        self.assertEqual(changed.read_bytes(), b"operator edit after this file was replaced\n")
+        self.assertIn(str(self.native), result["incomplete"])
+        self.assertNotIn(str(self.native), result["manifests"])
+        self.assertTrue(updates.pending_path(self.cache, self.native).exists())
+
     def test_generated_marketplace_metadata_accepts_already_current_plugin(self):
         marketplace, install = self.marketplace_install()
         shutil.rmtree(install["link"])
@@ -535,6 +590,33 @@ class LocalUpdatesTest(unittest.TestCase):
         self.assertNotIn("sha", receipt)
         self.assertFalse((config / "bot.json").exists())
         self.assertIn("synchronized", output.getvalue())
+
+    def test_public_cli_reports_git_index_lock_failure_and_recovers(self):
+        config = self.home / ".config/deepmodebot"
+        lock = self.checkout / ".git/index.lock"
+        lock.write_bytes(b"held by another Git operation\n")
+        self.addCleanup(lock.unlink, missing_ok=True)
+        with mock.patch.object(bot.Path, "home", return_value=self.home), \
+                mock.patch.object(bot, "WORK", self.cache.parent), \
+                mock.patch.object(bot, "CONFIG_DIR", config), \
+                mock.patch.object(bot, "BOT_CONFIG", config / "bot.json"), \
+                mock.patch.object(bot, "UPDATE_PATH", config / "update.json"), \
+                mock.patch.object(bot, "omp_install", return_value=None), \
+                mock.patch.object(bot.sys, "argv", ["bot.py", "update"]), \
+                contextlib.redirect_stdout(io.StringIO()):
+            with self.assertRaises(SystemExit) as raised:
+                bot.main()
+            self.assertNotEqual(raised.exception.code, 0)
+            failed = json.loads((config / "update.json").read_text(encoding="utf-8"))
+            self.assertEqual(self.row(failed, self.checkout)["action"], "failed")
+            self.assertNotIn(str(self.checkout), failed["copies"])
+            self.assertEqual(self.git(self.checkout, "rev-parse", "HEAD"), self.old)
+            self.assertEqual(failed["copies"][str(self.native)]["sha"], self.new)
+            lock.unlink()
+            bot.main()
+        recovered = json.loads((config / "update.json").read_text(encoding="utf-8"))
+        self.assertEqual(self.git(self.checkout, "rev-parse", "HEAD"), self.new)
+        self.assertEqual(recovered["copies"][str(self.checkout)]["sha"], self.new)
 
     def test_public_cli_dry_run_without_omp_does_not_create_config(self):
         updates.prepare_source(self.home, self.cache, False)

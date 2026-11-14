@@ -17,6 +17,10 @@ HISTORY_LIMIT = 2000
 CACHES = {"__pycache__", ".pytest_cache", ".mypy_cache", ".ruff_cache"}
 
 
+class GitCommandError(RuntimeError):
+    """A checked Git command failed, rather than deliberately preserving an ineligible copy."""
+
+
 def canonical(url):
     return bool(re.fullmatch(r"(?:https://github\.com/|ssh://git@github\.com/|git@github\.com:)"
                              r"TimothyVang/(?:deepmodebot|deep-mode)(?:\.git)?/?", url, re.I))
@@ -28,7 +32,7 @@ def git(path, *args, check=True, data=None):
     proc = subprocess.run(["git", "-c", "core.hooksPath=", "-C", str(path), *args],
                           input=data, stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=TIMEOUT, env=env)
     if check and proc.returncode:
-        raise RuntimeError(proc.stderr.decode("utf-8", "replace").strip() or "git failed")
+        raise GitCommandError(proc.stderr.decode("utf-8", "replace").strip() or "git failed")
     return proc
 
 
@@ -360,6 +364,8 @@ def sync_copy(path, prefix, source, manifest, cache, dry):
     complete = all(current.get(name) == blob for name, blob in desired.items()) \
         and not any(name in current for name in set(previous) - set(desired))
     if complete and not pending:
+        if inventory(path) != current:
+            raise RuntimeError("copy changed during verification; preserved")
         return "current" if manifest else "would adopt" if dry else "adopted", record
     if dry:
         return "would recover" if pending else "would synchronize", record
@@ -397,6 +403,10 @@ def sync_copy(path, prefix, source, manifest, cache, dry):
             raise RuntimeError(f"copy changed before removal: {name}; pending recovery retained")
         if observed is not None:
             dest.unlink()
+    verified = inventory(path)
+    if any(verified.get(name) != blob for name, blob in desired.items()) or any(
+            name in verified for name in set(previous) - set(desired)):
+        raise RuntimeError("copy changed during update; pending recovery retained")
     # Retain the journal through receipt persistence (including process termination).
     return "recovered" if target.sha != source.sha or complete else "synchronized", record
 
@@ -450,8 +460,8 @@ def synchronize(home, cache, registered=(), manifests=None, dry=False, install=N
             if not dry:
                 result["manifests"][key] = record
         except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as err:
-            row.update(action="failed" if isinstance(err, (OSError, subprocess.TimeoutExpired)) else "preserved",
-                       reason=str(err))
+            row.update(action="failed" if isinstance(err, (OSError, subprocess.SubprocessError, GitCommandError))
+                       else "preserved", reason=str(err))
             if kind == "copy" and pending_path(cache, path).exists():
                 result["incomplete"].append(key)
         result["targets"].append(row)
@@ -480,15 +490,18 @@ def synchronize(home, cache, registered=(), manifests=None, dry=False, install=N
                     raise RuntimeError("installed copy changed during update; preserved")
                 row["action"] = "updating"
                 upgrade()
-                if inventory(install["link"].resolve()) != desired:
-                    raise RuntimeError("omp installed contents do not match the pinned canonical SHA; not recorded")
-                row["action"] = "upgraded"
-                result["upgraded"] = True
             if not dry:
+                if inventory(install["link"].resolve()) != desired:
+                    raise RuntimeError("installed contents do not match the pinned canonical SHA; not recorded")
+                if row["action"] == "updating":
+                    row["action"] = "upgraded"
+                    result["upgraded"] = True
                 result["manifests"][str(install["link"])] = {
                     "kind": "plugin", "origin": CANONICAL, "sha": source.sha, "prefix": PLUGIN}
         except (OSError, ValueError, RuntimeError, subprocess.SubprocessError) as err:
-            row.update(action="failed" if row.get("action") == "updating" else "preserved", reason=str(err))
+            failed = row.get("action") == "updating" or isinstance(
+                err, (OSError, subprocess.SubprocessError, GitCommandError))
+            row.update(action="failed" if failed else "preserved", reason=str(err))
             # Refusal must remain a handover barrier on later retries too: a partial
             # manager upgrade is no longer a recognizable historical snapshot.
             result["incomplete"].append(str(install["link"].resolve()))
