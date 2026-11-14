@@ -236,6 +236,26 @@ class LocalUpdatesTest(unittest.TestCase):
         self.assertEqual((marketplace / "marketplace.json").read_bytes(), metadata)
         self.assertEqual(updates.inventory(install["link"]), updates.inventory(self.remote / updates.PLUGIN))
 
+    def test_plugin_edit_during_marketplace_update_is_preserved_without_upgrade(self):
+        marketplace, install = self.marketplace_install()
+        changed = install["link"] / "skills/deepmodebot/SKILL.md"
+        synchronize_checkout = updates.sync_checkout
+
+        def edit_after_fetch(path, *args, **kwargs):
+            result = synchronize_checkout(path, *args, **kwargs)
+            if path == marketplace:
+                changed.write_bytes(b"concurrent local edit\n")
+            return result
+
+        upgrade = mock.Mock()
+        with mock.patch.object(updates, "sync_checkout", side_effect=edit_after_fetch):
+            result = self.sync(install=install, upgrade=upgrade)
+        upgrade.assert_not_called()
+        self.assertEqual(changed.read_bytes(), b"concurrent local edit\n")
+        self.assertFalse(result["upgraded"])
+        self.assertNotIn(str(install["link"]), result["manifests"])
+        self.assertEqual(self.row(result, install["link"])["action"], "preserved")
+
     def test_generated_marketplace_metadata_accepts_already_current_plugin(self):
         marketplace, install = self.marketplace_install()
         shutil.rmtree(install["link"])

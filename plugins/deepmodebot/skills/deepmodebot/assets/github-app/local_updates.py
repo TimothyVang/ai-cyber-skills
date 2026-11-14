@@ -476,6 +476,8 @@ def synchronize(home, cache, registered=(), manifests=None, dry=False, install=N
             else:
                 row["backup"] = backup(actual, files, cache)
                 sync_checkout(marketplace, source, False, marketplace_source)
+                if install["link"].resolve() != actual or inventory(actual) != files:
+                    raise RuntimeError("installed copy changed during update; preserved")
                 row["action"] = "updating"
                 upgrade()
                 if inventory(install["link"].resolve()) != desired:

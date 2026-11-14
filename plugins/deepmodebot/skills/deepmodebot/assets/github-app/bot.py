@@ -2575,6 +2575,13 @@ class AutoUpdate:
                 return None
             if code_hash(self.assets) == self.started:
                 return None
+            running = self.assets.resolve()
+            inspected = [target for target in result["targets"]
+                         if running.is_relative_to(Path(target["path"]).resolve())]
+            verified_actions = {"current", "fast-forwarded", "synchronized", "recovered", "upgraded"}
+            if not inspected or any(target["action"] not in verified_actions for target in inspected):
+                log("running installation was not verified by this update; retaining this watcher")
+                return None
             return restart_watcher(self.script, lock)
         except Exception as err:
             log(f"update failed: {err}; the next check in {bot.cfg['updateMinutes']} minutes retries")
@@ -2590,6 +2597,8 @@ def cmd_update(args) -> None:
               + (f" ({target['reason']})" if target.get("reason") else ""))
     if result.get("error"):
         raise SystemExit(f"update unavailable: {result['error']}")
+    if result.get("incomplete") or any(target["action"] == "failed" for target in result["targets"]):
+        raise SystemExit("update incomplete: see failed targets or unverified plugin installations above")
     if args.dry_run:
         print("dry run: no files or state changed")
     elif result["codeChanged"]:

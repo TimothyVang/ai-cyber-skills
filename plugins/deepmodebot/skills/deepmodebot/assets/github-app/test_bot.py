@@ -1524,8 +1524,9 @@ class AutoUpdateTest(unittest.TestCase):
         changed = (self.assets / "github-app/bot.py").read_text(encoding="utf-8") != "v2"
         if changed and not dry and install:
             upgrade()
-        return {"remote": self.NEW, "targets": [], "manifests": manifests,
-                "upgraded": bool(changed and not dry and install)}
+        return {"remote": self.NEW,
+                "targets": [{"path": str(self.install["link"]), "kind": "plugin", "action": "current"}],
+                "manifests": manifests, "upgraded": bool(changed and not dry and install)}
 
     def upgrade(self, command, **kw):
         """Simulate omp rewriting the install, with new bot code when `new_code`."""
@@ -1596,6 +1597,35 @@ class AutoUpdateTest(unittest.TestCase):
         popen.assert_not_called()
         self.assertTrue(any("incomplete update" in line for line in self.logs))
         self.assertIsNotNone(self.lock.fh)
+
+    def test_failed_or_unverified_running_checkout_never_hands_over(self):
+        updates, b = self.watcher()
+        (self.assets / "github-app/bot.py").write_text("partial v2", encoding="utf-8")
+        for action in ("failed", "preserved", None):
+            with self.subTest(action=action):
+                targets = [] if action is None else [
+                    {"path": str(self.install["link"]), "kind": "checkout", "action": action}]
+                result = {"remote": self.NEW, "targets": targets, "manifests": {},
+                          "upgraded": False, "incomplete": []}
+                bot.save_update_record({})
+                with mock.patch.object(bot.local_updates, "synchronize", return_value=result), self.child() as popen:
+                    self.assertIsNone(updates.after_cycle(b, self.lock))
+                popen.assert_not_called()
+                self.assertIsNotNone(self.lock.fh)
+
+    def test_cli_failure_status_distinguishes_failed_updates_from_preserved_checkouts(self):
+        for action, incomplete, fails in (("failed", [], True), ("preserved", [str(self.install["link"])], True),
+                                          ("preserved", [], False)):
+            with self.subTest(action=action, incomplete=incomplete):
+                result = {"remote": self.NEW, "codeChanged": False, "incomplete": incomplete,
+                          "targets": [{"path": str(self.install["link"]), "kind": "checkout", "action": action}]}
+                with mock.patch.object(bot, "update_install", return_value=result), mock.patch("builtins.print"):
+                    if fails:
+                        with self.assertRaises(SystemExit) as raised:
+                            bot.cmd_update(mock.Mock(dry_run=False))
+                        self.assertNotEqual(raised.exception.code, 0)
+                    else:
+                        bot.cmd_update(mock.Mock(dry_run=False))
 
     def test_new_bot_code_hands_over_to_a_new_watcher_once_it_holds_the_lock(self):
         updates, b = self.watcher()

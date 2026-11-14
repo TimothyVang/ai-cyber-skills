@@ -1,0 +1,31 @@
+{
+  "source": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+  "old": "d604b39ffe65eab5d7c4a3a57824a1745150ee09",
+  "commands": [],
+  "observations": {
+    "upgrade_called": false,
+    "edit_injected": true,
+    "backup_sha256": "9174dbe34e5c46d1e527d615f226f33e0ae274a406bf5999134e9ed2c2270171",
+    "edited_sha256": "cfe6c74500c1bcc4cbf7d26de5c3f8090cee23264540a80d662ec0a2fcc703d9",
+    "edit_preserved": true
+  },
+  "result": {
+    "remote": "6b00c9303eca4a856144af63dff3dc28149dbe69",
+    "targets": [
+      {
+        "path": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-race-fixed\\home\\isolated-install",
+        "kind": "plugin",
+        "backup": "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-race-fixed\\cache\\backups\\f20f405d7e024f098f93988c45e60da8",
+        "action": "preserved",
+        "reason": "installed copy changed during update; preserved"
+      }
+    ],
+    "manifests": {},
+    "upgraded": false,
+    "incomplete": [
+      "C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-race-fixed\\home\\isolated-install"
+    ]
+  },
+  "updater_sha256": "f99dea004a600fb6f31ba4270bca37f79629da2440c12be635956e099277ad03",
+  "limits": "Real synchronize API, canonical network/Git and concurrent scratch-only editor. No updater/provider function patched. The callback is an observation-only stop; no package manager or production installation was invoked."
+}

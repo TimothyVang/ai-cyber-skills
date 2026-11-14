@@ -19,6 +19,8 @@ These receipts belong to canonical `TimothyVang/deepmodebot`. Rebranded distribu
 | Generated design | Six SVG groups and embedded thumbnails rendered; HTML video playback reached its end | [Portable index](design/index.html), [SVG](design/workflow.svg), [browser proof](design/invoice-design-playback.png) |
 | Native design editor | Local Penpot 2.18 imported SVG; rectangle width changed from 984 to 1000; native archive and SVG downloaded | [Provenance](penpot/provenance.json), [native file](penpot/workflow-edited.penpot), [after edit](penpot/penpot-rectangle-after.png) |
 | Canonical update | Real GitHub identity/network; clean canonical checkout advanced and historical native copy synchronized; three negative cases unchanged | [Receipt](updater-proof.json), [CLI logs](updates/update-bare-boundary.stdout.txt), [detailed state](updates/update-receipt.json) |
+| Update failure and recovery | Real Windows handle denied replacement: CLI exit 1; handle release and retry: exit 0; all 140 files matched pinned Git blobs | [Receipt](updates/failure-recovery.json), [failure output](updates/sharing-failure.stdout.txt), [recovery output](updates/sharing-recovery.stdout.txt) |
+| Concurrent installed edit | Real canonical-network API run retained the edit and never invoked the upgrade callback | [Receipt](updates/concurrent-edit.json), [retained driver](updates/concurrent-edit-driver.py) |
 
 ## Inspect or replay
 
@@ -50,6 +52,8 @@ The goal fixture's original evidence records five failing cases in an eight-case
 - Native agent-browser download reported cancellation; a fresh owned Chrome session downloaded the actual native archive and SVG. The cancellation's cause was not isolated.
 - Initial updater runs correctly refused a native-copy fixture nested inside another Git working tree. An empty bare Git boundary isolated the fixture; the successful run changed no guard. [Initial log](updates/update.stdout.txt) and [environment-boundary attempt](updates/update-standalone.stdout.txt) remain. The foreign-origin negative used a synthetic noncanonical URL, not a live GitHub fork.
 - This updater receipt uses an isolated home and real canonical upstream. It does not establish activation of the workstation's production watcher.
+- The failure/recovery fixture initially inherited CRLF conversion from Git archive and was safely refused as unknown provenance. A separate candidate used per-command `core.autocrlf=false` and matched canonical blobs before the actual Windows sharing fault. No global Git setting changed.
+- The first concurrent-editor attempt encountered a Windows backup-handle sharing error before injecting its edit. Its [receipt](updates/concurrent-edit-initial.json) and [stderr](updates/concurrent-edit-initial.stderr.txt) remain. The resumed driver waited for the backup writer to release its handle, reused the owned fixture, and passed. The upgrade callback was an observation-only stop, not a package-manager execution.
 
 The research, routing and implementation are separate from these measured outcomes. A two-of-three vote does not override a failed deterministic check, a missing artifact, a fork/dirty-copy guard, or an explicit user requirement.
 
@@ -59,3 +63,5 @@ The research, routing and implementation are separate from these measured outcom
 - [Rendered public quorum policy](docs-policy-observations.json): wide and compact views, no horizontal overflow, keyboard focus and inspected link destinations. Settled screenshots are explicitly distinguished from premature smooth-scroll captures.
 - `.gitattributes` disables text normalization for this evidence tree. Recorded bytes, including original CRLF logs, must survive Git publication unchanged; normalizing them would invalidate artifact hashes.
 - [Rebrand preservation proof](branding-proof.json): the actual builder preserved every existing evidence file's path and bytes; the built distribution's own loader validated all three sealed bundles. This is not a media-rendering or model-backed rebrand test.
+- [Rejected frozen review round](reviews/85099c4.json): all three independent native reviewers returned NOT DONE at `85099c4`, despite three successful repository gates. Updater defects, complete reports and limits are retained; these are not votes on later heads.
+- [Updater regression check](updates/regressions.json): 53 tests passed after the fixes. Process-boundary doubles in these tests are distinguished from the separate real CLI/network evidence.

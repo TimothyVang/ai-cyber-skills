@@ -1,0 +1,8 @@
+canonical main: 6b00c9303eca4a856144af63dff3dc28149dbe69
+checkout C:\Users\newbi\deep-mode\.worktrees\langchain-ecosystem-20261113\.scratch\updater-live-001\deepmodebot: current
+checkout C:\Users\newbi\deep-mode\.worktrees\langchain-ecosystem-20261113\.scratch\updater-live-001\code\deep-mode: preserved (not on main; feature branches are preserved)
+checkout C:\Users\newbi\deep-mode\.worktrees\langchain-ecosystem-20261113\.scratch\updater-live-001\foreign-origin: preserved (origin is a fork or unknown source (canonical upstream does not override origin))
+checkout C:\Users\newbi\deep-mode\.worktrees\langchain-ecosystem-20261113\.scratch\updater-live-001\dirty-checkout: preserved (dirty checkout; tracked edits or unknown untracked files are preserved)
+copy C:\Users\newbi\deep-mode\.worktrees\langchain-ecosystem-20261113\.scratch\updater-live-001\.omp\agent\skills\deepmodebot: current
+copy C:\Users\newbi\deep-mode\.worktrees\langchain-ecosystem-20261113\.scratch\updater-live-001\.claude\skills\deepmodebot: preserved (no complete canonical snapshot matches (searched 10 historical revisions); unknown provenance or local modifications)
+copy C:\Users\newbi\deep-mode\.worktrees\langchain-ecosystem-20261113\.scratch\updater-live-001\.agents\skills\deepmodebot: failed ([WinError 5] Access is denied: 'C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\.agents\\skills\\deepmodebot\\references\\.README.md.update-26c549d02b9341469a37617abcb1915a' -> 'C:\\Users\\newbi\\deep-mode\\.worktrees\\langchain-ecosystem-20261113\\.scratch\\updater-live-001\\.agents\\skills\\deepmodebot\\references\\README.md')

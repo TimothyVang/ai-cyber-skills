@@ -44,6 +44,9 @@ Required outcomes:
 - Preserve custom or reformatted metadata, symlinked metadata, manifests matching only incoming bytes, and incoming canonical file/directory collisions at the root metadata path. The same filename in a user checkout or another marketplace receives no exception. Verify the preserved bytes and checkout head, and that the plugin-upgrade callback never runs.
 - A partial plugin upgrade remains an incomplete-installation handover barrier after a fresh retry. Mixed contents are not silently repaired or accepted from an old receipt; only an externally repaired complete canonical plugin clears the barrier.
 - Copy journals survive interrupted replacement and receipt loss; CLI and watcher share the update lock through receipt persistence. Existing managed edits, including edits to an installed native skill, remain protected.
+- An installed-tree edit or link-target change during marketplace synchronization prevents the package-manager callback; retain the intervening bytes and do not record a successful installation.
+- A failed checkout update and its later dirty-tree refusal both prevent watcher handover. Changed running code without a covering successful per-target observation also cannot authorize restart.
+- The public update command returns nonzero for failed targets or incomplete/unverified installations; ordinary preserved checkout/native-copy candidates remain distinguishable from operational failure.
 
 Run `bot.py update --dry-run` against the installed configuration only as a read-only preview.
 After publication, activate through the canonical installation path and record per-target outcomes; never force dirty copies to match.
