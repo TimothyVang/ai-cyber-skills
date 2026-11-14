@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
-"""Trending-repo catalog for deepmodebot's prior-art step. Stdlib only.
+"""Trending and reference-repo catalog for deepmodebot's prior-art step. Stdlib only.
 
-update  Collect repos from GitHub Trending, GitHub search (new fast risers and watched agent topics) and the
-        githubawesome.com feed, enrich them through the GitHub API, merge them into <out>/catalog.json, and render
-        <out>/README.md. <out> defaults to the project's .scratch/trending/; the deepmodebot repo publishes its copy
-        in trending/ at its root (`update --out trending`).
+update  Collect repos from GitHub Trending, GitHub search, githubawesome.com and the curated reference library;
+        enrich them through the GitHub API, merge them into <out>/catalog.json, and render <out>/README.md.
+        <out> defaults to the project's .scratch/trending/; this repo publishes its copy in trending/.
 find    Rank catalog repos against search terms. A missing or day-old catalog in .scratch/trending/ is first
         replaced by the published one, or rebuilt with `update` when that is a day old too.
 The catalog is not shipped in the skill: it changes daily, and the plugin should change only when its rules do.
 """
 import argparse
 import datetime as dt
+import hashlib
 import html
 import json
 import os
@@ -25,6 +25,8 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 
 SKILL_DIR = Path(__file__).resolve().parent.parent
+REFERENCE_FILE = SKILL_DIR / "assets" / "repo-references.json"
+REFERENCE_REVISION = hashlib.sha256(REFERENCE_FILE.read_text(encoding="utf-8").encode("utf-8")).hexdigest()
 sys.path.insert(0, str(SKILL_DIR / "assets" / "github-app"))
 import brand  # noqa: E402  (the repo that publishes the catalog)
 
@@ -91,12 +93,12 @@ def fetch(url, token=None):
         return response.read().decode("utf-8", "replace")
 
 
-def clean(text):
+def clean(text, limit=DESCRIPTION_CHARS):
     text = html.unescape(text or "")
     text = re.sub(r"[\x00-\x1f\x7f]+", " ", text)
     text = re.sub(r"\s+", " ", text).strip()
-    if len(text) > DESCRIPTION_CHARS:
-        text = text[: DESCRIPTION_CHARS - 1].rstrip() + "…"
+    if limit is not None and len(text) > limit:
+        text = text[: limit - 1].rstrip() + "…"
     return text
 
 
@@ -163,10 +165,20 @@ def source_githubawesome(found, token):
                 add(found, f"{owner}/{repo}", "githubawesome")
 
 
+def source_references(found, token):
+    config = json.loads(REFERENCE_FILE.read_text(encoding="utf-8"))
+    for name, reference in config["repos"].items():
+        add(found, name, "reference-library")
+        found[name.lower()]["reference"] = {
+            **reference, "reviewed": config["reviewed"], "archive": config["archive"],
+        }
+
+
 SOURCES = [
     ("github-trending", source_github_trending),
     ("github-search", source_github_search),
     ("githubawesome", source_githubawesome),
+    ("reference-library", source_references),
 ]
 
 
@@ -205,6 +217,13 @@ def update(args):
     catalog_path = args.out / "catalog.json"
     catalog = load_catalog(catalog_path)
     repos = catalog["repos"]
+    reference_ready = not status.get("reference-library", "failed: missing").startswith("failed:")
+    references = {name: entry["reference"] for name, entry in repos.items() if "reference" in entry}
+    if reference_ready:
+        references = {
+            (item["repo"] or {}).get("full_name", item["name"]).lower(): item["reference"]
+            for item in found.values() if "reference" in item
+        }
     stamp = today().isoformat()
     for item in found.values():
         repo = item["repo"]
@@ -213,15 +232,32 @@ def update(args):
         fresh = entry_from(repo)
         key = fresh["name"].lower()
         previous = repos.get(key, {})
+        seen_in = set(previous.get("seen_in", []))
+        alias = item["name"].lower()
+        if alias != key:
+            alias_previous = repos.pop(alias, {})
+            seen_in.update(alias_previous.get("seen_in", []))
+            if alias_previous and (not previous or alias_previous["first_seen"] < previous["first_seen"]):
+                previous = alias_previous
+            if not reference_ready and alias in references:
+                references.setdefault(key, references.pop(alias))
         fresh["first_seen"] = previous.get("first_seen", stamp)
         fresh["stars_first_seen"] = previous.get("stars_first_seen", fresh["stars"])
         fresh["last_seen"] = stamp
-        fresh["seen_in"] = sorted(set(previous.get("seen_in", [])) | item["labels"])
+        fresh["seen_in"] = sorted(seen_in | item["labels"])
         repos[key] = fresh
+    for name, entry in repos.items():
+        reference = references.get(name)
+        if reference:
+            entry["reference"] = reference
+        else:
+            entry.pop("reference", None)
     cutoff = (today() - dt.timedelta(days=KEEP_DAYS)).isoformat()
     catalog["repos"] = {k: v for k, v in sorted(repos.items()) if v["last_seen"] >= cutoff}
     catalog["updated"] = stamp
     catalog["sources"] = status
+    if reference_ready:
+        catalog["reference_revision"] = REFERENCE_REVISION
 
     args.out.mkdir(parents=True, exist_ok=True)
     catalog_path.write_text(json.dumps(catalog, indent=1, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n")
@@ -245,9 +281,14 @@ def line(entry):
     gained = entry["stars"] - entry["stars_first_seen"]
     parts = [f"[{entry['name']}]({entry['url']})", f"★{short_count(entry['stars'])}"
              + (f" (+{short_count(gained)} since seen)" if gained > 0 else "")]
-    parts += [entry["language"] or "?", entry["license"] or "no license", f"first seen {entry['first_seen']}"]
+    parts += [entry["language"] or "?", entry["license"] or "license not detected", f"first seen {entry['first_seen']}"]
     if entry["description"]:
         parts.append(entry["description"])
+    reference = entry.get("reference")
+    if reference:
+        parts.append(f"reference {reference['reviewed']}: " + ", ".join(reference["topics"]))
+        if reference["caution"]:
+            parts.append("caution: " + clean(reference["caution"], limit=None))
     return "- " + " · ".join(parts)
 
 
@@ -258,10 +299,10 @@ def render(catalog):
     entries = list(catalog["repos"].values())
     by_stars = sorted(entries, key=lambda e: -e["stars"])
     out = [
-        "# Trending repos for prior-art",
+        "# Trending and reference repos for prior-art",
         "",
         f"Generated by `scripts/trending.py`; `find` refreshes it when it is over a day old. Updated {catalog['updated']}. "
-        f"{len(entries)} repos seen in the last {KEEP_DAYS} days.",
+        f"{len(entries)} repos observed in the last {KEEP_DAYS} days.",
         "",
         "Sources this run: " + "; ".join(f"{k} {v}" for k, v in catalog["sources"].items()) + ".",
         "",
@@ -281,7 +322,7 @@ def render(catalog):
             sections[category(entry)].append(entry)
     for title, members in sections.items():
         out += ["", f"## {title}", "", f"Top {min(PER_SECTION, len(members))} of {len(members)} by stars, "
-                f"seen trending in the last {RECENT_DAYS} days.", ""]
+                f"observed from these sources in the last {RECENT_DAYS} days.", ""]
         out += [line(e) for e in members[:PER_SECTION]] or ["- (none)"]
     return "\n".join(out) + "\n"
 
@@ -299,12 +340,13 @@ def project_cache() -> Path:
 
 
 def is_stale(catalog) -> bool:
-    return (catalog["updated"] or "") <= (today() - dt.timedelta(days=STALE_AFTER_DAYS)).isoformat()
+    return ((catalog["updated"] or "") <= (today() - dt.timedelta(days=STALE_AFTER_DAYS)).isoformat()
+            or catalog.get("reference_revision") != REFERENCE_REVISION)
 
 
 def fetch_published(out: Path, local) -> bool:
-    """Copy the published catalog into `out` when it is newer than the local copy, even if it is a day old itself:
-    an old catalog still beats none when a rebuild fails. True when `out` now holds a fresh catalog."""
+    """Copy a newer catalog or a fresh same-day reference revision.
+    An old catalog still beats none after a failed rebuild. Return freshness of the stored copy, not just the response."""
     if not PUBLISHED:
         return False
     try:
@@ -312,12 +354,15 @@ def fetch_published(out: Path, local) -> bool:
     except (urllib.error.URLError, OSError, ValueError) as err:
         print(f"warning: could not read the published catalog ({err})", file=sys.stderr)
         return False
-    if (published.get("updated") or "") > (local["updated"] or ""):
+    published_stamp, local_stamp = published.get("updated") or "", local["updated"] or ""
+    if published_stamp > local_stamp or (
+            published_stamp == local_stamp and not is_stale(published) and is_stale(local)):
         out.mkdir(parents=True, exist_ok=True)
         (out / "catalog.json").write_text(json.dumps(published, indent=1, ensure_ascii=False) + "\n",
                                           encoding="utf-8", newline="\n")
         (out / "README.md").write_text(render(published), encoding="utf-8", newline="\n")
-    return not is_stale(published)
+        local = published
+    return not is_stale(local)
 
 
 def find(args):
@@ -325,7 +370,7 @@ def find(args):
     catalog_path = out / "catalog.json"
     catalog = load_catalog(catalog_path)
     if not args.no_refresh and is_stale(catalog) and not fetch_published(out, catalog):
-        print(f"catalog last updated {catalog['updated']}; rebuilding it (about a minute)", file=sys.stderr)
+        print(f"catalog last updated {catalog['updated']}; rebuilding it", file=sys.stderr)
         try:
             update(argparse.Namespace(out=out))
         except SystemExit as err:
@@ -335,6 +380,7 @@ def find(args):
     ranked = []
     for entry in catalog["repos"].values():
         haystack = " ".join([entry["name"], entry["description"], " ".join(entry["topics"]),
+                             " ".join(entry.get("reference", {}).get("topics", [])),
                              entry["language"] or ""]).lower()
         hits = sum(term in haystack for term in terms)
         if hits:

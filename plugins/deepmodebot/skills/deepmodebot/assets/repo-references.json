@@ -1,0 +1,585 @@
+{
+  "schemaVersion": 1,
+  "reviewed": "2026-11-14",
+  "archive": "https://drive.google.com/drive/folders/1x8ioZmwn9W_iu3LMzi4vH7fdZs2IwugN",
+  "scope": "Primary identities, README and license scopes inspected. Source code, benchmark performance, production security and medical suitability were not independently exercised. Reference tags are leads, not deployment approval.",
+  "repos": {
+    "0xCodez/iphone-mirror-windows": {
+      "topics": [
+        "airplay receiver",
+        "device mirroring",
+        "windows utility"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=836s"
+      ],
+      "caution": "README identifies the whole application as GPL-3.0 because it includes the playfair-derived FairPlay module. Network receiver, FFmpeg/Qt packaging, device control and further third-party license/security boundaries need independent review. Use only authorized devices and content."
+    },
+    "799953468/frp-ban": {
+      "topics": [
+        "frp operations",
+        "brute force defense",
+        "log driven blocking"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=888s"
+      ],
+      "caution": "Regex/IP blocking can cause false positives and miss abuse; it is not authentication, patching, or comprehensive perimeter security."
+    },
+    "addyosmani/agent-skills": {
+      "topics": [
+        "agent workflows",
+        "lifecycle",
+        "verification",
+        "anti rationalization"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=1719s"
+      ],
+      "caution": "Individual skill installation may omit shared references. Compare the existing workflow and harness compatibility before adopting; no blanket installation or efficacy claim."
+    },
+    "adventists-ai/sophon-realtime": {
+      "topics": [
+        "realtime voice",
+        "full duplex audio",
+        "voice agent research"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=243s"
+      ],
+      "caution": "Voice/prosody claims and concurrency benchmarks are upstream, not independently reproduced; not clinical evidence. Code/weights claim Apache-2.0 but individual build/third-party model notices must travel with redistribution. Reported80GB GPU class is a substantial deployment constraint."
+    },
+    "alexeyw/lot-map": {
+      "topics": [
+        "agent observability",
+        "claude code plugin",
+        "execution visualization"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=708s"
+      ],
+      "caution": "Visual activity is not correctness/progress proof; hook/log collection may reveal filenames or sensitive tool data."
+    },
+    "Anil-matcha/open-genjutsu": {
+      "topics": [
+        "media",
+        "video recasting",
+        "local workspace"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=27s"
+      ],
+      "caution": "External generation credits and uploads; source/likeness/audio rights required; no public-hosting auth upstream."
+    },
+    "anthropics/skills": {
+      "topics": [
+        "document processing",
+        "docx",
+        "pdf",
+        "pptx",
+        "xlsx",
+        "agent skills"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=343s"
+      ],
+      "caution": "Per-folder licensing, no root license conclusion; office skills changed custom restrictions to Apache2 on Nov6 2026; preserve third-party terms; educational/demo disclaimer."
+    },
+    "archid21/rightsize": {
+      "topics": [
+        "model routing",
+        "cost observability",
+        "claude code plugin"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=2192s"
+      ],
+      "caution": "Savings/benchmarks upstream only, not reproduced; model/hook compatibility and spend controls need review."
+    },
+    "bea4dev/shoji-bar-4": {
+      "topics": [
+        "linux desktop shell",
+        "rust ui",
+        "material design"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=786s"
+      ],
+      "caution": "Compositor/platform-specific system integration; not a portable generic frontend toolkit."
+    },
+    "bomby-app/bomby": {
+      "topics": [
+        "voice interface",
+        "coding agent orchestration",
+        "macos"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=2135s"
+      ],
+      "caution": "README explicitly says permissions bypass/full computer access; not recommended deployment posture; MIT code excludes trademarks/branding; external voice/model costs."
+    },
+    "cloudflare/security-audit-skill": {
+      "topics": [
+        "authorized security review",
+        "coverage ledger",
+        "independent verification"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=1917s"
+      ],
+      "caution": "OS-enforced sandbox required before target-controlled execution per README; no audit run or vulnerability discovery claim."
+    },
+    "Coolerwave/AimMac": {
+      "topics": [
+        "iphone controller",
+        "bluetooth input",
+        "macos utility"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=813s"
+      ],
+      "caution": "Input injection/pairing and ergonomics need validation; not assistive-device or safety certification."
+    },
+    "djyde/dalibre": {
+      "topics": [
+        "ebook library",
+        "native go desktop",
+        "mcp library tools"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=521s"
+      ],
+      "caution": "No blanket top-level license established; README identifies GPL-3.0 calibre SQL plus OFL fonts/ISC icons/MIT colors. Writes to an existing calibre database require backup/compatibility validation."
+    },
+    "Dodaios/ste80-humanizer": {
+      "topics": [
+        "technical editing",
+        "writing agent skills",
+        "plain language"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=493s"
+      ],
+      "caution": "Style transformation is not evidence of human authorship, correctness or STE certification; preserve meaning and citations. Third-party notices and source attribution require review."
+    },
+    "ersinkoc/phonebox": {
+      "topics": [
+        "desktop observability",
+        "android companion",
+        "agent status panel"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=90s"
+      ],
+      "caution": "Pairing, notifications and local control increase device trust requirements; no security test performed."
+    },
+    "expo/exact": {
+      "topics": [
+        "cross platform ui",
+        "native app runtime",
+        "agent testability"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=65s"
+      ],
+      "caution": "Not a drop-in React Native replacement without migration evaluation; compiler/host/toolchain requirements must be checked. NOTICE carves out vendor/media/font licenses; included permission for images is not blanket redistribution permission."
+    },
+    "FutureMLS-Lab/FlashStates": {
+      "topics": [
+        "llm serving",
+        "state cache",
+        "inference research"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=861s"
+      ],
+      "caution": "Reported latency improvements are workload/model/hardware-specific upstream benchmarks, not reproduced. Caching conversation/model state has privacy and cross-session isolation implications."
+    },
+    "gokayfem/image-to-sculpt": {
+      "topics": [
+        "image to 3d",
+        "blender workflows",
+        "creative agent skills"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=394s"
+      ],
+      "caution": "Unseen geometry is inferred/generated; image likeness and watertightness are not physical/manufacturing validity. Input images/model services/dependencies have separate terms."
+    },
+    "google-deepmind/mujoco": {
+      "topics": [
+        "robotics",
+        "physics simulation"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=1434s"
+      ],
+      "caution": "Simulation is not real-world/clinical validation; main tip may be unstable; third-party implot license."
+    },
+    "GoogleChrome/modern-web-guidance": {
+      "topics": [
+        "web platform guidance",
+        "frontend agent skills",
+        "accessibility review"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=11s"
+      ],
+      "caution": "Code Apache-2.0 is not the entire license story: guides/ documentation is CC-BY-4.0 and derived documents have attribution requirements."
+    },
+    "govijr/terminal-phone": {
+      "topics": [
+        "ios automation",
+        "terminal device ui",
+        "mcp device tools"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=626s"
+      ],
+      "caution": "macOS/iOS pairing, terminal graphics and accessibility support constrain portability; physical-device permissions require review."
+    },
+    "HybridRobotics/supermimic": {
+      "topics": [
+        "robotics research",
+        "motion imitation",
+        "simulation training"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=191s"
+      ],
+      "caution": "Do not transfer simulation claims to physical robot safety; GPU/dependency/training data terms need separate review."
+    },
+    "jammaru/sakutto": {
+      "topics": [
+        "local translation",
+        "browser extension",
+        "on device inference"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=268s"
+      ],
+      "caution": "MIT covers project code, not PLaMo model weights: model Community License imposes separate commercial registration/eligibility terms. PLaMo Community License Article7.2 forbids using output as sole evidence/evaluation/opinion for medical diagnoses, legal matters, financial decisions or important personal assessments; redistribution, output attribution and derivative-model terms also apply. Wikipedia-derived benchmark fixture has CC-BY-SA-4.0 scope; third-party PDF/runtime notices apply. Local-processing claims are not an independently audited privacy guarantee."
+    },
+    "JDhruv14/line-art-animation": {
+      "topics": [
+        "svg animation",
+        "illustrated ui",
+        "creative agent skills"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=140s"
+      ],
+      "caution": "Check accessibility/reduced-motion and rendering cost in the actual product; no performance measurements reproduced."
+    },
+    "JuneYaooo/rea-video": {
+      "topics": [
+        "media",
+        "shot analysis",
+        "agent handoff"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=130s"
+      ],
+      "caution": "Technique analysis does not grant rights to footage/music/likeness; authenticity judgments not verified."
+    },
+    "Junhan2/ztd-charts": {
+      "topics": [
+        "react charts",
+        "svg data visualization",
+        "accessible dashboards"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=344s"
+      ],
+      "caution": "Keyboard/screen-reader claims require testing with real target users and data; example values are fabricated upstream examples."
+    },
+    "littledivy/tailnet-do": {
+      "topics": [
+        "cloudflare workers",
+        "private network connectivity",
+        "durable objects"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=467s"
+      ],
+      "caution": "Bridges a cloud runtime into private network trust; ACLs, egress, key lifecycle and Tailscale/Cloudflare terms need separate review."
+    },
+    "mattpocock/skills": {
+      "topics": [
+        "agent workflows",
+        "retro",
+        "specs",
+        "project orchestration",
+        "tdd"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=1594s"
+      ],
+      "caution": "Compare existing workflow before adopting; no blanket installation or efficacy claim."
+    },
+    "milind-soni/OpenMausBot": {
+      "topics": [
+        "agent orchestration",
+        "chat agents",
+        "computer use",
+        "vertical admin assistant research",
+        "doctor admin prototype",
+        "synthetic data prototype"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=429s"
+      ],
+      "caution": "Apache-2.0 covers the core, excluding enterprise/. Enterprise production needs a key; third-party hosting, resale and white-labeling of enterprise features require a written partner agreement. Core-only use must exclude enterprise code and retain applicable notices and bundled licenses. Doctor-admin tags mean synthetic-data research, not healthcare approval."
+    },
+    "Moh4696/cinematic-skill": {
+      "topics": [
+        "narrated video",
+        "motion design",
+        "creative agent skills"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=575s"
+      ],
+      "caution": "Research, image/music rights and factual checks remain producer responsibilities; generated output is not automatically cleared."
+    },
+    "nishant-Tiwari24/cracked": {
+      "topics": [
+        "interview practice",
+        "learning agent skills"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=113s"
+      ],
+      "caution": "Company-specific advice and hiring outcomes are not independently verified; resume/personal data requires privacy review."
+    },
+    "NVIDIA/auto-ontology": {
+      "topics": [
+        "ontology",
+        "semantic model",
+        "text to sql",
+        "data catalog"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=1020s"
+      ],
+      "caution": "Keep backend/ingestion private; ingestion has no own auth; optional Kumo table upload requires governance; human certification; no guaranteed retrieval completeness."
+    },
+    "nwverse/persona": {
+      "topics": [
+        "personal agent hub",
+        "cross device orchestration",
+        "human approval"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=603s"
+      ],
+      "caution": "Always-on hub and remote agent access expand authority; connected devices and secrets require independent security review."
+    },
+    "NYLLON-SOFTWARE/ember-cloudflare": {
+      "topics": [
+        "team chat",
+        "cloudflare",
+        "project collaboration"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=177s"
+      ],
+      "caution": "Not Slack feature parity; cloud/model/service costs and data/access review required; nested Apache/MIT/ISC notices."
+    },
+    "oddmundleikvoll/sprintwake-projects": {
+      "topics": [
+        "project management",
+        "github projects",
+        "native macos",
+        "team chat"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=2174s"
+      ],
+      "caution": "Everyone with project access can read draft-backed chat; private repo OAuth scope broad; macOS14+; no backend does not mean no external data."
+    },
+    "OmniJev/Flide": {
+      "topics": [
+        "decision inference",
+        "shared context batching",
+        "inference research"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=294s"
+      ],
+      "caution": "Published throughput/exactness claims depend on supported model/workload/hardware; not reproduced. Kernel provenance and model-weight licenses must be checked separately from root Apache-2.0."
+    },
+    "paulirish/chrome-capture": {
+      "topics": [
+        "browser recording",
+        "visual test artifacts",
+        "demo video"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=216s"
+      ],
+      "caution": "README targets Chrome153+ native recording and evolving automation support; verify installed versions before use. Recorded pages/audio may contain confidential information."
+    },
+    "rauchg/vinyl": {
+      "topics": [
+        "webgl audio",
+        "interactive demo",
+        "audio simulation"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=652s"
+      ],
+      "caution": "Simulation/educational fidelity is not validated signal-accuracy; uploaded audio must be licensed. MIT covers the code, not all bundled recordings or generated cuts. README identifies Summer: Presto and its cut as CC BY-SA 4.0; preserve each recording's terms."
+    },
+    "RUC-NLPIR/CoworkOS": {
+      "topics": [
+        "multi session agents",
+        "document workflows",
+        "agent workspace"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=547s"
+      ],
+      "caution": "Persistent logs/connected desktop applications can expose confidential documents; reliability and recovery claims are not reproduced. THIRD_PARTY_NOTICES identifies bundled PPTist and bridge/local modifications under vendor/pptist with GNU AGPL-3.0 obligations. Application-wide distribution must not be described solely as MIT; fonts and external runtimes have further terms."
+    },
+    "sherlock-project/sherlock": {
+      "topics": [
+        "authorized username audit"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=255s"
+      ],
+      "caution": "Username matches are not proof of person identity; no unauthorized profiling or contact enrichment recommendation."
+    },
+    "shinyobjectz/raea": {
+      "topics": [
+        "programmatic video",
+        "motion graphics",
+        "react rendering"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=39s"
+      ],
+      "caution": "FSL-1.1-ALv2 restricts competing use; future Apache conversion is not current Apache permission. Source-available is not equivalent to unrestricted open source. README calls Windows newest/least tested and release young."
+    },
+    "sshah03/recalc": {
+      "topics": [
+        "agent spreadsheet",
+        "local workbench",
+        "formula workflows"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=761s"
+      ],
+      "caution": "Early beta with expected bugs and breaking changes; keep independent backups before evaluating valuable spreadsheets. Cells can invoke shell commands or agents, crossing an execution boundary. Local-only/citation/lock claims are not a medical record, financial-control or security certification."
+    },
+    "stevenmichaelthomas/numbrone": {
+      "topics": [
+        "agent team orchestration",
+        "git worktrees",
+        "issue routing"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=680s"
+      ],
+      "caution": "Requires separate review of terminal workspace integration, shell authority, merge approvals and external-service access."
+    },
+    "TIGER-AI-Lab/WebsiteBench": {
+      "topics": [
+        "browser agent evaluation",
+        "website reconstruction benchmark"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=368s"
+      ],
+      "caution": "Apache-2.0 code/task/verifier scope does not grant production reuse of third-party reference websites; README limits reference content to non-commercial research. Benchmark scores do not prove general production correctness or safety."
+    },
+    "tobi/wrapvm": {
+      "topics": [
+        "agent desktop sandbox",
+        "development vm",
+        "browser automation"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=320s"
+      ],
+      "caution": "No root LICENSE discovered: do not assume permission from public visibility or dependencies. Persistent browser sessions, workspace mounts, credentials and CDP exposure need threat modeling; VM is not automatically safe isolation."
+    },
+    "Trendorin/yami": {
+      "topics": [
+        "linux desktop",
+        "rust ui",
+        "wayland shell"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=444s"
+      ],
+      "caution": "OS/compositor-specific, not a generic application UI library. MIT code has separate bundled fonts; README identifies GPL-3.0 niri-derived component and branding restrictions."
+    },
+    "tryatlas/atlas": {
+      "topics": [
+        "agent provenance",
+        "session history",
+        "commit traceability",
+        "team orchestration"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=2036s"
+      ],
+      "caution": "Redirect to tryatlas/atlas preserved; sensitive prompt/tool-output collection needs consent/redaction/retention review."
+    },
+    "udhaykumarbala/cleanyourtv-app": {
+      "topics": [
+        "android tv tools",
+        "device maintenance"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=167s"
+      ],
+      "caution": "ADB/network debugging and app removal can disrupt a device; claimed restore safety is not independently validated. Third-party notices and bundled font licenses remain relevant."
+    },
+    "vercel-labs/agent-browser": {
+      "topics": [
+        "authorized browser automation",
+        "browser qa",
+        "accessibility snapshots"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=728s"
+      ],
+      "caution": "Fresh refs after DOM/navigation; no anti-bot/auth bypass recommendation; bundled axe-core MPL2/third-party terms."
+    },
+    "Z1Code/iCopy": {
+      "topics": [
+        "photo backup",
+        "resumable transfer",
+        "desktop utility"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=417s"
+      ],
+      "caution": "iCloud authentication and optional deletion are high-impact; no account access or deletion was tested. Do not generalize README verification claims to guaranteed recovery; independently prove restore before deletion."
+    },
+    "zainudinnoori/gitmanual": {
+      "topics": [
+        "repository onboarding",
+        "setup documentation",
+        "dependency discovery"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=i5OYXeCUHwY&t=734s"
+      ],
+      "caution": "Generated setup/download scripts are untrusted suggestions; never execute merely because a guide produced them."
+    },
+    "ZhuLinsen/daily_stock_analysis": {
+      "topics": [
+        "financial research",
+        "report automation"
+      ],
+      "sources": [
+        "https://www.youtube.com/watch?v=pnZh5PAF3VE&t=907s"
+      ],
+      "caution": "Not investment advice or accuracy proof; data/provider limits; screening subtree Apache2 while root MIT."
+    }
+  }
+}
