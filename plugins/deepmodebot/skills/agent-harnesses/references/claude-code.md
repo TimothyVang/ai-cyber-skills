@@ -100,7 +100,7 @@ Exact names from [tools-reference](https://code.claude.com/docs/en/tools-referen
 - `-p` skips the workspace-trust dialog and runs project hooks and `.mcp.json` servers. Use `--bare` for scripted calls; Anthropic says it will become the `-p` default ([headless](https://code.claude.com/docs/en/headless)).
 - `--bare` reads only `ANTHROPIC_API_KEY` or `apiKeyHelper`, never OAuth, so it cannot use a subscription login (claude 2.1.322 --help).
 - Background sessions: `claude --bg "<prompt>"`, then `claude agents`, `attach`, `logs`, `stop`, `rm` (claude 2.1.322 --help).
-- Agent SDK: TypeScript [claude-agent-sdk-typescript](https://github.com/anthropics/claude-agent-sdk-typescript), Python [claude-agent-sdk-python](https://github.com/anthropics/claude-agent-sdk-python); it runs the Claude Code binary ([agent-sdk overview](https://code.claude.com/docs/en/agent-sdk/overview)). Package names `@anthropic-ai/claude-agent-sdk`, `claude-agent-sdk` [unverified].
+- Agent SDK: verified package names `@anthropic-ai/claude-agent-sdk` (TypeScript) and `claude-agent-sdk` (Python); both normally bundle the Claude Code binary. Follow [SDK setup and usage](sdks.md) for isolated installs, examples, and authentication/product restrictions. Sources: [TypeScript upstream](https://github.com/anthropics/claude-agent-sdk-typescript), [Python upstream](https://github.com/anthropics/claude-agent-sdk-python), [quickstart](https://code.claude.com/docs/en/agent-sdk/quickstart.md). Checked 2026-11-13.
 - GitHub Actions: `uses: anthropics/claude-code-action@v1` ([github-actions](https://code.claude.com/docs/en/github-actions)).
 
 ## Hooks

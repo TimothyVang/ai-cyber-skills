@@ -15,3 +15,12 @@ Open a managed browser with relay disabled. Follow the Evidence navigation link 
 Check keyboard focus, overflow and evidence-link destinations without visiting external sites.
 Save screenshots under `.scratch/evidence/`, then close the owned tab and service.
 Local rendering and destination inspection do not prove that unpublished reports are available on the public site.
+
+## Optional agent SDK workspace
+
+Follow the SDK workspace entry in [agent-harnesses](../../../../plugins/deepmodebot/skills/agent-harnesses/SKILL.md) to copy the source-only kit into a fresh `.scratch/sdk-runtime/` and install its dependencies there.
+Run the venv's `python -m pip check`, `python check_antigravity.py`, and `bun check.ts` from that workspace.
+Expect Antigravity custom-tool dispatch, Codex native version output, omp in-memory message storage, and a Claude SDK native initialization handshake without sending a prompt.
+Capture commands and outputs under `.scratch/evidence/`. Report platform, package versions, and any failures.
+These checks do not verify model inference, provider authentication, Antigravity runtime startup, or permission enforcement during model turns.
+Model-backed examples require separate approved provider/data/spend boundaries; do not silently turn a local installation check into an agent run.

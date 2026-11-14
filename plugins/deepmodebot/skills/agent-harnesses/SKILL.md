@@ -1,8 +1,8 @@
 ---
 name: agent-harnesses
-description: "Cited, dated facts for using and scripting omp, Claude Code and Codex: config paths, flags, hooks, skills and plugins, headless runs, sandboxes, subagent model and effort choice, and the MCP, ACP, A2A and WebMCP protocols. Use when configuring, scripting, or comparing an agent harness or protocol."
+description: "Cited, dated facts for using and scripting omp, Claude Code, Codex, and Antigravity SDKs: installation, embedding, config paths, flags, hooks, skills, headless runs, permissions, and MCP/ACP/A2A protocols. Use when installing SDKs, building agent applications, or configuring, scripting, or comparing an agent harness or protocol."
 metadata:
-  as-of: "2026-11-11"
+  as-of: "2026-11-13"
 ---
 
 # Harnesses, protocols, and AI-native tooling
@@ -16,6 +16,7 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 | `references/omp.md` | Running in omp, scripting `omp -p`, omp hooks, approval modes, `task` agents, `omp acp` |
 | `references/claude-code.md` | Running in Claude Code, `claude -p`, the Agent SDK, `.claude/` settings, hooks, permissions, plugins |
 | `references/codex.md` | Running in Codex CLI, IDE, app, or cloud; `codex exec`, `config.toml`, sandbox and approvals, plugins |
+| `references/sdks.md` | Installing or embedding Antigravity, Claude Agent, Codex, or omp SDKs; package names, tool APIs, isolated setup, CLI versus SDK auth, and local smoke checks |
 | `references/protocols.md` | Building, configuring, testing, or securing MCP servers and clients; ACP; A2A; WebMCP |
 | `references/ai-native-tooling.md` | Portable `AGENTS.md` and Agent Skills, plugin and marketplace formats, other harnesses (Gemini, Antigravity, Cursor, Copilot, OpenCode, Amp, Goose, Zed, Devin, Kiro), browser automation, docs for agents, orchestrators |
 | `references/self-authoring.md` | Writing prompts, commands, or skills from inside a session; native goal and loop modes (`/goal`, `/loop`, ralph-loop, `/autoresearch`); headless loop flags and cost caps; skill spec and validation; self-modification risks |
@@ -48,6 +49,6 @@ Checked 2026-11-11 against primary docs and local `--help` of omp 18.18.9, Claud
 
 - deepmodebot's **Contain the work** section (SKILL.md) wins over any harness default: scratch in `<root>/.scratch/`, worktrees in `<root>/.worktrees/`, never system temp. Codex and Claude Code both make temp dirs writable by default.
 - Subagents in every harness start without your conversation. Put the goal, root, files, rules, and acceptance check in the brief.
-- Model calls use the user's subscription. An API key in the environment silently switches `claude -p` and `codex exec` to API billing.
+- deepmodebot's own model runs use the user's subscription. SDK applications have separate provider/authentication requirements; follow `references/sdks.md` and obtain explicit approval for API billing. Never assume a CLI subscription authorizes an SDK product.
 - Secrets and logins follow `skill://secrets-and-auth` in every harness: never read or print a value, inject at run time, one scoped identity per agent. It lists the per-harness settings (Claude Code sandbox and deny rules, Codex `shell_environment_policy`, omp `secrets.enabled`).
 - Translate, don't skip: when a step names an omp tool your harness lacks, use the mapped tool above; when nothing maps, do the step by hand and say so.
