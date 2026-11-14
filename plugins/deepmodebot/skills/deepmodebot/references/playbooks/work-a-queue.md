@@ -142,6 +142,8 @@ Issues become merged PRs through a fixed pipeline. You operate the factory; it d
 
 The factory is the `factory` CLI (source: `github.com/TimothyVang/softwarefactory`). It is the lever (`references/principles/build-the-lever.md`). A program sequences the stages, runs the gate, and merges, so its files are the proof a reviewer reruns. `factory --help` lists the commands; `factory.json` and the CLI's README are the source of truth for config.
 
+Choosing a different runner or improving this pipeline → read `references/factory-landscape.md` first. It maps candidate GitHub factories to missing capabilities and acceptance experiments. This is prior art, not authority to import their deployment or auto-merge permissions; the steps below still govern a `factory.json` run.
+
 ### Steps
 
 1. Install check: `factory --help` runs.

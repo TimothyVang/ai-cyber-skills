@@ -68,6 +68,8 @@ The review holdout contains one bug/control pair. The four exercised journeys do
 
 The main line takes an idea to merged code. Skip the phases a job doesn't need. [The flow map](plugins/deepmodebot/skills/deepmodebot/references/flows.md) has the full table.
 
+Choosing or improving the machinery? The [software-factory GitHub landscape](plugins/deepmodebot/skills/deepmodebot/references/factory-landscape.md) maps 61 projects to dispatch, isolation, review, merge, and recovery patterns. It separates documented mechanisms from runtime proof and flags license and hosted-service limits.
+
 | Phase | Flow | Leaves behind |
 |---|---|---|
 | 0. Set up the repo once | Setup playbook | A tracker (GitHub issues, local files, or another tracker), mapped labels, `GLOSSARY.md`, `docs/adr/`, `CODING_STANDARDS.md`, an `AGENTS.md` section |
