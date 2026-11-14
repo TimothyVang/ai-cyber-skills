@@ -106,17 +106,7 @@ For size **S**, only the one-line restate, the Scope ledger, proving it on the r
 - **Your subscription, not an API.** Every model call runs on a subscription the user is logged in with: the session's own model and its subagents (or a headless run from scripts: `omp -p`, `claude -p`, `codex exec`), and the bots, which are any ACP (Agent Client Protocol) agents driven through `acpx`, omp by default, each harness on its own subscription login. Never set up an API key or wait on a hosted review bot. Unset `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, and `CODEX_API_KEY` in a child's environment: a set key switches `claude -p` or `codex exec` to API billing.
 - **Run to the finish line.** A green run, a beaten benchmark or a clean commit is a waypoint: tick it in the todo list and start the next ledger item in the same turn. The final reply reports each item of the request as done or blocked; a blocked item names its hard stop and the exact ask, or shows its three failed panels or dead end. A pause or handoff the user asks for is not a final reply.
 - **No is an acceptable answer.** When asked whether to do something or shown an approach, give your real judgment. Push back or say "this doesn't earn its place" when true. Candor over agreement.
-
-## Subagents
-
-- You run the playbook. Delegates do bounded steps. Never delegate the playbook itself.
-- Use your harness's subagent tool: omp `task`, Claude Code `Agent`, Codex `spawn_agent` (Codex spawns only when told to). Read-only research uses omp `agent: "scout"`, Claude Code `Explore`, or Codex `explorer`. Anything that edits, runs the app, or reads transcripts uses the default agent. omp `reviewer` is read-only: use it only to review a diff. Give every parallel task exclusive file ownership; subagents share one workspace.
-- Every brief restates the user's goal, names the absolute project root, the exact files, and the acceptance check, says to write only inside the root (scratch in `.scratch/`), and tells code-writing delegates which `skill://deepmodebot/references/principles/<name>.md` files apply. omp subagents do not receive AGENTS.md, so put anything they must follow in the brief.
-- Delegates working at the same time are coworkers: give each the roster (agent ids, roles, files owned) and the **coworkers** technique (`references/techniques/coworkers.md`), so they ask, hand off, and push back on each other directly instead of through you. Panel verifiers are the exception: they vote before they talk.
-- **Delegate only when it pays.** A child re-pays the system prompt and a cold cache, and multi-agent work costs about 15x a chat. Delegate wide searches, log or transcript digests, fresh-eyes review, and truly independent slices. Keep one-file tasks, tightly coupled work, and the hard reasoning in the main session. Message a finished child instead of spawning a new one.
-- **Match model and effort to the task.** Search and mechanical edits take the small tier; routine features the mid tier at medium effort; hard design, debugging, and review the strongest model at high effort. A judge or second opinion uses a different model family when one is available. Cap unattended runs (omp `--max-cost`, Claude Code `--max-budget-usd`). Per-harness names and settings: `skill://agent-harnesses/references/delegation-efficiency.md`.
-- You own every delegate's work. Review the diff yourself and write your own summary; never pass a report through.
-- Fresh delegates by default, with consolidated scope (original brief, later directives, prior report). Reuse a running delegate only when the work needs state that lives in it.
+- **Delegation.** Follow Subagents below for tool mappings, model selection, file ownership, and bounded briefs.
 
 ## Routes
 
@@ -168,6 +158,17 @@ Step 2 of Route. First match wins.
 | A new app, an empty repo, "start / build me <app>", "what stack" | **prior-art** first (newest repos to copy or learn from), then `skill://deep-stack` `references/any-app-stack.md`, then scaffold, then the Feature playbook for the first slice |
 | "write / improve your own prompt, skill, goal, or loop", "make yourself able to X", a workflow done the same way twice | Self-authoring playbook |
 | Anything else | The Playbooks table below |
+
+## Subagents
+
+- You run the playbook. Delegates do bounded steps. Never delegate the playbook itself.
+- Use your harness's subagent tool: omp `task`, Claude Code `Agent`, Codex `spawn_agent` (Codex spawns only when told to). Read-only research uses omp `agent: "scout"`, Claude Code `Explore`, or Codex `explorer`. Anything that edits, runs the app, or reads transcripts uses the default agent. omp `reviewer` is read-only: use it only to review a diff. Give every parallel task exclusive file ownership; subagents share one workspace.
+- Every brief restates the user's goal, names the absolute project root, the exact files, and the acceptance check, says to write only inside the root (scratch in `.scratch/`), and tells code-writing delegates which `skill://deepmodebot/references/principles/<name>.md` files apply. omp subagents do not receive AGENTS.md, so put anything they must follow in the brief.
+- Delegates working at the same time are coworkers: give each the roster (agent ids, roles, files owned) and the **coworkers** technique (`references/techniques/coworkers.md`), so they ask, hand off, and push back on each other directly instead of through you. Panel verifiers are the exception: they vote before they talk.
+- **Delegate only when it pays.** A child re-pays the system prompt and a cold cache, and multi-agent work costs about 15x a chat. Delegate wide searches, log or transcript digests, fresh-eyes review, and truly independent slices. Keep one-file tasks, tightly coupled work, and the hard reasoning in the main session. Message a finished child instead of spawning a new one.
+- **Match model and effort to the task.** Search and mechanical edits take the small tier; routine features the mid tier at medium effort; hard design, debugging, and review the strongest model at high effort. A judge or second opinion uses a different model family when one is available. Cap unattended runs (omp `--max-cost`, Claude Code `--max-budget-usd`). Per-harness names and settings: `skill://agent-harnesses/references/delegation-efficiency.md`.
+- You own every delegate's work. Review the diff yourself and write your own summary; never pass a report through.
+- Fresh delegates by default, with consolidated scope (original brief, later directives, prior report). Reuse a running delegate only when the work needs state that lives in it.
 
 ## Running without the human
 
